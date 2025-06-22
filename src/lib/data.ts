@@ -183,3 +183,64 @@ export const suppliers: Supplier[] = [
         totalPurchaseReturnDue: 0.00
     }
 ];
+
+export type Customer = {
+  id: string;
+  contactId: string;
+  name: string;
+  email: string | null;
+  taxNumber: string;
+  customerGroup: string;
+  openingBalance: number;
+  addedOn: string;
+  address: string;
+  mobile: string;
+  totalSaleDue: number;
+  totalSaleReturnDue: number;
+  customField1?: string;
+};
+
+export const customers: Customer[] = [
+    {
+        id: 'cus-1',
+        contactId: 'CO0001',
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+        taxNumber: '123456789',
+        customerGroup: 'Wholesale',
+        openingBalance: 1000,
+        addedOn: '01/01/2023',
+        address: '123 Main St, Anytown, USA',
+        mobile: '555-123-4567',
+        totalSaleDue: 500,
+        totalSaleReturnDue: 50,
+    },
+    {
+        id: 'cus-2',
+        contactId: 'CO0002',
+        name: 'Jane Smith',
+        email: 'jane.smith@example.com',
+        taxNumber: '987654321',
+        customerGroup: 'Retail',
+        openingBalance: 500,
+        addedOn: '02/15/2023',
+        address: '456 Oak Ave, Anytown, USA',
+        mobile: '555-987-6543',
+        totalSaleDue: 250,
+        totalSaleReturnDue: 0,
+    },
+    {
+        id: 'cus-3',
+        contactId: 'CO0005',
+        name: 'Walk-in Customer',
+        email: null,
+        taxNumber: '',
+        customerGroup: 'Retail',
+        openingBalance: 0,
+        addedOn: '03/20/2023',
+        address: 'N/A',
+        mobile: 'N/A',
+        totalSaleDue: 1200,
+        totalSaleReturnDue: 100,
+    },
+];
