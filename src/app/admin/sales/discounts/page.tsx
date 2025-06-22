@@ -6,12 +6,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search, X } from "lucide-react";
+import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search, X, Calendar as CalendarIcon } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { discounts as initialDiscounts, detailedProducts, type Discount } from '@/lib/data';
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type DiscountType = 'Fixed' | 'Percentage';
 
@@ -23,8 +27,8 @@ const initialNewDiscountState = {
   priority: '',
   discountType: 'Percentage' as DiscountType,
   discountAmount: '',
-  startsAt: '',
-  endsAt: ''
+  startsAt: undefined as Date | undefined,
+  endsAt: undefined as Date | undefined,
 };
 
 export default function DiscountsPage() {
@@ -37,9 +41,7 @@ export default function DiscountsPage() {
 
   useEffect(() => {
     if (isAddDialogOpen) {
-        const now = new Date();
-        const formattedDateTime = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        setNewDiscount(d => ({ ...initialNewDiscountState, startsAt: formattedDateTime, discountType: 'Percentage' }));
+        setNewDiscount({ ...initialNewDiscountState, startsAt: new Date(), discountType: 'Percentage' });
         setSelectedProducts([]);
         setProductSearchTerm('');
     }
@@ -75,8 +77,8 @@ export default function DiscountsPage() {
         priority: Number(newDiscount.priority) || 0,
         discountType: newDiscount.discountType,
         discountAmount: Number(newDiscount.discountAmount),
-        startsAt: newDiscount.startsAt,
-        endsAt: newDiscount.endsAt || null,
+        startsAt: newDiscount.startsAt ? format(newDiscount.startsAt, 'MM/dd/yyyy') : '',
+        endsAt: newDiscount.endsAt ? format(newDiscount.endsAt, 'MM/dd/yyyy') : null,
         isActive: true,
       };
       setDiscounts([...discounts, discountToAdd]);
@@ -215,12 +217,54 @@ export default function DiscountsPage() {
                       <Input id="discount-amount" placeholder="Discount Amount" value={newDiscount.discountAmount} onChange={(e) => handleInputChange('discountAmount', e.target.value)}/>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="starts-at">Starts At:</Label>
-                      <Input id="starts-at" value={newDiscount.startsAt} onChange={(e) => handleInputChange('startsAt', e.target.value)} />
+                        <Label htmlFor="starts-at">Starts At:</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !newDiscount.startsAt && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {newDiscount.startsAt ? format(newDiscount.startsAt, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={newDiscount.startsAt}
+                              onSelect={(date) => setNewDiscount(p => ({...p, startsAt: date}))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="ends-at">Ends At:</Label>
-                      <Input id="ends-at" placeholder="Ends At" value={newDiscount.endsAt} onChange={(e) => handleInputChange('endsAt', e.target.value)}/>
+                       <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !newDiscount.endsAt && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {newDiscount.endsAt ? format(newDiscount.endsAt, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={newDiscount.endsAt}
+                              onSelect={(date) => setNewDiscount(p => ({...p, endsAt: date}))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                     </div>
                   </div>
                   <DialogFooter>
