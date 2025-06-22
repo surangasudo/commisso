@@ -21,6 +21,30 @@ export type Commission = {
   date: string;
 };
 
+export type Product = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  imageUrl: string;
+  stock: number;
+};
+
+export const products: Product[] = [
+  { id: 'prod-001', name: 'Espresso', price: 2.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
+  { id: 'prod-002', name: 'Latte', price: 3.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
+  { id: 'prod-003', name: 'Cappuccino', price: 3.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
+  { id: 'prod-004', name: 'Croissant', price: 2.75, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 50 },
+  { id: 'prod-005', name: 'Muffin', price: 2.25, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 60 },
+  { id: 'prod-006', name: 'Iced Tea', price: 3.00, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 80 },
+  { id: 'prod-007', name: 'Mineral Water', price: 1.50, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 120 },
+  { id: 'prod-008', name: 'Club Sandwich', price: 6.50, category: 'Food', imageUrl: 'https://placehold.co/150x150.png', stock: 30 },
+  { id: 'prod-009', name: 'Caesar Salad', price: 7.00, category: 'Food', imageUrl: 'https://placehold.co/150x150.png', stock: 25 },
+  { id: 'prod-010', name: 'Bagel with Cream Cheese', price: 3.25, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 40 },
+  { id: 'prod-011', name: 'Americano', price: 3.00, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 90 },
+  { id: 'prod-012', name: 'Hot Chocolate', price: 4.00, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 70 },
+];
+
 export const profiles: Profile[] = [
   { id: 'usr-001', name: 'John Doe', type: 'Agent', email: 'john.doe@example.com', phone: '1234567890', commissionRate: 10, status: 'Active', notificationPreference: 'Email', categoryRates: [{ category: 'Electronics', rate: 5 }, { category: 'Furniture', rate: 12 }] },
   { id: 'usr-002', name: 'Jane Smith', type: 'Salesperson', email: 'jane.smith@example.com', phone: '0987654321', commissionRate: 5, status: 'Active', notificationPreference: 'SMS' },
