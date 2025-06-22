@@ -10,6 +10,15 @@ import { Search, Plus, Trash2, User, Calendar, FilePlus, Info, PlusCircle, X } f
 import { detailedProducts, type DetailedProduct, customers, users } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 type DraftItem = {
   product: DetailedProduct;
@@ -25,6 +34,13 @@ export default function AddDraftPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentDate, setCurrentDate] = useState('');
     const [additionalExpenses, setAdditionalExpenses] = useState<{ id: number, name: string, amount: string }[]>([]);
+
+    // State for the Add Customer Dialog
+    const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+    const [newCustomerName, setNewCustomerName] = useState('');
+    const [newCustomerMobile, setNewCustomerMobile] = useState('');
+    const [newCustomerEmail, setNewCustomerEmail] = useState('');
+    const [newCustomerAddress, setNewCustomerAddress] = useState('');
 
     useEffect(() => {
         const now = new Date();
@@ -95,6 +111,38 @@ export default function AddDraftPage() {
         setAdditionalExpenses(additionalExpenses.filter(exp => exp.id !== id));
     };
 
+    const handleSaveCustomer = () => {
+        if (!newCustomerName || !newCustomerMobile) {
+            toast({
+                title: "Error",
+                description: "Name and Mobile Number are required.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // In a real app, you would save this data to your backend
+        // and likely update the customer list.
+        console.log("New Customer:", { 
+            name: newCustomerName, 
+            mobile: newCustomerMobile, 
+            email: newCustomerEmail, 
+            address: newCustomerAddress 
+        });
+
+        toast({
+            title: "Customer Added",
+            description: `${newCustomerName} has been successfully added.`,
+        });
+
+        // Reset form and close dialog
+        setNewCustomerName('');
+        setNewCustomerMobile('');
+        setNewCustomerEmail('');
+        setNewCustomerAddress('');
+        setIsAddCustomerOpen(false);
+    };
+
     return (
         <div className="flex flex-col gap-6">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
@@ -134,7 +182,41 @@ export default function AddDraftPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Button size="icon" className="flex-shrink-0"><Plus className="w-4 h-4" /></Button>
+                                <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button size="icon" className="flex-shrink-0"><Plus className="w-4 h-4" /></Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-md">
+                                        <DialogHeader>
+                                            <DialogTitle>Add New Customer</DialogTitle>
+                                            <DialogDescription>
+                                                Quickly add a new customer to the system.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="new-customer-name">Name *</Label>
+                                                <Input id="new-customer-name" value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Customer Name" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="new-customer-mobile">Mobile Number *</Label>
+                                                <Input id="new-customer-mobile" value={newCustomerMobile} onChange={(e) => setNewCustomerMobile(e.target.value)} placeholder="Mobile Number" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="new-customer-email">Email</Label>
+                                                <Input id="new-customer-email" type="email" value={newCustomerEmail} onChange={(e) => setNewCustomerEmail(e.target.value)} placeholder="Email Address" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="new-customer-address">Address</Label>
+                                                <Textarea id="new-customer-address" value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} placeholder="Customer Address" />
+                                            </div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                                            <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
                             <div>
                                 <h4 className="font-semibold text-sm">Billing Address:</h4>
