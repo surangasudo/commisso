@@ -115,7 +115,14 @@ const sidebarNav = [
             { href: "/admin/sales/import", label: "Import Sales" },
         ]
     },
-    { href: "#", icon: ArrowRightLeft, label: "Stock Transfers" },
+    { 
+        label: "Stock Transfers", 
+        icon: ArrowRightLeft,
+        children: [
+            { href: "/admin/stock-transfers/list", label: "List Stock Transfers" },
+            { href: "/admin/stock-transfers/add", label: "Add Stock Transfer" },
+        ]
+    },
     { href: "#", icon: SlidersHorizontal, label: "Stock Adjustment" },
     { href: "/admin/expenses", icon: Wallet, label: "Expenses" },
     { href: "#", icon: Landmark, label: "Payment Accounts" },

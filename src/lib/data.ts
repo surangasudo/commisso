@@ -418,3 +418,21 @@ export type Discount = {
 };
 
 export const discounts: Discount[] = [];
+
+export type StockTransfer = {
+  id: string;
+  date: string;
+  referenceNo: string;
+  locationFrom: string;
+  locationTo: string;
+  status: 'Pending' | 'In-Transit' | 'Completed';
+  shippingCharges: number;
+  totalAmount: number;
+  addedBy: string;
+};
+
+export const stockTransfers: StockTransfer[] = [
+  { id: 'st-1', date: '06/22/2025 11:08', referenceNo: 'ST2025/0001', locationFrom: 'Awesome Shop', locationTo: 'Warehouse A', status: 'In-Transit', shippingCharges: 50, totalAmount: 7700.00, addedBy: 'Mr Admin' },
+  { id: 'st-2', date: '06/20/2025 15:30', referenceNo: 'ST2025/0002', locationFrom: 'Warehouse A', locationTo: 'Awesome Shop', status: 'Completed', shippingCharges: 25, totalAmount: 1250.00, addedBy: 'Mr Admin' },
+  { id: 'st-3', date: '06/18/2025 09:00', referenceNo: 'ST2025/0003', locationFrom: 'Awesome Shop', locationTo: 'Warehouse B', status: 'Pending', shippingCharges: 75, totalAmount: 9800.50, addedBy: 'Mr Admin' },
+];
