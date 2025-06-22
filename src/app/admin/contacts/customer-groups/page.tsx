@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Search,
   Plus,
@@ -32,7 +32,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -49,12 +48,41 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const customerGroups = [
+const initialCustomerGroups = [
   { name: 'Wholesale', calculationPercentage: 0 },
   { name: 'Retail', calculationPercentage: 0 },
 ];
 
 export default function CustomerGroupsPage() {
+  const [customerGroups, setCustomerGroups] = useState(initialCustomerGroups);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newCalculationPercentage, setNewCalculationPercentage] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+  const handleAddGroup = () => {
+    if (newGroupName.trim()) {
+      setCustomerGroups([
+        ...customerGroups,
+        {
+          name: newGroupName,
+          calculationPercentage: Number(newCalculationPercentage) || 0,
+        },
+      ]);
+      setNewGroupName('');
+      setNewCalculationPercentage('');
+      setIsAddDialogOpen(false);
+    }
+  };
+
+  const handleDeleteGroup = (groupNameToDelete: string) => {
+    setCustomerGroups(customerGroups.filter(group => group.name !== groupNameToDelete));
+  };
+  
+  const handleEditGroup = (groupName: string) => {
+    // For now, edit will just open an alert. A full implementation would involve a separate state and dialog.
+    alert(`Editing "${groupName}" is not yet implemented.`);
+  }
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-4">
@@ -67,7 +95,7 @@ export default function CustomerGroupsPage() {
           <CardHeader>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <CardTitle>All customer groups</CardTitle>
-                    <Dialog>
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
                             <Plus className="h-4 w-4" />
@@ -81,7 +109,13 @@ export default function CustomerGroupsPage() {
                           <div className="space-y-4 py-4">
                               <div className="space-y-2">
                                   <Label htmlFor="group-name">Customer Group Name:*</Label>
-                                  <Input id="group-name" placeholder="Customer Group Name" required />
+                                  <Input 
+                                    id="group-name" 
+                                    placeholder="Customer Group Name" 
+                                    required 
+                                    value={newGroupName}
+                                    onChange={(e) => setNewGroupName(e.target.value)}
+                                  />
                               </div>
                               <div className="space-y-2">
                                   <Label htmlFor="calculation-type">Price calculation type:</Label>
@@ -108,14 +142,18 @@ export default function CustomerGroupsPage() {
                                           </TooltipContent>
                                       </Tooltip>
                                   </Label>
-                                  <Input id="calculation-percentage" type="number" placeholder="Calculation Percentage (%)" />
+                                  <Input 
+                                    id="calculation-percentage" 
+                                    type="number" 
+                                    placeholder="Calculation Percentage (%)"
+                                    value={newCalculationPercentage}
+                                    onChange={(e) => setNewCalculationPercentage(e.target.value)}
+                                  />
                               </div>
                           </div>
                           <DialogFooter>
-                              <Button>Save</Button>
-                              <DialogClose asChild>
-                                  <Button variant="secondary">Close</Button>
-                              </DialogClose>
+                              <Button onClick={handleAddGroup}>Save</Button>
+                              <Button variant="secondary" onClick={() => setIsAddDialogOpen(false)}>Close</Button>
                           </DialogFooter>
                       </DialogContent>
                     </Dialog>
@@ -148,10 +186,10 @@ export default function CustomerGroupsPage() {
                       <TableCell>{group.calculationPercentage}%</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                          <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditGroup(group.name)}>
                             <Pencil className="mr-1 h-3 w-3" /> Edit
                           </Button>
-                          <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                          <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteGroup(group.name)}>
                             <Trash2 className="mr-1 h-3 w-3" /> Delete
                           </Button>
                         </div>
