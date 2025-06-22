@@ -384,3 +384,20 @@ export const drafts: Draft[] = [
     { id: 'draft-2', date: '06/21/2025 11:30', draftNo: 'DRFT0002', customerName: 'Jane Smith', location: 'Awesome Shop', totalAmount: 1200.50, totalItems: 3, addedBy: 'Mr Admin' },
     { id: 'draft-3', date: '06/20/2025 09:00', draftNo: 'DRFT0003', customerName: 'Walk-In Customer', location: 'Awesome Shop', totalAmount: 85.00, totalItems: 2, addedBy: 'Cashier' },
 ];
+
+export type SellReturn = {
+  id: string;
+  date: string;
+  invoiceNo: string;
+  parentSale: string;
+  customerName: string;
+  location: string;
+  paymentStatus: 'Paid' | 'Due' | 'Partial';
+  totalAmount: number;
+  paymentDue: number;
+};
+
+export const sellReturns: SellReturn[] = [
+    { id: 'sr-1', date: '06/23/2025 11:00', invoiceNo: 'SRO-001', parentSale: 'AS0004', customerName: 'Walk-In Customer', location: 'Awesome Shop', paymentStatus: 'Due', totalAmount: 50.00, paymentDue: 50.00 },
+    { id: 'sr-2', date: '06/21/2025 15:00', invoiceNo: 'SRO-002', parentSale: 'AS0003', customerName: 'Harry', location: 'Awesome Shop', paymentStatus: 'Paid', totalAmount: 100.00, paymentDue: 0.00 },
+];
