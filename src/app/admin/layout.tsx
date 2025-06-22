@@ -1,5 +1,7 @@
-import React from 'react';
+'use client';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Bell,
   CircleUser,
@@ -22,6 +24,7 @@ import {
   Grid3x3,
   CalendarDays,
   PlusCircle,
+  ChevronDown,
 } from 'lucide-react';
 
 import {
@@ -48,7 +51,15 @@ import { Logo } from '@/components/icons';
 
 const sidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home" },
-    { href: "/admin/users", icon: Users, label: "User Management" },
+    { 
+        label: "User Management", 
+        icon: Users,
+        children: [
+            { href: "/admin/users", label: "Users" },
+            { href: "/admin/roles", label: "Roles" },
+            { href: "/admin/sales-commission-agents", label: "Sales Commission Agents" }
+        ]
+    },
     { href: "/admin/customers", icon: Contact, label: "Contacts" },
     { href: "/admin/inventory", icon: Package, label: "Products" },
     { href: "/admin/purchases", icon: Download, label: "Purchases" },
@@ -59,13 +70,29 @@ const sidebarNav = [
     { href: "#", icon: Landmark, label: "Payment Accounts" },
     { href: "/admin/reports", icon: FileText, label: "Reports" },
     { href: "#", icon: Mail, label: "Notification Templates" },
-]
+];
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    const activeParent = sidebarNav.find(item => 
+      item.children?.some(child => child.href === pathname)
+    );
+    if (activeParent) {
+      setOpenMenu(activeParent.label);
+    }
+  }, [pathname]);
+
+  const toggleMenu = (label: string) => {
+    setOpenMenu(openMenu === label ? null : label);
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -73,12 +100,45 @@ export default function AdminLayout({
           <SidebarMenu>
             {sidebarNav.map((item) => (
                  <SidebarMenuItem key={item.label}>
-                    <Link href={item.href} className="w-full">
-                        <SidebarMenuButton tooltip={item.label} variant={item.href === '/admin/dashboard' ? 'primary' : 'ghost'}>
-                        <item.icon />
-                        <span>{item.label}</span>
+                    {item.children ? (
+                        <>
+                        <SidebarMenuButton
+                            variant={openMenu === item.label || item.children.some(c => c.href === pathname) ? 'secondary' : 'ghost'}
+                            className="w-full justify-between"
+                            onClick={() => toggleMenu(item.label)}
+                        >
+                            <div className="flex items-center gap-2">
+                            <item.icon />
+                            <span>{item.label}</span>
+                            </div>
+                            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${openMenu === item.label ? 'rotate-180' : ''}`} />
                         </SidebarMenuButton>
-                    </Link>
+                        {openMenu === item.label && (
+                            <ul className="pl-7 pt-2 flex flex-col gap-1">
+                            {item.children.map((child) => (
+                                <li key={child.label}>
+                                <Link href={child.href} className="w-full">
+                                    <SidebarMenuButton 
+                                    tooltip={child.label} 
+                                    variant={pathname === child.href ? 'secondary' : 'ghost'} 
+                                    className="w-full justify-start h-8 text-sm"
+                                    >
+                                    <span>{child.label}</span>
+                                    </SidebarMenuButton>
+                                </Link>
+                                </li>
+                            ))}
+                            </ul>
+                        )}
+                        </>
+                    ) : (
+                        <Link href={item.href!} className="w-full">
+                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'primary' : 'ghost'}>
+                            <item.icon />
+                            <span>{item.label}</span>
+                            </SidebarMenuButton>
+                        </Link>
+                    )}
                 </SidebarMenuItem>
             ))}
           </SidebarMenu>
