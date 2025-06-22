@@ -33,102 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-const profitData = {
-  openingStockPurchase: 0.00,
-  openingStockSale: 0.00,
-  totalPurchase: 386936.00,
-  totalStockAdjustment: 0.00,
-  totalExpense: 0.00,
-  totalPurchaseShipping: 0.00,
-  purchaseAdditionalExpense: 0.00,
-  totalTransferShipping: 0.00,
-  totalSellDiscount: 0.00,
-  totalCustomerReward: 0.00,
-  totalSellReturn: 0.00,
-  totalPayroll: 0.00,
-  totalProductionCost: 0.00,
-  closingStockPurchase: 386936.00,
-  closingStockSale: 471020.00,
-  totalSales: 9687.50,
-  totalSellShipping: 0.00,
-  sellAdditionalExpenses: 0.00,
-  totalStockRecovered: 0.00,
-  totalPurchaseReturn: 0.00,
-  totalPurchaseDiscount: 0.00,
-  totalSellRoundOff: 0.00,
-  hmsTotal: 0.00,
-};
-
-const productProfitData = [
-    { product: 'Barilla Pasta (AS0028)', profit: 0.00 },
-    { product: 'Butter Cookies (AS0027)', profit: 0.00 },
-    { product: "Levi's Men's Slimmy Fit Jeans - Waist Size - 28 (AS0002-1)", profit: 0.00 },
-    { product: "Levi's Men's Slimmy Fit Jeans - Waist Size 30 (AS0002-2)", profit: 0.00 },
-    { product: 'Pair Of Dumbbells (AS0021)', profit: 0.00 },
-];
-
-const categoryProfitData = [
-    { category: 'Accessories -- Shoes', profit: 588.50 },
-    { category: 'Food & Grocery', profit: 475.00 },
-    { category: 'Sports -- Exercise & Fitness', profit: 125.00 },
-    { category: 'Uncategorized', profit: 0.00 },
-];
-
-const brandProfitData = [
-    { brand: 'Nike', profit: 300.00 },
-    { brand: 'Puma', profit: 250.50 },
-    { brand: 'Oreo', profit: 75.00 },
-    { brand: 'Bowflex', profit: 125.00 },
-    { brand: 'Unbranded', profit: 0.00 },
-];
-
-const locationProfitData = [
-    { location: 'Awesome Shop', profit: 1182.00 },
-];
-
-const invoiceProfitData = [
-    { invoiceNo: 'AS0004', customer: 'Walk-In Customer', profit: 75.00 },
-    { invoiceNo: 'AS0005', customer: 'Walk-In Customer', profit: 41.25 },
-    { invoiceNo: 'AS0002', customer: 'Walk-In Customer', profit: 82.50 },
-    { invoiceNo: 'AS0003', customer: 'Harry', profit: 770.00 },
-];
-
-const dateProfitData = [
-    { date: '06/22/2025', profit: 825.00 },
-    { date: '06/21/2025', profit: 0.00 },
-    { date: '06/20/2025', profit: 8112.50 },
-];
-
-const customerProfitData = [
-    { customer: 'Walk-In Customer', profit: 198.75 },
-    { customer: 'Harry', profit: 770.00 },
-];
-
-const dayProfitData = [
-    { day: 'Sunday', profit: 1500.00 },
-    { day: 'Monday', profit: 2200.00 },
-    { day: 'Tuesday', profit: 1800.00 },
-    { day: 'Wednesday', profit: 2500.00 },
-    { day: 'Thursday', profit: 3100.00 },
-    { day: 'Friday', profit: 4200.00 },
-    { day: 'Saturday', profit: 5500.00 },
-];
-
-const serviceStaffProfitData = [
-    { staffName: 'Mr Admin', profit: 5500.00 },
-    { staffName: 'Mr Demo Cashier', profit: 3250.75 },
-];
-
-const agentProfitData = [
-    { agentName: 'John Doe', profit: 4500.00 },
-    { agentName: 'Alex Ray', profit: 2800.50 },
-];
-
-const subAgentProfitData = [
-    { subAgentName: 'Jane Smith', profit: 1850.50 },
-    { subAgentName: 'Peter Jones', profit: 975.00 },
-];
+import { profitData, productProfitData, categoryProfitData, brandProfitData, locationProfitData, invoiceProfitData, dateProfitData, customerProfitData, dayProfitData, serviceStaffProfitData, agentProfitData, subAgentProfitData, companyProfitData } from '@/lib/data';
 
 const ReportItem = ({ label, value, note }: { label: string; value: string; note?: string }) => (
     <div className="flex justify-between items-center py-2 border-b">
@@ -925,7 +830,56 @@ export default function ProfitLossReportPage() {
                             </div>
                         </TabsContent>
                         <TabsContent value="company" className="mt-4">
-                             <ComingSoonPlaceholder title="Profit by Company" />
+                             <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Label>Show</Label>
+                                    <Select defaultValue="25">
+                                        <SelectTrigger className="w-[70px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="10">10</SelectItem>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Label>entries</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                     <Button variant="outline" size="sm">Export CSV</Button>
+                                     <Button variant="outline" size="sm">Export Excel</Button>
+                                     <Button variant="outline" size="sm">Print</Button>
+                                     <Button variant="outline" size="sm">Column visibility</Button>
+                                     <Button variant="outline" size="sm">Export PDF</Button>
+                                </div>
+                                <div>
+                                    <Input placeholder="Search..." />
+                                </div>
+                            </div>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Company</TableHead>
+                                        <TableHead className="text-right">Gross Profit</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {companyProfitData.map(item => (
+                                        <TableRow key={item.company}>
+                                            <TableCell>{item.company}</TableCell>
+                                            <TableCell className="text-right">${item.profit.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
+                                <span>Showing 1 to {companyProfitData.length} of {companyProfitData.length} entries</span>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="outline" size="sm">Previous</Button>
+                                    <Button variant="default" size="sm" className="w-8 h-8 p-0">1</Button>
+                                    <Button variant="outline" size="sm">Next</Button>
+                                </div>
+                            </div>
                         </TabsContent>
                     </Tabs>
                 </CardContent>

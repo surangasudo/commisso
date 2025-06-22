@@ -494,3 +494,109 @@ export const expenseCategories: ExpenseCategory[] = [
   { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M', parentId: null },
   { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
 ];
+
+export type CompanyProfit = {
+  company: string;
+  profit: number;
+};
+
+export const companyProfitData: CompanyProfit[] = [
+    { company: 'Global Corp', profit: 25000.00 },
+    { company: 'Innovate Inc.', profit: 18500.75 },
+];
+
+export const profitData = {
+  openingStockPurchase: 0.00,
+  openingStockSale: 0.00,
+  totalPurchase: 386936.00,
+  totalStockAdjustment: 0.00,
+  totalExpense: 0.00,
+  totalPurchaseShipping: 0.00,
+  purchaseAdditionalExpense: 0.00,
+  totalTransferShipping: 0.00,
+  totalSellDiscount: 0.00,
+  totalCustomerReward: 0.00,
+  totalSellReturn: 0.00,
+  totalPayroll: 0.00,
+  totalProductionCost: 0.00,
+  closingStockPurchase: 386936.00,
+  closingStockSale: 471020.00,
+  totalSales: 9687.50,
+  totalSellShipping: 0.00,
+  sellAdditionalExpenses: 0.00,
+  totalStockRecovered: 0.00,
+  totalPurchaseReturn: 0.00,
+  totalPurchaseDiscount: 0.00,
+  totalSellRoundOff: 0.00,
+  hmsTotal: 0.00,
+};
+
+export const productProfitData = [
+    { product: 'Barilla Pasta (AS0028)', profit: 0.00 },
+    { product: 'Butter Cookies (AS0027)', profit: 0.00 },
+    { product: "Levi's Men's Slimmy Fit Jeans - Waist Size - 28 (AS0002-1)", profit: 0.00 },
+    { product: "Levi's Men's Slimmy Fit Jeans - Waist Size 30 (AS0002-2)", profit: 0.00 },
+    { product: 'Pair Of Dumbbells (AS0021)', profit: 0.00 },
+];
+
+export const categoryProfitData = [
+    { category: 'Accessories -- Shoes', profit: 588.50 },
+    { category: 'Food & Grocery', profit: 475.00 },
+    { category: 'Sports -- Exercise & Fitness', profit: 125.00 },
+    { category: 'Uncategorized', profit: 0.00 },
+];
+
+export const brandProfitData = [
+    { brand: 'Nike', profit: 300.00 },
+    { brand: 'Puma', profit: 250.50 },
+    { brand: 'Oreo', profit: 75.00 },
+    { brand: 'Bowflex', profit: 125.00 },
+    { brand: 'Unbranded', profit: 0.00 },
+];
+
+export const locationProfitData = [
+    { location: 'Awesome Shop', profit: 1182.00 },
+];
+
+export const invoiceProfitData = [
+    { invoiceNo: 'AS0004', customer: 'Walk-In Customer', profit: 75.00 },
+    { invoiceNo: 'AS0005', customer: 'Walk-In Customer', profit: 41.25 },
+    { invoiceNo: 'AS0002', customer: 'Walk-In Customer', profit: 82.50 },
+    { invoiceNo: 'AS0003', customer: 'Harry', profit: 770.00 },
+];
+
+export const dateProfitData = [
+    { date: '06/22/2025', profit: 825.00 },
+    { date: '06/21/2025', profit: 0.00 },
+    { date: '06/20/2025', profit: 8112.50 },
+];
+
+export const customerProfitData = [
+    { customer: 'Walk-In Customer', profit: 198.75 },
+    { customer: 'Harry', profit: 770.00 },
+];
+
+export const dayProfitData = [
+    { day: 'Sunday', profit: 1500.00 },
+    { day: 'Monday', profit: 2200.00 },
+    { day: 'Tuesday', profit: 1800.00 },
+    { day: 'Wednesday', profit: 2500.00 },
+    { day: 'Thursday', profit: 3100.00 },
+    { day: 'Friday', profit: 4200.00 },
+    { day: 'Saturday', profit: 5500.00 },
+];
+
+export const serviceStaffProfitData = [
+    { staffName: 'Mr Admin', profit: 5500.00 },
+    { staffName: 'Mr Demo Cashier', profit: 3250.75 },
+];
+
+export const agentProfitData = [
+    { agentName: 'John Doe', profit: 4500.00 },
+    { agentName: 'Alex Ray', profit: 2800.50 },
+];
+
+export const subAgentProfitData = [
+    { subAgentName: 'Jane Smith', profit: 1850.50 },
+    { subAgentName: 'Peter Jones', profit: 975.00 },
+];
