@@ -70,29 +70,51 @@ export default function AddStockTransferPage() {
         <CardContent className="pt-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                  <div className="space-y-2">
-                    <Label htmlFor="date">Date *</Label>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !date && "text-muted-foreground"
-                                )}
-                            >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date ? format(date, "PPP") : <span>Pick a date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar
-                                mode="single"
-                                selected={date}
-                                onSelect={setDate}
-                                initialFocus
-                            />
-                        </PopoverContent>
-                    </Popover>
+                    <Label htmlFor="date">Date & Time *</Label>
+                    <div className="flex items-center gap-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "flex-1 justify-start text-left font-normal",
+                                    !date && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={date}
+                                    onSelect={(newDate) => {
+                                        if (!newDate) return;
+                                        const oldDate = date || new Date();
+                                        newDate.setHours(oldDate.getHours());
+                                        newDate.setMinutes(oldDate.getMinutes());
+                                        newDate.setSeconds(oldDate.getSeconds());
+                                        setDate(newDate);
+                                    }}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                        <Input
+                            type="time"
+                            className="w-32"
+                            value={date ? format(date, "HH:mm") : ""}
+                            onChange={(e) => {
+                                if (!e.target.value) return;
+                                const [hours, minutes] = e.target.value.split(':');
+                                const newDate = date ? new Date(date.getTime()) : new Date();
+                                newDate.setHours(parseInt(hours, 10));
+                                newDate.setMinutes(parseInt(minutes, 10));
+                                setDate(newDate);
+                            }}
+                        />
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="reference-no">Reference No:</Label>
