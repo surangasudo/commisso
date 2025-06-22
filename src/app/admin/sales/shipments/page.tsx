@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Download,
   Printer,
@@ -88,6 +89,7 @@ const getShippingStatusBadge = (status: string | null) => {
 }
 
 export default function ShipmentsPage() {
+    const router = useRouter();
     const [shipments, setShipments] = useState<Sale[]>(sales.filter(sale => sale.shippingStatus));
     
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -99,7 +101,7 @@ export default function ShipmentsPage() {
     const [editedDetails, setEditedDetails] = useState<string | null>('');
 
     const handleViewSale = (saleId: string) => {
-        alert(`Viewing sale ${saleId} is not yet implemented.`);
+        router.push(`/admin/sales/view/${saleId}`);
     };
 
     const handleEditClick = (shipment: Sale) => {
