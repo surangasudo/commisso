@@ -39,9 +39,17 @@ import { variations as initialVariations, type Variation } from '@/lib/data';
 
 export default function VariationsPage() {
   const [variations, setVariations] = useState(initialVariations);
+
+  // State for Add Dialog
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newVariationName, setNewVariationName] = useState('');
   const [newVariationValues, setNewVariationValues] = useState('');
+
+  // State for Edit Dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingVariation, setEditingVariation] = useState<Variation | null>(null);
+  const [editedVariationName, setEditedVariationName] = useState('');
+  const [editedVariationValues, setEditedVariationValues] = useState('');
 
   const handleAddVariation = () => {
     if (newVariationName.trim() && newVariationValues.trim()) {
@@ -57,12 +65,32 @@ export default function VariationsPage() {
     }
   };
 
-  const handleDeleteVariation = (id: string) => {
-    setVariations(variations.filter(v => v.id !== id));
+  const handleEditVariation = (variation: Variation) => {
+    setEditingVariation(variation);
+    setEditedVariationName(variation.name);
+    setEditedVariationValues(variation.values.join(', '));
+    setIsEditDialogOpen(true);
   };
   
-  const handleEditVariation = (id: string) => {
-    alert(`Editing variation with ID ${id} is not implemented yet.`);
+  const handleUpdateVariation = () => {
+    if (editingVariation && editedVariationName.trim() && editedVariationValues.trim()) {
+        const updatedVariations = variations.map(v => 
+            v.id === editingVariation.id 
+            ? { 
+                ...v, 
+                name: editedVariationName, 
+                values: editedVariationValues.split(',').map(val => val.trim()).filter(val => val) 
+              } 
+            : v
+        );
+        setVariations(updatedVariations);
+        setIsEditDialogOpen(false);
+        setEditingVariation(null);
+    }
+  };
+
+  const handleDeleteVariation = (id: string) => {
+    setVariations(variations.filter(v => v.id !== id));
   };
 
   return (
@@ -148,7 +176,7 @@ export default function VariationsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditVariation(variation.id)}>
+                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditVariation(variation)}>
                           <Pencil className="mr-1 h-3 w-3" /> Edit
                         </Button>
                         <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteVariation(variation.id)}>
@@ -168,6 +196,47 @@ export default function VariationsPage() {
             </div>
         </CardFooter>
       </Card>
+
+      {/* Edit Variation Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Edit Variation</DialogTitle>
+                <DialogDescription>
+                  Update the variation name and its values.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="edit-variation-name">Variation Name *</Label>
+                    <Input 
+                      id="edit-variation-name" 
+                      placeholder="e.g. Color" 
+                      required 
+                      value={editedVariationName}
+                      onChange={(e) => setEditedVariationName(e.target.value)}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="edit-variation-values">Variation Values *</Label>
+                    <Input 
+                      id="edit-variation-values" 
+                      placeholder="e.g. Red, Green, Blue" 
+                      required 
+                      value={editedVariationValues}
+                      onChange={(e) => setEditedVariationValues(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Separate values with a comma.
+                    </p>
+                </div>
+            </div>
+            <DialogFooter>
+                <Button onClick={handleUpdateVariation}>Save Changes</Button>
+                <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>Close</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
