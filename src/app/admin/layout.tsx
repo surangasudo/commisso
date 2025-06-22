@@ -48,7 +48,7 @@ import { Logo } from '@/components/icons';
 
 const sidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home" },
-    { href: "/admin/profiles", icon: Users, label: "User Management" },
+    { href: "/admin/users", icon: Users, label: "User Management" },
     { href: "/admin/customers", icon: Contact, label: "Contacts" },
     { href: "/admin/inventory", icon: Package, label: "Products" },
     { href: "/admin/purchases", icon: Download, label: "Purchases" },
