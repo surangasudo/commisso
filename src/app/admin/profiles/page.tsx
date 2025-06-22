@@ -96,6 +96,10 @@ export default function ProfilesPage() {
                     <Input id="email" type="email" placeholder="john@example.com" className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="phone" className="text-right">Phone</Label>
+                    <Input id="phone" type="tel" placeholder="123-456-7890" className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="type" className="text-right">Type</Label>
                     <Select>
                       <SelectTrigger className="col-span-3">
@@ -169,6 +173,7 @@ export default function ProfilesPage() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
                       <TableHead>Commission Rate</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>
@@ -181,6 +186,7 @@ export default function ProfilesPage() {
                       <TableRow key={profile.id}>
                         <TableCell className="font-medium">{profile.name}</TableCell>
                         <TableCell>{profile.email}</TableCell>
+                        <TableCell>{profile.phone}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <span>{profile.commissionRate}%</span>
