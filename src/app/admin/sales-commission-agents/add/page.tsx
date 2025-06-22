@@ -1,14 +1,27 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, PlusCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { detailedProducts } from '@/lib/data';
 
 export default function AddSalesCommissionAgentPage() {
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const [entityType, setEntityType] = useState('');
+    const [agentName, setAgentName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [email, setEmail] = useState('');
+    const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    
+    const productCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
 
     const addCategoryCommission = () => {
         setCategoryCommissions([...categoryCommissions, { id: Date.now(), category: '', rate: '' }]);
@@ -16,6 +29,51 @@ export default function AddSalesCommissionAgentPage() {
 
     const removeCategoryCommission = (id: number) => {
         setCategoryCommissions(categoryCommissions.filter(c => c.id !== id));
+    };
+
+    const handleCategoryCommissionChange = (id: number, field: 'category' | 'rate', value: string) => {
+        setCategoryCommissions(
+            categoryCommissions.map(comm => 
+                comm.id === id ? { ...comm, [field]: value } : comm
+            )
+        );
+    };
+
+    const handleSaveProfile = () => {
+        if (!entityType || !agentName || !phoneNumber || !overallCommission) {
+            toast({
+                title: "Error: Missing Fields",
+                description: "Please fill in all required fields (*).",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        const newProfile = {
+            name: agentName,
+            entityType: entityType,
+            phone: phoneNumber,
+            email: email,
+            commission: {
+                overall: parseFloat(overallCommission),
+                categories: categoryCommissions
+                    .filter(c => c.category && c.rate)
+                    .map(c => ({
+                        category: c.category,
+                        rate: parseFloat(c.rate)
+                    })),
+            }
+        };
+
+        // In a real app, this would be sent to a server.
+        console.log("Saving new commission profile:", newProfile);
+
+        toast({
+            title: "Profile Saved!",
+            description: `The commission profile for ${agentName} has been created.`,
+        });
+
+        router.push('/admin/sales-commission-agents');
     };
 
     return (
@@ -31,36 +89,36 @@ export default function AddSalesCommissionAgentPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="entity-type">Entity Type *</Label>
-                                    <Select>
+                                    <Select value={entityType} onValueChange={setEntityType}>
                                         <SelectTrigger id="entity-type">
                                             <SelectValue placeholder="Select an entity type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="agent">Agent</SelectItem>
-                                            <SelectItem value="sub-agent">Sub-Agent</SelectItem>
-                                            <SelectItem value="company">Company</SelectItem>
-                                            <SelectItem value="salesperson">Salesperson</SelectItem>
+                                            <SelectItem value="Agent">Agent</SelectItem>
+                                            <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
+                                            <SelectItem value="Company">Company</SelectItem>
+                                            <SelectItem value="Salesperson">Salesperson</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="agent-name">Name *</Label>
-                                    <Input id="agent-name" placeholder="Enter entity's full name" />
+                                    <Input id="agent-name" placeholder="Enter entity's full name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />
                                 </div>
                             </div>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="phone-number">Phone Number *</Label>
-                                    <Input id="phone-number" placeholder="Enter phone number" />
+                                    <Input id="phone-number" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="email">Email</Label>
-                                    <Input id="email" type="email" placeholder="Enter email address" />
+                                    <Input id="email" type="email" placeholder="Enter email address" value={email} onChange={(e) => setEmail(e.target.value)} />
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="overall-commission">Overall Commission Rate (%) *</Label>
-                                <Input id="overall-commission" type="number" placeholder="e.g. 5" />
+                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} />
                                 <p className="text-xs text-muted-foreground">This is the default commission rate if no category-specific rate applies.</p>
                             </div>
                         </CardContent>
@@ -80,22 +138,20 @@ export default function AddSalesCommissionAgentPage() {
                                         <div className="grid grid-cols-2 gap-4 flex-1">
                                             <div className="space-y-2">
                                                 <Label htmlFor={`category-${index}`}>Product Category</Label>
-                                                <Select>
+                                                <Select value={comm.category} onValueChange={(value) => handleCategoryCommissionChange(comm.id, 'category', value)}>
                                                     <SelectTrigger id={`category-${index}`}>
                                                         <SelectValue placeholder="Select a category" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="electronics">Electronics</SelectItem>
-                                                        <SelectItem value="groceries">Groceries</SelectItem>
-                                                        <SelectItem value="apparel">Apparel</SelectItem>
-                                                        <SelectItem value="books">Books</SelectItem>
-                                                        <SelectItem value="furniture">Furniture</SelectItem>
+                                                        {productCategories.map(cat => (
+                                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label htmlFor={`rate-${index}`}>Commission Rate (%)</Label>
-                                                <Input id={`rate-${index}`} type="number" placeholder="e.g. 10" />
+                                                <Input id={`rate-${index}`} type="number" placeholder="e.g. 10" value={comm.rate} onChange={(e) => handleCategoryCommissionChange(comm.id, 'rate', e.target.value)} />
                                             </div>
                                         </div>
                                         <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => removeCategoryCommission(comm.id)}>
@@ -110,7 +166,7 @@ export default function AddSalesCommissionAgentPage() {
                         </CardContent>
                     </Card>
                     <div className="flex justify-end">
-                        <Button size="lg">Save Profile</Button>
+                        <Button size="lg" onClick={handleSaveProfile}>Save Profile</Button>
                     </div>
                 </div>
                 <div className="lg:col-span-1">
