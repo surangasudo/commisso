@@ -162,6 +162,13 @@ export default function ProfitLossReportPage() {
         'This month last year', 'This Year', 'Last Year', 'Current financial year', 'Last financial year'
     ];
 
+    const ComingSoonPlaceholder = ({title}: {title: string}) => (
+        <Card>
+            <CardHeader><CardTitle>{title}</CardTitle><CardDescription>This report is currently under development.</CardDescription></CardHeader>
+            <CardContent><div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg"><p className="text-muted-foreground">Coming Soon...</p></div></CardContent>
+        </Card>
+    );
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
@@ -277,6 +284,9 @@ export default function ProfitLossReportPage() {
                             <TabsTrigger value="customer">Profit by customer</TabsTrigger>
                             <TabsTrigger value="day">Profit by day</TabsTrigger>
                             <TabsTrigger value="service-staff">Profit by service staff</TabsTrigger>
+                            <TabsTrigger value="agent">Profit by Agent</TabsTrigger>
+                            <TabsTrigger value="sub-agent">Profit by Sub-Agent</TabsTrigger>
+                            <TabsTrigger value="company">Profit by Company</TabsTrigger>
                         </TabsList>
                         <TabsContent value="products" className="mt-4">
                              <div className="flex justify-between items-center mb-4">
@@ -329,6 +339,39 @@ export default function ProfitLossReportPage() {
                                     <Button variant="outline" size="sm">Next</Button>
                                 </div>
                             </div>
+                        </TabsContent>
+                        <TabsContent value="categories" className="mt-4">
+                            <ComingSoonPlaceholder title="Profit by Categories" />
+                        </TabsContent>
+                        <TabsContent value="brands" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Brands" />
+                        </TabsContent>
+                        <TabsContent value="locations" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Locations" />
+                        </TabsContent>
+                        <TabsContent value="invoice" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Invoice" />
+                        </TabsContent>
+                        <TabsContent value="date" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Date" />
+                        </TabsContent>
+                        <TabsContent value="customer" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Customer" />
+                        </TabsContent>
+                        <TabsContent value="day" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Day" />
+                        </TabsContent>
+                        <TabsContent value="service-staff" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Service Staff" />
+                        </TabsContent>
+                        <TabsContent value="agent" className="mt-4">
+                            <ComingSoonPlaceholder title="Profit by Agent" />
+                        </TabsContent>
+                        <TabsContent value="sub-agent" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Sub-Agent" />
+                        </TabsContent>
+                        <TabsContent value="company" className="mt-4">
+                             <ComingSoonPlaceholder title="Profit by Company" />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
