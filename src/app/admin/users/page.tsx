@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import {
   Download,
   Printer,
@@ -44,10 +45,12 @@ export default function UsersPage() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <CardTitle>All users</CardTitle>
-            <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
-              <PlusCircle className="h-4 w-4" />
-              <span>Add</span>
-            </Button>
+            <Link href="/admin/users/add">
+              <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
+                <PlusCircle className="h-4 w-4" />
+                <span>Add</span>
+              </Button>
+            </Link>
         </div>
       </CardHeader>
       <CardContent>
