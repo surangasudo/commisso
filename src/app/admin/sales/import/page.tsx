@@ -25,6 +25,26 @@ const instructionsData = [
 
 
 export default function ImportSalesPage() {
+
+  const handleDownloadTemplate = () => {
+    // Generate the CSV header row from instructionsData
+    const headers = instructionsData.map(item => `"${item.name.replace(/"/g, '""')}"`).join(',');
+
+    // Create a Blob from the CSV string
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    // Create a link to trigger the download
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "sales_import_template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
@@ -43,7 +63,7 @@ export default function ImportSalesPage() {
             <Button type="submit">Submit</Button>
           </form>
           <div className="pt-6">
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleDownloadTemplate}>
               <Download className="mr-2 h-4 w-4" />
               Download template file
             </Button>
