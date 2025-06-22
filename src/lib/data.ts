@@ -319,7 +319,7 @@ export const purchases: Purchase[] = [
     { id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin' },
     { id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
     { id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
-    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin' },
+    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin' },
     { id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
 ];
 
@@ -338,4 +338,32 @@ export type PurchaseReturn = {
 export const purchaseReturns: PurchaseReturn[] = [
     { id: 'pr-1', date: '06/23/2025 10:00', referenceNo: 'PR2025/0001', parentPurchase: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', paymentStatus: 'Due', grandTotal: 150.00, paymentDue: 150.00 },
     { id: 'pr-2', date: '06/21/2025 14:30', referenceNo: 'PR2025/0002', parentPurchase: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', paymentStatus: 'Paid', grandTotal: 200.00, paymentDue: 0.00 },
+];
+
+export type Sale = {
+    id: string;
+    date: string;
+    invoiceNo: string;
+    customerName: string;
+    contactNumber: string;
+    location: string;
+    paymentStatus: 'Paid' | 'Due' | 'Partial';
+    paymentMethod: string;
+    totalAmount: number;
+    totalPaid: number;
+    sellDue: number;
+    sellReturnDue: number;
+    shippingStatus: string | null;
+    totalItems: number;
+    addedBy: string;
+    sellNote: string | null;
+    staffNote: string | null;
+    shippingDetails: string | null;
+};
+
+export const sales: Sale[] = [
+    { id: 'sale-1', date: '06/22/2025 21:00', invoiceNo: 'AS0004', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 750.00, totalPaid: 750.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
+    { id: 'sale-2', date: '06/22/2025 21:00', invoiceNo: 'AS0005', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 412.50, totalPaid: 412.50, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
+    { id: 'sale-3', date: '06/20/2025 21:00', invoiceNo: 'AS0002', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 825.00, totalPaid: 825.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
+    { id: 'sale-4', date: '06/20/2025 21:00', invoiceNo: 'AS0003', customerName: 'Harry', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 7700.00, totalPaid: 7700.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 2.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
 ];

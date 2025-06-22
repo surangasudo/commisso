@@ -97,7 +97,24 @@ const sidebarNav = [
             { href: "/admin/purchases/return/list", label: "List Purchase Return" },
         ]
     },
-    { href: "/admin/sales", icon: Upload, label: "Sell" },
+    { 
+        label: "Sell", 
+        icon: Upload,
+        children: [
+            { href: "/admin/sales/all", label: "All sales" },
+            { href: "/admin/sales/add", label: "Add Sale" },
+            { href: "/admin/sales/list-pos", label: "List POS" },
+            { href: "/admin/pos", label: "POS" },
+            { href: "/admin/sales/draft/add", label: "Add Draft" },
+            { href: "/admin/sales/drafts", label: "List Drafts" },
+            { href: "/admin/sales/quotation/add", label: "Add Quotation" },
+            { href: "/admin/sales/quotations", label: "List quotations" },
+            { href: "/admin/sales/return/list", label: "List Sell Return" },
+            { href: "/admin/sales/shipments", label: "Shipments" },
+            { href: "/admin/sales/discounts", label: "Discounts" },
+            { href: "/admin/sales/import", label: "Import Sales" },
+        ]
+    },
     { href: "#", icon: ArrowRightLeft, label: "Stock Transfers" },
     { href: "#", icon: SlidersHorizontal, label: "Stock Adjustment" },
     { href: "/admin/expenses", icon: Wallet, label: "Expenses" },
