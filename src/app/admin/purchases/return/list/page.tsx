@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Download,
   Printer,
@@ -76,6 +77,7 @@ const getPaymentStatusBadge = (status: string) => {
 }
 
 export default function ListPurchaseReturnPage() {
+  const router = useRouter();
   const [returns, setReturns] = useState<PurchaseReturn[]>(purchaseReturns);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [returnToDelete, setReturnToDelete] = useState<PurchaseReturn | null>(null);
@@ -96,6 +98,10 @@ export default function ListPurchaseReturnPage() {
     }
   };
   
+  const handleEdit = (id: string) => {
+    router.push(`/admin/purchases/return/edit/${id}`);
+  };
+
   const handleUnsupportedAction = (actionName: string) => {
     alert(`${actionName} is not yet implemented.`);
   }
@@ -120,10 +126,12 @@ export default function ListPurchaseReturnPage() {
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <CardTitle>All Purchase Returns</CardTitle>
                             <div className="flex items-center gap-2">
-                                <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto" onClick={() => handleUnsupportedAction('Add Purchase Return')}>
-                                    <PlusCircle className="h-4 w-4" />
-                                    <span>Add</span>
-                                </Button>
+                                <Link href="/admin/purchases/return/add">
+                                    <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
+                                        <PlusCircle className="h-4 w-4" />
+                                        <span>Add</span>
+                                    </Button>
+                                </Link>
                             </div>
                         </div>
                          <CardDescription>
@@ -181,7 +189,7 @@ export default function ListPurchaseReturnPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem onSelect={() => handleUnsupportedAction('Print')}><Printer className="mr-2 h-4 w-4" /> Print</DropdownMenuItem>
-                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Edit')}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleEdit(item.id)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                                             <DropdownMenuItem onSelect={() => handleDelete(item)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
