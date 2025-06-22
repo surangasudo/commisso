@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Download,
   Printer,
@@ -47,7 +47,27 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { sales } from '@/lib/data';
+import { sales, type Sale } from '@/lib/data';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const getShippingStatusBadge = (status: string | null) => {
     if (!status) return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -68,9 +88,54 @@ const getShippingStatusBadge = (status: string | null) => {
 }
 
 export default function ShipmentsPage() {
-    const shipments = sales.filter(sale => sale.shippingStatus);
+    const [shipments, setShipments] = useState<Sale[]>(sales.filter(sale => sale.shippingStatus));
+    
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [shipmentToDelete, setShipmentToDelete] = useState<Sale | null>(null);
+    
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [shipmentToEdit, setShipmentToEdit] = useState<Sale | null>(null);
+    const [editedStatus, setEditedStatus] = useState<string | null>('');
+    const [editedDetails, setEditedDetails] = useState<string | null>('');
+
+    const handleViewSale = (saleId: string) => {
+        alert(`Viewing sale ${saleId} is not yet implemented.`);
+    };
+
+    const handleEditClick = (shipment: Sale) => {
+        setShipmentToEdit(shipment);
+        setEditedStatus(shipment.shippingStatus);
+        setEditedDetails(shipment.shippingDetails);
+        setIsEditDialogOpen(true);
+    };
+    
+    const handleUpdateShipment = () => {
+        if (shipmentToEdit) {
+            setShipments(shipments.map(s => 
+                s.id === shipmentToEdit.id 
+                ? { ...s, shippingStatus: editedStatus, shippingDetails: editedDetails } 
+                : s
+            ));
+            setIsEditDialogOpen(false);
+            setShipmentToEdit(null);
+        }
+    };
+
+    const handleDeleteClick = (shipment: Sale) => {
+        setShipmentToDelete(shipment);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (shipmentToDelete) {
+            setShipments(shipments.filter(s => s.id !== shipmentToDelete.id));
+            setIsDeleteDialogOpen(false);
+            setShipmentToDelete(null);
+        }
+    };
 
   return (
+    <>
     <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
@@ -148,9 +213,9 @@ export default function ShipmentsPage() {
                                             <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View Sale</DropdownMenuItem>
-                                            <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" /> Edit Shipping</DropdownMenuItem>
-                                            <DropdownMenuItem><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleViewSale(shipment.id)}><Eye className="mr-2 h-4 w-4" /> View Sale</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleEditClick(shipment)}><Pencil className="mr-2 h-4 w-4" /> Edit Shipping</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleDeleteClick(shipment)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -180,5 +245,64 @@ export default function ShipmentsPage() {
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>
+    
+    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle>Edit Shipment</DialogTitle>
+                 <DialogDescription>
+                    Update the shipping status and details for invoice {shipmentToEdit?.invoiceNo}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                    <Label htmlFor="shipping-status">Shipping Status</Label>
+                    <Select value={editedStatus || ''} onValueChange={(value) => setEditedStatus(value)}>
+                    <SelectTrigger id="shipping-status">
+                        <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="ordered">Ordered</SelectItem>
+                        <SelectItem value="packed">Packed</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="shipping-details">Shipping Details</Label>
+                    <Textarea
+                    id="shipping-details"
+                    value={editedDetails || ''}
+                    onChange={(e) => setEditedDetails(e.target.value)}
+                    placeholder="Enter shipping details"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleUpdateShipment}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action will delete the shipment for invoice "{shipmentToDelete?.invoiceNo}". This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setShipmentToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
