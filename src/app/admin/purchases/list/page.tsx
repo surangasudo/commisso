@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Download,
   Printer,
@@ -25,7 +26,6 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -53,7 +53,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { purchases, type Purchase } from '@/lib/data';
+import { purchases as initialPurchases, type Purchase } from '@/lib/data';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const getPurchaseStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -78,14 +88,45 @@ const getPaymentStatusBadge = (status: string) => {
 }
 
 export default function ListPurchasesPage() {
+  const router = useRouter();
+  const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
+
   const totalGrandTotal = purchases.reduce((acc, purchase) => acc + purchase.grandTotal, 0);
   const totalPurchaseDue = purchases.reduce((acc, purchase) => acc + purchase.paymentDue, 0);
 
   const dueCount = purchases.filter(p => p.paymentStatus === 'Due').length;
   const paidCount = purchases.filter(p => p.paymentStatus === 'Paid').length;
   const partialCount = purchases.filter(p => p.paymentStatus === 'Partial').length;
+  
+  const handleView = (purchaseId: string) => {
+    router.push(`/admin/purchases/view/${purchaseId}`);
+  };
+
+  const handleEdit = (purchaseId: string) => {
+    router.push(`/admin/purchases/edit/${purchaseId}`);
+  };
+
+  const handleDelete = (purchase: Purchase) => {
+    setPurchaseToDelete(purchase);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = () => {
+    if (purchaseToDelete) {
+      setPurchases(purchases.filter(p => p.id !== purchaseToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
+    }
+  };
+  
+  const handleUnsupportedAction = (actionName: string) => {
+    alert(`${actionName} is not yet implemented.`);
+  }
 
   return (
+    <>
     <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold">Purchases</h1>
@@ -167,16 +208,16 @@ export default function ListPurchasesPage() {
                                             <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
-                                            <DropdownMenuItem><Printer className="mr-2 h-4 w-4" /> Print</DropdownMenuItem>
-                                            <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                            <DropdownMenuItem><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleView(purchase.id)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Print')}><Printer className="mr-2 h-4 w-4" /> Print</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleEdit(purchase.id)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleDelete(purchase)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem><FileText className="mr-2 h-4 w-4" /> View Payments</DropdownMenuItem>
-                                            <DropdownMenuItem><PlusCircle className="mr-2 h-4 w-4" /> Add Payment</DropdownMenuItem>
-                                            <DropdownMenuItem><Undo2 className="mr-2 h-4 w-4" /> Purchase Return</DropdownMenuItem>
-                                            <DropdownMenuItem><CheckCircle className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
-                                            <DropdownMenuItem><FileText className="mr-2 h-4 w-4" /> Documents & Note</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('View Payments')}><FileText className="mr-2 h-4 w-4" /> View Payments</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Add Payment')}><PlusCircle className="mr-2 h-4 w-4" /> Add Payment</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Purchase Return')}><Undo2 className="mr-2 h-4 w-4" /> Purchase Return</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Update Status')}><CheckCircle className="mr-2 h-4 w-4" /> Update Status</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleUnsupportedAction('Documents & Note')}><FileText className="mr-2 h-4 w-4" /> Documents & Note</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -225,5 +266,23 @@ export default function ListPurchasesPage() {
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the purchase
+            with reference "{purchaseToDelete?.referenceNo}".
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setPurchaseToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
