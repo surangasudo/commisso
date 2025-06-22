@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Folder, Plus, Pencil, Trash2 } from "lucide-react";
 import React, { useState } from 'react';
 
@@ -12,14 +13,17 @@ type ExpenseCategory = {
   id: string;
   name: string;
   code: string;
+  parentId?: string | null;
 };
 
 const initialCategories: ExpenseCategory[] = [
-  { id: 'cat-exp-1', name: 'Office Supplies', code: 'OS' },
-  { id: 'cat-exp-2', name: 'Utilities', code: 'UTIL' },
-  { id: 'cat-exp-3', name: 'Marketing', code: 'MKTG' },
-  { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M' },
-  { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY' },
+  { id: 'cat-exp-1', name: 'Office Supplies', code: 'OS', parentId: null },
+  { id: 'cat-exp-2', name: 'Utilities', code: 'UTIL', parentId: null },
+  { id: 'cat-exp-6', name: 'Electricity Bill', code: 'ELEC', parentId: 'cat-exp-2' },
+  { id: 'cat-exp-7', name: 'Water Bill', code: 'WATR', parentId: 'cat-exp-2' },
+  { id: 'cat-exp-3', name: 'Marketing', code: 'MKTG', parentId: null },
+  { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M', parentId: null },
+  { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
 ];
 
 export default function ExpenseCategoriesPage() {
@@ -29,12 +33,15 @@ export default function ExpenseCategoriesPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryCode, setNewCategoryCode] = useState('');
+  const [newParentCategoryId, setNewParentCategoryId] = useState<string | undefined>(undefined);
 
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ExpenseCategory | null>(null);
   const [editedCategoryName, setEditedCategoryName] = useState('');
   const [editedCategoryCode, setEditedCategoryCode] = useState('');
+  const [editedParentCategoryId, setEditedParentCategoryId] = useState<string | undefined>(undefined);
+
 
   const handleAddCategory = () => {
     if (newCategoryName.trim()) {
@@ -42,11 +49,13 @@ export default function ExpenseCategoriesPage() {
         id: `cat-exp-${Date.now()}`,
         name: newCategoryName,
         code: newCategoryCode,
+        parentId: newParentCategoryId || null,
       };
       setCategories([...categories, newCategory]);
       setIsAddDialogOpen(false);
       setNewCategoryName('');
       setNewCategoryCode('');
+      setNewParentCategoryId(undefined);
     }
   };
   
@@ -54,6 +63,7 @@ export default function ExpenseCategoriesPage() {
     setEditingCategory(category);
     setEditedCategoryName(category.name);
     setEditedCategoryCode(category.code);
+    setEditedParentCategoryId(category.parentId || undefined);
     setIsEditDialogOpen(true);
   };
   
@@ -61,7 +71,7 @@ export default function ExpenseCategoriesPage() {
     if (editingCategory && editedCategoryName.trim()) {
         const updatedCategories = categories.map(c => 
             c.id === editingCategory.id 
-            ? { ...c, name: editedCategoryName, code: editedCategoryCode } 
+            ? { ...c, name: editedCategoryName, code: editedCategoryCode, parentId: editedParentCategoryId || null } 
             : c
         );
         setCategories(updatedCategories);
@@ -71,8 +81,13 @@ export default function ExpenseCategoriesPage() {
   };
 
   const handleDeleteCategory = (id: string) => {
-    setCategories(categories.filter(c => c.id !== id));
+    setCategories(categories.filter(c => c.id !== id && c.parentId !== id));
   };
+
+  const getCategoryName = (id: string | null | undefined) => {
+      if (!id) return 'None';
+      return categories.find(c => c.id === id)?.name || 'Unknown';
+  }
   
   return (
     <div className="flex flex-col gap-6">
@@ -118,6 +133,20 @@ export default function ExpenseCategoriesPage() {
                             onChange={(e) => setNewCategoryCode(e.target.value)}
                           />
                       </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="parent-category">Add as sub-category</Label>
+                           <Select value={newParentCategoryId || 'none'} onValueChange={(value) => setNewParentCategoryId(value === 'none' ? undefined : value)}>
+                                <SelectTrigger id="parent-category">
+                                    <SelectValue placeholder="Select parent category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    {categories.filter(c => !c.parentId).map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                      </div>
                   </div>
                   <DialogFooter>
                       <Button onClick={handleAddCategory}>Save</Button>
@@ -137,6 +166,7 @@ export default function ExpenseCategoriesPage() {
                 <TableRow>
                   <TableHead>Category Name</TableHead>
                   <TableHead>Category Code</TableHead>
+                  <TableHead>Parent Category</TableHead>
                   <TableHead className="w-[180px]">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -145,6 +175,7 @@ export default function ExpenseCategoriesPage() {
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell>{category.code}</TableCell>
+                    <TableCell>{getCategoryName(category.parentId)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(category)}>
@@ -196,6 +227,22 @@ export default function ExpenseCategoriesPage() {
                       value={editedCategoryCode}
                       onChange={(e) => setEditedCategoryCode(e.target.value)}
                     />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="edit-parent-category">Add as sub-category</Label>
+                    <Select value={editedParentCategoryId || 'none'} onValueChange={(value) => setEditedParentCategoryId(value === 'none' ? undefined : value)}>
+                        <SelectTrigger id="edit-parent-category">
+                            <SelectValue placeholder="Select parent category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                             <SelectItem value="none">None</SelectItem>
+                            {categories
+                                .filter(cat => cat.id !== editingCategory?.id && !cat.parentId)
+                                .map(cat => (
+                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
             <DialogFooter>
