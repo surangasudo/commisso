@@ -78,7 +78,7 @@ export default function CustomersContactPage() {
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <CardTitle>All your Customers</CardTitle>
                             <div className="flex items-center gap-2">
-                                <Link href="#">
+                                <Link href="/admin/contacts/customers/add">
                                 <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
                                     <PlusCircle className="h-4 w-4" />
                                     <span>Add</span>
