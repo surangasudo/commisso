@@ -119,7 +119,7 @@ export default function EditProductPage() {
                                     <SelectValue placeholder="Select Brand" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="Nike">Nike</SelectItem>
                                     <SelectItem value="Puma">Puma</SelectItem>
                                     <SelectItem value="Oreo">Oreo</SelectItem>
@@ -134,7 +134,7 @@ export default function EditProductPage() {
                                     <SelectValue placeholder="Select Category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="Accessories -- Shoes">Accessories -- Shoes</SelectItem>
                                     <SelectItem value="Food & Grocery">Food & Grocery</SelectItem>
                                     <SelectItem value="Sports -- Exercise & Fitness">Sports -- Exercise & Fitness</SelectItem>
@@ -199,7 +199,7 @@ export default function EditProductPage() {
                                     <SelectValue placeholder="Select Tax" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">None</SelectItem>
+                                    <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="VAT@10%">VAT@10%</SelectItem>
                                     <SelectItem value="GST@5%">GST@5%</SelectItem>
                                 </SelectContent>
