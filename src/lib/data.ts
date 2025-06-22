@@ -287,3 +287,15 @@ export const detailedProducts: DetailedProduct[] = [
     { id: 'prod-8', image: 'https://placehold.co/40x40.png', name: 'PUMA Men\'s Black Sneaker', businessLocation: 'Awesome Shop', unitPurchasePrice: 148.50, sellingPrice: 148.50, currentStock: 0, productType: 'Variable', category: 'Accessories -- Shoes', brand: 'Puma', tax: 'VAT@10%', sku: 'AS0009' },
     { id: 'prod-9', image: 'https://placehold.co/40x40.png', name: 'Red Wine', businessLocation: 'Awesome Shop', unitPurchasePrice: 34.00, sellingPrice: 42.50, currentStock: 20, productType: 'Single', category: 'Food & Grocery', brand: '', tax: '', sku: 'AS0061' },
 ];
+
+export type Variation = {
+  id: string;
+  name: string;
+  values: string[];
+};
+
+export const variations: Variation[] = [
+  { id: 'var-1', name: 'Color', values: ['Red', 'Green', 'Blue', 'Black', 'White'] },
+  { id: 'var-2', name: 'Size', values: ['S', 'M', 'L', 'XL'] },
+  { id: 'var-3', name: 'Material', values: ['Cotton', 'Polyester', 'Wool'] },
+];
