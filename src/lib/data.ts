@@ -401,3 +401,18 @@ export const sellReturns: SellReturn[] = [
     { id: 'sr-1', date: '06/23/2025 11:00', invoiceNo: 'SRO-001', parentSale: 'AS0004', customerName: 'Walk-In Customer', location: 'Awesome Shop', paymentStatus: 'Due', totalAmount: 50.00, paymentDue: 50.00 },
     { id: 'sr-2', date: '06/21/2025 15:00', invoiceNo: 'SRO-002', parentSale: 'AS0003', customerName: 'Harry', location: 'Awesome Shop', paymentStatus: 'Paid', totalAmount: 100.00, paymentDue: 0.00 },
 ];
+
+export type Discount = {
+  id: string;
+  name: string;
+  type: 'Fixed' | 'Percentage';
+  value: number;
+  isActive: boolean;
+};
+
+export const discounts: Discount[] = [
+  { id: 'disc-1', name: 'New Year Sale', type: 'Percentage', value: 15, isActive: true },
+  { id: 'disc-2', name: 'Staff Discount', type: 'Percentage', value: 20, isActive: true },
+  { id: 'disc-3', name: 'Clearance', type: 'Fixed', value: 50, isActive: false },
+  { id: 'disc-4', name: 'Student Discount', type: 'Percentage', value: 10, isActive: true },
+];
