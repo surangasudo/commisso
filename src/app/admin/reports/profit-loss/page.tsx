@@ -105,6 +105,16 @@ const customerProfitData = [
     { customer: 'Harry', profit: 770.00 },
 ];
 
+const dayProfitData = [
+    { day: 'Sunday', profit: 1500.00 },
+    { day: 'Monday', profit: 2200.00 },
+    { day: 'Tuesday', profit: 1800.00 },
+    { day: 'Wednesday', profit: 2500.00 },
+    { day: 'Thursday', profit: 3100.00 },
+    { day: 'Friday', profit: 4200.00 },
+    { day: 'Saturday', profit: 5500.00 },
+];
+
 const ReportItem = ({ label, value, note }: { label: string; value: string; note?: string }) => (
     <div className="flex justify-between items-center py-2 border-b">
         <div>
@@ -692,7 +702,56 @@ export default function ProfitLossReportPage() {
                             </div>
                         </TabsContent>
                         <TabsContent value="day" className="mt-4">
-                             <ComingSoonPlaceholder title="Profit by Day" />
+                            <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Label>Show</Label>
+                                    <Select defaultValue="25">
+                                        <SelectTrigger className="w-[70px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="10">10</SelectItem>
+                                            <SelectItem value="25">25</SelectItem>
+                                            <SelectItem value="50">50</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Label>entries</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm">Export CSV</Button>
+                                        <Button variant="outline" size="sm">Export Excel</Button>
+                                        <Button variant="outline" size="sm">Print</Button>
+                                        <Button variant="outline" size="sm">Column visibility</Button>
+                                        <Button variant="outline" size="sm">Export PDF</Button>
+                                </div>
+                                <div>
+                                    <Input placeholder="Search..." />
+                                </div>
+                            </div>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Day of the week</TableHead>
+                                        <TableHead className="text-right">Gross Profit</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {dayProfitData.map(item => (
+                                        <TableRow key={item.day}>
+                                            <TableCell>{item.day}</TableCell>
+                                            <TableCell className="text-right">${item.profit.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
+                                <span>Showing 1 to {dayProfitData.length} of {dayProfitData.length} entries</span>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="outline" size="sm">Previous</Button>
+                                    <Button variant="default" size="sm" className="w-8 h-8 p-0">1</Button>
+                                    <Button variant="outline" size="sm">Next</Button>
+                                </div>
+                            </div>
                         </TabsContent>
                         <TabsContent value="service-staff" className="mt-4">
                              <ComingSoonPlaceholder title="Profit by Service Staff" />
