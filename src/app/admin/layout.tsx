@@ -88,7 +88,15 @@ const sidebarNav = [
             { href: "/admin/products/warranties", label: "Warranties" },
         ]
     },
-    { href: "/admin/purchases", icon: Download, label: "Purchases" },
+    { 
+        label: "Purchases", 
+        icon: Download,
+        children: [
+            { href: "/admin/purchases/list", label: "List Purchases" },
+            { href: "/admin/purchases/add", label: "Add Purchase" },
+            { href: "/admin/purchases/return/list", label: "List Purchase Return" },
+        ]
+    },
     { href: "/admin/sales", icon: Upload, label: "Sell" },
     { href: "#", icon: ArrowRightLeft, label: "Stock Transfers" },
     { href: "#", icon: SlidersHorizontal, label: "Stock Adjustment" },
