@@ -33,12 +33,12 @@ const statusStyles = {
 export default function ReportsPage() {
   return (
     <div className="flex flex-col gap-6">
-       <h1 className="font-headline text-3xl font-bold">Commission Reports</h1>
+       <h1 className="font-headline text-3xl font-bold">Reports</h1>
        <Card>
         <CardHeader className="flex flex-row items-center gap-4">
             <div className="flex-1">
-                <CardTitle>Detailed Report</CardTitle>
-                <CardDescription>View and filter all commission records.</CardDescription>
+                <CardTitle>Commission Report</CardTitle>
+                <CardDescription>A detailed report of all commission records.</CardDescription>
             </div>
             <div className="flex items-center gap-2">
                 <DropdownMenu>

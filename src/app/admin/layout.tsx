@@ -11,6 +11,9 @@ import {
   Package,
   ReceiptText,
   UsersRound,
+  CreditCard,
+  Wallet,
+  Briefcase,
 } from 'lucide-react';
 
 import {
@@ -76,6 +79,22 @@ export default function AdminLayout({
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <Link href="/admin/purchases" className="w-full">
+                <SidebarMenuButton tooltip="Purchases">
+                  <CreditCard />
+                  <span>Purchases</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <Link href="/admin/expenses" className="w-full">
+                <SidebarMenuButton tooltip="Expenses">
+                  <Wallet />
+                  <span>Expenses</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/admin/inventory" className="w-full">
                 <SidebarMenuButton tooltip="Inventory">
@@ -93,18 +112,26 @@ export default function AdminLayout({
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
+              <Link href="/admin/employees" className="w-full">
+                <SidebarMenuButton tooltip="Employees">
+                  <Briefcase />
+                  <span>Employees</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
                <Link href="/admin/profiles" className="w-full">
-                <SidebarMenuButton tooltip="Commission Profiles">
+                <SidebarMenuButton tooltip="Profiles">
                   <Users />
-                  <span>Commission Profiles</span>
+                  <span>Profiles</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <Link href="/admin/reports" className="w-full">
-                <SidebarMenuButton tooltip="Commission Reports">
+                <SidebarMenuButton tooltip="Reports">
                   <FileText />
-                  <span>Commission Reports</span>
+                  <span>Reports</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
