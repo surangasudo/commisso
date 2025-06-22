@@ -453,3 +453,27 @@ export const stockAdjustments: StockAdjustment[] = [
   { id: 'sa-1', date: '06/22/2025 11:20', referenceNo: 'SA2025/0001', location: 'Awesome Shop', adjustmentType: 'Normal', totalAmount: 150.00, totalAmountRecovered: 0, reason: 'Stock correction', addedBy: 'Mr Admin' },
   { id: 'sa-2', date: '06/21/2025 10:00', referenceNo: 'SA2025/0002', location: 'Warehouse A', adjustmentType: 'Abnormal', totalAmount: 500.50, totalAmountRecovered: 450.00, reason: 'Damaged goods', addedBy: 'Mr Admin' },
 ];
+
+export type Expense = {
+  id: string;
+  date: string;
+  referenceNo: string;
+  location: string;
+  expenseCategory: string;
+  subCategory: string | null;
+  paymentStatus: 'Paid' | 'Due' | 'Partial';
+  tax: number;
+  totalAmount: number;
+  paymentDue: number;
+  expenseFor: string | null;
+  contact: string | null;
+  addedBy: string;
+  expenseNote: string | null;
+};
+
+export const expenses: Expense[] = [
+  { id: 'exp-1', date: '06/22/2025 10:00', referenceNo: 'EXP2025/0001', location: 'Awesome Shop', expenseCategory: 'Office Supplies', subCategory: 'Stationery', paymentStatus: 'Paid', tax: 5.00, totalAmount: 55.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Printer paper and pens' },
+  { id: 'exp-2', date: '06/21/2025 12:30', referenceNo: 'EXP2025/0002', location: 'Awesome Shop', expenseCategory: 'Utilities', subCategory: 'Electricity Bill', paymentStatus: 'Paid', tax: 20.00, totalAmount: 220.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Monthly electricity bill' },
+  { id: 'exp-3', date: '06/20/2025 15:00', referenceNo: 'EXP2025/0003', location: 'Awesome Shop', expenseCategory: 'Marketing', subCategory: 'Online Ads', paymentStatus: 'Due', tax: 0, totalAmount: 500.00, paymentDue: 500.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Facebook campaign' },
+  { id: 'exp-4', date: '06/19/2025 09:00', referenceNo: 'EXP2025/0004', location: 'Awesome Shop', expenseCategory: 'Repairs', subCategory: 'AC Maintenance', paymentStatus: 'Paid', tax: 10.00, totalAmount: 110.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: null },
+];
