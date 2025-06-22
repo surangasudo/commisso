@@ -11,8 +11,28 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
-import { format, addDays } from 'date-fns';
+import { 
+    format, 
+    startOfToday,
+    endOfToday,
+    startOfYesterday,
+    endOfYesterday,
+    subDays,
+    startOfMonth,
+    endOfMonth,
+    subMonths,
+    startOfYear,
+    endOfYear,
+    subYears,
+} from 'date-fns';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const profitData = {
   openingStockPurchase: 0.00,
@@ -60,9 +80,87 @@ const ReportItem = ({ label, value, note }: { label: string; value: string; note
 
 export default function ProfitLossReportPage() {
     const [date, setDate] = useState<DateRange | undefined>({
-      from: new Date(2025, 0, 20),
-      to: addDays(new Date(2025, 0, 20), 20),
-    })
+      from: startOfYear(new Date()),
+      to: endOfYear(new Date()),
+    });
+    const [selectedPreset, setSelectedPreset] = useState<string>('This Year');
+
+    const handlePresetSelect = (preset: string) => {
+        const today = new Date();
+        let newDate: DateRange | undefined;
+        
+        switch (preset) {
+            case 'Today':
+                newDate = { from: startOfToday(), to: endOfToday() };
+                break;
+            case 'Yesterday':
+                const yesterdayStart = startOfYesterday();
+                const yesterdayEnd = endOfYesterday();
+                newDate = { from: yesterdayStart, to: yesterdayEnd };
+                break;
+            case 'Last 7 Days':
+                newDate = { from: subDays(today, 6), to: today };
+                break;
+            case 'Last 30 Days':
+                newDate = { from: subDays(today, 29), to: today };
+                break;
+            case 'This Month':
+                newDate = { from: startOfMonth(today), to: endOfMonth(today) };
+                break;
+            case 'Last Month':
+                const lastMonth = subMonths(today, 1);
+                newDate = { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
+                break;
+            case 'This month last year':
+                const thisMonthLastYear = subYears(today, 1);
+                newDate = { from: startOfMonth(thisMonthLastYear), to: endOfMonth(thisMonthLastYear) };
+                break;
+            case 'This Year':
+                newDate = { from: startOfYear(today), to: endOfYear(today) };
+                break;
+            case 'Last Year':
+                const lastYear = subYears(today, 1);
+                newDate = { from: startOfYear(lastYear), to: endOfYear(lastYear) };
+                break;
+            case 'Current financial year': // Assuming same as calendar year
+                newDate = { from: startOfYear(today), to: endOfYear(today) };
+                break;
+            case 'Last financial year': // Assuming same as calendar year
+                const prevYear = subYears(today, 1);
+                newDate = { from: startOfYear(prevYear), to: endOfYear(prevYear) };
+                break;
+            default:
+                break;
+        }
+
+        if (newDate) {
+            setDate(newDate);
+        }
+        setSelectedPreset(preset);
+    }
+    
+    const handleCustomDateSelect = (newDate: DateRange | undefined) => {
+      setDate(newDate);
+      setSelectedPreset('Custom Range');
+    }
+
+    const displayLabel = () => {
+        if (selectedPreset === 'Custom Range' && date?.from) {
+            if (date.to) {
+                 if (format(date.from, 'PPP') === format(date.to, 'PPP')) {
+                    return format(date.from, 'PPP');
+                }
+                return `${format(date.from, 'PPP')} - ${format(date.to, 'PPP')}`;
+            }
+            return format(date.from, 'PPP');
+        }
+        return selectedPreset;
+    };
+
+    const datePresets = [
+        'Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month', 'Last Month',
+        'This month last year', 'This Year', 'Last Year', 'Current financial year', 'Last financial year'
+    ];
 
     return (
         <div className="flex flex-col gap-6">
@@ -80,42 +178,43 @@ export default function ProfitLossReportPage() {
                             <SelectItem value="all">All locations</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                           <Button
                                 id="date"
-                                variant={"outline"}
-                                className={cn(
-                                    "w-[260px] justify-start text-left font-normal",
-                                    !date && "text-muted-foreground"
-                                )}
+                                variant={"default"}
+                                className={cn("w-[260px] justify-start text-left font-normal")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date?.from ? (
-                                    date.to ? (
-                                        <>
-                                            {format(date.from, "LLL dd, y")} -{" "}
-                                            {format(date.to, "LLL dd, y")}
-                                        </>
-                                    ) : (
-                                        format(date.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Pick a date</span>
-                                )}
+                                <span>{displayLabel()}</span>
                             </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={date?.from}
-                                selected={date}
-                                onSelect={setDate}
-                                numberOfMonths={2}
-                            />
-                        </PopoverContent>
-                    </Popover>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56" align="end">
+                            {datePresets.map(preset => (
+                                <DropdownMenuItem key={preset} onClick={() => handlePresetSelect(preset)}>
+                                    {preset}
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuSeparator />
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                        Custom Range
+                                    </DropdownMenuItem>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="end">
+                                    <Calendar
+                                        initialFocus
+                                        mode="range"
+                                        defaultMonth={date?.from}
+                                        selected={date}
+                                        onSelect={handleCustomDateSelect}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
