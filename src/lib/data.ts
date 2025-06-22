@@ -260,3 +260,30 @@ export const customers: Customer[] = [
         totalSaleReturnDue: 100,
     },
 ];
+
+export type DetailedProduct = {
+  id: string;
+  image: string;
+  name: string;
+  businessLocation: string;
+  unitPurchasePrice: number;
+  sellingPrice: number;
+  currentStock: number;
+  productType: 'Single' | 'Variable';
+  category: string;
+  brand: string;
+  tax: string;
+  sku: string;
+};
+
+export const detailedProducts: DetailedProduct[] = [
+    { id: 'prod-1', image: 'https://placehold.co/40x40.png', name: 'Nike Fashion Sneaker', businessLocation: 'Awesome Shop', unitPurchasePrice: 121.00, sellingPrice: 165.00, currentStock: 0, productType: 'Variable', category: 'Accessories -- Shoes', brand: 'Nike', tax: 'VAT@10%', sku: 'AS0008' },
+    { id: 'prod-2', image: 'https://placehold.co/40x40.png', name: 'NXT Men\'s Running Shoe', businessLocation: 'Awesome Shop', unitPurchasePrice: 165.00, sellingPrice: 165.00, currentStock: 0, productType: 'Variable', category: 'Accessories -- Shoes', brand: 'Nike', tax: 'VAT@10%', sku: 'AS0010' },
+    { id: 'prod-3', image: 'https://placehold.co/40x40.png', name: 'Oreo Cookies', businessLocation: 'Awesome Shop', unitPurchasePrice: 5.00, sellingPrice: 6.25, currentStock: 0, productType: 'Single', category: 'Food & Grocery', brand: 'Oreo', tax: '', sku: 'AS0026' },
+    { id: 'prod-4', image: 'https://placehold.co/40x40.png', name: 'Organic Egg', businessLocation: 'Awesome Shop', unitPurchasePrice: 10.00, sellingPrice: 12.50, currentStock: 50, productType: 'Single', category: 'Food & Grocery', brand: '', tax: '', sku: 'AS0065' },
+    { id: 'prod-5', image: 'https://placehold.co/40x40.png', name: 'Pair Of Dumbbells', businessLocation: 'Awesome Shop', unitPurchasePrice: 10.00, sellingPrice: 12.50, currentStock: 140, productType: 'Single', category: 'Sports -- Exercise & Fitness', brand: 'Bowflex', tax: '', sku: 'AS0021' },
+    { id: 'prod-6', image: 'https://placehold.co/40x40.png', name: 'Pinot Noir Red Wine', businessLocation: 'Awesome Shop', unitPurchasePrice: 35.00, sellingPrice: 43.75, currentStock: 0, productType: 'Single', category: 'Food & Grocery', brand: '', tax: '', sku: 'AS0057' },
+    { id: 'prod-7', image: 'https://placehold.co/40x40.png', name: 'Puma Brown Sneaker', businessLocation: 'Awesome Shop', unitPurchasePrice: 182.00, sellingPrice: 182.00, currentStock: 0, productType: 'Variable', category: 'Accessories -- Shoes', brand: 'Puma', tax: 'VAT@10%', sku: 'AS0006' },
+    { id: 'prod-8', image: 'https://placehold.co/40x40.png', name: 'PUMA Men\'s Black Sneaker', businessLocation: 'Awesome Shop', unitPurchasePrice: 148.50, sellingPrice: 148.50, currentStock: 0, productType: 'Variable', category: 'Accessories -- Shoes', brand: 'Puma', tax: 'VAT@10%', sku: 'AS0009' },
+    { id: 'prod-9', image: 'https://placehold.co/40x40.png', name: 'Red Wine', businessLocation: 'Awesome Shop', unitPurchasePrice: 34.00, sellingPrice: 42.50, currentStock: 20, productType: 'Single', category: 'Food & Grocery', brand: '', tax: '', sku: 'AS0061' },
+];

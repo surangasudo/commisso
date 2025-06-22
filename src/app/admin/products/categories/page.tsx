@@ -1,18 +1,19 @@
+'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package } from "lucide-react";
+import { Folder } from "lucide-react";
 
-export default function InventoryPage() {
+export default function CategoriesPage() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-        <Package className="w-8 h-8" />
-        Inventory Management
+        <Folder className="w-8 h-8" />
+        Categories
       </h1>
       <Card>
         <CardHeader>
-          <CardTitle>Product & Stock Management</CardTitle>
+          <CardTitle>Product Categories</CardTitle>
           <CardDescription>
-            This section will contain tools to manage products, stock levels, suppliers, and purchase orders.
+            This section is for managing product categories.
           </CardDescription>
         </CardHeader>
         <CardContent>

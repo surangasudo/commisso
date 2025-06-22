@@ -70,7 +70,24 @@ const sidebarNav = [
             { href: "/admin/contacts/import", label: "Import Contacts" },
         ]
     },
-    { href: "/admin/inventory", icon: Package, label: "Products" },
+    { 
+        label: "Products", 
+        icon: Package,
+        children: [
+            { href: "/admin/products/list", label: "List Products" },
+            { href: "/admin/products/add", label: "Add Product" },
+            { href: "/admin/products/update-price", label: "Update Price" },
+            { href: "/admin/products/print-labels", label: "Print Labels" },
+            { href: "/admin/products/variations", label: "Variations" },
+            { href: "/admin/products/import", label: "Import Products" },
+            { href: "/admin/products/import-opening-stock", label: "Import Opening Stock" },
+            { href: "/admin/products/selling-price-group", label: "Selling Price Group" },
+            { href: "/admin/products/units", label: "Units" },
+            { href: "/admin/products/categories", label: "Categories" },
+            { href: "/admin/products/brands", label: "Brands" },
+            { href: "/admin/products/warranties", label: "Warranties" },
+        ]
+    },
     { href: "/admin/purchases", icon: Download, label: "Purchases" },
     { href: "/admin/sales", icon: Upload, label: "Sell" },
     { href: "#", icon: ArrowRightLeft, label: "Stock Transfers" },
