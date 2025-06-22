@@ -29,6 +29,8 @@ const initialNewDiscountState = {
   discountAmount: '',
   startsAt: undefined as Date | undefined,
   endsAt: undefined as Date | undefined,
+  isForSellingPriceGroup: false,
+  customerGroup: '',
 };
 
 export default function DiscountsPage() {
@@ -92,6 +94,10 @@ export default function DiscountsPage() {
 
   const handleSelectChange = (field: keyof typeof newDiscount, value: string) => {
     setNewDiscount(prev => ({...prev, [field]: value}));
+  };
+
+  const handleCheckboxChange = (field: keyof typeof newDiscount, checked: boolean) => {
+    setNewDiscount(prev => ({ ...prev, [field]: checked }));
   };
   
   return (
@@ -266,6 +272,34 @@ export default function DiscountsPage() {
                           </PopoverContent>
                         </Popover>
                     </div>
+                    <div className="md:col-span-2 flex items-center space-x-2 pt-4 border-t mt-4">
+                        <Checkbox
+                            id="isForSellingPriceGroup"
+                            checked={newDiscount.isForSellingPriceGroup}
+                            onCheckedChange={(checked) => handleCheckboxChange('isForSellingPriceGroup', !!checked)}
+                        />
+                        <Label htmlFor="isForSellingPriceGroup" className="font-normal">Apply to a specific Selling Price Group</Label>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Info className="w-4 h-4 text-muted-foreground cursor-pointer" />
+                            </TooltipTrigger>
+                            <TooltipContent><p>If checked, this discount will only apply to the selected group.</p></TooltipContent>
+                        </Tooltip>
+                    </div>
+                    {newDiscount.isForSellingPriceGroup && (
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="customerGroup">Customer Group:*</Label>
+                            <Select value={newDiscount.customerGroup} onValueChange={(value) => handleSelectChange('customerGroup', value)}>
+                                <SelectTrigger id="customerGroup">
+                                    <SelectValue placeholder="Select Customer Group" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="wholesale">Wholesale</SelectItem>
+                                    <SelectItem value="retail">Retail</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                   </div>
                   <DialogFooter>
                       <Button onClick={handleAddDiscount}>Save</Button>
