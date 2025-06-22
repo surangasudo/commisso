@@ -26,7 +26,7 @@ export default function AddExpensePage() {
     }, []);
 
     useEffect(() => {
-        if (selectedCategory) {
+        if (selectedCategory && selectedCategory !== 'none') {
             setSubCategories(expenseCategories.filter(c => c.parentId === selectedCategory));
         } else {
             setSubCategories([]);
@@ -66,7 +66,7 @@ export default function AddExpensePage() {
                                 <Select onValueChange={setSelectedCategory}>
                                     <SelectTrigger id="expense-category"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">None</SelectItem>
+                                        <SelectItem value="none">None</SelectItem>
                                         {mainCategories.map(cat => (
                                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                                         ))}
