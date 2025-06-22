@@ -319,6 +319,23 @@ export const purchases: Purchase[] = [
     { id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin' },
     { id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
     { id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
-    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin' },
+    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin' },
     { id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
+];
+
+export type PurchaseReturn = {
+  id: string;
+  date: string;
+  referenceNo: string;
+  parentPurchase: string;
+  location: string;
+  supplier: string;
+  paymentStatus: 'Paid' | 'Due' | 'Partial';
+  grandTotal: number;
+  paymentDue: number;
+};
+
+export const purchaseReturns: PurchaseReturn[] = [
+    { id: 'pr-1', date: '06/23/2025 10:00', referenceNo: 'PR2025/0001', parentPurchase: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', paymentStatus: 'Due', grandTotal: 150.00, paymentDue: 150.00 },
+    { id: 'pr-2', date: '06/21/2025 14:30', referenceNo: 'PR2025/0002', parentPurchase: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', paymentStatus: 'Paid', grandTotal: 200.00, paymentDue: 0.00 },
 ];
