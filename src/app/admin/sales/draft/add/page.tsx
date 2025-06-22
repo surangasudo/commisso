@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Trash2, User, Calendar, FilePlus, Info, PlusCircle, X } from "lucide-react";
-import { detailedProducts, type DetailedProduct } from '@/lib/data';
-import { customers } from '@/lib/data';
+import { detailedProducts, type DetailedProduct, customers, users } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
@@ -304,9 +303,31 @@ export default function AddDraftPage() {
                     <div className="space-y-2"><Label>Shipping Details</Label><Textarea placeholder="Shipping Details"/></div>
                     <div className="space-y-2"><Label>Shipping Address</Label><Textarea placeholder="Shipping Address"/></div>
                     <div className="space-y-2"><Label>Shipping Charges</Label><Input type="number" defaultValue="0.00"/></div>
-                    <div className="space-y-2"><Label>Shipping Status</Label><Select><SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger></Select></div>
+                    <div className="space-y-2">
+                        <Label>Shipping Status</Label>
+                        <Select>
+                            <SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="ordered">Ordered</SelectItem>
+                                <SelectItem value="packed">Packed</SelectItem>
+                                <SelectItem value="shipped">Shipped</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-2"><Label>Delivered To</Label><Input placeholder="Delivered To"/></div>
-                    <div className="space-y-2"><Label>Delivery Person</Label><Select><SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger></Select></div>
+                    <div className="space-y-2">
+                        <Label>Delivery Person</Label>
+                        <Select>
+                            <SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger>
+                            <SelectContent>
+                                {users.map(user => (
+                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-2 md:col-span-2"><Label>Shipping Document</Label><Input type="file" /></div>
                 </CardContent>
             </Card>
