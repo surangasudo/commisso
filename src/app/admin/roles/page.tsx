@@ -1,26 +1,127 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShieldCheck } from "lucide-react";
+'use client';
+import React from 'react';
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUpDown
+} from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const roles = [
+  { name: 'Admin' },
+  { name: 'Cashier' },
+];
 
 export default function RolesPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-        <ShieldCheck className="w-8 h-8" />
-        Roles Management
-      </h1>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-baseline gap-2">
+        <h1 className="font-headline text-3xl font-bold">Roles</h1>
+        <p className="text-muted-foreground">Manage roles</p>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Manage Roles</CardTitle>
-          <CardDescription>
-            Define and manage user roles and permissions.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>All roles</CardTitle>
+          {/* The add button should eventually link to an "add role" page */}
+          <Button size="sm" className="h-9 gap-1.5">
+              <Plus className="h-4 w-4" />
+              <span>Add</span>
+          </Button>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-            <p className="text-muted-foreground">Coming Soon...</p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Select defaultValue="25">
+                <SelectTrigger className="w-[100px] h-9">
+                  <SelectValue placeholder="25" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-muted-foreground hidden sm:inline">entries</span>
+            </div>
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="pl-8 w-full sm:w-auto h-9" />
+            </div>
+          </div>
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Roles</TableHead>
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                        <ArrowUpDown className="h-4 w-4" /> Action
+                    </div>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {roles.map((role) => (
+                  <TableRow key={role.name}>
+                    <TableCell className="font-medium">{role.name}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
+                          <Pencil className="mr-1 h-3 w-3" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                          <Trash2 className="mr-1 h-3 w-3" /> Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
+        <CardFooter className="flex items-center justify-between py-4">
+          <div className="text-xs text-muted-foreground">
+            Showing <strong>1 to 2</strong> of <strong>2</strong> entries
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled>Previous</Button>
+            <Button variant="default" size="sm" className="h-9 w-9 p-0">1</Button>
+            <Button variant="outline" size="sm">Next</Button>
+          </div>
+        </CardFooter>
       </Card>
+       <div className="text-center text-xs text-slate-400 p-1">
+        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+      </div>
     </div>
   );
 }
