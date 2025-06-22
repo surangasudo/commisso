@@ -60,7 +60,16 @@ const sidebarNav = [
             { href: "/admin/sales-commission-agents", label: "Sales Commission Agents" }
         ]
     },
-    { href: "/admin/customers", icon: Contact, label: "Contacts" },
+    { 
+        label: "Contacts", 
+        icon: Contact,
+        children: [
+            { href: "/admin/contacts/suppliers", label: "Suppliers" },
+            { href: "/admin/contacts/customers", label: "Customers" },
+            { href: "/admin/contacts/customer-groups", label: "Customer Groups" },
+            { href: "/admin/contacts/import", label: "Import Contacts" },
+        ]
+    },
     { href: "/admin/inventory", icon: Package, label: "Products" },
     { href: "/admin/purchases", icon: Download, label: "Purchases" },
     { href: "/admin/sales", icon: Upload, label: "Sell" },
@@ -82,7 +91,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     const activeParent = sidebarNav.find(item => 
-      item.children?.some(child => child.href === pathname)
+      item.children?.some(child => pathname.startsWith(child.href))
     );
     if (activeParent) {
       setOpenMenu(activeParent.label);
@@ -103,7 +112,7 @@ export default function AdminLayout({
                     {item.children ? (
                         <>
                         <SidebarMenuButton
-                            variant={openMenu === item.label || item.children.some(c => c.href === pathname) ? 'secondary' : 'ghost'}
+                            variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
                             className="w-full justify-between"
                             onClick={() => toggleMenu(item.label)}
                         >

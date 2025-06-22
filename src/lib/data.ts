@@ -98,3 +98,88 @@ export const commissionProfiles: CommissionProfile[] = [
     },
   },
 ];
+
+export type Supplier = {
+  id: string;
+  contactId: string;
+  businessName: string;
+  name: string;
+  email: string | null;
+  taxNumber: string;
+  payTerm: number;
+  openingBalance: number;
+  advanceBalance: number;
+  addedOn: string;
+  address: string;
+  mobile: string;
+  totalPurchaseDue: number;
+  totalPurchaseReturnDue: number;
+  customField1?: string;
+};
+
+export const suppliers: Supplier[] = [
+    {
+        id: 'sup-1',
+        contactId: 'CO0003',
+        businessName: 'Manhattan Clothing Ltd.',
+        name: 'Philip',
+        email: 'philip@manhattan.com',
+        taxNumber: '54869310093',
+        payTerm: 15,
+        openingBalance: 0.00,
+        advanceBalance: 0.00,
+        addedOn: '01/03/2018',
+        address: 'Linking Street, Phoenix, Arizona, USA',
+        mobile: '(378) 400-1234',
+        totalPurchaseDue: 0.00,
+        totalPurchaseReturnDue: 0.00
+    },
+    {
+        id: 'sup-2',
+        contactId: '',
+        businessName: 'Univer Suppliers',
+        name: 'Jackson Hill',
+        email: 'jackson@univer.com',
+        taxNumber: '5459000655',
+        payTerm: 45,
+        openingBalance: 0.00,
+        advanceBalance: 0.00,
+        addedOn: '01/06/2018',
+        address: 'Linking Street, Phoenix, Arizona, USA',
+        mobile: '(378) 400-1234',
+        totalPurchaseDue: 255986.00,
+        totalPurchaseReturnDue: 0.00
+    },
+    {
+        id: 'sup-3',
+        contactId: '',
+        businessName: 'Alpha Clothings',
+        name: 'Michael',
+        email: 'michael@alpha.com',
+        taxNumber: '4590091535',
+        payTerm: 15,
+        openingBalance: 0.00,
+        advanceBalance: 0.00,
+        addedOn: '01/03/2018',
+        address: 'Linking Street, Phoenix, Arizona, USA',
+        mobile: '(378) 400-1234',
+        totalPurchaseDue: 0.00,
+        totalPurchaseReturnDue: 0.00
+    },
+    {
+        id: 'sup-4',
+        contactId: 'CN0004',
+        businessName: 'Digital Ocean',
+        name: 'Mike McCubbin',
+        email: 'mike@digitalocean.com',
+        taxNumber: '52965489001',
+        payTerm: 30,
+        openingBalance: 0.00,
+        advanceBalance: 0.00,
+        addedOn: '01/06/2018',
+        address: 'Linking Street, Phoenix, Arizona, USA',
+        mobile: '(378) 400-1234',
+        totalPurchaseDue: 0.00,
+        totalPurchaseReturnDue: 0.00
+    }
+];
