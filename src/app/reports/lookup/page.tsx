@@ -42,7 +42,7 @@ export default function LookupPage() {
             <div className="absolute top-6 left-6">
                 <Link href="/" className="flex items-center gap-2 text-foreground">
                     <Logo className="h-6 w-6" />
-                    <span className="font-headline text-lg">Commisso</span>
+                    <span className="font-headline text-lg">Ultimate POS</span>
                 </Link>
             </div>
             <Card className="w-full max-w-2xl">
@@ -65,7 +65,7 @@ export default function LookupPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button type="submit" className="w-full bg-accent hover:bg-accent/80" disabled={isLoading}>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             {isLoading ? 'Searching...' : 'Search'}
                         </Button>

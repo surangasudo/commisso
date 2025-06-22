@@ -38,7 +38,7 @@ export default function SettingsPage() {
                 <Input id="whatsapp-api-key" placeholder="Enter your WhatsApp API Key" />
             </div>
           </div>
-           <Button className="bg-accent hover:bg-accent/90">Save Settings</Button>
+           <Button>Save Settings</Button>
         </CardContent>
       </Card>
     </div>

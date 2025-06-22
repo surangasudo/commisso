@@ -43,7 +43,7 @@ export default function AdminLayout({
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Logo className="size-7 text-primary" />
-            <span className="font-headline text-lg">Commisso</span>
+            <span className="font-headline text-lg">Ultimate POS</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
