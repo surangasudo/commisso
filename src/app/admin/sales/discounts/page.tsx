@@ -3,114 +3,86 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BadgePercent, Plus, Pencil, Trash2 } from "lucide-react";
-import React, { useState } from 'react';
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { discounts as initialDiscounts, type Discount } from '@/lib/data';
 
 type DiscountType = 'Fixed' | 'Percentage';
 
+const initialNewDiscountState = {
+  name: '',
+  products: '',
+  brand: '',
+  category: '',
+  location: 'awesome-shop',
+  priority: '',
+  discountType: 'Percentage' as DiscountType,
+  discountAmount: '',
+  startsAt: '',
+  endsAt: ''
+};
+
 export default function DiscountsPage() {
   const [discounts, setDiscounts] = useState<Discount[]>(initialDiscounts);
-  
-  // Add dialog state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newDiscountName, setNewDiscountName] = useState('');
-  const [newDiscountType, setNewDiscountType] = useState<DiscountType>('Percentage');
-  const [newDiscountValue, setNewDiscountValue] = useState<number | ''>('');
-  const [newDiscountIsActive, setNewDiscountIsActive] = useState(true);
+  const [newDiscount, setNewDiscount] = useState(initialNewDiscountState);
+  const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
 
-  // Edit dialog state
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
-  const [editedDiscountName, setEditedDiscountName] = useState('');
-  const [editedDiscountType, setEditedDiscountType] = useState<DiscountType>('Percentage');
-  const [editedDiscountValue, setEditedDiscountValue] = useState<number | ''>('');
-  const [editedDiscountIsActive, setEditedDiscountIsActive] = useState(true);
-
-  // Delete dialog state
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [discountToDelete, setDiscountToDelete] = useState<Discount | null>(null);
-
+  useEffect(() => {
+    if (isAddDialogOpen) {
+        const now = new Date();
+        const formattedDateTime = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        setNewDiscount(d => ({ ...initialNewDiscountState, startsAt: formattedDateTime, discountType: 'Percentage' }));
+    }
+  }, [isAddDialogOpen]);
 
   const handleAddDiscount = () => {
-    if (newDiscountName.trim() && newDiscountValue) {
-      const newDiscount: Discount = {
+    if (newDiscount.name.trim() && newDiscount.location && newDiscount.discountType && newDiscount.discountAmount) {
+      const discountToAdd: Discount = {
         id: `disc-${Date.now()}`,
-        name: newDiscountName,
-        type: newDiscountType,
-        value: newDiscountValue,
-        isActive: newDiscountIsActive
+        name: newDiscount.name,
+        products: newDiscount.products.split(',').map(p => p.trim()).filter(Boolean),
+        brand: newDiscount.brand,
+        category: newDiscount.category,
+        location: newDiscount.location,
+        priority: Number(newDiscount.priority) || 0,
+        discountType: newDiscount.discountType,
+        discountAmount: Number(newDiscount.discountAmount),
+        startsAt: newDiscount.startsAt,
+        endsAt: newDiscount.endsAt || null,
+        isActive: true,
       };
-      setDiscounts([...discounts, newDiscount]);
+      setDiscounts([...discounts, discountToAdd]);
       setIsAddDialogOpen(false);
-      setNewDiscountName('');
-      setNewDiscountType('Percentage');
-      setNewDiscountValue('');
-      setNewDiscountIsActive(true);
     }
   };
   
-  const handleEditClick = (discount: Discount) => {
-    setEditingDiscount(discount);
-    setEditedDiscountName(discount.name);
-    setEditedDiscountType(discount.type);
-    setEditedDiscountValue(discount.value);
-    setEditedDiscountIsActive(discount.isActive);
-    setIsEditDialogOpen(true);
+  const handleInputChange = (field: keyof typeof newDiscount, value: string) => {
+    setNewDiscount(prev => ({...prev, [field]: value}));
+  };
+
+  const handleSelectChange = (field: keyof typeof newDiscount, value: string) => {
+    setNewDiscount(prev => ({...prev, [field]: value}));
   };
   
-  const handleUpdateDiscount = () => {
-    if (editingDiscount && editedDiscountName.trim() && editedDiscountValue) {
-        const updatedDiscounts = discounts.map(d => 
-            d.id === editingDiscount.id 
-            ? { ...d, name: editedDiscountName, type: editedDiscountType, value: editedDiscountValue, isActive: editedDiscountIsActive } 
-            : d
-        );
-        setDiscounts(updatedDiscounts);
-        setIsEditDialogOpen(false);
-        setEditingDiscount(null);
-    }
-  };
-
-  const handleDeleteClick = (discount: Discount) => {
-    setDiscountToDelete(discount);
-    setIsDeleteDialogOpen(true);
-  }
-
-  const confirmDelete = () => {
-    if (discountToDelete) {
-      setDiscounts(discounts.filter(d => d.id !== discountToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setDiscountToDelete(null);
-    }
-  };
-
   return (
-    <>
+    <TooltipProvider>
     <div className="flex flex-col gap-6">
       <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-        <BadgePercent className="w-8 h-8" />
-        Discounts
+        Discount
       </h1>
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <CardTitle>All Discounts</CardTitle>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-4">
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search..." className="pl-8 w-full sm:w-auto h-9" />
+            </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
@@ -118,53 +90,85 @@ export default function DiscountsPage() {
                     <span>Add</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-3xl">
                   <DialogHeader>
                       <DialogTitle>Add Discount</DialogTitle>
-                      <DialogDescription>
-                        Create a new discount for your sales.
-                      </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="discount-name">Discount Name *</Label>
-                          <Input 
-                            id="discount-name" 
-                            placeholder="e.g. Summer Sale" 
-                            required 
-                            value={newDiscountName}
-                            onChange={(e) => setNewDiscountName(e.target.value)}
-                          />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                              <Label htmlFor="discount-type">Discount Type</Label>
-                              <Select value={newDiscountType} onValueChange={(value: DiscountType) => setNewDiscountType(value)}>
-                                  <SelectTrigger id="discount-type">
-                                      <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                      <SelectItem value="Percentage">Percentage</SelectItem>
-                                      <SelectItem value="Fixed">Fixed</SelectItem>
-                                  </SelectContent>
-                              </Select>
-                          </div>
-                          <div className="space-y-2">
-                                <Label htmlFor="discount-value">Discount Value *</Label>
-                                <Input 
-                                    id="discount-value" 
-                                    type="number"
-                                    placeholder={newDiscountType === 'Percentage' ? "e.g. 15" : "e.g. 50"}
-                                    required 
-                                    value={newDiscountValue}
-                                    onChange={(e) => setNewDiscountValue(Number(e.target.value))}
-                                />
-                          </div>
-                      </div>
-                      <div className="flex items-center space-x-2 pt-2">
-                        <Switch id="is-active" checked={newDiscountIsActive} onCheckedChange={setNewDiscountIsActive} />
-                        <Label htmlFor="is-active">Is Active?</Label>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name:*</Label>
+                      <Input id="name" value={newDiscount.name} onChange={(e) => handleInputChange('name', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="products">Products:</Label>
+                      <Input id="products" placeholder="Search products..." value={newDiscount.products} onChange={(e) => handleInputChange('products', e.target.value)}/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brand">Brand:</Label>
+                      <Select value={newDiscount.brand} onValueChange={(value) => handleSelectChange('brand', value)}>
+                        <SelectTrigger id="brand"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                        <SelectContent>
+                           <SelectItem value="none">None</SelectItem>
+                           <SelectItem value="nike">Nike</SelectItem>
+                           <SelectItem value="puma">Puma</SelectItem>
+                           <SelectItem value="oreo">Oreo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category:</Label>
+                       <Select value={newDiscount.category} onValueChange={(value) => handleSelectChange('category', value)}>
+                        <SelectTrigger id="category"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="shoes">Accessories -- Shoes</SelectItem>
+                          <SelectItem value="food">Food & Grocery</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Location:*</Label>
+                       <Select value={newDiscount.location} onValueChange={(value) => handleSelectChange('location', value)}>
+                        <SelectTrigger id="location"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="awesome-shop">Awesome Shop</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="priority" className="flex items-center gap-1">
+                        Priority:
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-muted-foreground cursor-pointer" />
+                          </TooltipTrigger>
+                          <TooltipContent><p>Higher priority discounts override lower ones.</p></TooltipContent>
+                        </Tooltip>
+                      </Label>
+                      <Input id="priority" placeholder="Priority" value={newDiscount.priority} onChange={(e) => handleInputChange('priority', e.target.value)}/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discount-type">Discount Type:*</Label>
+                      <Select value={newDiscount.discountType} onValueChange={(value: DiscountType) => setNewDiscount(p => ({...p, discountType: value}))}>
+                        <SelectTrigger id="discount-type"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Fixed">Fixed</SelectItem>
+                          <SelectItem value="Percentage">Percentage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discount-amount">Discount Amount:*</Label>
+                      <Input id="discount-amount" placeholder="Discount Amount" value={newDiscount.discountAmount} onChange={(e) => handleInputChange('discountAmount', e.target.value)}/>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="starts-at">Starts At:</Label>
+                      <Input id="starts-at" value={newDiscount.startsAt} onChange={(e) => handleInputChange('startsAt', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ends-at">Ends At:</Label>
+                      <Input id="ends-at" placeholder="Ends At" value={newDiscount.endsAt} onChange={(e) => handleInputChange('endsAt', e.target.value)}/>
+                    </div>
                   </div>
                   <DialogFooter>
                       <Button onClick={handleAddDiscount}>Save</Button>
@@ -173,132 +177,81 @@ export default function DiscountsPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <CardDescription className="pt-2">
-            Manage your discounts. These can be applied to sales.
-          </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+                <Select defaultValue="25">
+                    <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="10">Show 10</SelectItem>
+                        <SelectItem value="25">Show 25</SelectItem>
+                        <SelectItem value="50">Show 50</SelectItem>
+                        <SelectItem value="100">Show 100</SelectItem>
+                    </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
+            </div>
+             <Button variant="destructive" size="sm" disabled={selectedDiscounts.length === 0}>Deactivate Selected</Button>
+          </div>
           <div className="border rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[180px]">Action</TableHead>
+                  <TableHead><Checkbox/></TableHead>
+                  <TableHead><div className="flex items-center gap-1">Name <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                  <TableHead><div className="flex items-center gap-1">Starts At <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                  <TableHead><div className="flex items-center gap-1">Ends At <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Products</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {discounts.map((discount) => (
+                {discounts.length > 0 ? discounts.map((discount) => (
                   <TableRow key={discount.id}>
+                    <TableCell><Checkbox/></TableCell>
                     <TableCell className="font-medium">{discount.name}</TableCell>
-                    <TableCell>{discount.type}</TableCell>
-                    <TableCell>{discount.type === 'Percentage' ? `${discount.value}%` : `$${discount.value.toFixed(2)}`}</TableCell>
-                    <TableCell>
-                        <Badge variant={discount.isActive ? "default" : "secondary"}>
-                            {discount.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                    </TableCell>
+                    <TableCell>{discount.startsAt}</TableCell>
+                    <TableCell>{discount.endsAt || 'N/A'}</TableCell>
+                    <TableCell>{discount.category || 'All'}</TableCell>
+                    <TableCell>{discount.products.join(', ') || 'All'}</TableCell>
+                    <TableCell>{discount.location}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(discount)}>
+                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700">
                           <Pencil className="mr-1 h-3 w-3" /> Edit
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(discount)}>
+                        <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
                           <Trash2 className="mr-1 h-3 w-3" /> Delete
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                   <TableRow>
+                    <TableCell colSpan={8} className="text-center h-24">Showing 0 to 0 of 0 entries</TableCell>
+                   </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex items-center justify-between py-4">
             <div className="text-xs text-muted-foreground">
-                Showing <strong>1 to {discounts.length}</strong> of <strong>{discounts.length}</strong> entries
+                Showing <strong>{discounts.length} to {discounts.length}</strong> of <strong>{discounts.length}</strong> entries
+            </div>
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm">Previous</Button>
+                <Button variant="outline" size="sm">Next</Button>
             </div>
         </CardFooter>
       </Card>
-      
-      {/* Edit Dialog */}
-       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Edit Discount</DialogTitle>
-                <DialogDescription>
-                  Update the details for this discount.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="edit-discount-name">Discount Name *</Label>
-                    <Input 
-                      id="edit-discount-name" 
-                      placeholder="e.g. Summer Sale" 
-                      required 
-                      value={editedDiscountName}
-                      onChange={(e) => setEditedDiscountName(e.target.value)}
-                    />
-                </div>
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-discount-type">Discount Type</Label>
-                        <Select value={editedDiscountType} onValueChange={(value: DiscountType) => setEditedDiscountType(value)}>
-                            <SelectTrigger id="edit-discount-type">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Percentage">Percentage</SelectItem>
-                                <SelectItem value="Fixed">Fixed</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                          <Label htmlFor="edit-discount-value">Discount Value *</Label>
-                          <Input 
-                              id="edit-discount-value" 
-                              type="number"
-                              placeholder={editedDiscountType === 'Percentage' ? "e.g. 15" : "e.g. 50"}
-                              required 
-                              value={editedDiscountValue}
-                              onChange={(e) => setEditedDiscountValue(Number(e.target.value))}
-                          />
-                    </div>
-                </div>
-                <div className="flex items-center space-x-2 pt-2">
-                  <Switch id="edit-is-active" checked={editedDiscountIsActive} onCheckedChange={setEditedDiscountIsActive} />
-                  <Label htmlFor="edit-is-active">Is Active?</Label>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button onClick={handleUpdateDiscount}>Save Changes</Button>
-                <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>Close</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-       {/* Delete Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the 
-              "{discountToDelete?.name}" discount.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDiscountToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className="text-center text-xs text-slate-400 p-1">
+          Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+      </div>
     </div>
-    </>
+    </TooltipProvider>
   );
 }

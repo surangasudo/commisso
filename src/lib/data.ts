@@ -405,14 +405,16 @@ export const sellReturns: SellReturn[] = [
 export type Discount = {
   id: string;
   name: string;
-  type: 'Fixed' | 'Percentage';
-  value: number;
+  startsAt: string;
+  endsAt: string | null;
+  category: string;
+  products: string[];
+  brand: string;
+  location: string;
+  priority: number;
+  discountType: 'Fixed' | 'Percentage';
+  discountAmount: number;
   isActive: boolean;
 };
 
-export const discounts: Discount[] = [
-  { id: 'disc-1', name: 'New Year Sale', type: 'Percentage', value: 15, isActive: true },
-  { id: 'disc-2', name: 'Staff Discount', type: 'Percentage', value: 20, isActive: true },
-  { id: 'disc-3', name: 'Clearance', type: 'Fixed', value: 50, isActive: false },
-  { id: 'disc-4', name: 'Student Discount', type: 'Percentage', value: 10, isActive: true },
-];
+export const discounts: Discount[] = [];
