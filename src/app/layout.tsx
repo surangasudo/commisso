@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Ultimate POS - Commission Management',
-  description: 'A Commission Management Module for Ultimate POS',
+  title: 'Ultimate ERP - Advanced POS Solution',
+  description: 'An advanced Point of Sale and ERP system for modern businesses.',
 };
 
 export default function RootLayout({
