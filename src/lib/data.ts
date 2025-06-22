@@ -23,6 +23,7 @@ export type Commission = {
 
 export type Product = {
   id: string;
+  sku: string;
   name: string;
   price: number;
   category: string;
@@ -31,19 +32,20 @@ export type Product = {
 };
 
 export const products: Product[] = [
-  { id: 'prod-001', name: 'Espresso', price: 2.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
-  { id: 'prod-002', name: 'Latte', price: 3.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
-  { id: 'prod-003', name: 'Cappuccino', price: 3.50, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 100 },
-  { id: 'prod-004', name: 'Croissant', price: 2.75, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 50 },
-  { id: 'prod-005', name: 'Muffin', price: 2.25, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 60 },
-  { id: 'prod-006', name: 'Iced Tea', price: 3.00, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 80 },
-  { id: 'prod-007', name: 'Mineral Water', price: 1.50, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 120 },
-  { id: 'prod-008', name: 'Club Sandwich', price: 6.50, category: 'Food', imageUrl: 'https://placehold.co/150x150.png', stock: 30 },
-  { id: 'prod-009', name: 'Caesar Salad', price: 7.00, category: 'Food', imageUrl: 'https://placehold.co/150x150.png', stock: 25 },
-  { id: 'prod-010', name: 'Bagel with Cream Cheese', price: 3.25, category: 'Pastries', imageUrl: 'https://placehold.co/150x150.png', stock: 40 },
-  { id: 'prod-011', name: 'Americano', price: 3.00, category: 'Coffee', imageUrl: 'https://placehold.co/150x150.png', stock: 90 },
-  { id: 'prod-012', name: 'Hot Chocolate', price: 4.00, category: 'Drinks', imageUrl: 'https://placehold.co/150x150.png', stock: 70 },
+  { id: 'prod-001', sku: 'AS0017-1', name: 'Acer Aspire E15 - Black', price: 350.00, category: 'Electronics', imageUrl: 'https://placehold.co/150x150.png', stock: 10 },
+  { id: 'prod-002', sku: 'AS0017-2', name: 'Acer Aspire E15 - White', price: 350.00, category: 'Electronics', imageUrl: 'https://placehold.co/150x150.png', stock: 15 },
+  { id: 'prod-003', sku: 'AS0064', name: 'Apple - Fuji', price: 1.50, category: 'Groceries', imageUrl: 'https://placehold.co/150x150.png', stock: 300 },
+  { id: 'prod-004', sku: 'AS0015-1', name: 'Apple iPhone 8 - White', price: 399.00, category: 'Electronics', imageUrl: 'https://placehold.co/150x150.png', stock: 20 },
+  { id: 'prod-005', sku: 'AS0015-2', name: 'Apple iPhone 8 - Gray', price: 399.00, category: 'Electronics', imageUrl: 'https://placehold.co/150x150.png', stock: 20 },
+  { id: 'prod-006', sku: 'AS0018-1', name: 'Apple MacBook Air - 256GB', price: 999.00, category: 'Electronics', imageUrl: 'https://placehold.co/150x150.png', stock: 12 },
+  { id: 'prod-007', sku: 'AS0063', name: 'Banana', price: 0.75, category: 'Groceries', imageUrl: 'https://placehold.co/150x150.png', stock: 400 },
+  { id: 'prod-008', sku: 'AS0028', name: 'Barilla Pasta', price: 2.25, category: 'Groceries', imageUrl: 'https://placehold.co/150x150.png', stock: 150 },
+  { id: 'prod-009', sku: 'CK-001', name: 'Butter Cookies', price: 5.50, category: 'Groceries', imageUrl: 'https://placehold.co/150x150.png', stock: 80 },
+  { id: 'prod-010', sku: 'SK-002', name: 'Cushion Crew Socks', price: 8.00, category: 'Apparel', imageUrl: 'https://placehold.co/150x150.png', stock: 120 },
+  { id: 'prod-011', sku: 'BK-003', name: 'Diary of a Wimpy Kid', price: 12.00, category: 'Books', imageUrl: 'https://placehold.co/150x150.png', stock: 45 },
+  { id: 'prod-012', sku: 'BK-004', name: 'Etched in Sand', price: 15.00, category: 'Books', imageUrl: 'https://placehold.co/150x150.png', stock: 35 },
 ];
+
 
 export const profiles: Profile[] = [
   { id: 'usr-001', name: 'John Doe', type: 'Agent', email: 'john.doe@example.com', phone: '1234567890', commissionRate: 10, status: 'Active', notificationPreference: 'Email', categoryRates: [{ category: 'Electronics', rate: 5 }, { category: 'Furniture', rate: 12 }] },
