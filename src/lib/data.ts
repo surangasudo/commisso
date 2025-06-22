@@ -181,6 +181,22 @@ export const suppliers: Supplier[] = [
         mobile: '(378) 400-1234',
         totalPurchaseDue: 0.00,
         totalPurchaseReturnDue: 0.00
+    },
+    {
+        id: 'sup-5',
+        contactId: 'CO0006',
+        businessName: 'Essential Goods Inc.',
+        name: 'Sarah Connor',
+        email: 'sarah.c@essentialgoods.com',
+        taxNumber: '1122334455',
+        payTerm: 60,
+        openingBalance: 0.00,
+        advanceBalance: 0.00,
+        addedOn: '05/10/2023',
+        address: '123 Future Way, Cyber City, USA',
+        mobile: '(555) 867-5309',
+        totalPurchaseDue: 12500.00,
+        totalPurchaseReturnDue: 0.00
     }
 ];
 
