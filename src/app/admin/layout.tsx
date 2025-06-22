@@ -123,7 +123,14 @@ const sidebarNav = [
             { href: "/admin/stock-transfers/add", label: "Add Stock Transfer" },
         ]
     },
-    { href: "#", icon: SlidersHorizontal, label: "Stock Adjustment" },
+    { 
+        label: "Stock Adjustment", 
+        icon: SlidersHorizontal, 
+        children: [
+            { href: "/admin/stock-adjustment/list", label: "List Stock Adjustments" },
+            { href: "/admin/stock-adjustment/add", label: "Add Stock Adjustment" },
+        ]
+    },
     { href: "/admin/expenses", icon: Wallet, label: "Expenses" },
     { href: "#", icon: Landmark, label: "Payment Accounts" },
     { href: "/admin/reports", icon: FileText, label: "Reports" },

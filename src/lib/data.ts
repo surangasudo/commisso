@@ -436,3 +436,20 @@ export const stockTransfers: StockTransfer[] = [
   { id: 'st-2', date: '06/20/2025 15:30', referenceNo: 'ST2025/0002', locationFrom: 'Warehouse A', locationTo: 'Awesome Shop', status: 'Completed', shippingCharges: 25, totalAmount: 1250.00, addedBy: 'Mr Admin' },
   { id: 'st-3', date: '06/18/2025 09:00', referenceNo: 'ST2025/0003', locationFrom: 'Awesome Shop', locationTo: 'Warehouse B', status: 'Pending', shippingCharges: 75, totalAmount: 9800.50, addedBy: 'Mr Admin' },
 ];
+
+export type StockAdjustment = {
+  id: string;
+  date: string;
+  referenceNo: string;
+  location: string;
+  adjustmentType: 'Normal' | 'Abnormal';
+  totalAmount: number;
+  totalAmountRecovered: number;
+  reason: string;
+  addedBy: string;
+};
+
+export const stockAdjustments: StockAdjustment[] = [
+  { id: 'sa-1', date: '06/22/2025 11:20', referenceNo: 'SA2025/0001', location: 'Awesome Shop', adjustmentType: 'Normal', totalAmount: 150.00, totalAmountRecovered: 0, reason: 'Stock correction', addedBy: 'Mr Admin' },
+  { id: 'sa-2', date: '06/21/2025 10:00', referenceNo: 'SA2025/0002', location: 'Warehouse A', adjustmentType: 'Abnormal', totalAmount: 500.50, totalAmountRecovered: 450.00, reason: 'Damaged goods', addedBy: 'Mr Admin' },
+];
