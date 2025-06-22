@@ -106,6 +106,10 @@ export default function ViewSalePage() {
     }
   }, [id, router]);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   if (!sale || !saleItems) {
     return (
       <div className="flex flex-col gap-6">
@@ -128,15 +132,15 @@ export default function ViewSalePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-6" id="sale-details-page">
+        <div className="flex items-center justify-between gap-4 print:hidden">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                 <Eye className="w-8 h-8" />
                 Sale Details
             </h1>
             <div className="flex gap-2">
-                <Button variant="outline"><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                <Button onClick={() => alert('Edit page not yet implemented')}><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
+                <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                <Button onClick={() => router.push(`/admin/sales/edit/${sale.id}`)}><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
             </div>
         </div>
 
@@ -253,12 +257,12 @@ export default function ViewSalePage() {
                     </div>
                 </div>
             </CardContent>
-             <CardFooter className="flex justify-end">
+             <CardFooter className="flex justify-end print:hidden">
                 <p className="text-sm text-muted-foreground">Added by: {sale.addedBy}</p>
             </CardFooter>
         </Card>
 
-         <div className="text-center text-xs text-slate-400 p-1">
+         <div className="text-center text-xs text-slate-400 p-1 print:hidden">
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>

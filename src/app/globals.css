@@ -92,3 +92,30 @@ body {
         @apply bg-primary text-primary-foreground;
     }
 }
+
+@media print {
+  body {
+    background: white;
+  }
+  /* Hide sidebar and header */
+  [data-sidebar="sidebar"],
+  header,
+  .print\:hidden {
+    display: none;
+  }
+
+  /* Make main content take full width */
+  main {
+    padding: 0 !important;
+  }
+  
+  #sale-details-page {
+    margin: 0;
+    padding: 0;
+  }
+
+  @page {
+    size: auto;
+    margin: 0.5in;
+  }
+}
