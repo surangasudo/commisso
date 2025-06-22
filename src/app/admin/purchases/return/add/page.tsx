@@ -1,24 +1,31 @@
 'use client';
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { Undo, Search, Plus, Trash2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Undo, Search, Plus, Trash2, Calendar, User } from "lucide-react";
 import { detailedProducts, type DetailedProduct } from '@/lib/data';
 
 type ReturnItem = {
   product: DetailedProduct;
   quantity: number;
-  purchasePrice: number;
+  unitPrice: number;
   subtotal: number;
 };
 
 export default function AddPurchaseReturnPage() {
     const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentDate, setCurrentDate] = useState('');
+
+    useEffect(() => {
+        const date = new Date();
+        const formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}/${date.getFullYear()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+        setCurrentDate(formattedDate);
+    }, []);
 
     const searchResults = searchTerm
     ? detailedProducts.filter(p =>
@@ -32,7 +39,7 @@ export default function AddPurchaseReturnPage() {
             setReturnItems([...returnItems, {
                 product,
                 quantity: 1,
-                purchasePrice: product.unitPurchasePrice,
+                unitPrice: product.unitPurchasePrice,
                 subtotal: product.unitPurchasePrice,
             }]);
         }
@@ -47,13 +54,13 @@ export default function AddPurchaseReturnPage() {
         setReturnItems(returnItems.map(item => {
             if (item.product.id === productId) {
                 const newQuantity = Math.max(0, quantity);
-                return { ...item, quantity: newQuantity, subtotal: newQuantity * item.purchasePrice };
+                return { ...item, quantity: newQuantity, subtotal: newQuantity * item.unitPrice };
             }
             return item;
         }));
     };
 
-    const grandTotal = returnItems.reduce((acc, item) => acc + item.subtotal, 0);
+    const totalAmount = returnItems.reduce((acc, item) => acc + item.subtotal, 0);
 
     return (
         <div className="flex flex-col gap-6">
@@ -64,12 +71,15 @@ export default function AddPurchaseReturnPage() {
 
             <Card>
                 <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="supplier">Supplier *</Label>
-                            <Select>
+                             <Select>
                                 <SelectTrigger id="supplier">
-                                    <SelectValue placeholder="Select Supplier" />
+                                    <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4 text-muted-foreground" />
+                                        <SelectValue placeholder="Please Select" />
+                                    </div>
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="univer-suppliers">Univer Suppliers, Jackson Hill</SelectItem>
@@ -80,34 +90,48 @@ export default function AddPurchaseReturnPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="location">Business Location *</Label>
-                            <Select defaultValue="Awesome Shop">
+                            <Select defaultValue="please-select">
                                 <SelectTrigger id="location">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Please Select" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
+                                    <SelectItem value="please-select" disabled>Please Select</SelectItem>
+                                    <SelectItem value="awesome-shop">Awesome Shop</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="reference-no">Reference No:</Label>
-                            <Input id="reference-no" placeholder="e.g. PR2025/0001" />
-                            <p className="text-xs text-muted-foreground">Leave blank to auto generate.</p>
+                            <Input id="reference-no" />
                         </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="date">Date *</Label>
+                            <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm">
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                <span>{currentDate}</span>
+                            </div>
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="attach-document">Attach Document:</Label>
+                        <div className="flex items-center gap-4">
+                            <Input id="attach-document" type="file" className="max-w-xs" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Max File size: 5MB <br />
+                            Allowed File: .pdf, .csv, .zip, .doc, .docx, .jpeg, .jpg, .png
+                        </p>
                     </div>
                 </CardContent>
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Products to Return</CardTitle>
-                    <CardDescription>Search for products to add to this return.</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
+                     <h3 className="text-lg font-semibold mb-4">Search Products</h3>
                     <div className="relative mb-4">
                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search products by name or SKU..."
+                            placeholder="Search Products"
                             className="pl-10 w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -133,10 +157,10 @@ export default function AddPurchaseReturnPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead className="w-[50%]">Product</TableHead>
-                                    <TableHead>Return Quantity</TableHead>
-                                    <TableHead>Purchase Price</TableHead>
+                                    <TableHead>Quantity</TableHead>
+                                    <TableHead>Unit Price</TableHead>
                                     <TableHead>Subtotal</TableHead>
-                                    <TableHead className="text-center"><Trash2 className="w-4 h-4 mx-auto" /></TableHead>
+                                    <TableHead className="text-center w-[50px]"><Trash2 className="w-4 h-4 mx-auto" /></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -151,7 +175,7 @@ export default function AddPurchaseReturnPage() {
                                                 className="w-24 h-9"
                                             />
                                         </TableCell>
-                                        <TableCell>${item.purchasePrice.toFixed(2)}</TableCell>
+                                        <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
                                         <TableCell className="font-semibold">${item.subtotal.toFixed(2)}</TableCell>
                                         <TableCell className="text-center">
                                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(item.product.id)}>
@@ -165,20 +189,35 @@ export default function AddPurchaseReturnPage() {
                                     </TableRow>
                                 )}
                             </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-right font-bold">Net Total Amount:</TableCell>
-                                    <TableCell className="font-bold">${grandTotal.toFixed(2)}</TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            </TableFooter>
                         </Table>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 mt-6 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="purchase-tax">Purchase Tax:</Label>
+                             <Select defaultValue="none">
+                                <SelectTrigger id="purchase-tax">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="vat-10">VAT @10%</SelectItem>
+                                    <SelectItem value="gst-5">GST @5%</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex justify-end items-end">
+                             <div className="text-right">
+                                <span className="text-muted-foreground">Total Amount: </span>
+                                <span className="font-bold text-lg">${totalAmount.toFixed(2)}</span>
+                            </div>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             <div className="flex justify-end">
-                <Button size="lg">Save</Button>
+                <Button size="lg">Submit</Button>
             </div>
 
             <div className="text-center text-xs text-slate-400 p-1">
