@@ -131,7 +131,15 @@ const sidebarNav = [
             { href: "/admin/stock-adjustment/add", label: "Add Stock Adjustment" },
         ]
     },
-    { href: "/admin/expenses", icon: Wallet, label: "Expenses" },
+    { 
+        label: "Expenses", 
+        icon: Wallet, 
+        children: [
+            { href: "/admin/expenses/list", label: "List Expenses" },
+            { href: "/admin/expenses/add", label: "Add Expense" },
+            { href: "/admin/expenses/categories", label: "Expense Categories" },
+        ]
+    },
     { href: "#", icon: Landmark, label: "Payment Accounts" },
     { href: "/admin/reports", icon: FileText, label: "Reports" },
     { href: "#", icon: Mail, label: "Notification Templates" },
