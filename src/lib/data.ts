@@ -22,9 +22,9 @@ export type Commission = {
 };
 
 export const profiles: Profile[] = [
-  { id: 'usr-001', name: 'John Doe', type: 'Agent', email: 'john.doe@example.com', phone: '1234567890', commissionRate: 10, status: 'Active', notificationPreference: 'Email' },
+  { id: 'usr-001', name: 'John Doe', type: 'Agent', email: 'john.doe@example.com', phone: '1234567890', commissionRate: 10, status: 'Active', notificationPreference: 'Email', categoryRates: [{ category: 'Electronics', rate: 5 }, { category: 'Furniture', rate: 12 }] },
   { id: 'usr-002', name: 'Jane Smith', type: 'Salesperson', email: 'jane.smith@example.com', phone: '0987654321', commissionRate: 5, status: 'Active', notificationPreference: 'SMS' },
-  { id: 'usr-003', name: 'Global Corp', type: 'Company', email: 'contact@globalcorp.com', phone: '1122334455', commissionRate: 15, status: 'Active', notificationPreference: 'WhatsApp' },
+  { id: 'usr-003', name: 'Global Corp', type: 'Company', email: 'contact@globalcorp.com', phone: '1122334455', commissionRate: 15, status: 'Active', notificationPreference: 'WhatsApp', categoryRates: [{ category: 'Software', rate: 20 }, { category: 'Hardware', rate: 8 }] },
   { id: 'usr-004', name: 'Peter Jones', type: 'Sub-Agent', email: 'peter.jones@example.com', phone: '5544332211', commissionRate: 8, status: 'Inactive', notificationPreference: 'Email' },
   { id: 'usr-005', name: 'Alice Williams', type: 'Salesperson', email: 'alice.w@example.com', phone: '6677889900', commissionRate: 5, status: 'Active', notificationPreference: 'SMS' },
 ];

@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2, Info } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { profiles, type Profile } from '@/lib/data';
 
@@ -32,6 +33,26 @@ const profileTypes: Profile['type'][] = ['Agent', 'Sub-Agent', 'Company', 'Sales
 
 export default function ProfilesPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [categoryRates, setCategoryRates] = React.useState<{ category: string; rate: string }[]>([]);
+
+  const handleAddRate = () => {
+    setCategoryRates([...categoryRates, { category: '', rate: '' }]);
+  };
+
+  const handleRemoveRate = (index: number) => {
+    setCategoryRates(rates => rates.filter((_, i) => i !== index));
+  };
+
+  const handleRateChange = (index: number, field: 'category' | 'rate', value: string) => {
+    const newRates = [...categoryRates];
+    newRates[index] = { ...newRates[index], [field]: value };
+    setCategoryRates(newRates);
+  };
+  
+  const closeDialog = () => {
+    setIsDialogOpen(false);
+    setCategoryRates([]);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +65,12 @@ export default function ProfilesPage() {
             ))}
           </TabsList>
           <div className="ml-auto flex items-center gap-2">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) {
+                setCategoryRates([]);
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button size="sm" className="h-8 gap-1 bg-accent hover:bg-accent/90">
                   <PlusCircle className="h-3.5 w-3.5" />
@@ -53,7 +79,7 @@ export default function ProfilesPage() {
                   </span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
                   <DialogTitle>Add New Profile</DialogTitle>
                   <DialogDescription>
@@ -81,13 +107,48 @@ export default function ProfilesPage() {
                     </Select>
                   </div>
                    <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="commission" className="text-right">Commission (%)</Label>
+                    <Label htmlFor="commission" className="text-right">Default Commission (%)</Label>
                     <Input id="commission" type="number" placeholder="10" className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4 pt-2">
+                    <Label className="text-right pt-2">
+                        Category Commissions
+                    </Label>
+                    <div className="col-span-3 space-y-2">
+                        <div className="space-y-2 rounded-md border p-3">
+                            {categoryRates.map((rate, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <Input 
+                                        placeholder="Category Name" 
+                                        value={rate.category} 
+                                        onChange={(e) => handleRateChange(index, 'category', e.target.value)}
+                                    />
+                                    <Input 
+                                        type="number" 
+                                        placeholder="Rate %" 
+                                        className="w-24" 
+                                        value={rate.rate}
+                                        onChange={(e) => handleRateChange(index, 'rate', e.target.value)} 
+                                    />
+                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveRate(index)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" className="h-8 gap-1" onClick={handleAddRate}>
+                                <PlusCircle className="h-3.5 w-3.5" />
+                                Add Rate
+                            </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Define specific rates for categories. The default rate is used if a category is not specified.
+                        </p>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" className="bg-primary hover:bg-primary/90" onClick={() => setIsDialogOpen(false)}>Create Profile</Button>
+                  <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                  <Button type="submit" className="bg-primary hover:bg-primary/90" onClick={closeDialog}>Create Profile</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -120,7 +181,34 @@ export default function ProfilesPage() {
                       <TableRow key={profile.id}>
                         <TableCell className="font-medium">{profile.name}</TableCell>
                         <TableCell>{profile.email}</TableCell>
-                        <TableCell>{profile.commissionRate}%</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span>{profile.commissionRate}%</span>
+                            {profile.categoryRates && profile.categoryRates.length > 0 && (
+                              <TooltipProvider>
+                                <Tooltip delayDuration={0}>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                                      <Info className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-sm">
+                                      <p className="font-semibold">Category Rates</p>
+                                      <ul className="mt-1 list-disc list-inside space-y-1">
+                                        {profile.categoryRates.map((rate, i) => (
+                                          <li key={i}>
+                                            <span className="font-medium">{rate.category}:</span> {rate.rate}%
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge variant={profile.status === 'Active' ? 'default' : 'secondary'} className={profile.status === 'Active' ? 'bg-green-600' : ''}>{profile.status}</Badge>
                         </TableCell>
