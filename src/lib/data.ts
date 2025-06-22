@@ -41,3 +41,36 @@ export const products: Product[] = [
   { id: 'prod-011', sku: 'BK-003', name: 'Diary of a Wimpy Kid', price: 12.00, category: 'Books', imageUrl: 'https://placehold.co/150x150.png', stock: 45 },
   { id: 'prod-012', sku: 'BK-004', name: 'Etched in Sand', price: 15.00, category: 'Books', imageUrl: 'https://placehold.co/150x150.png', stock: 35 },
 ];
+
+export type CommissionAgent = {
+  id: string;
+  name: string;
+  phone: string;
+  commission: {
+    overall: number;
+    categories?: { category: string; rate: number }[];
+  };
+};
+
+export const commissionAgents: CommissionAgent[] = [
+  {
+    id: 'agent-001',
+    name: 'John Doe',
+    phone: '123-456-7890',
+    commission: {
+      overall: 5,
+      categories: [
+        { category: 'Electronics', rate: 7 },
+        { category: 'Apparel', rate: 10 },
+      ],
+    },
+  },
+  {
+    id: 'agent-002',
+    name: 'Jane Smith',
+    phone: '098-765-4321',
+    commission: {
+      overall: 6,
+    },
+  },
+];
