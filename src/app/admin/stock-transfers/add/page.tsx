@@ -1,14 +1,18 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRightLeft, Search, Plus, Trash2, Info, Calendar } from "lucide-react";
+import { ArrowRightLeft, Search, Plus, Trash2, Info, Calendar as CalendarIcon } from "lucide-react";
 import { detailedProducts, type DetailedProduct } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type TransferItem = {
   product: DetailedProduct;
@@ -19,13 +23,7 @@ type TransferItem = {
 export default function AddStockTransferPage() {
     const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentDateTime, setCurrentDateTime] = useState('');
-
-    useEffect(() => {
-        const now = new Date();
-        const formatted = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        setCurrentDateTime(formatted);
-    }, []);
+    const [date, setDate] = useState<Date | undefined>(new Date());
     
     const searchResults = searchTerm
     ? detailedProducts.filter(p =>
@@ -73,10 +71,28 @@ export default function AddStockTransferPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                  <div className="space-y-2">
                     <Label htmlFor="date">Date *</Label>
-                     <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>{currentDateTime}</span>
-                    </div>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !date && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={setDate}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="reference-no">Reference No:</Label>
