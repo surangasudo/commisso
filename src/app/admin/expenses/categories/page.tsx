@@ -18,23 +18,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { expenseCategories as initialCategories, type ExpenseCategory } from '@/lib/data';
 
-type ExpenseCategory = {
-  id: string;
-  name: string;
-  code: string;
-  parentId?: string | null;
-};
-
-const initialCategories: ExpenseCategory[] = [
-  { id: 'cat-exp-1', name: 'Office Supplies', code: 'OS', parentId: null },
-  { id: 'cat-exp-2', name: 'Utilities', code: 'UTIL', parentId: null },
-  { id: 'cat-exp-6', name: 'Electricity Bill', code: 'ELEC', parentId: 'cat-exp-2' },
-  { id: 'cat-exp-7', name: 'Water Bill', code: 'WATR', parentId: 'cat-exp-2' },
-  { id: 'cat-exp-3', name: 'Marketing', code: 'MKTG', parentId: null },
-  { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M', parentId: null },
-  { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
-];
 
 export default function ExpenseCategoriesPage() {
   const [categories, setCategories] = useState(initialCategories);

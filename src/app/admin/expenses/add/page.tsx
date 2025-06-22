@@ -8,16 +8,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Info, Calendar, DollarSign, Wallet } from "lucide-react";
+import { expenseCategories, type ExpenseCategory, customers, suppliers } from '@/lib/data';
 
 export default function AddExpensePage() {
     const [currentDate, setCurrentDate] = useState('');
     const [isRecurring, setIsRecurring] = useState(false);
+    
+    const [totalAmount, setTotalAmount] = useState<number | string>('');
+    const [paidAmount, setPaidAmount] = useState<number | string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
+    const [subCategories, setSubCategories] = useState<ExpenseCategory[]>([]);
 
     useEffect(() => {
         const now = new Date();
         const formatted = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         setCurrentDate(formatted);
     }, []);
+
+    useEffect(() => {
+        if (selectedCategory) {
+            setSubCategories(expenseCategories.filter(c => c.parentId === selectedCategory));
+        } else {
+            setSubCategories([]);
+        }
+    }, [selectedCategory]);
+
+    const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setTotalAmount(value);
+        setPaidAmount(value);
+    };
+
+    const paymentDue = (Number(totalAmount) || 0) - (Number(paidAmount) || 0);
+    const allContacts = [...customers.map(c => ({id: `cus-${c.id}`, name: `${c.name} (Customer)`})), ...suppliers.map(s => ({id: `sup-${s.id}`, name: `${s.businessName} (Supplier)`}))];
+    const mainCategories = expenseCategories.filter(c => !c.parentId);
 
     return (
         <div className="flex flex-col gap-6">
@@ -39,11 +63,26 @@ export default function AddExpensePage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="expense-category">Expense Category:</Label>
-                                <Select><SelectTrigger id="expense-category"><SelectValue placeholder="Please Select" /></SelectTrigger></Select>
+                                <Select onValueChange={setSelectedCategory}>
+                                    <SelectTrigger id="expense-category"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="">None</SelectItem>
+                                        {mainCategories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="sub-category">Sub category:</Label>
-                                <Select><SelectTrigger id="sub-category"><SelectValue placeholder="Please Select" /></SelectTrigger></Select>
+                                <Select disabled={subCategories.length === 0}>
+                                    <SelectTrigger id="sub-category"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                     <SelectContent>
+                                        {subCategories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="reference-no">Reference No:</Label>
@@ -62,7 +101,14 @@ export default function AddExpensePage() {
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="expense-for-contact">Expense for contact:</Label>
-                                <Select><SelectTrigger id="expense-for-contact"><SelectValue placeholder="Please Select" /></SelectTrigger></Select>
+                                <Select>
+                                    <SelectTrigger id="expense-for-contact"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                     <SelectContent>
+                                        {allContacts.map(contact => (
+                                            <SelectItem key={contact.id} value={contact.id}>{contact.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="attach-document">Attach Document:</Label>
@@ -71,11 +117,24 @@ export default function AddExpensePage() {
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="applicable-tax" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
-                                <Select><SelectTrigger id="applicable-tax"><SelectValue placeholder="None" /></SelectTrigger></Select>
+                                <Select>
+                                    <SelectTrigger id="applicable-tax"><SelectValue placeholder="None" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="vat@10%">VAT@10%</SelectItem>
+                                        <SelectItem value="gst@5%">GST@5%</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="total-amount">Total amount:*</Label>
-                                <Input id="total-amount" type="number" placeholder="Total amount" />
+                                <Input 
+                                    id="total-amount" 
+                                    type="number" 
+                                    placeholder="Total amount"
+                                    value={totalAmount}
+                                    onChange={handleTotalAmountChange}
+                                />
                             </div>
                             <div className="space-y-2 md:col-span-full">
                                 <Label htmlFor="expense-note">Expense note:</Label>
@@ -127,7 +186,14 @@ export default function AddExpensePage() {
                                 <Label htmlFor="amount">Amount:*</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input id="amount" type="number" placeholder="0.00" className="pl-8" />
+                                    <Input 
+                                        id="amount" 
+                                        type="number" 
+                                        placeholder="0.00" 
+                                        className="pl-8" 
+                                        value={paidAmount}
+                                        onChange={(e) => setPaidAmount(e.target.value)}
+                                    />
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -157,7 +223,7 @@ export default function AddExpensePage() {
                                 <Textarea id="payment-note" />
                             </div>
                         </div>
-                        <div className="text-right font-semibold mt-4">Payment due: 0.00</div>
+                        <div className="text-right font-semibold mt-4">Payment due: ${paymentDue.toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-end">

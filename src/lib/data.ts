@@ -477,3 +477,20 @@ export const expenses: Expense[] = [
   { id: 'exp-3', date: '06/20/2025 15:00', referenceNo: 'EXP2025/0003', location: 'Awesome Shop', expenseCategory: 'Marketing', subCategory: 'Online Ads', paymentStatus: 'Due', tax: 0, totalAmount: 500.00, paymentDue: 500.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Facebook campaign' },
   { id: 'exp-4', date: '06/19/2025 09:00', referenceNo: 'EXP2025/0004', location: 'Awesome Shop', expenseCategory: 'Repairs', subCategory: 'AC Maintenance', paymentStatus: 'Paid', tax: 10.00, totalAmount: 110.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: null },
 ];
+
+export type ExpenseCategory = {
+  id: string;
+  name: string;
+  code: string;
+  parentId?: string | null;
+};
+
+export const expenseCategories: ExpenseCategory[] = [
+  { id: 'cat-exp-1', name: 'Office Supplies', code: 'OS', parentId: null },
+  { id: 'cat-exp-2', name: 'Utilities', code: 'UTIL', parentId: null },
+  { id: 'cat-exp-6', name: 'Electricity Bill', code: 'ELEC', parentId: 'cat-exp-2' },
+  { id: 'cat-exp-7', name: 'Water Bill', code: 'WATR', parentId: 'cat-exp-2' },
+  { id: 'cat-exp-3', name: 'Marketing', code: 'MKTG', parentId: null },
+  { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M', parentId: null },
+  { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
+];
