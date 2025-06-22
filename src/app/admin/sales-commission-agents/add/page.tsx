@@ -20,22 +20,42 @@ export default function AddSalesCommissionAgentPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold">Add Sales Commission Agent</h1>
+            <h1 className="font-headline text-3xl font-bold">Add Commission Profile</h1>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Agent Details</CardTitle>
+                            <CardTitle>Profile Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6 pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="agent-name">Agent Name *</Label>
-                                    <Input id="agent-name" placeholder="Enter agent's full name" />
+                                    <Label htmlFor="entity-type">Entity Type *</Label>
+                                    <Select>
+                                        <SelectTrigger id="entity-type">
+                                            <SelectValue placeholder="Select an entity type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="agent">Agent</SelectItem>
+                                            <SelectItem value="sub-agent">Sub-Agent</SelectItem>
+                                            <SelectItem value="company">Company</SelectItem>
+                                            <SelectItem value="salesperson">Salesperson</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="agent-name">Name *</Label>
+                                    <Input id="agent-name" placeholder="Enter entity's full name" />
+                                </div>
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="phone-number">Phone Number *</Label>
                                     <Input id="phone-number" placeholder="Enter phone number" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input id="email" type="email" placeholder="Enter email address" />
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -90,7 +110,7 @@ export default function AddSalesCommissionAgentPage() {
                         </CardContent>
                     </Card>
                     <div className="flex justify-end">
-                        <Button size="lg">Save Agent</Button>
+                        <Button size="lg">Save Profile</Button>
                     </div>
                 </div>
                 <div className="lg:col-span-1">
@@ -99,7 +119,8 @@ export default function AddSalesCommissionAgentPage() {
                             <CardTitle>Instructions</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6 text-sm text-muted-foreground space-y-4">
-                            <p>Fill in the agent's details and their commission structure.</p>
+                             <p>Create commission profiles for different entities like Agents, Companies, or Salespersons.</p>
+                            <p>Fill in the profile details and their commission structure.</p>
                             <p>The <span className="font-bold text-foreground">Overall Commission Rate</span> is the default percentage applied to all sales unless a more specific rate is defined for a product's category.</p>
                             <p><span className="font-bold text-foreground">Category-Specific Rates</span> allow you to set different commissions for items from different categories, offering more granular control.</p>
                         </CardContent>

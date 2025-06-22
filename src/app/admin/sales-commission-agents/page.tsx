@@ -29,18 +29,18 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { commissionAgents } from '@/lib/data';
+import { commissionProfiles } from '@/lib/data';
 
 export default function SalesCommissionAgentsPage() {
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <CardTitle>Sales Commission Agents</CardTitle>
+            <CardTitle>Commission Profiles</CardTitle>
             <Link href="/admin/sales-commission-agents/add">
               <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
                 <PlusCircle className="h-4 w-4" />
-                <span>Add</span>
+                <span>Add Profile</span>
               </Button>
             </Link>
         </div>
@@ -49,7 +49,7 @@ export default function SalesCommissionAgentsPage() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
           <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search agents..." className="pl-8 w-full sm:w-auto h-9" />
+              <Input placeholder="Search profiles..." className="pl-8 w-full sm:w-auto h-9" />
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export</span></Button>
@@ -61,20 +61,22 @@ export default function SalesCommissionAgentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Entity Type</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Commission Rate</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {commissionAgents.map((agent) => (
-                <TableRow key={agent.id}>
-                  <TableCell className="font-medium">{agent.name}</TableCell>
-                  <TableCell>{agent.phone}</TableCell>
+              {commissionProfiles.map((profile) => (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                  <TableCell>{profile.phone}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 items-center">
-                        <Badge variant="secondary">Overall: {agent.commission.overall}%</Badge>
-                        {agent.commission.categories?.map(c => (
+                        <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>
+                        {profile.commission.categories?.map(c => (
                             <Badge key={c.category} variant="outline">{c.category}: {c.rate}%</Badge>
                         ))}
                     </div>
@@ -100,7 +102,7 @@ export default function SalesCommissionAgentsPage() {
       </CardContent>
       <CardFooter className="py-4">
         <div className="text-xs text-muted-foreground">
-          Showing <strong>1 to 2</strong> of <strong>2</strong> entries
+          Showing <strong>1 to 4</strong> of <strong>4</strong> entries
         </div>
       </CardFooter>
     </Card>
