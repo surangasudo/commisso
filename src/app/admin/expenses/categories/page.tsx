@@ -8,6 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Folder, Plus, Pencil, Trash2 } from "lucide-react";
 import React, { useState } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ExpenseCategory = {
   id: string;
@@ -41,6 +51,10 @@ export default function ExpenseCategoriesPage() {
   const [editedCategoryName, setEditedCategoryName] = useState('');
   const [editedCategoryCode, setEditedCategoryCode] = useState('');
   const [editedParentCategoryId, setEditedParentCategoryId] = useState<string | undefined>(undefined);
+
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<ExpenseCategory | null>(null);
 
 
   const handleAddCategory = () => {
@@ -80,8 +94,17 @@ export default function ExpenseCategoriesPage() {
     }
   };
 
-  const handleDeleteCategory = (id: string) => {
-    setCategories(categories.filter(c => c.id !== id && c.parentId !== id));
+  const handleDeleteClick = (category: ExpenseCategory) => {
+    setCategoryToDelete(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (categoryToDelete) {
+      setCategories(categories.filter(c => c.id !== categoryToDelete.id && c.parentId !== categoryToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    }
   };
 
   const getCategoryName = (id: string | null | undefined) => {
@@ -90,170 +113,189 @@ export default function ExpenseCategoriesPage() {
   }
   
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-        <Folder className="w-8 h-8" />
-        Expense Categories
-      </h1>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <CardTitle>All Expense Categories</CardTitle>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
-                    <Plus className="h-4 w-4" />
-                    <span>Add</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                      <DialogTitle>Add Expense Category</DialogTitle>
-                      <DialogDescription>
-                        Create a new category for your expenses.
-                      </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                          <Label htmlFor="category-name">Category Name *</Label>
-                          <Input 
-                            id="category-name" 
-                            placeholder="Category Name" 
-                            required 
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                          />
-                      </div>
-                      <div className="space-y-2">
-                          <Label htmlFor="category-code">Category Code</Label>
-                          <Input 
-                            id="category-code" 
-                            placeholder="Unique category code" 
-                            value={newCategoryCode}
-                            onChange={(e) => setNewCategoryCode(e.target.value)}
-                          />
-                      </div>
-                      <div className="space-y-2">
-                          <Label htmlFor="parent-category">Add as sub-category</Label>
-                           <Select value={newParentCategoryId || 'none'} onValueChange={(value) => setNewParentCategoryId(value === 'none' ? undefined : value)}>
-                                <SelectTrigger id="parent-category">
-                                    <SelectValue placeholder="Select parent category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    {categories.filter(c => !c.parentId).map(cat => (
-                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                      </div>
-                  </div>
-                  <DialogFooter>
-                      <Button onClick={handleAddCategory}>Save</Button>
-                      <Button variant="secondary" onClick={() => setIsAddDialogOpen(false)}>Close</Button>
-                  </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-          <CardDescription className="pt-2">
-            Manage categories for your business expenses.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Category Name</TableHead>
-                  <TableHead>Category Code</TableHead>
-                  <TableHead>Parent Category</TableHead>
-                  <TableHead className="w-[180px]">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">{category.name}</TableCell>
-                    <TableCell>{category.code}</TableCell>
-                    <TableCell>{getCategoryName(category.parentId)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(category)}>
-                          <Pencil className="mr-1 h-3 w-3" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteCategory(category.id)}>
-                          <Trash2 className="mr-1 h-3 w-3" /> Delete
-                        </Button>
-                      </div>
-                    </TableCell>
+    <>
+      <div className="flex flex-col gap-6">
+        <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+          <Folder className="w-8 h-8" />
+          Expense Categories
+        </h1>
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <CardTitle>All Expense Categories</CardTitle>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
+                      <Plus className="h-4 w-4" />
+                      <span>Add</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Add Expense Category</DialogTitle>
+                        <DialogDescription>
+                          Create a new category for your expenses.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="category-name">Category Name *</Label>
+                            <Input 
+                              id="category-name" 
+                              placeholder="Category Name" 
+                              required 
+                              value={newCategoryName}
+                              onChange={(e) => setNewCategoryName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="category-code">Category Code</Label>
+                            <Input 
+                              id="category-code" 
+                              placeholder="Unique category code" 
+                              value={newCategoryCode}
+                              onChange={(e) => setNewCategoryCode(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="parent-category">Add as sub-category</Label>
+                            <Select value={newParentCategoryId || 'none'} onValueChange={(value) => setNewParentCategoryId(value === 'none' ? undefined : value)}>
+                                  <SelectTrigger id="parent-category">
+                                      <SelectValue placeholder="Select parent category" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      {categories.filter(c => !c.parentId).map(cat => (
+                                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleAddCategory}>Save</Button>
+                        <Button variant="secondary" onClick={() => setIsAddDialogOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <CardDescription className="pt-2">
+              Manage categories for your business expenses.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category Name</TableHead>
+                    <TableHead>Category Code</TableHead>
+                    <TableHead>Parent Category</TableHead>
+                    <TableHead className="w-[180px]">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter>
-            <div className="text-xs text-muted-foreground">
-                Showing <strong>1 to {categories.length}</strong> of <strong>{categories.length}</strong> entries
+                </TableHeader>
+                <TableBody>
+                  {categories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell>{category.code}</TableCell>
+                      <TableCell>{getCategoryName(category.parentId)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(category)}>
+                            <Pencil className="mr-1 h-3 w-3" /> Edit
+                          </Button>
+                          <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(category)}>
+                            <Trash2 className="mr-1 h-3 w-3" /> Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
-        </CardFooter>
-      </Card>
-      
-      {/* Edit Dialog */}
-       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle>Edit Expense Category</DialogTitle>
-                <DialogDescription>
-                  Update the details for this expense category.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                    <Label htmlFor="edit-category-name">Category Name *</Label>
-                    <Input 
-                      id="edit-category-name" 
-                      placeholder="Category Name" 
-                      required 
-                      value={editedCategoryName}
-                      onChange={(e) => setEditedCategoryName(e.target.value)}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="edit-category-code">Category Code</Label>
-                    <Input 
-                      id="edit-category-code" 
-                      placeholder="Unique category code" 
-                      value={editedCategoryCode}
-                      onChange={(e) => setEditedCategoryCode(e.target.value)}
-                    />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="edit-parent-category">Add as sub-category</Label>
-                    <Select value={editedParentCategoryId || 'none'} onValueChange={(value) => setEditedParentCategoryId(value === 'none' ? undefined : value)}>
-                        <SelectTrigger id="edit-parent-category">
-                            <SelectValue placeholder="Select parent category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                             <SelectItem value="none">None</SelectItem>
-                            {categories
-                                .filter(cat => cat.id !== editingCategory?.id && !cat.parentId)
-                                .map(cat => (
-                                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <DialogFooter>
-                <Button onClick={handleUpdateCategory}>Save Changes</Button>
-                <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>Close</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <div className="text-center text-xs text-slate-400 p-1">
-        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+          </CardContent>
+          <CardFooter>
+              <div className="text-xs text-muted-foreground">
+                  Showing <strong>1 to {categories.length}</strong> of <strong>{categories.length}</strong> entries
+              </div>
+          </CardFooter>
+        </Card>
+        
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                  <DialogTitle>Edit Expense Category</DialogTitle>
+                  <DialogDescription>
+                    Update the details for this expense category.
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-category-name">Category Name *</Label>
+                      <Input 
+                        id="edit-category-name" 
+                        placeholder="Category Name" 
+                        required 
+                        value={editedCategoryName}
+                        onChange={(e) => setEditedCategoryName(e.target.value)}
+                      />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-category-code">Category Code</Label>
+                      <Input 
+                        id="edit-category-code" 
+                        placeholder="Unique category code" 
+                        value={editedCategoryCode}
+                        onChange={(e) => setEditedCategoryCode(e.target.value)}
+                      />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-parent-category">Add as sub-category</Label>
+                      <Select value={editedParentCategoryId || 'none'} onValueChange={(value) => setEditedParentCategoryId(value === 'none' ? undefined : value)}>
+                          <SelectTrigger id="edit-parent-category">
+                              <SelectValue placeholder="Select parent category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              {categories
+                                  .filter(cat => cat.id !== editingCategory?.id && !cat.parentId)
+                                  .map(cat => (
+                                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
+              <DialogFooter>
+                  <Button onClick={handleUpdateCategory}>Save Changes</Button>
+                  <Button variant="secondary" onClick={() => setIsEditDialogOpen(false)}>Close</Button>
+              </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        <div className="text-center text-xs text-slate-400 p-1">
+          Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+        </div>
       </div>
-    </div>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the category
+              "{categoryToDelete?.name}" and all its sub-categories.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCategoryToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
