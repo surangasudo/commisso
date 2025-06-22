@@ -141,7 +141,29 @@ const sidebarNav = [
         ]
     },
     { href: "#", icon: Landmark, label: "Payment Accounts" },
-    { href: "/admin/reports", icon: FileText, label: "Reports" },
+    { 
+        label: "Reports", 
+        icon: FileText,
+        children: [
+            { href: "/admin/reports/profit-loss", label: "Profit / Loss Report" },
+            { href: "/admin/reports/purchase-sale", label: "Purchase & Sale" },
+            { href: "/admin/reports/tax", label: "Tax Report" },
+            { href: "/admin/reports/supplier-customer", label: "Supplier & Customer Report" },
+            { href: "/admin/reports/customer-groups", label: "Customer Groups Report" },
+            { href: "/admin/reports/stock", label: "Stock Report" },
+            { href: "/admin/reports/stock-adjustment", label: "Stock Adjustment Report" },
+            { href: "/admin/reports/trending-products", label: "Trending Products" },
+            { href: "/admin/reports/items", label: "Items Report" },
+            { href: "/admin/reports/product-purchase", label: "Product Purchase Report" },
+            { href: "/admin/reports/product-sell", label: "Product Sell Report" },
+            { href: "/admin/reports/purchase-payment", label: "Purchase Payment Report" },
+            { href: "/admin/reports/sell-payment", label: "Sell Payment Report" },
+            { href: "/admin/reports/expense", label: "Expense Report" },
+            { href: "/admin/reports/register", label: "Register Report" },
+            { href: "/admin/reports/sales-representative", label: "Sales Representative Report" },
+            { href: "/admin/reports/activity-log", label: "Activity Log" },
+        ]
+    },
     { href: "#", icon: Mail, label: "Notification Templates" },
 ];
 
