@@ -1,13 +1,18 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Printer } from 'lucide-react';
+import { FileText, Printer, Calendar as CalendarIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { DateRange } from 'react-day-picker';
+import { format, addDays } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const profitData = {
   openingStockPurchase: 0.00,
@@ -54,6 +59,11 @@ const ReportItem = ({ label, value, note }: { label: string; value: string; note
 );
 
 export default function ProfitLossReportPage() {
+    const [date, setDate] = useState<DateRange | undefined>({
+      from: new Date(2025, 0, 20),
+      to: addDays(new Date(2025, 0, 20), 20),
+    })
+
     return (
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
@@ -70,7 +80,42 @@ export default function ProfitLossReportPage() {
                             <SelectItem value="all">All locations</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button variant="outline">Filter by date</Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                id="date"
+                                variant={"outline"}
+                                className={cn(
+                                    "w-[260px] justify-start text-left font-normal",
+                                    !date && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {date?.from ? (
+                                    date.to ? (
+                                        <>
+                                            {format(date.from, "LLL dd, y")} -{" "}
+                                            {format(date.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(date.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={date?.from}
+                                selected={date}
+                                onSelect={setDate}
+                                numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
             </div>
 
