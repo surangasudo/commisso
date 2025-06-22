@@ -367,3 +367,20 @@ export const sales: Sale[] = [
     { id: 'sale-3', date: '06/20/2025 21:00', invoiceNo: 'AS0002', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 825.00, totalPaid: 825.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
     { id: 'sale-4', date: '06/20/2025 21:00', invoiceNo: 'AS0003', customerName: 'Harry', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 7700.00, totalPaid: 7700.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: null, totalItems: 2.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: null },
 ];
+
+export type Draft = {
+    id: string;
+    date: string;
+    draftNo: string;
+    customerName: string;
+    location: string;
+    totalAmount: number;
+    totalItems: number;
+    addedBy: string;
+};
+
+export const drafts: Draft[] = [
+    { id: 'draft-1', date: '06/22/2025 14:00', draftNo: 'DRFT0001', customerName: 'John Doe', location: 'Awesome Shop', totalAmount: 350.00, totalItems: 1, addedBy: 'Mr Admin' },
+    { id: 'draft-2', date: '06/21/2025 11:30', draftNo: 'DRFT0002', customerName: 'Jane Smith', location: 'Awesome Shop', totalAmount: 1200.50, totalItems: 3, addedBy: 'Mr Admin' },
+    { id: 'draft-3', date: '06/20/2025 09:00', draftNo: 'DRFT0003', customerName: 'Walk-In Customer', location: 'Awesome Shop', totalAmount: 85.00, totalItems: 2, addedBy: 'Cashier' },
+];
