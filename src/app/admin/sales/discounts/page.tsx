@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search, X, Calendar as CalendarIcon } from "lucide-react";
@@ -123,6 +123,9 @@ export default function DiscountsPage() {
               <DialogContent className="sm:max-w-3xl">
                   <DialogHeader>
                       <DialogTitle>Add Discount</DialogTitle>
+                      <DialogDescription>
+                        Create a new discount for your products. Fill in the details below.
+                      </DialogDescription>
                   </DialogHeader>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                     <div className="space-y-2">
