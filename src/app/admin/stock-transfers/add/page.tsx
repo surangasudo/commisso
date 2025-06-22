@@ -24,6 +24,7 @@ export default function AddStockTransferPage() {
     const [transferItems, setTransferItems] = useState<TransferItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
+    const [shippingCharges, setShippingCharges] = useState(0);
     
     const searchResults = searchTerm
     ? detailedProducts.filter(p =>
@@ -58,6 +59,7 @@ export default function AddStockTransferPage() {
     }
 
     const totalAmount = transferItems.reduce((acc, item) => acc + calculateSubtotal(item), 0);
+    const finalTotal = totalAmount + shippingCharges;
   
   return (
     <div className="flex flex-col gap-6">
@@ -240,7 +242,12 @@ export default function AddStockTransferPage() {
             <div className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="shipping-charges">Shipping Charges:</Label>
-                    <Input id="shipping-charges" defaultValue="0" />
+                    <Input 
+                        id="shipping-charges" 
+                        type="number"
+                        value={shippingCharges}
+                        onChange={(e) => setShippingCharges(Number(e.target.value) || 0)}
+                    />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="additional-notes">Additional Notes:</Label>
@@ -249,7 +256,7 @@ export default function AddStockTransferPage() {
             </div>
             <div className="text-right">
                 <p className="text-muted-foreground">Total Amount:</p>
-                <p className="text-2xl font-bold">${totalAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${finalTotal.toFixed(2)}</p>
             </div>
         </CardContent>
       </Card>
