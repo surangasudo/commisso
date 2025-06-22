@@ -6,17 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search } from "lucide-react";
+import { BadgePercent, Plus, Pencil, Trash2, ArrowUpDown, Info, Search, X } from "lucide-react";
 import React, { useState, useEffect } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { discounts as initialDiscounts, type Discount } from '@/lib/data';
+import { discounts as initialDiscounts, detailedProducts, type Discount } from '@/lib/data';
+import { Badge } from "@/components/ui/badge";
 
 type DiscountType = 'Fixed' | 'Percentage';
 
 const initialNewDiscountState = {
   name: '',
-  products: '',
   brand: '',
   category: '',
   location: 'awesome-shop',
@@ -32,21 +32,43 @@ export default function DiscountsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newDiscount, setNewDiscount] = useState(initialNewDiscountState);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
+  const [productSearchTerm, setProductSearchTerm] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   useEffect(() => {
     if (isAddDialogOpen) {
         const now = new Date();
         const formattedDateTime = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         setNewDiscount(d => ({ ...initialNewDiscountState, startsAt: formattedDateTime, discountType: 'Percentage' }));
+        setSelectedProducts([]);
+        setProductSearchTerm('');
     }
   }, [isAddDialogOpen]);
 
+  const searchResults = productSearchTerm
+    ? detailedProducts.filter(p =>
+        p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+        p.sku.toLowerCase().includes(productSearchTerm.toLowerCase())
+      ).slice(0, 5) // Limit results
+    : [];
+
+  const handleSelectProduct = (productName: string) => {
+    if (!selectedProducts.includes(productName)) {
+      setSelectedProducts([...selectedProducts, productName]);
+    }
+    setProductSearchTerm('');
+  };
+
+  const handleRemoveProduct = (productName: string) => {
+    setSelectedProducts(selectedProducts.filter(p => p !== productName));
+  };
+  
   const handleAddDiscount = () => {
     if (newDiscount.name.trim() && newDiscount.location && newDiscount.discountType && newDiscount.discountAmount) {
       const discountToAdd: Discount = {
         id: `disc-${Date.now()}`,
         name: newDiscount.name,
-        products: newDiscount.products.split(',').map(p => p.trim()).filter(Boolean),
+        products: selectedProducts,
         brand: newDiscount.brand,
         category: newDiscount.category,
         location: newDiscount.location,
@@ -101,7 +123,38 @@ export default function DiscountsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="products">Products:</Label>
-                      <Input id="products" placeholder="Search products..." value={newDiscount.products} onChange={(e) => handleInputChange('products', e.target.value)}/>
+                       <div className="relative">
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {selectedProducts.map(product => (
+                            <Badge key={product} variant="secondary">
+                              {product}
+                              <button onClick={() => handleRemoveProduct(product)} className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <Input 
+                          id="products" 
+                          placeholder="Search products to add..." 
+                          value={productSearchTerm}
+                          onChange={(e) => setProductSearchTerm(e.target.value)}
+                        />
+                        {searchResults.length > 0 && (
+                          <div className="absolute z-10 w-full bg-card border rounded-md shadow-lg mt-1">
+                            {searchResults.map(product => (
+                              <div 
+                                key={product.id} 
+                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
+                                onClick={() => handleSelectProduct(product.name)}
+                              >
+                                <span>{product.name} ({product.sku})</span>
+                                <Plus className="h-4 w-4" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="brand">Brand:</Label>
