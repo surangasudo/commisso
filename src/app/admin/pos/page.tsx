@@ -165,40 +165,7 @@ export default function PosPage() {
       {/* Main Content */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-8 gap-4 p-4 overflow-hidden">
         
-        {/* Left Side: Product Selection */}
-        <div className="lg:col-span-5 flex flex-col gap-2">
-           <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => setActiveFilter('category')} className={cn("text-lg py-6", activeFilter === 'category' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><LayoutGrid className="mr-2"/> Category</Button>
-              <Button onClick={() => setActiveFilter('brands')} className={cn("text-lg py-6", activeFilter === 'brands' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><Copyright className="mr-2"/> Brands</Button>
-           </div>
-           <Card className="flex-1 bg-white p-2">
-            <ScrollArea className="h-full">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-                    {filteredProducts.map(product => (
-                        <Card key={product.id} className="cursor-pointer group overflow-hidden" onClick={() => addToCart(product)}>
-                            <div className="relative aspect-square bg-slate-50">
-                                <Image
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    fill
-                                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                                    data-ai-hint={productHints[product.id] || 'product item'}
-                                />
-                            </div>
-                            <div className="p-2 text-center bg-white">
-                                <p className="text-xs font-semibold truncate">{product.name}</p>
-                                <p className="text-xs text-slate-500">({product.sku})</p>
-                                <p className="text-sm font-bold text-indigo-600">${product.price.toFixed(2)}</p>
-                                <p className="text-xs text-green-600">{product.stock} Pc(s) in stock</p>
-                            </div>
-                        </Card>
-                    ))}
-                </div>
-            </ScrollArea>
-           </Card>
-        </div>
-        
-        {/* Right Side: Cart */}
+        {/* Left Side: Cart */}
         <div className="lg:col-span-3 flex flex-col gap-2">
             <Card className="p-3 bg-white">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -266,6 +233,39 @@ export default function PosPage() {
                      <div className="flex justify-between items-center text-slate-600"><span>Shipping (+): <Info className="w-3 h-3 inline"/> <Edit2 className="w-3 h-3 inline cursor-pointer"/></span> <span>$0.00</span></div>
                 </div>
             </Card>
+        </div>
+        
+        {/* Right Side: Product Selection */}
+        <div className="lg:col-span-5 flex flex-col gap-2">
+           <div className="grid grid-cols-2 gap-2">
+              <Button onClick={() => setActiveFilter('category')} className={cn("text-lg py-6", activeFilter === 'category' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><LayoutGrid className="mr-2"/> Category</Button>
+              <Button onClick={() => setActiveFilter('brands')} className={cn("text-lg py-6", activeFilter === 'brands' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><Copyright className="mr-2"/> Brands</Button>
+           </div>
+           <Card className="flex-1 bg-white p-2">
+            <ScrollArea className="h-full">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
+                    {filteredProducts.map(product => (
+                        <Card key={product.id} className="cursor-pointer group overflow-hidden" onClick={() => addToCart(product)}>
+                            <div className="relative aspect-square bg-slate-50">
+                                <Image
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    fill
+                                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                                    data-ai-hint={productHints[product.id] || 'product item'}
+                                />
+                            </div>
+                            <div className="p-2 text-center bg-white">
+                                <p className="text-xs font-semibold truncate">{product.name}</p>
+                                <p className="text-xs text-slate-500">({product.sku})</p>
+                                <p className="text-sm font-bold text-indigo-600">${product.price.toFixed(2)}</p>
+                                <p className="text-xs text-green-600">{product.stock} Pc(s) in stock</p>
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            </ScrollArea>
+           </Card>
         </div>
       </div>
 
