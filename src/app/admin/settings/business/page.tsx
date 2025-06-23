@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import {
@@ -625,6 +626,72 @@ const ProductSettingsForm = () => {
     )
 };
 
+const ContactSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        defaultCreditLimit: '1000',
+        contactIdPrefix: 'CN',
+        defaultPayTermValue: '30',
+        defaultPayTermUnit: 'days',
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating contact settings:', settings);
+        toast({
+            title: 'Contact Settings Updated',
+            description: 'Your contact settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Contact Settings</CardTitle>
+                <CardDescription>Manage default settings for suppliers and customers.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultCreditLimit">Default credit limit:</Label>
+                        <Input id="defaultCreditLimit" type="number" value={settings.defaultCreditLimit} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="contactIdPrefix">Contact ID Prefix:</Label>
+                        <Input id="contactIdPrefix" value={settings.contactIdPrefix} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultPayTermValue">Default Pay Term:</Label>
+                        <div className="flex gap-2">
+                             <Input id="defaultPayTermValue" type="number" value={settings.defaultPayTermValue} onChange={handleInputChange} />
+                             <Select value={settings.defaultPayTermUnit} onValueChange={(value) => handleSelectChange('defaultPayTermUnit', value)}>
+                                <SelectTrigger className="w-[150px]">
+                                    <SelectValue/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="days">Days</SelectItem>
+                                    <SelectItem value="months">Months</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -650,7 +717,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="product" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="contact" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -673,7 +740,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="product">
                             <ProductSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product'].includes(t.value)).map(tab => (
+                         <TabsContent value="contact">
+                            <ContactSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
