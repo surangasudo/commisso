@@ -1,3 +1,4 @@
+
 export type User = {
   id: string;
   username: string;
@@ -531,7 +532,8 @@ export const profitData = {
   hmsTotal: 0.00,
 };
 
-export const productProfitData = [
+export type ProductProfit = { product: string; profit: number; };
+export const productProfitData: ProductProfit[] = [
     { product: 'Barilla Pasta (AS0028)', profit: 0.00 },
     { product: 'Butter Cookies (AS0027)', profit: 0.00 },
     { product: "Levi's Men's Slimmy Fit Jeans - Waist Size - 28 (AS0002-1)", profit: 0.00 },
@@ -539,14 +541,16 @@ export const productProfitData = [
     { product: 'Pair Of Dumbbells (AS0021)', profit: 0.00 },
 ];
 
-export const categoryProfitData = [
+export type CategoryProfit = { category: string; profit: number; };
+export const categoryProfitData: CategoryProfit[] = [
     { category: 'Accessories -- Shoes', profit: 588.50 },
     { category: 'Food & Grocery', profit: 475.00 },
     { category: 'Sports -- Exercise & Fitness', profit: 125.00 },
     { category: 'Uncategorized', profit: 0.00 },
 ];
 
-export const brandProfitData = [
+export type BrandProfit = { brand: string; profit: number; };
+export const brandProfitData: BrandProfit[] = [
     { brand: 'Nike', profit: 300.00 },
     { brand: 'Puma', profit: 250.50 },
     { brand: 'Oreo', profit: 75.00 },
@@ -554,29 +558,34 @@ export const brandProfitData = [
     { brand: 'Unbranded', profit: 0.00 },
 ];
 
-export const locationProfitData = [
+export type LocationProfit = { location: string; profit: number; };
+export const locationProfitData: LocationProfit[] = [
     { location: 'Awesome Shop', profit: 1182.00 },
 ];
 
-export const invoiceProfitData = [
+export type InvoiceProfit = { invoiceNo: string; customer: string; profit: number; };
+export const invoiceProfitData: InvoiceProfit[] = [
     { invoiceNo: 'AS0004', customer: 'Walk-In Customer', profit: 75.00 },
     { invoiceNo: 'AS0005', customer: 'Walk-In Customer', profit: 41.25 },
     { invoiceNo: 'AS0002', customer: 'Walk-In Customer', profit: 82.50 },
     { invoiceNo: 'AS0003', customer: 'Harry', profit: 770.00 },
 ];
 
-export const dateProfitData = [
+export type DateProfit = { date: string; profit: number; };
+export const dateProfitData: DateProfit[] = [
     { date: '06/22/2025', profit: 825.00 },
     { date: '06/21/2025', profit: 0.00 },
     { date: '06/20/2025', profit: 8112.50 },
 ];
 
-export const customerProfitData = [
+export type CustomerProfit = { customer: string; profit: number; };
+export const customerProfitData: CustomerProfit[] = [
     { customer: 'Walk-In Customer', profit: 198.75 },
     { customer: 'Harry', profit: 770.00 },
 ];
 
-export const dayProfitData = [
+export type DayProfit = { day: string; profit: number; };
+export const dayProfitData: DayProfit[] = [
     { day: 'Sunday', profit: 1500.00 },
     { day: 'Monday', profit: 2200.00 },
     { day: 'Tuesday', profit: 1800.00 },
@@ -586,17 +595,20 @@ export const dayProfitData = [
     { day: 'Saturday', profit: 5500.00 },
 ];
 
-export const serviceStaffProfitData = [
+export type ServiceStaffProfit = { staffName: string; profit: number; };
+export const serviceStaffProfitData: ServiceStaffProfit[] = [
     { staffName: 'Mr Admin', profit: 5500.00 },
     { staffName: 'Mr Demo Cashier', profit: 3250.75 },
 ];
 
-export const agentProfitData = [
+export type AgentProfit = { agentName: string; profit: number; };
+export const agentProfitData: AgentProfit[] = [
     { agentName: 'John Doe', profit: 4500.00 },
     { agentName: 'Alex Ray', profit: 2800.50 },
 ];
 
-export const subAgentProfitData = [
+export type SubAgentProfit = { subAgentName: string; profit: number; };
+export const subAgentProfitData: SubAgentProfit[] = [
     { subAgentName: 'Jane Smith', profit: 1850.50 },
     { subAgentName: 'Peter Jones', profit: 975.00 },
 ];
