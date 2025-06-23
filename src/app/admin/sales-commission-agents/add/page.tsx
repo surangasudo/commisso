@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, PlusCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { detailedProducts } from '@/lib/data';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function AddSalesCommissionAgentPage() {
     const [agentName, setAgentName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
+    const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
     
@@ -54,6 +56,7 @@ export default function AddSalesCommissionAgentPage() {
             entityType: entityType,
             phone: phoneNumber,
             email: email,
+            bankDetails: bankDetails,
             commission: {
                 overall: parseFloat(overallCommission),
                 categories: categoryCommissions
@@ -115,6 +118,10 @@ export default function AddSalesCommissionAgentPage() {
                                     <Label htmlFor="email">Email</Label>
                                     <Input id="email" type="email" placeholder="Enter email address" value={email} onChange={(e) => setEmail(e.target.value)} />
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="bank-details">Bank Details</Label>
+                                <Textarea id="bank-details" placeholder="Enter bank account details" value={bankDetails} onChange={(e) => setBankDetails(e.target.value)} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="overall-commission">Overall Commission Rate (%) *</Label>

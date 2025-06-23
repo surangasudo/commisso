@@ -63,6 +63,7 @@ export default function SalesCommissionAgentsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Entity Type</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Bank Details</TableHead>
                 <TableHead>Commission Rate</TableHead>
                 <TableHead>Action</TableHead>
               </TableRow>
@@ -73,6 +74,7 @@ export default function SalesCommissionAgentsPage() {
                   <TableCell className="font-medium">{profile.name}</TableCell>
                   <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
                   <TableCell>{profile.phone}</TableCell>
+                  <TableCell>{profile.bankDetails || 'N/A'}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1 items-center">
                         <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>

@@ -48,6 +48,7 @@ export type CommissionProfile = {
   name: string;
   entityType: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
   phone: string;
+  bankDetails?: string;
   commission: {
     overall: number;
     categories?: { category: string; rate: number }[];
@@ -60,6 +61,7 @@ export const commissionProfiles: CommissionProfile[] = [
     name: 'John Doe',
     entityType: 'Agent',
     phone: '123-456-7890',
+    bankDetails: 'Bank of America - 1234567890',
     commission: {
       overall: 5,
       categories: [
@@ -73,6 +75,7 @@ export const commissionProfiles: CommissionProfile[] = [
     name: 'Jane Smith',
     entityType: 'Sub-Agent',
     phone: '098-765-4321',
+    bankDetails: 'Chase Bank - 0987654321',
     commission: {
       overall: 6,
     },
@@ -94,6 +97,7 @@ export const commissionProfiles: CommissionProfile[] = [
     name: 'Alex Ray',
     entityType: 'Salesperson',
     phone: '555-333-4444',
+    bankDetails: 'Wells Fargo - 5555555555',
     commission: {
       overall: 4,
     },
