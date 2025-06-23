@@ -135,18 +135,47 @@ const BusinessSettingsForm = () => {
                                 <SelectValue/>
                             </div>
                         </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="usd">America - Dollars (USD)</SelectItem>
-                            <SelectItem value="eur">Europe - Euro (EUR)</SelectItem>
-                            <SelectItem value="gbp">United Kingdom - Pounds (GBP)</SelectItem>
-                            <SelectItem value="jpy">Japan - Yen (JPY)</SelectItem>
-                            <SelectItem value="inr">India - Rupees (INR)</SelectItem>
-                            <SelectItem value="cad">Canada - Dollar (CAD)</SelectItem>
-                            <SelectItem value="aud">Australia - Dollar (AUD)</SelectItem>
-                            <SelectItem value="chf">Switzerland - Franc (CHF)</SelectItem>
-                            <SelectItem value="cny">China - Yuan (CNY)</SelectItem>
-                            <SelectItem value="brl">Brazil - Real (BRL)</SelectItem>
-                            <SelectItem value="zar">South Africa - Rand (ZAR)</SelectItem>
+                        <SelectContent className="max-h-60">
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">North America</Label>
+                                <SelectItem value="usd">United States Dollar (USD)</SelectItem>
+                                <SelectItem value="cad">Canadian Dollar (CAD)</SelectItem>
+                                <SelectItem value="mxn">Mexican Peso (MXN)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Europe</Label>
+                                <SelectItem value="eur">Euro (EUR)</SelectItem>
+                                <SelectItem value="gbp">British Pound (GBP)</SelectItem>
+                                <SelectItem value="chf">Swiss Franc (CHF)</SelectItem>
+                                <SelectItem value="sek">Swedish Krona (SEK)</SelectItem>
+                                <SelectItem value="nok">Norwegian Krone (NOK)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Asia</Label>
+                                <SelectItem value="jpy">Japanese Yen (JPY)</SelectItem>
+                                <SelectItem value="cny">Chinese Yuan (CNY)</SelectItem>
+                                <SelectItem value="inr">Indian Rupee (INR)</SelectItem>
+                                <SelectItem value="sgd">Singapore Dollar (SGD)</SelectItem>
+                                <SelectItem value="hkd">Hong Kong Dollar (HKD)</SelectItem>
+                                <SelectItem value="krw">South Korean Won (KRW)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Oceania</Label>
+                                <SelectItem value="aud">Australian Dollar (AUD)</SelectItem>
+                                <SelectItem value="nzd">New Zealand Dollar (NZD)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">South America</Label>
+                                <SelectItem value="brl">Brazilian Real (BRL)</SelectItem>
+                                <SelectItem value="ars">Argentine Peso (ARS)</SelectItem>
+                                <SelectItem value="clp">Chilean Peso (CLP)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Africa</Label>
+                                <SelectItem value="zar">South African Rand (ZAR)</SelectItem>
+                                <SelectItem value="ngn">Nigerian Naira (NGN)</SelectItem>
+                                <SelectItem value="kes">Kenyan Shilling (KES)</SelectItem>
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>
@@ -175,10 +204,17 @@ const BusinessSettingsForm = () => {
                                 <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
                                 <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
                                 <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
-                                <SelectItem value="America/Phoenix">America/Phoenix</SelectItem>
+                                <SelectItem value="America/Phoenix">America/Phoenix (MST)</SelectItem>
                                 <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
                                 <SelectItem value="America/Anchorage">America/Anchorage (AKST)</SelectItem>
-                                <SelectItem value="Pacific/Honolulu">Pacific/Honolulu (HST)</SelectItem>
+                                <SelectItem value="America/Adak">America/Adak (HST)</SelectItem>
+                                <SelectItem value="America/Toronto">America/Toronto</SelectItem>
+                                <SelectItem value="America/Vancouver">America/Vancouver</SelectItem>
+                                <SelectItem value="America/Mexico_City">America/Mexico_City</SelectItem>
+                                <SelectItem value="America/Bogota">America/Bogota</SelectItem>
+                                <SelectItem value="America/Lima">America/Lima</SelectItem>
+                                <SelectItem value="America/Buenos_Aires">America/Buenos_Aires</SelectItem>
+                                <SelectItem value="America/Sao_Paulo">America/Sao_Paulo</SelectItem>
                             </SelectGroup>
                             <SelectGroup>
                                 <Label className="px-2 text-xs">Europe</Label>
@@ -187,24 +223,36 @@ const BusinessSettingsForm = () => {
                                 <SelectItem value="Europe/Berlin">Europe/Berlin (CET/CEST)</SelectItem>
                                 <SelectItem value="Europe/Moscow">Europe/Moscow (MSK)</SelectItem>
                                 <SelectItem value="Europe/Istanbul">Europe/Istanbul (TRT)</SelectItem>
+                                <SelectItem value="Europe/Madrid">Europe/Madrid</SelectItem>
+                                <SelectItem value="Europe/Rome">Europe/Rome</SelectItem>
+                                <SelectItem value="Europe/Kiev">Europe/Kiev</SelectItem>
                             </SelectGroup>
-                             <SelectGroup>
+                            <SelectGroup>
                                 <Label className="px-2 text-xs">Asia</Label>
                                 <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
                                 <SelectItem value="Asia/Dubai">Asia/Dubai (GST)</SelectItem>
                                 <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
                                 <SelectItem value="Asia/Shanghai">Asia/Shanghai (CST)</SelectItem>
                                 <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
+                                <SelectItem value="Asia/Hong_Kong">Asia/Hong_Kong</SelectItem>
+                                <SelectItem value="Asia/Seoul">Asia/Seoul</SelectItem>
+                                <SelectItem value="Asia/Bangkok">Asia/Bangkok</SelectItem>
                             </SelectGroup>
-                             <SelectGroup>
-                                <Label className="px-2 text-xs">Australia</Label>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Australia & Pacific</Label>
                                 <SelectItem value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</SelectItem>
                                 <SelectItem value="Australia/Perth">Australia/Perth (AWST)</SelectItem>
+                                <SelectItem value="Australia/Adelaide">Australia/Adelaide</SelectItem>
+                                <SelectItem value="Australia/Brisbane">Australia/Brisbane</SelectItem>
+                                <SelectItem value="Pacific/Auckland">Pacific/Auckland</SelectItem>
+                                <SelectItem value="Pacific/Honolulu">Pacific/Honolulu (HST)</SelectItem>
                             </SelectGroup>
                             <SelectGroup>
                                 <Label className="px-2 text-xs">Africa</Label>
                                 <SelectItem value="Africa/Cairo">Africa/Cairo (EET)</SelectItem>
                                 <SelectItem value="Africa/Johannesburg">Africa/Johannesburg (SAST)</SelectItem>
+                                <SelectItem value="Africa/Nairobi">Africa/Nairobi (EAT)</SelectItem>
+                                <SelectItem value="Africa/Lagos">Africa/Lagos (WAT)</SelectItem>
                             </SelectGroup>
                         </SelectContent>
                     </Select>
