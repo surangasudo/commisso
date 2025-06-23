@@ -895,6 +895,114 @@ const SaleSettingsForm = () => {
     );
 };
 
+const PosSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        disablePayCheckout: false,
+        disableDraft: false,
+        disableQuotation: false,
+        disableSuspend: false,
+        disableCreditSale: false,
+        showProductSuggestions: true,
+        showRecentTransactions: true,
+        disableDiscount: false,
+        disableOrderTax: false,
+        disableMultiplePay: false,
+        disablePaymentMethodSettings: false,
+        disableServiceStaff: false,
+        enableWeighingScale: false,
+        showInvoiceScheme: true,
+        showInvoiceLayout: true,
+    });
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating POS settings:', settings);
+        toast({
+            title: 'POS Settings Updated',
+            description: 'Your POS settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>POS Settings</CardTitle>
+                <CardDescription>Configure the Point of Sale screen functionalities.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disablePayCheckout" checked={settings.disablePayCheckout} onCheckedChange={(checked) => handleCheckboxChange('disablePayCheckout', !!checked)} />
+                        <Label htmlFor="disablePayCheckout" className="font-normal">Disable Pay & Checkout</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disableDraft" checked={settings.disableDraft} onCheckedChange={(checked) => handleCheckboxChange('disableDraft', !!checked)} />
+                        <Label htmlFor="disableDraft" className="font-normal">Disable Draft</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disableQuotation" checked={settings.disableQuotation} onCheckedChange={(checked) => handleCheckboxChange('disableQuotation', !!checked)} />
+                        <Label htmlFor="disableQuotation" className="font-normal">Disable Quotation</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disableSuspend" checked={settings.disableSuspend} onCheckedChange={(checked) => handleCheckboxChange('disableSuspend', !!checked)} />
+                        <Label htmlFor="disableSuspend" className="font-normal">Disable Suspend Sale</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disableCreditSale" checked={settings.disableCreditSale} onCheckedChange={(checked) => handleCheckboxChange('disableCreditSale', !!checked)} />
+                        <Label htmlFor="disableCreditSale" className="font-normal">Disable Credit Sale</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="disableDiscount" checked={settings.disableDiscount} onCheckedChange={(checked) => handleCheckboxChange('disableDiscount', !!checked)} />
+                        <Label htmlFor="disableDiscount" className="font-normal">Disable Discount</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="disableOrderTax" checked={settings.disableOrderTax} onCheckedChange={(checked) => handleCheckboxChange('disableOrderTax', !!checked)} />
+                        <Label htmlFor="disableOrderTax" className="font-normal">Disable order tax</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disableMultiplePay" checked={settings.disableMultiplePay} onCheckedChange={(checked) => handleCheckboxChange('disableMultiplePay', !!checked)} />
+                        <Label htmlFor="disableMultiplePay" className="font-normal">Disable multiple pay</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="disablePaymentMethodSettings" checked={settings.disablePaymentMethodSettings} onCheckedChange={(checked) => handleCheckboxChange('disablePaymentMethodSettings', !!checked)} />
+                        <Label htmlFor="disablePaymentMethodSettings" className="font-normal">Disable Payment Method Settings</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="disableServiceStaff" checked={settings.disableServiceStaff} onCheckedChange={(checked) => handleCheckboxChange('disableServiceStaff', !!checked)} />
+                        <Label htmlFor="disableServiceStaff" className="font-normal">Disable service staff in selling</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="showProductSuggestions" checked={settings.showProductSuggestions} onCheckedChange={(checked) => handleCheckboxChange('showProductSuggestions', !!checked)} />
+                        <Label htmlFor="showProductSuggestions" className="font-normal">Show product suggestions</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="showRecentTransactions" checked={settings.showRecentTransactions} onCheckedChange={(checked) => handleCheckboxChange('showRecentTransactions', !!checked)} />
+                        <Label htmlFor="showRecentTransactions" className="font-normal">Show recent transactions</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="showInvoiceScheme" checked={settings.showInvoiceScheme} onCheckedChange={(checked) => handleCheckboxChange('showInvoiceScheme', !!checked)} />
+                        <Label htmlFor="showInvoiceScheme" className="font-normal">Show Invoice Scheme</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="showInvoiceLayout" checked={settings.showInvoiceLayout} onCheckedChange={(checked) => handleCheckboxChange('showInvoiceLayout', !!checked)} />
+                        <Label htmlFor="showInvoiceLayout" className="font-normal">Show invoice layout dropdown</Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enableWeighingScale" checked={settings.enableWeighingScale} onCheckedChange={(checked) => handleCheckboxChange('enableWeighingScale', !!checked)} />
+                        <Label htmlFor="enableWeighingScale" className="font-normal">Enable Weighing Scale</Label>
+                    </div>
+                </div>
+            </CardContent>
+             <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -920,7 +1028,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="sale" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="pos" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -949,7 +1057,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="sale">
                             <SaleSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale'].includes(t.value)).map(tab => (
+                         <TabsContent value="pos">
+                            <PosSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
