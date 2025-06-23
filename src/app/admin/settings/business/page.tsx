@@ -40,7 +40,8 @@ import {
   Tags,
   Calendar as CalendarIcon,
   Clock,
-  Calculator
+  Calculator,
+  Search,
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -448,12 +449,19 @@ const ProductSettingsForm = () => {
     const { toast } = useToast();
     const [settings, setSettings] = useState({
         skuPrefix: 'AS',
-        enableExpiry: true,
-        onProductExpiry: 'keep_selling', // 'keep_selling' or 'stop_selling'
         enableBrands: true,
+        enablePriceAndTax: true,
+        enableRacks: false,
+        enableWarranty: false,
+        enableProductExpiry: false,
+        addItemExpiry: '',
         enableCategories: true,
-        enableProductDescription: true,
-        defaultUnit: 'pcs',
+        defaultUnit: '',
+        enableRow: false,
+        isProductImageRequired: false,
+        enableSubCategories: true,
+        enableSubUnits: false,
+        enablePosition: false,
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -483,59 +491,95 @@ const ProductSettingsForm = () => {
             <CardTitle>Product Settings</CardTitle>
             <CardDescription>Manage default product settings and features.</CardDescription>
         </CardHeader>
-        <CardContent className="pt-6 space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-                <div className="space-y-2">
-                    <Label htmlFor="skuPrefix">SKU Prefix:</Label>
-                    <Input id="skuPrefix" value={settings.skuPrefix} onChange={handleInputChange} placeholder="e.g., SKU" />
+        <CardContent className="pt-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6">
+                {/* Column 1 */}
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="skuPrefix">SKU prefix:</Label>
+                        <Input id="skuPrefix" value={settings.skuPrefix} onChange={handleInputChange} />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableBrands" checked={settings.enableBrands} onCheckedChange={(checked) => handleCheckboxChange('enableBrands', !!checked)} />
+                        <Label htmlFor="enableBrands" className="font-normal">Enable Brands</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enablePriceAndTax" checked={settings.enablePriceAndTax} onCheckedChange={(checked) => handleCheckboxChange('enablePriceAndTax', !!checked)} />
+                        <Label htmlFor="enablePriceAndTax" className="font-normal">Enable Price & Tax info</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableRacks" checked={settings.enableRacks} onCheckedChange={(checked) => handleCheckboxChange('enableRacks', !!checked)} />
+                        <Label htmlFor="enableRacks" className="font-normal flex items-center gap-1">Enable Racks
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent><p>Manage racks, rows, and positions of products.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enableWarranty" checked={settings.enableWarranty} onCheckedChange={(checked) => handleCheckboxChange('enableWarranty', !!checked)} />
+                        <Label htmlFor="enableWarranty" className="font-normal">Enable Warranty</Label>
+                    </div>
                 </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="defaultUnit">Default unit:</Label>
-                    <Select value={settings.defaultUnit} onValueChange={(value) => handleSelectChange('defaultUnit', value)}>
-                        <SelectTrigger id="defaultUnit">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="pcs">Pieces</SelectItem>
-                            <SelectItem value="kg">Kilogram</SelectItem>
-                            <SelectItem value="box">Box</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <div className="space-y-4 border-t pt-6">
-                 <div className="flex items-center space-x-2">
-                    <Checkbox id="enableExpiry" checked={settings.enableExpiry} onCheckedChange={(checked) => handleCheckboxChange('enableExpiry', !!checked)} />
-                    <Label htmlFor="enableExpiry" className="font-normal">Enable Product Expiry?</Label>
-                </div>
-                {settings.enableExpiry && (
-                    <div className="space-y-2 pl-6">
-                        <Label htmlFor="onProductExpiry">On Product Expiry:</Label>
-                         <Select value={settings.onProductExpiry} onValueChange={(value) => handleSelectChange('onProductExpiry', value)}>
-                            <SelectTrigger id="onProductExpiry">
-                                <SelectValue />
+
+                {/* Column 2 */}
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="enableProductExpiryCheckbox" className="flex items-center gap-1">Enable Product Expiry: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                        <div className="flex items-center gap-2">
+                             <Checkbox id="enableProductExpiryCheckbox" checked={settings.enableProductExpiry} onCheckedChange={(checked) => handleCheckboxChange('enableProductExpiry', !!checked)} />
+                            <Select disabled={!settings.enableProductExpiry} value={settings.addItemExpiry} onValueChange={(value) => handleSelectChange('addItemExpiry', value as string)}>
+                                <SelectTrigger className="flex-1">
+                                    <SelectValue placeholder="Add item expiry" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="days">Add expiry in days</SelectItem>
+                                    <SelectItem value="months">Add expiry in months</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', !!checked)} />
+                        <Label htmlFor="enableCategories" className="font-normal">Enable Categories</Label>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="defaultUnit">Default Unit:</Label>
+                        <Select value={settings.defaultUnit} onValueChange={(value) => handleSelectChange('defaultUnit', value)}>
+                            <SelectTrigger id="defaultUnit">
+                                <SelectValue placeholder="Please Select" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="keep_selling">Keep selling</SelectItem>
-                                <SelectItem value="stop_selling">Stop selling n days before</SelectItem>
+                                <SelectItem value="pcs">Pieces</SelectItem>
+                                <SelectItem value="kg">Kilogram</SelectItem>
+                                <SelectItem value="box">Box</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground">This will be used to calculate the expiry date of products.</p>
                     </div>
-                )}
-            </div>
-             <div className="space-y-4 border-t pt-6">
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="enableBrands" checked={settings.enableBrands} onCheckedChange={(checked) => handleCheckboxChange('enableBrands', !!checked)} />
-                    <Label htmlFor="enableBrands" className="font-normal">Enable Brands</Label>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableRow" checked={settings.enableRow} onCheckedChange={(checked) => handleCheckboxChange('enableRow', !!checked)} />
+                        <Label htmlFor="enableRow" className="font-normal">Enable Row</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="isProductImageRequired" checked={settings.isProductImageRequired} onCheckedChange={(checked) => handleCheckboxChange('isProductImageRequired', !!checked)} />
+                        <Label htmlFor="isProductImageRequired" className="font-normal">Is product image required?</Label>
+                    </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', !!checked)} />
-                    <Label htmlFor="enableCategories" className="font-normal">Enable Categories</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="enableProductDescription" checked={settings.enableProductDescription} onCheckedChange={(checked) => handleCheckboxChange('enableProductDescription', !!checked)} />
-                    <Label htmlFor="enableProductDescription" className="font-normal">Enable Product Description</Label>
+
+                {/* Column 3 */}
+                <div className="space-y-6">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableSubCategories" checked={settings.enableSubCategories} onCheckedChange={(checked) => handleCheckboxChange('enableSubCategories', !!checked)} />
+                        <Label htmlFor="enableSubCategories" className="font-normal">Enable Sub-Categories</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableSubUnits" checked={settings.enableSubUnits} onCheckedChange={(checked) => handleCheckboxChange('enableSubUnits', !!checked)} />
+                        <Label htmlFor="enableSubUnits" className="font-normal flex items-center gap-1">Enable Sub Units <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enablePosition" checked={settings.enablePosition} onCheckedChange={(checked) => handleCheckboxChange('enablePosition', !!checked)} />
+                        <Label htmlFor="enablePosition" className="font-normal">Enable Position</Label>
+                    </div>
                 </div>
             </div>
         </CardContent>
@@ -564,8 +608,14 @@ export default function BusinessSettingsPage() {
     return (
         <TooltipProvider>
             <div className="flex flex-col gap-6">
-                <h1 className="font-headline text-3xl font-bold">Business Settings</h1>
-                <Tabs defaultValue="business" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                 <div className="flex items-center justify-between">
+                    <h1 className="font-headline text-3xl font-bold">Business Settings</h1>
+                    <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Search settings..." className="pl-8" />
+                    </div>
+                </div>
+                <Tabs defaultValue="product" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
