@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -52,12 +53,32 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
-import { customers, type Customer } from '@/lib/data';
+import { type Customer } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { useCurrency } from '@/hooks/use-currency';
+import { getCustomers } from '@/services/customerService';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function CustomersContactPage() {
   const { formatCurrency } = useCurrency();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const data = await getCustomers();
+        setCustomers(data);
+      } catch (error) {
+        console.error("Failed to fetch customers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
   const [visibleColumns, setVisibleColumns] = useState({
     action: true,
     contactId: true,
@@ -77,9 +98,9 @@ export default function CustomersContactPage() {
     setVisibleColumns(prev => ({...prev, [column]: !prev[column]}));
   };
 
-  const totalSaleDue = customers.reduce((acc, customer) => acc + customer.totalSaleDue, 0);
-  const totalSaleReturnDue = customers.reduce((acc, customer) => acc + customer.totalSaleReturnDue, 0);
-  const totalOpeningBalance = customers.reduce((acc, customer) => acc + customer.openingBalance, 0);
+  const totalSaleDue = customers.reduce((acc, customer) => acc + (customer.totalSaleDue || 0), 0);
+  const totalSaleReturnDue = customers.reduce((acc, customer) => acc + (customer.totalSaleReturnDue || 0), 0);
+  const totalOpeningBalance = customers.reduce((acc, customer) => acc + (customer.openingBalance || 0), 0);
   
   const getExportData = () => customers.map(c => ({
     contactId: c.contactId,
@@ -205,7 +226,15 @@ export default function CustomersContactPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {customers.map((customer) => (
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        {Object.values(visibleColumns).map((isVisible, j) => isVisible && (
+                                            <TableCell key={j}><Skeleton className="h-5" /></TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : customers.map((customer) => (
                                 <TableRow key={customer.id}>
                                 {visibleColumns.action && <TableCell>
                                     <DropdownMenu>

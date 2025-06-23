@@ -1,5 +1,6 @@
+
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -52,13 +53,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { suppliers, type Supplier } from '@/lib/data';
+import { type Supplier } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { useCurrency } from '@/hooks/use-currency';
+import { getSuppliers } from '@/services/supplierService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SuppliersPage() {
   const { formatCurrency } = useCurrency();
-  const totalPurchaseDue = suppliers.reduce((acc, supplier) => acc + supplier.totalPurchaseDue, 0);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const data = await getSuppliers();
+        setSuppliers(data);
+      } catch (error) {
+        console.error("Failed to fetch suppliers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+
+  const totalPurchaseDue = suppliers.reduce((acc, supplier) => acc + (supplier.totalPurchaseDue || 0), 0);
   
   const getExportData = () => suppliers.map(s => ({
     contactId: s.contactId,
@@ -169,7 +189,15 @@ export default function SuppliersPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {suppliers.map((supplier) => (
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        {Array.from({ length: 15 }).map((_, j) => (
+                                            <TableCell key={j}><Skeleton className="h-5" /></TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))
+                            ) : suppliers.map((supplier) => (
                                 <TableRow key={supplier.id}>
                                 <TableCell>
                                     <DropdownMenu>

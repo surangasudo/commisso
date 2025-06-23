@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -53,7 +54,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { detailedProducts as initialProducts, type DetailedProduct } from '@/lib/data';
+import { type DetailedProduct } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +66,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useCurrency } from '@/hooks/use-currency';
+import { getProducts, deleteProduct } from '@/services/productService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const productHints: { [key: string]: string } = {
     'prod-1': 'fashion sneaker',
@@ -81,9 +84,24 @@ const productHints: { [key: string]: string } = {
 export default function ListProductsPage() {
   const router = useRouter();
   const { formatCurrency } = useCurrency();
-  const [products, setProducts] = useState<DetailedProduct[]>(initialProducts);
+  const [products, setProducts] = useState<DetailedProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<DetailedProduct | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const productsData = await getProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
   
   const handleView = (productId: string) => {
     router.push(`/admin/products/view/${productId}`);
@@ -98,11 +116,17 @@ export default function ListProductsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      setProducts(products.filter(p => p.id !== productToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
+      try {
+        await deleteProduct(productToDelete.id);
+        setProducts(products.filter(p => p.id !== productToDelete.id));
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setProductToDelete(null);
+      }
     }
   };
 
@@ -194,7 +218,25 @@ export default function ListProductsPage() {
                                     </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                    {products.map((product) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                <TableCell><Skeleton className="h-5 w-5" /></TableCell>
+                                                <TableCell><Skeleton className="h-10 w-10 rounded" /></TableCell>
+                                                <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : products.map((product) => (
                                         <TableRow key={product.id}>
                                         <TableCell><Checkbox /></TableCell>
                                         <TableCell>

@@ -1,5 +1,4 @@
 
-
 export type User = {
   id: string;
   username: string;
@@ -28,8 +27,6 @@ export type Product = {
   imageUrl: string;
   stock: number;
 };
-
-export const products: Product[] = [];
 
 export type CommissionProfile = {
   id: string;
@@ -110,89 +107,6 @@ export type Supplier = {
   customField1?: string;
 };
 
-export const suppliers: Supplier[] = [
-    {
-        id: 'sup-1',
-        contactId: 'CO0003',
-        businessName: 'Manhattan Clothing Ltd.',
-        name: 'Philip',
-        email: 'philip@manhattan.com',
-        taxNumber: '54869310093',
-        payTerm: 15,
-        openingBalance: 0.00,
-        advanceBalance: 0.00,
-        addedOn: '01/03/2018',
-        address: 'Linking Street, Phoenix, Arizona, USA',
-        mobile: '(378) 400-1234',
-        totalPurchaseDue: 0.00,
-        totalPurchaseReturnDue: 0.00
-    },
-    {
-        id: 'sup-2',
-        contactId: '',
-        businessName: 'Univer Suppliers, Jackson Hill',
-        name: 'Jackson Hill',
-        email: 'jackson@univer.com',
-        taxNumber: '5459000655',
-        payTerm: 45,
-        openingBalance: 0.00,
-        advanceBalance: 0.00,
-        addedOn: '01/06/2018',
-        address: 'Linking Street, Phoenix, Arizona, USA',
-        mobile: '(378) 400-1234',
-        totalPurchaseDue: 0,
-        totalPurchaseReturnDue: 0.00
-    },
-    {
-        id: 'sup-3',
-        contactId: '',
-        businessName: 'Alpha Clothings, Michael',
-        name: 'Michael',
-        email: 'michael@alpha.com',
-        taxNumber: '4590091535',
-        payTerm: 15,
-        openingBalance: 0.00,
-        advanceBalance: 0.00,
-        addedOn: '01/03/2018',
-        address: 'Linking Street, Phoenix, Arizona, USA',
-        mobile: '(378) 400-1234',
-        totalPurchaseDue: 0.00,
-        totalPurchaseReturnDue: 0.00
-    },
-    {
-        id: 'sup-4',
-        contactId: 'CN0004',
-        businessName: 'Digital Ocean, Mike McCubbin',
-        name: 'Mike McCubbin',
-        email: 'mike@digitalocean.com',
-        taxNumber: '52965489001',
-        payTerm: 30,
-        openingBalance: 0.00,
-        advanceBalance: 0.00,
-        addedOn: '01/06/2018',
-        address: 'Linking Street, Phoenix, Arizona, USA',
-        mobile: '(378) 400-1234',
-        totalPurchaseDue: 0.00,
-        totalPurchaseReturnDue: 0.00
-    },
-    {
-        id: 'sup-5',
-        contactId: 'CO0006',
-        businessName: 'Essential Goods Inc.',
-        name: 'Sarah Connor',
-        email: 'sarah.c@essentialgoods.com',
-        taxNumber: '1122334455',
-        payTerm: 60,
-        openingBalance: 0.00,
-        advanceBalance: 0.00,
-        addedOn: '05/10/2023',
-        address: '123 Future Way, Cyber City, USA',
-        mobile: '(555) 867-5309',
-        totalPurchaseDue: 0,
-        totalPurchaseReturnDue: 0.00
-    }
-];
-
 export type Customer = {
   id: string;
   contactId: string;
@@ -208,65 +122,6 @@ export type Customer = {
   totalSaleReturnDue: number;
   customField1?: string;
 };
-
-export const customers: Customer[] = [
-    {
-        id: 'cus-1',
-        contactId: 'CO0001',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        taxNumber: '123456789',
-        customerGroup: 'Wholesale',
-        openingBalance: 1000,
-        addedOn: '01/01/2023',
-        address: '123 Main St, Anytown, USA',
-        mobile: '555-123-4567',
-        totalSaleDue: 0,
-        totalSaleReturnDue: 0,
-    },
-    {
-        id: 'cus-2',
-        contactId: 'CO0002',
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        taxNumber: '987654321',
-        customerGroup: 'Retail',
-        openingBalance: 500,
-        addedOn: '02/15/2023',
-        address: '456 Oak Ave, Anytown, USA',
-        mobile: '555-987-6543',
-        totalSaleDue: 0,
-        totalSaleReturnDue: 0,
-    },
-    {
-        id: 'cus-3',
-        contactId: 'CO0005',
-        name: 'Walk-In Customer',
-        email: null,
-        taxNumber: '',
-        customerGroup: 'Retail',
-        openingBalance: 0,
-        addedOn: '03/20/2023',
-        address: 'N/A',
-        mobile: 'N/A',
-        totalSaleDue: 0,
-        totalSaleReturnDue: 0,
-    },
-    {
-        id: 'cus-4',
-        contactId: 'CO0004',
-        name: 'Harry',
-        email: 'harry@example.com',
-        taxNumber: '111222333',
-        customerGroup: 'Retail',
-        openingBalance: 0,
-        addedOn: '06/20/2025',
-        address: 'N/A',
-        mobile: 'N/A',
-        totalSaleDue: 0,
-        totalSaleReturnDue: 0,
-    }
-];
 
 export type DetailedProduct = {
   id: string;
@@ -285,8 +140,6 @@ export type DetailedProduct = {
   totalUnitTransferred?: number;
   totalUnitAdjusted?: number;
 };
-
-export const detailedProducts: DetailedProduct[] = [];
 
 export type Variation = {
   id: string;
@@ -322,8 +175,6 @@ export type Purchase = {
   items: PurchaseItem[];
 };
 
-export const purchases: Purchase[] = [];
-
 export type PurchaseReturn = {
   id: string;
   date: string;
@@ -335,8 +186,6 @@ export type PurchaseReturn = {
   grandTotal: number;
   paymentDue: number;
 };
-
-export const purchaseReturns: PurchaseReturn[] = [];
 
 export type SaleItem = {
   productId: string;
@@ -368,8 +217,6 @@ export type Sale = {
     items: SaleItem[];
 };
 
-export const sales: Sale[] = [];
-
 export type Draft = {
     id: string;
     date: string;
@@ -380,8 +227,6 @@ export type Draft = {
     totalItems: number;
     addedBy: string;
 };
-
-export const drafts: Draft[] = [];
 
 export type SellReturn = {
   id: string;
@@ -394,8 +239,6 @@ export type SellReturn = {
   totalAmount: number;
   paymentDue: number;
 };
-
-export const sellReturns: SellReturn[] = [];
 
 export type Discount = {
   id: string;
@@ -412,8 +255,6 @@ export type Discount = {
   isActive: boolean;
 };
 
-export const discounts: Discount[] = [];
-
 export type StockTransfer = {
   id: string;
   date: string;
@@ -426,8 +267,6 @@ export type StockTransfer = {
   addedBy: string;
 };
 
-export const stockTransfers: StockTransfer[] = [];
-
 export type StockAdjustment = {
   id: string;
   date: string;
@@ -439,8 +278,6 @@ export type StockAdjustment = {
   reason: string;
   addedBy: string;
 };
-
-export const stockAdjustments: StockAdjustment[] = [];
 
 export type Expense = {
   id: string;
@@ -458,13 +295,6 @@ export type Expense = {
   addedBy: string;
   expenseNote: string | null;
 };
-
-export const expenses: Expense[] = [
-  { id: 'exp-1', date: '06/22/2025 10:00', referenceNo: 'EXP2025/0001', location: 'Awesome Shop', expenseCategory: 'Office Supplies', subCategory: 'Stationery', paymentStatus: 'Paid', tax: 5.00, totalAmount: 55.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Printer paper and pens' },
-  { id: 'exp-2', date: '06/21/2025 12:30', referenceNo: 'EXP2025/0002', location: 'Awesome Shop', expenseCategory: 'Utilities', subCategory: 'Electricity Bill', paymentStatus: 'Paid', tax: 20.00, totalAmount: 220.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Monthly electricity bill' },
-  { id: 'exp-3', date: '06/20/2025 15:00', referenceNo: 'EXP2025/0003', location: 'Awesome Shop', expenseCategory: 'Marketing', subCategory: 'Online Ads', paymentStatus: 'Due', tax: 0, totalAmount: 500.00, paymentDue: 500.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: 'Facebook campaign' },
-  { id: 'exp-4', date: '06/19/2025 09:00', referenceNo: 'EXP2025/0004', location: 'Awesome Shop', expenseCategory: 'Repairs', subCategory: 'AC Maintenance', paymentStatus: 'Paid', tax: 10.00, totalAmount: 110.00, paymentDue: 0.00, expenseFor: null, contact: null, addedBy: 'Mr Admin', expenseNote: null },
-];
 
 export type ExpenseCategory = {
   id: string;
@@ -522,45 +352,6 @@ export type AgentProfit = { agentName: string; profit: number; };
 export type SubAgentProfit = { subAgentName: string; profit: number; };
 export type CompanyProfit = { company: string; profit: number; };
 
-export const profitData: ProfitData = {
-  openingStockPurchase: 0.00,
-  openingStockSale: 0.00,
-  totalPurchase: 0.00,
-  totalStockAdjustment: 0.00,
-  totalExpense: 0.00,
-  totalPurchaseShipping: 0.00,
-  purchaseAdditionalExpense: 0.00,
-  totalTransferShipping: 0.00,
-  totalSellDiscount: 0.00,
-  totalCustomerReward: 0.00,
-  totalSellReturn: 0.00,
-  totalPayroll: 0.00,
-  totalProductionCost: 0.00,
-  closingStockPurchase: 0.00,
-  closingStockSale: 0.00,
-  totalSales: 0.00,
-  totalSellShipping: 0.00,
-  sellAdditionalExpenses: 0.00,
-  totalStockRecovered: 0.00,
-  totalPurchaseReturn: 0.00,
-  totalPurchaseDiscount: 0.00,
-  totalSellRoundOff: 0.00,
-  hmsTotal: 0.00,
-};
-
-export const productProfitData: ProductProfit[] = [];
-export const categoryProfitData: CategoryProfit[] = [];
-export const brandProfitData: BrandProfit[] = [];
-export const locationProfitData: LocationProfit[] = [];
-export const invoiceProfitData: InvoiceProfit[] = [];
-export const dateProfitData: DateProfit[] = [];
-export const customerProfitData: CustomerProfit[] = [];
-export const dayProfitData: DayProfit[] = [];
-export const serviceStaffProfitData: ServiceStaffProfit[] = [];
-export const agentProfitData: AgentProfit[] = [];
-export const subAgentProfitData: SubAgentProfit[] = [];
-export const companyProfitData: CompanyProfit[] = [];
-
 export type RegisterLog = {
     id: string;
     openTime: string;
@@ -578,57 +369,6 @@ export type RegisterLog = {
     openingCash: number;
 };
 
-export const registerLogs: RegisterLog[] = [
-    {
-        id: 'reg-1',
-        openTime: '06/22/2025 09:00',
-        closeTime: '06/22/2025 17:00',
-        location: 'Awesome Shop',
-        user: 'Mr Admin',
-        closingNote: 'All good.',
-        status: 'Closed',
-        totalCardSlips: 1250,
-        totalCheques: 300,
-        totalCash: 4500.75,
-        totalRefunds: 50.00,
-        totalExpenses: 25.50,
-        openingCash: 100.00,
-        closingCash: 4525.25,
-    },
-    {
-        id: 'reg-2',
-        openTime: '06/21/2025 09:05',
-        closeTime: '06/21/2025 17:15',
-        location: 'Awesome Shop',
-        user: 'Mr Demo Cashier',
-        closingNote: 'Slightly over.',
-        status: 'Closed',
-        totalCardSlips: 800,
-        totalCheques: 150,
-        totalCash: 2100.50,
-        totalRefunds: 0.00,
-        totalExpenses: 15.00,
-        openingCash: 100.00,
-        closingCash: 2186.00,
-    },
-    {
-        id: 'reg-3',
-        openTime: '06/23/2025 08:55',
-        closeTime: null,
-        location: 'Awesome Shop',
-        user: 'Mr Admin',
-        closingNote: null,
-        status: 'Open',
-        totalCardSlips: 0,
-        totalCheques: 0,
-        totalCash: 0,
-        totalRefunds: 0.00,
-        totalExpenses: 0.00,
-        openingCash: 100.00,
-        closingCash: 0,
-    },
-];
-
 export type ActivityLog = {
   id: string;
   date: string;
@@ -639,17 +379,6 @@ export type ActivityLog = {
   note: string;
   ipAddress: string;
 };
-
-export const activityLogs: ActivityLog[] = [
-  { id: 'log-1', date: '06/23/2025 10:15', user: 'Mr Admin', action: 'Sale Created', subjectType: 'Sale', subjectId: 'AS0005', note: '', ipAddress: '192.168.1.1' },
-  { id: 'log-2', date: '06/23/2025 09:30', user: 'Mr Admin', action: 'Purchase Created', subjectType: 'Purchase', subjectId: 'PO2018/0002', note: '', ipAddress: '192.168.1.1' },
-  { id: 'log-3', date: '06/22/2025 14:00', user: 'Mr Demo Cashier', action: 'User Logged In', subjectType: 'User', subjectId: 'cashier', note: '', ipAddress: '192.168.1.5' },
-  { id: 'log-4', date: '06/22/2025 11:20', user: 'Mr Admin', action: 'Stock Adjustment Added', subjectType: 'Stock Adjustment', subjectId: 'SA2025/0001', note: 'Reason: Stock correction', ipAddress: '192.168.1.1' },
-  { id: 'log-5', date: '06/22/2025 11:08', user: 'Mr Admin', action: 'Stock Transfer Added', subjectType: 'Stock Transfer', subjectId: 'ST2025/0001', note: 'From Awesome Shop to Warehouse A', ipAddress: '192.168.1.1' },
-  { id: 'log-6', date: '06/21/2025 17:15', user: 'Mr Demo Cashier', action: 'Register Closed', subjectType: 'Register', subjectId: 'reg-2', note: 'Slightly over.', ipAddress: '192.168.1.5' },
-  { id: 'log-7', date: '06/21/2025 10:00', user: 'Mr Admin', action: 'Product Deleted', subjectType: 'Product', subjectId: 'prod-old-123', note: 'Product: Old T-Shirt', ipAddress: '192.168.1.1' },
-  { id: 'log-8', date: '06/20/2025 09:00', user: 'Mr Admin', action: 'User Logged In', subjectType: 'User', subjectId: 'admin', note: '', ipAddress: '192.168.1.1' },
-];
 
 export type TaxRate = {
   id: string;
@@ -754,3 +483,57 @@ export const businessLocations: BusinessLocation[] = [
     paymentOptions: defaultPaymentOptions,
   },
 ];
+// The following arrays are now empty as data will come from Firestore.
+// The empty arrays are kept for reference but are not used by the application pages anymore.
+export const detailedProducts: DetailedProduct[] = [];
+export const products: Product[] = [];
+export const suppliers: Supplier[] = [];
+export const customers: Customer[] = [];
+export const purchases: Purchase[] = [];
+export const purchaseReturns: PurchaseReturn[] = [];
+export const sales: Sale[] = [];
+export const drafts: Draft[] = [];
+export const sellReturns: SellReturn[] = [];
+export const discounts: Discount[] = [];
+export const stockTransfers: StockTransfer[] = [];
+export const stockAdjustments: StockAdjustment[] = [];
+export const expenses: Expense[] = [];
+export const profitData: ProfitData = {
+  openingStockPurchase: 0.00,
+  openingStockSale: 0.00,
+  totalPurchase: 0.00,
+  totalStockAdjustment: 0.00,
+  totalExpense: 0.00,
+  totalPurchaseShipping: 0.00,
+  purchaseAdditionalExpense: 0.00,
+  totalTransferShipping: 0.00,
+  totalSellDiscount: 0.00,
+  totalCustomerReward: 0.00,
+  totalSellReturn: 0.00,
+  totalPayroll: 0.00,
+  totalProductionCost: 0.00,
+  closingStockPurchase: 0.00,
+  closingStockSale: 0.00,
+  totalSales: 0.00,
+  totalSellShipping: 0.00,
+  sellAdditionalExpenses: 0.00,
+  totalStockRecovered: 0.00,
+  totalPurchaseReturn: 0.00,
+  totalPurchaseDiscount: 0.00,
+  totalSellRoundOff: 0.00,
+  hmsTotal: 0.00,
+};
+export const productProfitData: ProductProfit[] = [];
+export const categoryProfitData: CategoryProfit[] = [];
+export const brandProfitData: BrandProfit[] = [];
+export const locationProfitData: LocationProfit[] = [];
+export const invoiceProfitData: InvoiceProfit[] = [];
+export const dateProfitData: DateProfit[] = [];
+export const customerProfitData: CustomerProfit[] = [];
+export const dayProfitData: DayProfit[] = [];
+export const serviceStaffProfitData: ServiceStaffProfit[] = [];
+export const agentProfitData: AgentProfit[] = [];
+export const subAgentProfitData: SubAgentProfit[] = [];
+export const companyProfitData: CompanyProfit[] = [];
+export const registerLogs: RegisterLog[] = [];
+export const activityLogs: ActivityLog[] = [];
