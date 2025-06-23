@@ -2,6 +2,7 @@
 
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -795,4 +796,72 @@ export const subAgentProfitData: SubAgentProfit[] = [
 export const companyProfitData: CompanyProfit[] = [
     { company: 'Global Corp', profit: 25000.00 },
     { company: 'Innovate Inc.', profit: 18500.75 },
+];
+
+export type RegisterLog = {
+    id: string;
+    openTime: string;
+    closeTime: string | null;
+    location: string;
+    user: string;
+    closingNote: string | null;
+    status: 'Open' | 'Closed';
+    totalCardSlips: number;
+    totalCheques: number;
+    totalCash: number;
+    totalRefunds: number;
+    totalExpenses: number;
+    closingCash: number;
+    openingCash: number;
+};
+
+export const registerLogs: RegisterLog[] = [
+    {
+        id: 'reg-1',
+        openTime: '06/22/2025 09:00',
+        closeTime: '06/22/2025 17:00',
+        location: 'Awesome Shop',
+        user: 'Mr Admin',
+        closingNote: 'All good.',
+        status: 'Closed',
+        totalCardSlips: 1250,
+        totalCheques: 300,
+        totalCash: 4500.75,
+        totalRefunds: 50.00,
+        totalExpenses: 25.50,
+        openingCash: 100.00,
+        closingCash: 4525.25,
+    },
+    {
+        id: 'reg-2',
+        openTime: '06/21/2025 09:05',
+        closeTime: '06/21/2025 17:15',
+        location: 'Awesome Shop',
+        user: 'Mr Demo Cashier',
+        closingNote: 'Slightly over.',
+        status: 'Closed',
+        totalCardSlips: 800,
+        totalCheques: 150,
+        totalCash: 2100.50,
+        totalRefunds: 0.00,
+        totalExpenses: 15.00,
+        openingCash: 100.00,
+        closingCash: 2186.00,
+    },
+    {
+        id: 'reg-3',
+        openTime: '06/23/2025 08:55',
+        closeTime: null,
+        location: 'Awesome Shop',
+        user: 'Mr Admin',
+        closingNote: null,
+        status: 'Open',
+        totalCardSlips: 0,
+        totalCheques: 0,
+        totalCash: 0,
+        totalRefunds: 0.00,
+        totalExpenses: 0.00,
+        openingCash: 100.00,
+        closingCash: 0,
+    },
 ];
