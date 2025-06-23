@@ -164,7 +164,7 @@ const sidebarNav = [
             { href: "/admin/reports/activity-log", label: "Activity Log" },
         ]
     },
-    { href: "#", icon: Mail, label: "Notification Templates" },
+    { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates" },
 ];
 
 export default function AdminLayout({
@@ -228,7 +228,7 @@ export default function AdminLayout({
                         </>
                     ) : (
                         <Link href={item.href!} className="w-full">
-                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'primary' : 'ghost'}>
+                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
                             <item.icon />
                             <span>{item.label}</span>
                             </SidebarMenuButton>
@@ -296,3 +296,5 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
+
+    
