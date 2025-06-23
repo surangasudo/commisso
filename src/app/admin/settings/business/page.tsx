@@ -49,6 +49,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { initialTaxRates } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -57,7 +58,6 @@ const settingsTabs = [
   { value: "contact", label: "Contact", icon: Contact },
   { value: "sale", label: "Sale", icon: Upload },
   { value: "pos", label: "POS", icon: Printer },
-  { value: "display_screen", label: "Display Screen", icon: Monitor },
   { value: "purchases", label: "Purchases", icon: Download },
   { value: "payment", label: "Payment", icon: CreditCard },
   { value: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -898,25 +898,53 @@ const SaleSettingsForm = () => {
 const PosSettingsForm = () => {
     const { toast } = useToast();
     const [settings, setSettings] = useState({
-        disablePayCheckout: false,
-        disableDraft: false,
-        disableQuotation: false,
-        disableSuspend: false,
-        disableCreditSale: false,
-        showProductSuggestions: true,
-        showRecentTransactions: true,
-        disableDiscount: false,
-        disableOrderTax: false,
+        expressCheckout: 'shift+e',
+        payAndCheckout: 'shift+p',
+        draftShortcut: 'shift+d',
+        cancelShortcut: 'shift+c',
+        goToQuantity: 'f2',
+        weighingScaleShortcut: '',
+        editDiscount: 'shift+i',
+        editOrderTax: 'shift+t',
+        addPaymentRow: 'shift+r',
+        finalizePayment: 'shift+f',
+        addNewProduct: 'f4',
+
         disableMultiplePay: false,
-        disablePaymentMethodSettings: false,
-        disableServiceStaff: false,
+        dontShowProductSuggestion: false,
+        disableOrderTax: false,
+        enableTransactionDate: true,
+        isServiceStaffRequired: true,
+        showInvoiceScheme: false,
+        showPricingTooltip: false,
+        disableDraft: false,
+        dontShowRecentTransactions: false,
+        subtotalEditable: false,
+        disableCreditSaleButton: false,
+        enableServiceStaffInProductLine: false,
         enableWeighingScale: false,
-        showInvoiceScheme: true,
-        showInvoiceLayout: true,
+        showInvoiceLayoutDropdown: false,
+        printInvoiceOnSuspend: false,
+        disableExpressCheckout: false,
+        disableDiscount: false,
+        disableSuspendSale: false,
+        
+        weighingScalePrefix: '',
+        weighingScaleSkuLength: '5',
+        weighingScaleQtyIntegerLength: '4',
+        weighingScaleQtyFractionalLength: '3',
     });
+
+    const handleInputChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any}));
+    };
 
     const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
         setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+    
+     const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
     };
 
     const handleUpdateSettings = () => {
@@ -927,75 +955,138 @@ const PosSettingsForm = () => {
         });
     };
 
+    const shortcutFields1 = [
+        { id: 'expressCheckout', label: 'Express Checkout:' },
+        { id: 'payAndCheckout', label: 'Pay & Checkout:' },
+        { id: 'draftShortcut', label: 'Draft:' },
+        { id: 'cancelShortcut', label: 'Cancel:' },
+        { id: 'goToQuantity', label: 'Go to product quantity:' },
+        { id: 'weighingScaleShortcut', label: 'Weighing Scale:' },
+    ] as const;
+
+    const shortcutFields2 = [
+        { id: 'editDiscount', label: 'Edit Discount:' },
+        { id: 'editOrderTax', label: 'Edit Order Tax:' },
+        { id: 'addPaymentRow', label: 'Add Payment Row:' },
+        { id: 'finalizePayment', label: 'Finalize Payment:' },
+        { id: 'addNewProduct', label: 'Add new product:' },
+    ] as const;
+
+    const posSettingsCheckboxes = [
+        { id: 'disableMultiplePay', label: 'Disable Multiple Pay' },
+        { id: 'dontShowProductSuggestion', label: "Don't show product suggestion" },
+        { id: 'disableOrderTax', label: 'Disable order tax' },
+        { id: 'enableTransactionDate', label: 'Enable transaction date on POS screen' },
+        { id: 'isServiceStaffRequired', label: 'Is service staff required' },
+        { id: 'showInvoiceScheme', label: 'Show invoice scheme' },
+        { id: 'showPricingTooltip', label: 'Show pricing on product suggestion tooltip' },
+        { id: 'disableDraft', label: 'Disable Draft' },
+        { id: 'dontShowRecentTransactions', label: "Don't show recent transactions" },
+        { id: 'subtotalEditable', label: 'Subtotal Editable', tooltip: 'Ability to edit subtotal in POS screen' },
+        { id: 'disableCreditSaleButton', label: 'Disable credit sale button', tooltip: 'Disable credit sale button in POS screen' },
+        { id: 'enableServiceStaffInProductLine', label: 'Enable service staff in product line', tooltip: 'Select service staff for each product in POS screen' },
+        { id: 'enableWeighingScale', label: 'Enable Weighing Scale' },
+        { id: 'showInvoiceLayoutDropdown', label: 'Show invoice layout dropdown' },
+        { id: 'printInvoiceOnSuspend', label: 'Print invoice on suspend' },
+        { id: 'disableExpressCheckout', label: 'Disable Express Checkout' },
+        { id: 'disableDiscount', label: 'Disable Discount' },
+        { id: 'disableSuspendSale', label: 'Disable Suspend Sale' },
+    ] as const;
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>POS Settings</CardTitle>
                 <CardDescription>Configure the Point of Sale screen functionalities.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disablePayCheckout" checked={settings.disablePayCheckout} onCheckedChange={(checked) => handleCheckboxChange('disablePayCheckout', !!checked)} />
-                        <Label htmlFor="disablePayCheckout" className="font-normal">Disable Pay & Checkout</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disableDraft" checked={settings.disableDraft} onCheckedChange={(checked) => handleCheckboxChange('disableDraft', !!checked)} />
-                        <Label htmlFor="disableDraft" className="font-normal">Disable Draft</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disableQuotation" checked={settings.disableQuotation} onCheckedChange={(checked) => handleCheckboxChange('disableQuotation', !!checked)} />
-                        <Label htmlFor="disableQuotation" className="font-normal">Disable Quotation</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disableSuspend" checked={settings.disableSuspend} onCheckedChange={(checked) => handleCheckboxChange('disableSuspend', !!checked)} />
-                        <Label htmlFor="disableSuspend" className="font-normal">Disable Suspend Sale</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disableCreditSale" checked={settings.disableCreditSale} onCheckedChange={(checked) => handleCheckboxChange('disableCreditSale', !!checked)} />
-                        <Label htmlFor="disableCreditSale" className="font-normal">Disable Credit Sale</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="disableDiscount" checked={settings.disableDiscount} onCheckedChange={(checked) => handleCheckboxChange('disableDiscount', !!checked)} />
-                        <Label htmlFor="disableDiscount" className="font-normal">Disable Discount</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="disableOrderTax" checked={settings.disableOrderTax} onCheckedChange={(checked) => handleCheckboxChange('disableOrderTax', !!checked)} />
-                        <Label htmlFor="disableOrderTax" className="font-normal">Disable order tax</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disableMultiplePay" checked={settings.disableMultiplePay} onCheckedChange={(checked) => handleCheckboxChange('disableMultiplePay', !!checked)} />
-                        <Label htmlFor="disableMultiplePay" className="font-normal">Disable multiple pay</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="disablePaymentMethodSettings" checked={settings.disablePaymentMethodSettings} onCheckedChange={(checked) => handleCheckboxChange('disablePaymentMethodSettings', !!checked)} />
-                        <Label htmlFor="disablePaymentMethodSettings" className="font-normal">Disable Payment Method Settings</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="disableServiceStaff" checked={settings.disableServiceStaff} onCheckedChange={(checked) => handleCheckboxChange('disableServiceStaff', !!checked)} />
-                        <Label htmlFor="disableServiceStaff" className="font-normal">Disable service staff in selling</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="showProductSuggestions" checked={settings.showProductSuggestions} onCheckedChange={(checked) => handleCheckboxChange('showProductSuggestions', !!checked)} />
-                        <Label htmlFor="showProductSuggestions" className="font-normal">Show product suggestions</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="showRecentTransactions" checked={settings.showRecentTransactions} onCheckedChange={(checked) => handleCheckboxChange('showRecentTransactions', !!checked)} />
-                        <Label htmlFor="showRecentTransactions" className="font-normal">Show recent transactions</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="showInvoiceScheme" checked={settings.showInvoiceScheme} onCheckedChange={(checked) => handleCheckboxChange('showInvoiceScheme', !!checked)} />
-                        <Label htmlFor="showInvoiceScheme" className="font-normal">Show Invoice Scheme</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="showInvoiceLayout" checked={settings.showInvoiceLayout} onCheckedChange={(checked) => handleCheckboxChange('showInvoiceLayout', !!checked)} />
-                        <Label htmlFor="showInvoiceLayout" className="font-normal">Show invoice layout dropdown</Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableWeighingScale" checked={settings.enableWeighingScale} onCheckedChange={(checked) => handleCheckboxChange('enableWeighingScale', !!checked)} />
-                        <Label htmlFor="enableWeighingScale" className="font-normal">Enable Weighing Scale</Label>
+            <CardContent className="pt-6 space-y-8">
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">Add keyboard shortcuts:</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Shortcut should be the names of the keys separated by '+': Example: ctrl+shift+b, ctrl+h <br/>
+                        Available key names are: shift, ctrl, alt, backspace, tab, enter, return, capslock, esc, escape, space, pageup, pagedown, end, home, left, up, right, down, ins, del, and plus
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4">
+                       {shortcutFields1.map(field => (
+                           <div key={field.id} className="space-y-1">
+                               <Label htmlFor={field.id}>{field.label}</Label>
+                               <Input id={field.id} value={settings[field.id]} onChange={(e) => handleInputChange(field.id, e.target.value)} />
+                           </div>
+                       ))}
+                        {shortcutFields2.map(field => (
+                           <div key={field.id} className="space-y-1">
+                               <Label htmlFor={field.id}>{field.label}</Label>
+                               <Input id={field.id} value={settings[field.id]} onChange={(e) => handleInputChange(field.id, e.target.value)} />
+                           </div>
+                       ))}
                     </div>
                 </div>
+
+                <Separator />
+
+                <div>
+                    <h3 className="text-lg font-semibold mb-4">POS settings:</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+                        {posSettingsCheckboxes.map(cb => (
+                            <div key={cb.id} className="flex items-center space-x-2">
+                                <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, !!checked)} />
+                                <Label htmlFor={cb.id} className="font-normal flex items-center gap-1.5">{cb.label}
+                                 {cb.tooltip && (
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>{cb.tooltip}</p></TooltipContent>
+                                    </Tooltip>
+                                 )}
+                                </Label>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                 <Separator />
+
+                 <div>
+                    <h3 className="text-lg font-semibold mb-2">Weighing Scale barcode Setting:</h3>
+                     <p className="text-sm text-muted-foreground mb-4">
+                        Configure barcode as per your weighing scale.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="weighingScalePrefix">Prefix:</Label>
+                            <Input id="weighingScalePrefix" value={settings.weighingScalePrefix} onChange={(e) => handleInputChange('weighingScalePrefix', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="weighingScaleSkuLength">Product sku length:</Label>
+                            <Select value={settings.weighingScaleSkuLength} onValueChange={(value) => handleSelectChange('weighingScaleSkuLength', value)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {[...Array(9)].map((_, i) => <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="weighingScaleQtyIntegerLength">Quantity integer part length:</Label>
+                            <Select value={settings.weighingScaleQtyIntegerLength} onValueChange={(value) => handleSelectChange('weighingScaleQtyIntegerLength', value)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {[...Array(6)].map((_, i) => <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="weighingScaleQtyFractionalLength">Quantity fractional part length:</Label>
+                            <Select value={settings.weighingScaleQtyFractionalLength} onValueChange={(value) => handleSelectChange('weighingScaleQtyFractionalLength', value)}>
+                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                <SelectContent>
+                                    {[...Array(6)].map((_, i) => <SelectItem key={i+1} value={String(i+1)}>{i+1}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
             </CardContent>
              <CardFooter>
                 <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
