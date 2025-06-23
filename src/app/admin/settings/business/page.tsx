@@ -1095,6 +1095,84 @@ const PosSettingsForm = () => {
     );
 };
 
+const PurchaseSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        enableEditingProductPrice: true,
+        enablePurchaseStatus: true,
+        enableLotNumber: false,
+        enablePurchaseOrder: false,
+    });
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating purchase settings:', settings);
+        toast({
+            title: 'Purchase Settings Updated',
+            description: 'Your purchase settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Purchase Settings</CardTitle>
+                <CardDescription>Configure default settings for your purchases.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', !!checked)} />
+                        <Label htmlFor="enableEditingProductPrice" className="font-normal flex items-center gap-1.5">
+                            Enable editing product price from purchase screen
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p>Allow users to change the purchase price of a product when adding a purchase.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', !!checked)} />
+                        <Label htmlFor="enablePurchaseStatus" className="font-normal flex items-center gap-1.5">
+                            Enable Purchase Status
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p>Track the status of purchases (e.g., Received, Pending, Ordered).</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', !!checked)} />
+                        <Label htmlFor="enableLotNumber" className="font-normal flex items-center gap-1.5">
+                            Enable Lot Number
+                             <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p>Enable Lot number input in purchase screen.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', !!checked)} />
+                        <Label htmlFor="enablePurchaseOrder" className="font-normal flex items-center gap-1.5">
+                            Enable Purchase Order
+                             <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p>Allows creating and managing purchase orders.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -1119,7 +1197,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="pos" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="purchases" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -1151,7 +1229,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="pos">
                             <PosSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos'].includes(t.value)).map(tab => (
+                         <TabsContent value="purchases">
+                            <PurchaseSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
