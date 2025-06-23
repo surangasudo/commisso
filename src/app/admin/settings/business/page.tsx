@@ -704,6 +704,13 @@ const SaleSettingsForm = () => {
         enableSalesOrder: false,
         enableRecurringInvoice: false,
         isPayTermRequired: false,
+        isStripeEnabled: false,
+        stripePublicKey: '',
+        stripeSecretKey: '',
+        isRazorpayEnabled: false,
+        razorpayKeyId: '',
+        razorpayKeySecret: '',
+        allowOverselling: false,
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -734,7 +741,7 @@ const SaleSettingsForm = () => {
                 <CardDescription>Configure default settings for sales and invoices.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-8 gap-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="defaultSaleDiscount">Default Sale Discount:</Label>
                         <Input id="defaultSaleDiscount" type="number" value={settings.defaultSaleDiscount} onChange={handleInputChange} />
@@ -750,31 +757,7 @@ const SaleSettingsForm = () => {
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="commissionAgent">Commission Agent:</Label>
-                        <Select value={settings.commissionAgent} onValueChange={(value) => handleSelectChange('commissionAgent', value)}>
-                            <SelectTrigger id="commissionAgent"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="select_from_users_list">Select from users list</SelectItem>
-                                <SelectItem value="logged_in_user">Logged in user</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="commissionCalculationType" className="flex items-center gap-1">
-                            Commission Calculation Type:
-                            <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger><TooltipContent><p>Calculate commission on invoice value or payment received.</p></TooltipContent></Tooltip>
-                        </Label>
-                        <Select value={settings.commissionCalculationType} onValueChange={(value) => handleSelectChange('commissionCalculationType', value)}>
-                            <SelectTrigger id="commissionCalculationType"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="invoice_value">On Invoice Value</SelectItem>
-                                <SelectItem value="payment_received">On Payment Received</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="itemAdditionMethod">Item addition method:</Label>
+                        <Label htmlFor="itemAdditionMethod">Sales Item Addition Method:</Label>
                          <Select value={settings.itemAdditionMethod} onValueChange={(value) => handleSelectChange('itemAdditionMethod', value)}>
                             <SelectTrigger id="itemAdditionMethod"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -783,7 +766,7 @@ const SaleSettingsForm = () => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 lg:col-span-3">
                         <Label htmlFor="amountRoundingMethod">Amount rounding method:</Label>
                          <Select value={settings.amountRoundingMethod} onValueChange={(value) => handleSelectChange('amountRoundingMethod', value)}>
                             <SelectTrigger id="amountRoundingMethod"><SelectValue /></SelectTrigger>
@@ -796,7 +779,80 @@ const SaleSettingsForm = () => {
                         </Select>
                     </div>
                 </div>
-                 <div className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <div className="border-t pt-6 space-y-4">
+                    <h4 className="font-semibold text-lg">Commission Agent Settings</h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="commissionAgent">Commission Agent:</Label>
+                            <Select value={settings.commissionAgent} onValueChange={(value) => handleSelectChange('commissionAgent', value)}>
+                                <SelectTrigger id="commissionAgent"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="select_from_users_list">Select from users list</SelectItem>
+                                    <SelectItem value="logged_in_user">Logged in user</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="commissionCalculationType" className="flex items-center gap-1">
+                                Commission Calculation Type:
+                                <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger><TooltipContent><p>Calculate commission on invoice value or payment received.</p></TooltipContent></Tooltip>
+                            </Label>
+                            <Select value={settings.commissionCalculationType} onValueChange={(value) => handleSelectChange('commissionCalculationType', value)}>
+                                <SelectTrigger id="commissionCalculationType"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="invoice_value">On Invoice Value</SelectItem>
+                                    <SelectItem value="payment_received">On Payment Received</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                    <h4 className="font-semibold text-lg">Payment Link Settings</h4>
+                    <div className="space-y-6">
+                        <div>
+                            <div className="flex items-center space-x-2 mb-4">
+                                <Checkbox id="isStripeEnabled" checked={settings.isStripeEnabled} onCheckedChange={(checked) => handleCheckboxChange('isStripeEnabled', !!checked)} />
+                                <Label htmlFor="isStripeEnabled" className="font-normal">Enable Stripe</Label>
+                            </div>
+                            {settings.isStripeEnabled && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 ml-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripePublicKey">Stripe Public Key:</Label>
+                                        <Input id="stripePublicKey" value={settings.stripePublicKey} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripeSecretKey">Stripe Secret Key:</Label>
+                                        <Input id="stripeSecretKey" type="password" value={settings.stripeSecretKey} onChange={handleInputChange} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <div className="flex items-center space-x-2 mb-4">
+                                <Checkbox id="isRazorpayEnabled" checked={settings.isRazorpayEnabled} onCheckedChange={(checked) => handleCheckboxChange('isRazorpayEnabled', !!checked)} />
+                                <Label htmlFor="isRazorpayEnabled" className="font-normal">Enable Razorpay</Label>
+                            </div>
+                            {settings.isRazorpayEnabled && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 ml-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="razorpayKeyId">Razorpay Key ID:</Label>
+                                        <Input id="razorpayKeyId" value={settings.razorpayKeyId} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="razorpayKeySecret">Razorpay Key Secret:</Label>
+                                        <Input id="razorpayKeySecret" type="password" value={settings.razorpayKeySecret} onChange={handleInputChange} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                 <div className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="flex items-center space-x-2">
                         <Checkbox id="enableSalesOrder" checked={settings.enableSalesOrder} onCheckedChange={(checked) => handleCheckboxChange('enableSalesOrder', !!checked)} />
                         <Label htmlFor="enableSalesOrder" className="font-normal">Enable Sales Order</Label>
@@ -808,6 +864,10 @@ const SaleSettingsForm = () => {
                      <div className="flex items-center space-x-2">
                         <Checkbox id="isPayTermRequired" checked={settings.isPayTermRequired} onCheckedChange={(checked) => handleCheckboxChange('isPayTermRequired', !!checked)} />
                         <Label htmlFor="isPayTermRequired" className="font-normal">Is pay term required?</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="allowOverselling" checked={settings.allowOverselling} onCheckedChange={(checked) => handleCheckboxChange('allowOverselling', !!checked)} />
+                        <Label htmlFor="allowOverselling" className="font-normal">Allow Overselling</Label>
                     </div>
                 </div>
             </CardContent>
