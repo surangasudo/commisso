@@ -16,6 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
 } from "@/components/ui/select";
 import {
   Info,
@@ -135,11 +136,17 @@ const BusinessSettingsForm = () => {
                             </div>
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="usd">America - Dollars(USD)</SelectItem>
-                            <SelectItem value="eur">Europe - Euro(EUR)</SelectItem>
-                            <SelectItem value="gbp">United Kingdom - Pounds(GBP)</SelectItem>
-                            <SelectItem value="jpy">Japan - Yen(JPY)</SelectItem>
-                            <SelectItem value="inr">India - Rupees(INR)</SelectItem>
+                            <SelectItem value="usd">America - Dollars (USD)</SelectItem>
+                            <SelectItem value="eur">Europe - Euro (EUR)</SelectItem>
+                            <SelectItem value="gbp">United Kingdom - Pounds (GBP)</SelectItem>
+                            <SelectItem value="jpy">Japan - Yen (JPY)</SelectItem>
+                            <SelectItem value="inr">India - Rupees (INR)</SelectItem>
+                            <SelectItem value="cad">Canada - Dollar (CAD)</SelectItem>
+                            <SelectItem value="aud">Australia - Dollar (AUD)</SelectItem>
+                            <SelectItem value="chf">Switzerland - Franc (CHF)</SelectItem>
+                            <SelectItem value="cny">China - Yuan (CNY)</SelectItem>
+                            <SelectItem value="brl">Brazil - Real (BRL)</SelectItem>
+                            <SelectItem value="zar">South Africa - Rand (ZAR)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -162,15 +169,43 @@ const BusinessSettingsForm = () => {
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="America/Phoenix">America/Phoenix</SelectItem>
-                            <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
-                            <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
-                            <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
-                            <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
-                            <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-                            <SelectItem value="Europe/Paris">Europe/Paris (CET)</SelectItem>
-                            <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                        <SelectContent className="max-h-60">
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">America</Label>
+                                <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                                <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
+                                <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
+                                <SelectItem value="America/Phoenix">America/Phoenix</SelectItem>
+                                <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                                <SelectItem value="America/Anchorage">America/Anchorage (AKST)</SelectItem>
+                                <SelectItem value="Pacific/Honolulu">Pacific/Honolulu (HST)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Europe</Label>
+                                <SelectItem value="Europe/London">Europe/London (GMT/BST)</SelectItem>
+                                <SelectItem value="Europe/Paris">Europe/Paris (CET/CEST)</SelectItem>
+                                <SelectItem value="Europe/Berlin">Europe/Berlin (CET/CEST)</SelectItem>
+                                <SelectItem value="Europe/Moscow">Europe/Moscow (MSK)</SelectItem>
+                                <SelectItem value="Europe/Istanbul">Europe/Istanbul (TRT)</SelectItem>
+                            </SelectGroup>
+                             <SelectGroup>
+                                <Label className="px-2 text-xs">Asia</Label>
+                                <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                                <SelectItem value="Asia/Dubai">Asia/Dubai (GST)</SelectItem>
+                                <SelectItem value="Asia/Kolkata">Asia/Kolkata (IST)</SelectItem>
+                                <SelectItem value="Asia/Shanghai">Asia/Shanghai (CST)</SelectItem>
+                                <SelectItem value="Asia/Singapore">Asia/Singapore (SGT)</SelectItem>
+                            </SelectGroup>
+                             <SelectGroup>
+                                <Label className="px-2 text-xs">Australia</Label>
+                                <SelectItem value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</SelectItem>
+                                <SelectItem value="Australia/Perth">Australia/Perth (AWST)</SelectItem>
+                            </SelectGroup>
+                            <SelectGroup>
+                                <Label className="px-2 text-xs">Africa</Label>
+                                <SelectItem value="Africa/Cairo">Africa/Cairo (EET)</SelectItem>
+                                <SelectItem value="Africa/Johannesburg">Africa/Johannesburg (SAST)</SelectItem>
+                            </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>
