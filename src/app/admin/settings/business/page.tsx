@@ -707,6 +707,7 @@ const SaleSettingsForm = () => {
         defaultSaleDiscount: '0',
         defaultSellingPriceGroup: 'default',
         enableCommissionAgent: false,
+        isCommissionAgentPhoneCompulsory: false,
         commissionAgent: 'none',
         commissionCalculationType: 'invoice_value',
         itemAdditionMethod: 'increase_quantity',
@@ -831,6 +832,16 @@ const SaleSettingsForm = () => {
                                         <SelectItem value="payment_received">On Payment Received</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="lg:col-span-2 flex items-center space-x-2 pt-2">
+                                <Checkbox 
+                                    id="isCommissionAgentPhoneCompulsory" 
+                                    checked={settings.isCommissionAgentPhoneCompulsory} 
+                                    onCheckedChange={(checked) => handleCheckboxChange('isCommissionAgentPhoneCompulsory', !!checked)} 
+                                />
+                                <Label htmlFor="isCommissionAgentPhoneCompulsory" className="font-normal">
+                                    Make it compulsory to enter commission agent phone number to make sale in default pricing group
+                                </Label>
                             </div>
                         </div>
                     )}
