@@ -1,6 +1,7 @@
 
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -140,7 +141,7 @@ export const suppliers: Supplier[] = [
     {
         id: 'sup-2',
         contactId: '',
-        businessName: 'Univer Suppliers',
+        businessName: 'Univer Suppliers, Jackson Hill',
         name: 'Jackson Hill',
         email: 'jackson@univer.com',
         taxNumber: '5459000655',
@@ -156,7 +157,7 @@ export const suppliers: Supplier[] = [
     {
         id: 'sup-3',
         contactId: '',
-        businessName: 'Alpha Clothings',
+        businessName: 'Alpha Clothings, Michael',
         name: 'Michael',
         email: 'michael@alpha.com',
         taxNumber: '4590091535',
@@ -172,7 +173,7 @@ export const suppliers: Supplier[] = [
     {
         id: 'sup-4',
         contactId: 'CN0004',
-        businessName: 'Digital Ocean',
+        businessName: 'Digital Ocean, Mike McCubbin',
         name: 'Mike McCubbin',
         email: 'mike@digitalocean.com',
         taxNumber: '52965489001',
@@ -262,6 +263,20 @@ export const customers: Customer[] = [
         totalSaleDue: 1200,
         totalSaleReturnDue: 100,
     },
+    {
+        id: 'cus-4',
+        contactId: 'CO0004',
+        name: 'Harry',
+        email: 'harry@example.com',
+        taxNumber: '111222333',
+        customerGroup: 'Retail',
+        openingBalance: 0,
+        addedOn: '06/20/2025',
+        address: 'N/A',
+        mobile: 'N/A',
+        totalSaleDue: 0,
+        totalSaleReturnDue: 0,
+    }
 ];
 
 export type DetailedProduct = {
@@ -306,6 +321,13 @@ export const variations: Variation[] = [
   { id: 'var-3', name: 'Material', values: ['Cotton', 'Polyester', 'Wool'] },
 ];
 
+export type PurchaseItem = {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  tax: number;
+};
+
 export type Purchase = {
   id: string;
   referenceNo: string;
@@ -318,16 +340,53 @@ export type Purchase = {
   paymentDue: number;
   addedBy: string;
   taxAmount?: number;
+  items: PurchaseItem[];
 };
 
 export const purchases: Purchase[] = [
-    { id: 'pur-1', date: '06/22/2025 21:00', referenceNo: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 235656.00, paymentDue: 235656.00, addedBy: 'Mr Admin', taxAmount: 11782.80 },
-    { id: 'pur-2', date: '06/20/2025 21:00', referenceNo: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 5180.00, paymentDue: 5180.00, addedBy: 'Mr Admin', taxAmount: 259.00 },
-    { id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin', taxAmount: 605.00 },
-    { id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 2783.00 },
-    { id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 4235.00 },
-    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin', taxAmount: 302.50 },
-    { id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 100.00 },
+    { 
+        id: 'pur-1', date: '06/22/2025 21:00', referenceNo: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 235656.00, paymentDue: 235656.00, addedBy: 'Mr Admin', taxAmount: 11782.80,
+        items: [
+            { productId: 'prod-3', quantity: 200, unitPrice: 5.00, tax: 0 },
+            { productId: 'prod-4', quantity: 150, unitPrice: 10.00, tax: 0 },
+        ]
+    },
+    { 
+        id: 'pur-2', date: '06/20/2025 21:00', referenceNo: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 5180.00, paymentDue: 5180.00, addedBy: 'Mr Admin', taxAmount: 259.00,
+        items: [
+            { productId: 'prod-5', quantity: 50, unitPrice: 10.00, tax: 0 },
+        ]
+    },
+    { 
+        id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin', taxAmount: 605.00,
+        items: [
+            { productId: 'prod-1', quantity: 10, unitPrice: 121.00, tax: 0 },
+        ]
+    },
+    { 
+        id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 2783.00,
+        items: [
+             { productId: 'prod-7', quantity: 20, unitPrice: 182.00, tax: 0 },
+             { productId: 'prod-8', quantity: 30, unitPrice: 148.50, tax: 0 },
+        ]
+    },
+    { 
+        id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 4235.00,
+        items: []
+    },
+    { 
+        id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin', taxAmount: 302.50,
+        items: [
+            { productId: 'prod-6', quantity: 10, unitPrice: 35.00, tax: 0 },
+            { productId: 'prod-9', quantity: 15, unitPrice: 34.00, tax: 0 },
+        ]
+    },
+    { 
+        id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 100.00,
+        items: [
+             { productId: 'prod-3', quantity: 40, unitPrice: 5.00, tax: 0 },
+        ] 
+    },
 ];
 
 export type PurchaseReturn = {
