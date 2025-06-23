@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { MapPin, Plus, Pencil, Trash2, Power, Eye, Check, Info, Search } from "lucide-react";
+import { MapPin, Plus, Pencil, Power, Eye, Check, Info, Search } from "lucide-react";
 import React, { useState } from 'react';
 import {
   AlertDialog,
@@ -208,7 +208,7 @@ export default function BusinessLocationsPage() {
                           <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(location)}>
                             <Pencil className="mr-1 h-3 w-3" /> Edit
                           </Button>
-                          <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700">
+                          <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700" onClick={() => alert('Settings page for this location is not yet implemented.')}>
                              <Eye className="mr-1 h-3 w-3" /> Settings
                           </Button>
                            <Button variant="outline" size="sm" className={`h-8 ${location.isActive ? 'text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700' : 'text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700'}`} onClick={() => toggleActivation(location.id)}>
