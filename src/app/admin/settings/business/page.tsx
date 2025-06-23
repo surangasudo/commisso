@@ -784,7 +784,17 @@ const SaleSettingsForm = () => {
                 <div className="border-t pt-6 space-y-4">
                     <div className="flex items-center space-x-2 mb-4">
                         <Checkbox id="enableCommissionAgent" checked={settings.enableCommissionAgent} onCheckedChange={(checked) => handleCheckboxChange('enableCommissionAgent', !!checked)} />
-                        <Label htmlFor="enableCommissionAgent" className="font-normal text-lg">Enable Commission Agent</Label>
+                        <Label htmlFor="enableCommissionAgent" className="font-normal text-lg flex items-center gap-1">
+                            Enable Commission Agent
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Info className="w-4 h-4 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Enabling this activates the advanced commission module with the chosen selling group.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </Label>
                     </div>
                     
                     {settings.enableCommissionAgent && (
