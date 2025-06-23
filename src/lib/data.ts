@@ -5,6 +5,7 @@
 
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -337,7 +338,7 @@ export type Purchase = {
   date: string;
   location: string;
   supplier: string;
-  purchaseStatus: 'Received' | 'Pending' | 'Ordered';
+  purchaseStatus: 'Received' | 'Pending' | 'Ordered' | 'Partial';
   paymentStatus: 'Paid' | 'Due' | 'Partial';
   grandTotal: number;
   paymentDue: number;
@@ -899,4 +900,60 @@ export type TaxRate = {
 export const initialTaxRates: TaxRate[] = [
   { id: 'tax-1', name: 'VAT@10%', rate: 10 },
   { id: 'tax-2', name: 'GST@5%', rate: 5 },
+];
+
+export type BusinessLocation = {
+  id: string;
+  name: string;
+  locationId: string;
+  landmark: string;
+  city: string;
+  zipCode: string;
+  state: string;
+  country: string;
+  mobile: string;
+  email: string;
+  website: string;
+};
+
+export const businessLocations: BusinessLocation[] = [
+  {
+    id: 'loc-1',
+    name: 'Awesome Shop',
+    locationId: 'AS-001',
+    landmark: 'Near Central Park',
+    city: 'Phoenix',
+    zipCode: '85001',
+    state: 'Arizona',
+    country: 'USA',
+    mobile: '555-123-4567',
+    email: 'contact@awesomeshop.com',
+    website: 'https://www.awesomeshop.com',
+  },
+   {
+    id: 'loc-2',
+    name: 'Warehouse A',
+    locationId: 'WH-A',
+    landmark: 'Industrial Area',
+    city: 'Phoenix',
+    zipCode: '85043',
+    state: 'Arizona',
+    country: 'USA',
+    mobile: '555-111-2222',
+    email: 'warehouse-a@awesomeshop.com',
+    website: '',
+  },
+    {
+    id: 'loc-3',
+    name: 'Warehouse B',
+    locationId: 'WH-B',
+    landmark: 'South Mountain',
+    city: 'Phoenix',
+    zipCode: '85042',
+    state: 'Arizona',
+    country: 'USA',
+    mobile: '555-333-4444',
+    email: 'warehouse-b@awesomeshop.com',
+    website: '',
+  },
 ];
