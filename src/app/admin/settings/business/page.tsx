@@ -1754,12 +1754,12 @@ const SmsSettingsForm = () => {
                 <Input
                     placeholder={`Parameter ${i + 1} key`}
                     value={settings[`param${i + 1}Key` as keyof typeof settings]}
-                    onChange={(e) => handleInputChange(`param${i + 1}Key`, e.target.value)}
+                    onChange={(e) => handleInputChange(`param${i + 1}Key` as keyof typeof settings, e.target.value)}
                 />
                 <Input
                     placeholder={`Parameter ${i + 1} value`}
                     value={settings[`param${i + 1}Val` as keyof typeof settings]}
-                    onChange={(e) => handleInputChange(`param${i + 1}Val`, e.target.value)}
+                    onChange={(e) => handleInputChange(`param${i + 1}Val` as keyof typeof settings, e.target.value)}
                 />
             </div>
         ));
@@ -1894,6 +1894,126 @@ const SmsSettingsForm = () => {
     );
 };
 
+const RewardPointSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        enableRewardPoint: true,
+        rewardPointDisplayName: 'Reward Points',
+        amountForOnePoint: '10',
+        minOrderTotalToEarn: '100',
+        maxPointsPerOrder: '500',
+        redeemAmountPerPoint: '1',
+        minOrderTotalToRedeem: '200',
+        minRedeemPointPerOrder: '50',
+        maxRedeemPointPerOrder: '1000',
+        expiryPeriod: '365',
+        expiryPeriodType: 'days',
+    });
+
+    const handleInputChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+     const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating reward point settings:', settings);
+        toast({
+            title: 'Reward Point Settings Updated',
+            description: 'Your reward point settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Reward Point Settings</CardTitle>
+                <CardDescription>Manage how customers earn and redeem reward points.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableRewardPoint" checked={settings.enableRewardPoint} onCheckedChange={(checked) => handleCheckboxChange('enableRewardPoint', !!checked)} />
+                    <Label htmlFor="enableRewardPoint" className="text-lg font-normal">Enable Reward Point</Label>
+                </div>
+                {settings.enableRewardPoint && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="rewardPointDisplayName">Reward Point Display Name:</Label>
+                            <Input id="rewardPointDisplayName" value={settings.rewardPointDisplayName} onChange={(e) => handleInputChange('rewardPointDisplayName', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="amountForOnePoint" className="flex items-center gap-1.5">
+                                Amount to spend for 1 point:
+                                <Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent><p>The amount a customer needs to spend to earn one reward point.</p></TooltipContent></Tooltip>
+                            </Label>
+                            <Input id="amountForOnePoint" type="number" value={settings.amountForOnePoint} onChange={(e) => handleInputChange('amountForOnePoint', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="minOrderTotalToEarn" className="flex items-center gap-1.5">
+                                Minimum order total to earn reward:
+                                <Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent><p>The minimum order total required for a customer to earn reward points.</p></TooltipContent></Tooltip>
+                            </Label>
+                            <Input id="minOrderTotalToEarn" type="number" value={settings.minOrderTotalToEarn} onChange={(e) => handleInputChange('minOrderTotalToEarn', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="maxPointsPerOrder">Maximum reward points per order:</Label>
+                            <Input id="maxPointsPerOrder" type="number" value={settings.maxPointsPerOrder} onChange={(e) => handleInputChange('maxPointsPerOrder', e.target.value)} />
+                        </div>
+
+                        <Separator className="lg:col-span-2" />
+
+                        <div className="space-y-2">
+                            <Label htmlFor="redeemAmountPerPoint">Redeem Amount per 1 point:</Label>
+                            <Input id="redeemAmountPerPoint" type="number" value={settings.redeemAmountPerPoint} onChange={(e) => handleInputChange('redeemAmountPerPoint', e.target.value)} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="minOrderTotalToRedeem" className="flex items-center gap-1.5">
+                                Minimum order total to redeem reward:
+                                <Tooltip><TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger><TooltipContent><p>The minimum order total required for a customer to redeem reward points.</p></TooltipContent></Tooltip>
+                            </Label>
+                            <Input id="minOrderTotalToRedeem" type="number" value={settings.minOrderTotalToRedeem} onChange={(e) => handleInputChange('minOrderTotalToRedeem', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="minRedeemPointPerOrder">Minimum redeem point per order:</Label>
+                            <Input id="minRedeemPointPerOrder" type="number" value={settings.minRedeemPointPerOrder} onChange={(e) => handleInputChange('minRedeemPointPerOrder', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="maxRedeemPointPerOrder">Maximum redeem point per order:</Label>
+                            <Input id="maxRedeemPointPerOrder" type="number" value={settings.maxRedeemPointPerOrder} onChange={(e) => handleInputChange('maxRedeemPointPerOrder', e.target.value)} />
+                        </div>
+
+                        <Separator className="lg:col-span-2" />
+
+                         <div className="space-y-2">
+                            <Label htmlFor="expiryPeriod">Reward Point expiry period:</Label>
+                            <div className="flex gap-2">
+                                <Input id="expiryPeriod" type="number" value={settings.expiryPeriod} onChange={(e) => handleInputChange('expiryPeriod', e.target.value)} />
+                                <Select value={settings.expiryPeriodType} onValueChange={(value) => handleSelectChange('expiryPeriodType', value)}>
+                                    <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="days">Days</SelectItem>
+                                        <SelectItem value="months">Months</SelectItem>
+                                        <SelectItem value="years">Years</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -1972,7 +2092,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="sms_settings">
                             <SmsSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings'].includes(t.value)).map(tab => (
+                         <TabsContent value="reward_point_settings">
+                            <RewardPointSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
