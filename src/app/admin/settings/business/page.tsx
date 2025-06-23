@@ -1643,9 +1643,6 @@ const EmailSettingsForm = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Email Settings</CardTitle>
-                <CardDescription>
-                    Configure your email sending service. Instruction to get mail setting for <a href="https://ultimatefosters.com/docs/ultimatepos/getting-started/mail-settings-for-gmail-hotmail-etc/" target="_blank" rel="noopener noreferrer" className="text-primary underline">gmail, hotmail etc.</a>
-                </CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
