@@ -87,6 +87,16 @@ export default function PosPage() {
   const [cashAmount, setCashAmount] = useState('');
   const [cardAmount, setCardAmount] = useState('');
   const [changeDue, setChangeDue] = useState(0);
+  
+  // State for card payment dialog
+  const [isCardPaymentOpen, setIsCardPaymentOpen] = useState(false);
+  const [cardDetails, setCardDetails] = useState({
+    number: '',
+    holder: '',
+    month: '',
+    year: '',
+    cvv: '',
+  });
 
 
   useEffect(() => {
@@ -258,8 +268,27 @@ export default function PosPage() {
           toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
           return;
         }
-        toast({ title: 'Card Payment Successful', description: 'The sale has been finalized with card payment.' });
+        setIsCardPaymentOpen(true);
+      };
+
+      const handleFinalizeCardPayment = () => {
+        // Basic validation
+        if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
+            toast({
+                title: 'Missing Card Details',
+                description: 'Please fill in all card details to proceed.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        toast({
+            title: 'Card Payment Successful',
+            description: 'The sale has been finalized with card payment.',
+        });
         setCart([]);
+        setIsCardPaymentOpen(false);
+        setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
       };
 
   return (
@@ -432,6 +461,45 @@ export default function PosPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={isCardPaymentOpen} onOpenChange={setIsCardPaymentOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Card Payment</DialogTitle>
+                        <DialogDescription>
+                            Enter card details for a total of <strong>${totalPayable.toFixed(2)}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="card-number">Card Number</Label>
+                            <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({...d, number: e.target.value}))} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="card-holder">Card Holder Name</Label>
+                            <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({...d, holder: e.target.value}))} />
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                <Label htmlFor="expiry-month">Expiry Month</Label>
+                                <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({...d, month: e.target.value}))} />
+                                </div>
+                                <div className="space-y-2">
+                                <Label htmlFor="expiry-year">Expiry Year</Label>
+                                <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({...d, year: e.target.value}))} />
+                                </div>
+                                <div className="space-y-2">
+                                <Label htmlFor="cvv">CVV</Label>
+                                <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({...d, cvv: e.target.value}))} />
+                                </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" onClick={handleFinalizeCardPayment}>Finalize Payment</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <Button className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
             <Button className="bg-red-500 hover:bg-red-600 text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
           </div>
