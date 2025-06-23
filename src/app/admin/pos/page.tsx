@@ -61,6 +61,8 @@ import { Label } from "@/components/ui/label";
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -216,6 +218,60 @@ const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpe
     )
 };
 
+const EditValueDialog = ({
+    open,
+    onOpenChange,
+    title,
+    description,
+    value,
+    setValue
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: string;
+    description: string;
+    value: number;
+    setValue: (value: number) => void;
+}) => {
+    const [localValue, setLocalValue] = useState(String(value));
+
+    useEffect(() => {
+        if (open) {
+            setLocalValue(String(value));
+        }
+    }, [open, value]);
+
+    const handleSave = () => {
+        setValue(Number(localValue) || 0);
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-xs">
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <Label htmlFor="edit-value">Amount</Label>
+                    <Input
+                        id="edit-value"
+                        type="number"
+                        value={localValue}
+                        onChange={(e) => setLocalValue(e.target.value)}
+                        className="mt-2"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave}>Save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function PosPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -238,6 +294,13 @@ export default function PosPage() {
     cvv: '',
   });
   
+  const [discount, setDiscount] = useState(0);
+  const [orderTax, setOrderTax] = useState(0);
+  const [shipping, setShipping] = useState(0);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+
   // States for new header functions
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
@@ -272,8 +335,8 @@ export default function PosPage() {
     return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   }, [cart]);
 
-  const tax = useMemo(() => subtotal * 0.08, [subtotal]);
-  const totalPayable = useMemo(() => subtotal + tax, [subtotal, tax]);
+  const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
+
 
   useEffect(() => {
     if (isMultiPayOpen) {
@@ -459,6 +522,7 @@ export default function PosPage() {
     const handleCustomerDisplay = () => window.open('/customer-display', '_blank', 'noopener,noreferrer');
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh_-_60px)] bg-slate-100 text-slate-900 -m-6 font-sans">
       <header className="bg-white shadow-sm p-2 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
@@ -548,10 +612,31 @@ export default function PosPage() {
                    </ScrollArea>
                 </div>
                 <div className="border-t p-3 mt-auto text-sm space-y-2 bg-slate-50">
-                    <div className="flex justify-between"><span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> <span>Total: <span className="font-semibold">${subtotal.toFixed(2)}</span></span></div>
-                     <div className="flex justify-between items-center text-slate-600"><span>Discount (-): <Info className="w-3 h-3 inline"/> <Edit2 className="w-3 h-3 inline cursor-pointer"/></span> <span>$0.00</span></div>
-                     <div className="flex justify-between items-center text-slate-600"><span>Order Tax (+): <Info className="w-3 h-3 inline"/> <Edit2 className="w-3 h-3 inline cursor-pointer"/></span> <span>${tax.toFixed(2)}</span></div>
-                     <div className="flex justify-between items-center text-slate-600"><span>Shipping (+): <Info className="w-3 h-3 inline"/> <Edit2 className="w-3 h-3 inline cursor-pointer"/></span> <span>$0.00</span></div>
+                    <div className="flex justify-between">
+                        <span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> 
+                        <span>Total: <span className="font-semibold">${subtotal.toFixed(2)}</span></span>
+                    </div>
+                     <div className="flex justify-between items-center text-slate-600">
+                        <span className="flex items-center gap-1">Discount (-): 
+                            <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsDiscountModalOpen(true)}/>
+                        </span> 
+                        <span>${discount.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between items-center text-slate-600">
+                        <span className="flex items-center gap-1">Order Tax (+):
+                             <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsTaxModalOpen(true)}/>
+                        </span> 
+                        <span>${orderTax.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between items-center text-slate-600">
+                        <span className="flex items-center gap-1">Shipping (+):
+                             <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsShippingModalOpen(true)}/>
+                        </span>
+                        <span>${shipping.toFixed(2)}</span>
+                    </div>
                 </div>
             </Card>
         </div>
@@ -678,9 +763,35 @@ export default function PosPage() {
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
       <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
       <RecentTransactionsDialog open={isRecentTransactionsOpen} onOpenChange={setIsRecentTransactionsOpen} />
+       <EditValueDialog
+        open={isDiscountModalOpen}
+        onOpenChange={setIsDiscountModalOpen}
+        title="Edit Discount"
+        description="Enter the total discount amount for this order."
+        value={discount}
+        setValue={setDiscount}
+      />
+      <EditValueDialog
+        open={isTaxModalOpen}
+        onOpenChange={setIsTaxModalOpen}
+        title="Edit Order Tax"
+        description="Enter the total tax amount for this order."
+        value={orderTax}
+        setValue={setOrderTax}
+      />
+      <EditValueDialog
+        open={isShippingModalOpen}
+        onOpenChange={setIsShippingModalOpen}
+        title="Edit Shipping Charges"
+        description="Enter the shipping charges for this order."
+        value={shipping}
+        setValue={setShipping}
+      />
       <div className="text-center text-xs text-slate-400 p-1 bg-slate-100">
         Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
       </div>
     </div>
+    </TooltipProvider>
   );
 }
+
