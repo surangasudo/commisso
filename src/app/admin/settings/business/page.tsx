@@ -1188,6 +1188,104 @@ const PurchaseSettingsForm = () => {
     );
 };
 
+const PaymentSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        stripeKey: '',
+        stripeSecret: '',
+        paypalClientId: '',
+        paypalSecret: '',
+        cashAccountId: 'none',
+        cardAccountId: 'none',
+        chequeAccountId: 'none',
+        bankTransferAccountId: 'none',
+        otherAccountId: 'none',
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+    
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating payment settings:', settings);
+        toast({
+            title: 'Payment Settings Updated',
+            description: 'Your payment settings have been saved successfully.',
+        });
+    };
+
+    const paymentAccounts = [
+        { id: 'cashAccountId', label: 'Cash:' },
+        { id: 'cardAccountId', label: 'Card:' },
+        { id: 'chequeAccountId', label: 'Cheque:' },
+        { id: 'bankTransferAccountId', label: 'Bank Transfer:' },
+        { id: 'otherAccountId', label: 'Other:' },
+    ] as const;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Payment Settings</CardTitle>
+                <CardDescription>Configure payment gateways and default accounts.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-8">
+                <div className="space-y-6">
+                    <h3 className="text-lg font-semibold">Payment Gateways</h3>
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="stripeKey">Stripe Key:</Label>
+                            <Input id="stripeKey" value={settings.stripeKey} onChange={handleInputChange} />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="stripeSecret">Stripe Secret:</Label>
+                            <Input id="stripeSecret" type="password" value={settings.stripeSecret} onChange={handleInputChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="paypalClientId">PayPal App Client ID:</Label>
+                            <Input id="paypalClientId" value={settings.paypalClientId} onChange={handleInputChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="paypalSecret">PayPal App Secret:</Label>
+                            <Input id="paypalSecret" type="password" value={settings.paypalSecret} onChange={handleInputChange} />
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+                
+                <div>
+                     <h3 className="text-lg font-semibold">Default payment accounts</h3>
+                     <p className="text-sm text-muted-foreground mb-4">Choose a default payment account for different payment methods.</p>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                        {paymentAccounts.map(account => (
+                            <div key={account.id} className="space-y-2">
+                                <Label htmlFor={account.id}>{account.label}</Label>
+                                <Select value={settings[account.id]} onValueChange={(value) => handleSelectChange(account.id, value)}>
+                                    <SelectTrigger id={account.id}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="test_account">Test Account (Cash)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        ))}
+                      </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -1212,7 +1310,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="purchases" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="payment" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -1247,7 +1345,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="purchases">
                             <PurchaseSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases'].includes(t.value)).map(tab => (
+                        <TabsContent value="payment">
+                            <PaymentSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
