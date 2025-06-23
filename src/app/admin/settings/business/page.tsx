@@ -1327,6 +1327,78 @@ const PaymentSettingsForm = () => {
     );
 };
 
+const DashboardSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        viewStockExpiryAlert: '30',
+        enableStockExpiryAlert: true,
+    });
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating dashboard settings:', settings);
+        toast({
+            title: 'Dashboard Settings Updated',
+            description: 'Your dashboard settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Dashboard Settings</CardTitle>
+                <CardDescription>Configure your dashboard view and alerts.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="viewStockExpiryAlert" className="flex items-center gap-1.5">
+                            View Stock Expiry Alert For
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Show an alert for products expiring within the selected number of days.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </Label>
+                        <Select value={settings.viewStockExpiryAlert} onValueChange={(value) => handleSelectChange('viewStockExpiryAlert', value)}>
+                            <SelectTrigger id="viewStockExpiryAlert">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="7">7 Days</SelectItem>
+                                <SelectItem value="15">15 Days</SelectItem>
+                                <SelectItem value="30">30 Days</SelectItem>
+                                <SelectItem value="60">60 Days</SelectItem>
+                                <SelectItem value="90">90 Days</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center space-x-2 self-end pb-2">
+                        <Checkbox id="enableStockExpiryAlert" checked={settings.enableStockExpiryAlert} onCheckedChange={(checked) => handleCheckboxChange('enableStockExpiryAlert', !!checked)} />
+                        <Label htmlFor="enableStockExpiryAlert" className="font-normal">
+                            Enable Stock Expiry Alert
+                        </Label>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -1351,7 +1423,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="payment" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="dashboard" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -1389,7 +1461,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="payment">
                             <PaymentSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment'].includes(t.value)).map(tab => (
+                         <TabsContent value="dashboard">
+                            <DashboardSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
