@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -54,11 +54,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { DateRange } from 'react-day-picker';
-import { format, startOfYear, endOfYear, subDays, startOfMonth, endOfMonth, subMonths, subYears, startOfToday, endOfToday, startOfYesterday, endOfYesterday } from 'date-fns';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -79,9 +74,8 @@ const settingsTabs = [
   { value: "custom_labels", label: "Custom Labels", icon: Tags },
 ];
 
-const BusinessSettingsForm = () => {
-    const { toast } = useToast();
-    const [settings, setSettings] = useState({
+const initialSettings = {
+    business: {
         businessName: 'Awesome Shop',
         startDate: '2018-01-01',
         profitPercent: '25.00',
@@ -96,25 +90,241 @@ const BusinessSettingsForm = () => {
         timeFormat: '24-hour',
         currencyPrecision: '2',
         quantityPrecision: '2',
-    });
+    },
+    tax: {
+        taxNumber1: 'GSTIN12345',
+        taxNumber2: '',
+        enableInlineTax: true,
+        defaultSalesTax: 'tax-2',
+    },
+    product: {
+        skuPrefix: 'AS',
+        enableBrands: true,
+        enablePriceAndTax: true,
+        enableRacks: false,
+        enableWarranty: false,
+        enableProductExpiry: false,
+        addItemExpiry: '',
+        onExpiryAction: 'keep_selling',
+        onExpiryPeriod: '0',
+        enableCategories: true,
+        defaultUnit: '',
+        enableRow: false,
+        isProductImageRequired: false,
+        enableSubCategories: true,
+        enableSubUnits: false,
+        enablePosition: false,
+    },
+    contact: {
+        defaultCreditLimit: '1000',
+        contactIdPrefix: 'CN',
+        defaultPayTermValue: '30',
+        defaultPayTermUnit: 'days',
+    },
+    sale: {
+        defaultSaleDiscount: '0',
+        defaultSellingPriceGroup: 'default',
+        enableCommissionAgent: false,
+        isCommissionAgentPhoneCompulsory: false,
+        commissionAgent: 'none',
+        commissionCalculationType: 'invoice_value',
+        itemAdditionMethod: 'increase_quantity',
+        amountRoundingMethod: 'round_to_nearest_whole',
+        enableSalesOrder: false,
+        enableRecurringInvoice: false,
+        isPayTermRequired: false,
+        isStripeEnabled: false,
+        stripePublicKey: '',
+        stripeSecretKey: '',
+        isRazorpayEnabled: false,
+        razorpayKeyId: '',
+        razorpayKeySecret: '',
+        allowOverselling: false,
+    },
+    pos: {
+        expressCheckout: 'shift+e',
+        payAndCheckout: 'shift+p',
+        draftShortcut: 'shift+d',
+        cancelShortcut: 'shift+c',
+        goToQuantity: 'f2',
+        weighingScaleShortcut: '',
+        editDiscount: 'shift+i',
+        editOrderTax: 'shift+t',
+        addPaymentRow: 'shift+r',
+        finalizePayment: 'shift+f',
+        addNewProduct: 'f4',
+        disableMultiplePay: false,
+        dontShowProductSuggestion: false,
+        disableOrderTax: false,
+        enableTransactionDate: true,
+        isServiceStaffRequired: true,
+        showInvoiceScheme: false,
+        showPricingTooltip: false,
+        disableDraft: false,
+        dontShowRecentTransactions: false,
+        subtotalEditable: false,
+        disableCreditSaleButton: false,
+        enableServiceStaffInProductLine: false,
+        enableWeighingScale: false,
+        showInvoiceLayoutDropdown: false,
+        printInvoiceOnSuspend: false,
+        disableExpressCheckout: false,
+        disableDiscount: false,
+        disableSuspendSale: false,
+        weighingScalePrefix: '',
+        weighingScaleSkuLength: '5',
+        weighingScaleQtyIntegerLength: '4',
+        weighingScaleQtyFractionalLength: '3',
+    },
+    purchase: {
+        enableEditingProductPrice: true,
+        enablePurchaseStatus: true,
+        enableLotNumber: false,
+        enablePurchaseOrder: false,
+        enablePurchaseRequisition: false,
+    },
+    payment: {
+        cashDenominations: '10, 20, 50, 100, 200, 500, 2000',
+        enableOn: 'all_screens',
+        enableForMethods: '',
+        strictCheck: false,
+        enableStripe: false,
+        stripePublicKey: '',
+        stripeSecretKey: '',
+        enablePaypal: false,
+        paypalMode: 'sandbox',
+        paypalClientId: '',
+        paypalClientSecret: '',
+    },
+    dashboard: {
+        viewStockExpiryAlert: '30',
+        enableStockExpiryAlert: true,
+    },
+    system: {
+        appName: 'Ultimate POS',
+        helpLink: 'https://ultimatepos.com/docs',
+        googleApiKey: '',
+        isGoogleDriveEnabled: false,
+        googleDriveAppId: '',
+        enableRepairModule: true,
+        themeColor: 'blue',
+        defaultDatatableEntries: '25',
+        showHelpText: true,
+    },
+    prefixes: {
+        purchase: 'PO',
+        purchaseReturn: '',
+        purchaseRequisition: '',
+        purchaseOrder: '',
+        stockTransfer: 'ST',
+        stockAdjustment: 'SA',
+        sellReturn: 'CN',
+        expenses: 'EP',
+        contacts: 'CO',
+        purchasePayment: 'PP',
+        sellPayment: 'SP',
+        expensePayment: '',
+        businessLocation: 'BL',
+        username: '',
+        subscriptionNo: '',
+        draft: '',
+        salesOrder: '',
+    },
+    email: {
+        mailDriver: 'smtp',
+        host: 'smtp.mailgun.org',
+        port: '587',
+        username: 'postmaster@sandbox.mailgun.org',
+        password: '',
+        encryption: 'tls',
+        fromAddress: 'hello@example.com',
+        fromName: 'Awesome Shop',
+    },
+    sms: {
+        smsService: 'twilio',
+        twilioSid: '',
+        twilioToken: '',
+        twilioFrom: '',
+        nexmoKey: '',
+        nexmoSecret: '',
+        nexmoFrom: '',
+        textlkApiKey: '',
+        textlkSenderId: '',
+        otherUrl: '',
+        sendToParam: 'to',
+        msgParam: 'body',
+        requestMethod: 'get',
+        header1Key: '', header1Val: '',
+        header2Key: '', header2Val: '',
+        header3Key: '', header3Val: '',
+        param1Key: '', param1Val: '',
+        param2Key: '', param2Val: '',
+        param3Key: '', param3Val: '',
+        param4Key: '', param4Val: '',
+        param5Key: '', param5Val: '',
+        param6Key: '', param6Val: '',
+        param7Key: '', param7Val: '',
+        param8Key: '', param8Val: '',
+        param9Key: '', param9Val: '',
+        param10Key: '', param10Val: '',
+    },
+    rewardPoint: {
+        enableRewardPoint: true,
+        rewardPointDisplayName: 'Reward Points',
+        amountForOnePoint: '10',
+        minOrderTotalToEarn: '100',
+        maxPointsPerOrder: '500',
+        redeemAmountPerPoint: '1',
+        minOrderTotalToRedeem: '200',
+        minRedeemPointPerOrder: '50',
+        maxRedeemPointPerOrder: '1000',
+        expiryPeriod: '365',
+        expiryPeriodType: 'days',
+    },
+    modules: {
+        serviceStaff: true,
+        bookings: false,
+        kitchen: false,
+        subscription: false,
+        typesOfService: false,
+        tables: false,
+        modifiers: false,
+        account: true,
+        advancedCommission: false,
+    },
+    customLabels: {
+        contacts: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '', cf7: '', cf8: '', cf9: '', cf10: '' },
+        products: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        locations: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        users: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        purchase: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        sell: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        shipping: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '' },
+        typesOfService: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '' },
+    },
+};
+
+type AllSettings = typeof initialSettings;
+
+const BusinessSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['business'], updateSettings: (newValues: Partial<AllSettings['business']>) => void }) => {
+    const { toast } = useToast();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['business'], value: string) => {
+        updateSettings({ [id]: value });
     };
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setSettings(prev => ({ ...prev, logo: e.target.files![0] }));
+            updateSettings({ logo: e.target.files[0] });
         }
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating settings:', settings);
         toast({
             title: 'Settings Updated',
             description: 'Your business settings have been saved successfully.',
@@ -372,30 +582,23 @@ const BusinessSettingsForm = () => {
     )
 };
 
-const TaxSettingsForm = () => {
+const TaxSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['tax'], updateSettings: (newValues: Partial<AllSettings['tax']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        taxNumber1: 'GSTIN12345',
-        taxNumber2: '',
-        enableInlineTax: true,
-        defaultSalesTax: 'tax-2',
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: 'defaultSalesTax', value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value }));
+    const handleSelectChange = (id: keyof AllSettings['tax'], value: string) => {
+        updateSettings({ [id]: value });
     };
     
-    const handleCheckboxChange = (id: 'enableInlineTax', checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['tax'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating tax settings:', settings);
         toast({
             title: 'Tax Settings Updated',
             description: 'Your tax settings have been saved successfully.',
@@ -455,42 +658,23 @@ const TaxSettingsForm = () => {
     );
 };
 
-const ProductSettingsForm = () => {
+const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['product'], updateSettings: (newValues: Partial<AllSettings['product']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        skuPrefix: 'AS',
-        enableBrands: true,
-        enablePriceAndTax: true,
-        enableRacks: false,
-        enableWarranty: false,
-        enableProductExpiry: false,
-        addItemExpiry: '',
-        onExpiryAction: 'keep_selling',
-        onExpiryPeriod: '0',
-        enableCategories: true,
-        defaultUnit: '',
-        enableRow: false,
-        isProductImageRequired: false,
-        enableSubCategories: true,
-        enableSubUnits: false,
-        enablePosition: false,
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
     
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['product'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['product'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating product settings:', settings);
         toast({
             title: 'Product Settings Updated',
             description: 'Your product settings have been saved successfully.',
@@ -635,26 +819,19 @@ const ProductSettingsForm = () => {
     )
 };
 
-const ContactSettingsForm = () => {
+const ContactSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['contact'], updateSettings: (newValues: Partial<AllSettings['contact']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        defaultCreditLimit: '1000',
-        contactIdPrefix: 'CN',
-        defaultPayTermValue: '30',
-        defaultPayTermUnit: 'days',
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['contact'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating contact settings:', settings);
         toast({
             title: 'Contact Settings Updated',
             description: 'Your contact settings have been saved successfully.',
@@ -701,44 +878,23 @@ const ContactSettingsForm = () => {
     );
 };
 
-const SaleSettingsForm = () => {
+const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['sale'], updateSettings: (newValues: Partial<AllSettings['sale']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        defaultSaleDiscount: '0',
-        defaultSellingPriceGroup: 'default',
-        enableCommissionAgent: false,
-        isCommissionAgentPhoneCompulsory: false,
-        commissionAgent: 'none',
-        commissionCalculationType: 'invoice_value',
-        itemAdditionMethod: 'increase_quantity',
-        amountRoundingMethod: 'round_to_nearest_whole',
-        enableSalesOrder: false,
-        enableRecurringInvoice: false,
-        isPayTermRequired: false,
-        isStripeEnabled: false,
-        stripePublicKey: '',
-        stripeSecretKey: '',
-        isRazorpayEnabled: false,
-        razorpayKeyId: '',
-        razorpayKeySecret: '',
-        allowOverselling: false,
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['sale'], value: string) => {
+        updateSettings({ [id]: value });
     };
     
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['sale'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating sale settings:', settings);
         toast({
             title: 'Sale Settings Updated',
             description: 'Your sale settings have been saved successfully.',
@@ -915,60 +1071,22 @@ const SaleSettingsForm = () => {
     );
 };
 
-const PosSettingsForm = () => {
+const PosSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['pos'], updateSettings: (newValues: Partial<AllSettings['pos']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        expressCheckout: 'shift+e',
-        payAndCheckout: 'shift+p',
-        draftShortcut: 'shift+d',
-        cancelShortcut: 'shift+c',
-        goToQuantity: 'f2',
-        weighingScaleShortcut: '',
-        editDiscount: 'shift+i',
-        editOrderTax: 'shift+t',
-        addPaymentRow: 'shift+r',
-        finalizePayment: 'shift+f',
-        addNewProduct: 'f4',
-
-        disableMultiplePay: false,
-        dontShowProductSuggestion: false,
-        disableOrderTax: false,
-        enableTransactionDate: true,
-        isServiceStaffRequired: true,
-        showInvoiceScheme: false,
-        showPricingTooltip: false,
-        disableDraft: false,
-        dontShowRecentTransactions: false,
-        subtotalEditable: false,
-        disableCreditSaleButton: false,
-        enableServiceStaffInProductLine: false,
-        enableWeighingScale: false,
-        showInvoiceLayoutDropdown: false,
-        printInvoiceOnSuspend: false,
-        disableExpressCheckout: false,
-        disableDiscount: false,
-        disableSuspendSale: false,
-        
-        weighingScalePrefix: '',
-        weighingScaleSkuLength: '5',
-        weighingScaleQtyIntegerLength: '4',
-        weighingScaleQtyFractionalLength: '3',
-    });
-
-    const handleInputChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any}));
+    
+    const handleInputChange = (id: keyof AllSettings['pos'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['pos'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
     
-     const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+     const handleSelectChange = (id: keyof AllSettings['pos'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating POS settings:', settings);
         toast({
             title: 'POS Settings Updated',
             description: 'Your POS settings have been saved successfully.',
@@ -1115,22 +1233,14 @@ const PosSettingsForm = () => {
     );
 };
 
-const PurchaseSettingsForm = () => {
+const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['purchase'], updateSettings: (newValues: Partial<AllSettings['purchase']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        enableEditingProductPrice: true,
-        enablePurchaseStatus: true,
-        enableLotNumber: false,
-        enablePurchaseOrder: false,
-        enablePurchaseRequisition: false,
-    });
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['purchase'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating purchase settings:', settings);
         toast({
             title: 'Purchase Settings Updated',
             description: 'Your purchase settings have been saved successfully.',
@@ -1208,36 +1318,22 @@ const PurchaseSettingsForm = () => {
     );
 };
 
-const PaymentSettingsForm = () => {
+const PaymentSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['payment'], updateSettings: (newValues: Partial<AllSettings['payment']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        cashDenominations: '10, 20, 50, 100, 200, 500, 2000',
-        enableOn: 'all_screens',
-        enableForMethods: '',
-        strictCheck: false,
-        enableStripe: false,
-        stripePublicKey: '',
-        stripeSecretKey: '',
-        enablePaypal: false,
-        paypalMode: 'sandbox',
-        paypalClientId: '',
-        paypalClientSecret: '',
-    });
 
-    const handleInputChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleInputChange = (id: keyof AllSettings['payment'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['payment'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['payment'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating payment settings:', settings);
         toast({
             title: 'Payment Settings Updated',
             description: 'Your payment settings have been saved successfully.',
@@ -1347,23 +1443,18 @@ const PaymentSettingsForm = () => {
     );
 };
 
-const DashboardSettingsForm = () => {
+const DashboardSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['dashboard'], updateSettings: (newValues: Partial<AllSettings['dashboard']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        viewStockExpiryAlert: '30',
-        enableStockExpiryAlert: true,
-    });
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['dashboard'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['dashboard'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating dashboard settings:', settings);
         toast({
             title: 'Dashboard Settings Updated',
             description: 'Your dashboard settings have been saved successfully.',
@@ -1418,35 +1509,23 @@ const DashboardSettingsForm = () => {
     );
 };
 
-const SystemSettingsForm = () => {
+const SystemSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['system'], updateSettings: (newValues: Partial<AllSettings['system']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        appName: 'Ultimate POS',
-        helpLink: 'https://ultimatepos.com/docs',
-        googleApiKey: '',
-        isGoogleDriveEnabled: false,
-        googleDriveAppId: '',
-        enableRepairModule: true,
-        themeColor: 'blue',
-        defaultDatatableEntries: '25',
-        showHelpText: true,
-    });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['system'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['system'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating system settings:', settings);
         toast({
             title: 'System Settings Updated',
             description: 'Your system settings have been saved successfully.',
@@ -1549,34 +1628,14 @@ const SystemSettingsForm = () => {
     );
 };
 
-const PrefixesSettingsForm = () => {
+const PrefixesSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['prefixes'], updateSettings: (newValues: Partial<AllSettings['prefixes']>) => void }) => {
     const { toast } = useToast();
-    const [prefixes, setPrefixes] = useState({
-        purchase: 'PO',
-        purchaseReturn: '',
-        purchaseRequisition: '',
-        purchaseOrder: '',
-        stockTransfer: 'ST',
-        stockAdjustment: 'SA',
-        sellReturn: 'CN',
-        expenses: 'EP',
-        contacts: 'CO',
-        purchasePayment: 'PP',
-        sellPayment: 'SP',
-        expensePayment: '',
-        businessLocation: 'BL',
-        username: '',
-        subscriptionNo: '',
-        draft: '',
-        salesOrder: '',
-    });
 
-    const handleInputChange = (id: keyof typeof prefixes, value: string) => {
-        setPrefixes(prev => ({ ...prev, [id]: value }));
+    const handleInputChange = (id: keyof AllSettings['prefixes'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating prefixes:', prefixes);
         toast({
             title: 'Prefixes Updated',
             description: 'Your prefix settings have been saved successfully.',
@@ -1616,7 +1675,7 @@ const PrefixesSettingsForm = () => {
                             <Label htmlFor={field.id}>{field.label}</Label>
                             <Input
                                 id={field.id}
-                                value={prefixes[field.id]}
+                                value={settings[field.id]}
                                 onChange={(e) => handleInputChange(field.id, e.target.value)}
                             />
                         </div>
@@ -1630,29 +1689,18 @@ const PrefixesSettingsForm = () => {
     );
 };
 
-const EmailSettingsForm = () => {
+const EmailSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['email'], updateSettings: (newValues: Partial<AllSettings['email']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        mailDriver: 'smtp',
-        host: 'smtp.mailgun.org',
-        port: '587',
-        username: 'postmaster@sandbox.mailgun.org',
-        password: '',
-        encryption: 'tls',
-        fromAddress: 'hello@example.com',
-        fromName: 'Awesome Shop',
-    });
 
-    const handleInputChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value }));
+    const handleInputChange = (id: keyof AllSettings['email'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['email'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating email settings:', settings);
         toast({
             title: 'Email Settings Updated',
             description: 'Your email settings have been saved successfully.',
@@ -1720,47 +1768,18 @@ const EmailSettingsForm = () => {
     );
 };
 
-const SmsSettingsForm = () => {
+const SmsSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['sms'], updateSettings: (newValues: Partial<AllSettings['sms']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        smsService: 'twilio',
-        twilioSid: '',
-        twilioToken: '',
-        twilioFrom: '',
-        nexmoKey: '',
-        nexmoSecret: '',
-        nexmoFrom: '',
-        textlkApiKey: '',
-        textlkSenderId: '',
-        otherUrl: '',
-        sendToParam: 'to',
-        msgParam: 'body',
-        requestMethod: 'get',
-        header1Key: '', header1Val: '',
-        header2Key: '', header2Val: '',
-        header3Key: '', header3Val: '',
-        param1Key: '', param1Val: '',
-        param2Key: '', param2Val: '',
-        param3Key: '', param3Val: '',
-        param4Key: '', param4Val: '',
-        param5Key: '', param5Val: '',
-        param6Key: '', param6Val: '',
-        param7Key: '', param7Val: '',
-        param8Key: '', param8Val: '',
-        param9Key: '', param9Val: '',
-        param10Key: '', param10Val: '',
-    });
 
-    const handleInputChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleInputChange = (id: keyof AllSettings['sms'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
-    const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    const handleSelectChange = (id: keyof AllSettings['sms'], value: string) => {
+        updateSettings({ [id]: value });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating SMS settings:', settings);
         toast({
             title: 'SMS Settings Updated',
             description: 'Your SMS settings have been saved successfully.',
@@ -1913,36 +1932,22 @@ const SmsSettingsForm = () => {
     );
 };
 
-const RewardPointSettingsForm = () => {
+const RewardPointSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['rewardPoint'], updateSettings: (newValues: Partial<AllSettings['rewardPoint']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        enableRewardPoint: true,
-        rewardPointDisplayName: 'Reward Points',
-        amountForOnePoint: '10',
-        minOrderTotalToEarn: '100',
-        maxPointsPerOrder: '500',
-        redeemAmountPerPoint: '1',
-        minOrderTotalToRedeem: '200',
-        minRedeemPointPerOrder: '50',
-        maxRedeemPointPerOrder: '1000',
-        expiryPeriod: '365',
-        expiryPeriodType: 'days',
-    });
-
-    const handleInputChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+    
+    const handleInputChange = (id: keyof AllSettings['rewardPoint'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['rewardPoint'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
-     const handleSelectChange = (id: keyof typeof settings, value: string) => {
-        setSettings(prev => ({ ...prev, [id]: value as any }));
+     const handleSelectChange = (id: keyof AllSettings['rewardPoint'], value: string) => {
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating reward point settings:', settings);
         toast({
             title: 'Reward Point Settings Updated',
             description: 'Your reward point settings have been saved successfully.',
@@ -2033,26 +2038,14 @@ const RewardPointSettingsForm = () => {
     );
 };
 
-const ModulesSettingsForm = () => {
+const ModulesSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['modules'], updateSettings: (newValues: Partial<AllSettings['modules']>) => void }) => {
     const { toast } = useToast();
-    const [settings, setSettings] = useState({
-        serviceStaff: true,
-        bookings: false,
-        kitchen: false,
-        subscription: false,
-        typesOfService: false,
-        tables: false,
-        modifiers: false,
-        account: true,
-        advancedCommission: false,
-    });
 
-    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
-        setSettings(prev => ({ ...prev, [id]: checked }));
+    const handleCheckboxChange = (id: keyof AllSettings['modules'], checked: boolean) => {
+        updateSettings({ [id]: checked });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating modules settings:', settings);
         toast({
             title: 'Modules Settings Updated',
             description: 'Your modules settings have been saved successfully.',
@@ -2102,38 +2095,26 @@ const ModulesSettingsForm = () => {
     );
 };
 
-const CustomLabelsSettingsForm = () => {
+const CustomLabelsSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['customLabels'], updateSettings: (newValues: Partial<AllSettings['customLabels']>) => void }) => {
     const { toast } = useToast();
-    const [labels, setLabels] = useState({
-        contacts: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '', cf7: '', cf8: '', cf9: '', cf10: '' },
-        products: { cf1: '', cf2: '', cf3: '', cf4: '' },
-        locations: { cf1: '', cf2: '', cf3: '', cf4: '' },
-        users: { cf1: '', cf2: '', cf3: '', cf4: '' },
-        purchase: { cf1: '', cf2: '', cf3: '', cf4: '' },
-        sell: { cf1: '', cf2: '', cf3: '', cf4: '' },
-        shipping: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '' },
-        typesOfService: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '' },
-    });
 
-    const handleInputChange = (section: keyof typeof labels, field: string, value: string) => {
-        setLabels(prev => ({
-            ...prev,
+    const handleInputChange = (section: keyof AllSettings['customLabels'], field: string, value: string) => {
+        updateSettings({
             [section]: {
-                ...prev[section],
+                ...settings[section],
                 [field]: value
             }
-        }));
+        });
     };
 
     const handleUpdateSettings = () => {
-        console.log('Updating custom labels:', labels);
         toast({
             title: 'Custom Labels Updated',
             description: 'Your custom labels have been saved successfully.',
         });
     };
 
-    const labelSections: { key: keyof typeof labels; title: string; count: number }[] = [
+    const labelSections: { key: keyof AllSettings['customLabels']; title: string; count: number }[] = [
         { key: 'contacts', title: 'Contacts', count: 10 },
         { key: 'products', title: 'Products', count: 4 },
         { key: 'locations', title: 'Locations', count: 4 },
@@ -2166,7 +2147,7 @@ const CustomLabelsSettingsForm = () => {
                                                 <Label htmlFor={`${section.key}-${fieldKey}`}>Custom Field {i + 1}</Label>
                                                 <Input
                                                     id={`${section.key}-${fieldKey}`}
-                                                    value={labels[section.key][fieldKey as keyof typeof labels[typeof section.key]]}
+                                                    value={settings[section.key][fieldKey as keyof typeof settings[typeof section.key]]}
                                                     onChange={(e) => handleInputChange(section.key, fieldKey, e.target.value)}
                                                 />
                                             </div>
@@ -2197,6 +2178,48 @@ const PlaceholderContent = ({ title }: { title: string }) => (
 );
 
 export default function BusinessSettingsPage() {
+    const [settings, setSettings] = useState<AllSettings>(initialSettings);
+
+    useEffect(() => {
+        try {
+            const savedSettings = localStorage.getItem('businessSettings');
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                // A simple merge to avoid breaking the app if the structure changed
+                const mergedSettings = { ...initialSettings };
+                for (const key in initialSettings) {
+                    if (parsed[key]) {
+                        mergedSettings[key as keyof AllSettings] = {
+                            ...initialSettings[key as keyof AllSettings],
+                            ...parsed[key]
+                        };
+                    }
+                }
+                setSettings(mergedSettings);
+            }
+        } catch (error) {
+            console.error("Failed to parse settings from localStorage", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('businessSettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error("Failed to save settings to localStorage", error);
+        }
+    }, [settings]);
+
+    const handleSettingsChange = (section: keyof AllSettings, newValues: any) => {
+        setSettings(prev => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                ...newValues,
+            }
+        }));
+    };
+
     return (
         <TooltipProvider>
             <div className="flex flex-col gap-6">
@@ -2222,58 +2245,53 @@ export default function BusinessSettingsPage() {
                     </TabsList>
                     <div className="lg:col-span-3">
                         <TabsContent value="business">
-                            <BusinessSettingsForm />
+                            <BusinessSettingsForm settings={settings.business} updateSettings={(newValues) => handleSettingsChange('business', newValues)} />
                         </TabsContent>
                          <TabsContent value="tax">
-                            <TaxSettingsForm />
+                            <TaxSettingsForm settings={settings.tax} updateSettings={(newValues) => handleSettingsChange('tax', newValues)} />
                         </TabsContent>
                         <TabsContent value="product">
-                            <ProductSettingsForm />
+                            <ProductSettingsForm settings={settings.product} updateSettings={(newValues) => handleSettingsChange('product', newValues)} />
                         </TabsContent>
                          <TabsContent value="contact">
-                            <ContactSettingsForm />
+                            <ContactSettingsForm settings={settings.contact} updateSettings={(newValues) => handleSettingsChange('contact', newValues)} />
                         </TabsContent>
                         <TabsContent value="sale">
-                            <SaleSettingsForm />
+                            <SaleSettingsForm settings={settings.sale} updateSettings={(newValues) => handleSettingsChange('sale', newValues)} />
                         </TabsContent>
                          <TabsContent value="pos">
-                            <PosSettingsForm />
+                            <PosSettingsForm settings={settings.pos} updateSettings={(newValues) => handleSettingsChange('pos', newValues)} />
                         </TabsContent>
                          <TabsContent value="purchases">
-                            <PurchaseSettingsForm />
+                            <PurchaseSettingsForm settings={settings.purchase} updateSettings={(newValues) => handleSettingsChange('purchase', newValues)} />
                         </TabsContent>
                         <TabsContent value="payment">
-                            <PaymentSettingsForm />
+                            <PaymentSettingsForm settings={settings.payment} updateSettings={(newValues) => handleSettingsChange('payment', newValues)} />
                         </TabsContent>
                          <TabsContent value="dashboard">
-                            <DashboardSettingsForm />
+                            <DashboardSettingsForm settings={settings.dashboard} updateSettings={(newValues) => handleSettingsChange('dashboard', newValues)} />
                         </TabsContent>
                         <TabsContent value="system">
-                            <SystemSettingsForm />
+                            <SystemSettingsForm settings={settings.system} updateSettings={(newValues) => handleSettingsChange('system', newValues)} />
                         </TabsContent>
                         <TabsContent value="prefixes">
-                            <PrefixesSettingsForm />
+                            <PrefixesSettingsForm settings={settings.prefixes} updateSettings={(newValues) => handleSettingsChange('prefixes', newValues)} />
                         </TabsContent>
                         <TabsContent value="email_settings">
-                            <EmailSettingsForm />
+                            <EmailSettingsForm settings={settings.email} updateSettings={(newValues) => handleSettingsChange('email', newValues)} />
                         </TabsContent>
                          <TabsContent value="sms_settings">
-                            <SmsSettingsForm />
+                            <SmsSettingsForm settings={settings.sms} updateSettings={(newValues) => handleSettingsChange('sms', newValues)} />
                         </TabsContent>
                          <TabsContent value="reward_point_settings">
-                            <RewardPointSettingsForm />
+                            <RewardPointSettingsForm settings={settings.rewardPoint} updateSettings={(newValues) => handleSettingsChange('rewardPoint', newValues)} />
                         </TabsContent>
                          <TabsContent value="modules">
-                            <ModulesSettingsForm />
+                            <ModulesSettingsForm settings={settings.modules} updateSettings={(newValues) => handleSettingsChange('modules', newValues)} />
                         </TabsContent>
                         <TabsContent value="custom_labels">
-                           <CustomLabelsSettingsForm />
+                           <CustomLabelsSettingsForm settings={settings.customLabels} updateSettings={(newValues) => handleSettingsChange('customLabels', newValues)} />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings', 'modules', 'custom_labels'].includes(t.value)).map(tab => (
-                             <TabsContent key={tab.value} value={tab.value}>
-                                <PlaceholderContent title={tab.label} />
-                            </TabsContent>
-                        ))}
                     </div>
                 </Tabs>
                 <div className="text-center text-xs text-slate-400 p-1">
@@ -2283,3 +2301,4 @@ export default function BusinessSettingsPage() {
         </TooltipProvider>
     );
 }
+
