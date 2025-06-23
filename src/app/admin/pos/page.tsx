@@ -42,6 +42,17 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -68,6 +79,14 @@ export default function PosPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [time, setTime] = useState('');
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
+  const { toast } = useToast();
+
+  // State for multi-pay dialog
+  const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
+  const [cashAmount, setCashAmount] = useState('');
+  const [cardAmount, setCardAmount] = useState('');
+  const [changeDue, setChangeDue] = useState(0);
+
 
   useEffect(() => {
     const updateCurrentTime = () => {
@@ -84,6 +103,27 @@ export default function PosPage() {
     const timer = setInterval(updateCurrentTime, 1000 * 60);
     return () => clearInterval(timer);
   }, []);
+  
+  const subtotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  }, [cart]);
+
+  const tax = useMemo(() => subtotal * 0.08, [subtotal]); // 8% tax example
+  const totalPayable = useMemo(() => subtotal + tax, [subtotal, tax]);
+
+  useEffect(() => {
+    if (isMultiPayOpen) {
+      const cash = parseFloat(cashAmount) || 0;
+      const card = parseFloat(cardAmount) || 0;
+      const totalPaid = cash + card;
+      if (totalPaid >= totalPayable) {
+        setChangeDue(totalPaid - totalPayable);
+      } else {
+        setChangeDue(0);
+      }
+    }
+  }, [cashAmount, cardAmount, totalPayable, isMultiPayOpen]);
+
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm) return products;
@@ -128,15 +168,54 @@ export default function PosPage() {
     );
   };
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => {
+    setCart([]);
+    toast({
+        title: 'Cart Cleared',
+        description: 'The transaction has been cancelled.',
+    });
+  };
 
-  const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
-  }, [cart]);
+  const handleCashPayment = () => {
+    if (cart.length === 0) {
+        toast({
+            title: 'Cart Empty',
+            description: 'Add items to the cart before finalizing.',
+            variant: 'destructive',
+        });
+        return;
+    }
+    toast({
+        title: 'Sale Finalized',
+        description: 'Payment successful. Cart has been cleared.',
+    });
+    setCart([]);
+  };
 
-  const tax = useMemo(() => subtotal * 0.08, [subtotal]); // 8% tax example
-  const totalPayable = useMemo(() => subtotal + tax, [subtotal, tax]);
-  
+  const handleFinalizeMultiPay = () => {
+        const cash = parseFloat(cashAmount) || 0;
+        const card = parseFloat(cardAmount) || 0;
+        const totalPaid = cash + card;
+
+        if (totalPaid < totalPayable) {
+            toast({
+                title: 'Insufficient Payment',
+                description: `Paid amount is less than the total payable of $${totalPayable.toFixed(2)}.`,
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        toast({
+            title: 'Sale Finalized',
+            description: `Payment of $${totalPaid.toFixed(2)} received. Cart has been cleared.`,
+        });
+        setCart([]);
+        setIsMultiPayOpen(false);
+        setCashAmount('');
+        setCardAmount('');
+    };
+
   return (
     <div className="flex flex-col h-[calc(100vh_-_60px)] bg-slate-100 text-slate-900 -m-6 font-sans">
       {/* Top Header */}
@@ -279,8 +358,35 @@ export default function PosPage() {
               <Button variant="outline" className="text-slate-700 text-xs sm:text-sm"><CreditCard className="mr-1 sm:mr-2 h-4 w-4"/> Card</Button>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"><WalletCards className="mr-1 sm:mr-2 h-4 w-4"/> Multiple Pay</Button>
-            <Button className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm">Cash</Button>
+            <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
+                <DialogTrigger asChild>
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"><WalletCards className="mr-1 sm:mr-2 h-4 w-4"/> Multiple Pay</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Finalize Payment</DialogTitle>
+                        <DialogDescription>
+                            Split the payment across multiple methods. Total payable is <strong>${totalPayable.toFixed(2)}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="cash-amount" className="text-right">Cash</Label>
+                            <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="card-amount" className="text-right">Card</Label>
+                            <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
+                        </div>
+                        <div className="text-right font-medium">Remaining: ${Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)).toFixed(2)}</div>
+                        <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">${changeDue.toFixed(2)}</span></div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Button className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
             <Button className="bg-red-500 hover:bg-red-600 text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
           </div>
           <div className="text-right">
