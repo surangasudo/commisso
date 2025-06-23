@@ -1610,6 +1610,98 @@ const PrefixesSettingsForm = () => {
     );
 };
 
+const EmailSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        mailDriver: 'smtp',
+        host: 'smtp.mailgun.org',
+        port: '587',
+        username: 'postmaster@sandbox.mailgun.org',
+        password: '',
+        encryption: 'tls',
+        fromAddress: 'hello@example.com',
+        fromName: 'Awesome Shop',
+    });
+
+    const handleInputChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating email settings:', settings);
+        toast({
+            title: 'Email Settings Updated',
+            description: 'Your email settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Email Settings</CardTitle>
+                <CardDescription>Configure your email sending service.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="mailDriver">Mail Driver:</Label>
+                        <Select value={settings.mailDriver} onValueChange={(value) => handleSelectChange('mailDriver', value)}>
+                            <SelectTrigger id="mailDriver"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="smtp">SMTP</SelectItem>
+                                <SelectItem value="sendmail">Sendmail</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="host">Host:</Label>
+                        <Input id="host" value={settings.host} onChange={(e) => handleInputChange('host', e.target.value)} placeholder="e.g. smtp.gmail.com" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="port">Port:</Label>
+                        <Input id="port" value={settings.port} onChange={(e) => handleInputChange('port', e.target.value)} placeholder="e.g. 587" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="username">Username:</Label>
+                        <Input id="username" value={settings.username} onChange={(e) => handleInputChange('username', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="password">Password:</Label>
+                        <Input id="password" type="password" value={settings.password} onChange={(e) => handleInputChange('password', e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="encryption">Encryption:</Label>
+                        <Select value={settings.encryption} onValueChange={(value) => handleSelectChange('encryption', value)}>
+                            <SelectTrigger id="encryption"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="tls">TLS</SelectItem>
+                                <SelectItem value="ssl">SSL</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="fromAddress">From Address:</Label>
+                        <Input id="fromAddress" value={settings.fromAddress} onChange={(e) => handleInputChange('fromAddress', e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="fromName">From Name:</Label>
+                        <Input id="fromName" value={settings.fromName} onChange={(e) => handleInputChange('fromName', e.target.value)} />
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -1681,7 +1773,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="prefixes">
                             <PrefixesSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes'].includes(t.value)).map(tab => (
+                        <TabsContent value="email_settings">
+                            <EmailSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
