@@ -165,6 +165,18 @@ const sidebarNav = [
         ]
     },
     { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates" },
+    { 
+        label: "Settings", 
+        icon: Settings,
+        children: [
+            { href: "/admin/settings/business", label: "Business Settings" },
+            { href: "/admin/settings/locations", label: "Business Locations" },
+            { href: "/admin/settings/invoice", label: "Invoice Settings" },
+            { href: "/admin/settings/barcode", label: "Barcode Settings" },
+            { href: "/admin/settings/receipt-printers", label: "Receipt Printers" },
+            { href: "/admin/settings/tax-rates", label: "Tax Rates" },
+        ]
+    },
 ];
 
 export default function AdminLayout({
