@@ -312,16 +312,17 @@ export type Purchase = {
   grandTotal: number;
   paymentDue: number;
   addedBy: string;
+  taxAmount?: number;
 };
 
 export const purchases: Purchase[] = [
-    { id: 'pur-1', date: '06/22/2025 21:00', referenceNo: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 235656.00, paymentDue: 235656.00, addedBy: 'Mr Admin' },
-    { id: 'pur-2', date: '06/20/2025 21:00', referenceNo: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 5180.00, paymentDue: 5180.00, addedBy: 'Mr Admin' },
-    { id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin' },
-    { id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
-    { id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
-    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin' },
-    { id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin' },
+    { id: 'pur-1', date: '06/22/2025 21:00', referenceNo: 'PO2018/0002', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 235656.00, paymentDue: 235656.00, addedBy: 'Mr Admin', taxAmount: 11782.80 },
+    { id: 'pur-2', date: '06/20/2025 21:00', referenceNo: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 5180.00, paymentDue: 5180.00, addedBy: 'Mr Admin', taxAmount: 259.00 },
+    { id: 'pur-3', date: '06/15/2025 21:00', referenceNo: '35001BCVD', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Due', grandTotal: 12100.00, paymentDue: 12100.00, addedBy: 'Mr Admin', taxAmount: 605.00 },
+    { id: 'pur-4', date: '06/07/2025 21:00', referenceNo: '35001BCVX', location: 'Awesome Shop', supplier: 'Alpha Clothings, Michael', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 55660.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 2783.00 },
+    { id: 'pur-5', date: '06/07/2025 21:00', referenceNo: '35001BJGN', location: 'Awesome Shop', supplier: 'Digital Ocean, Mike McCubbin', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 84700.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 4235.00 },
+    { id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin', taxAmount: 302.50 },
+    { id: 'pur-7', date: '05/23/2025 21:00', referenceNo: '35001BCVK', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Paid', grandTotal: 2000.00, paymentDue: 0.00, addedBy: 'Mr Admin', taxAmount: 100.00 },
 ];
 
 export type PurchaseReturn = {
@@ -360,13 +361,14 @@ export type Sale = {
     sellNote: string | null;
     staffNote: string | null;
     shippingDetails: string | null;
+    taxAmount?: number;
 };
 
 export const sales: Sale[] = [
-    { id: 'sale-1', date: '06/22/2025 21:00', invoiceNo: 'AS0004', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 750.00, totalPaid: 750.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Ordered', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Standard Shipping' },
-    { id: 'sale-2', date: '06/22/2025 21:00', invoiceNo: 'AS0005', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 412.50, totalPaid: 412.50, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Packed', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Express Shipping' },
-    { id: 'sale-3', date: '06/20/2025 21:00', invoiceNo: 'AS0002', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 825.00, totalPaid: 825.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Shipped', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Courier' },
-    { id: 'sale-4', date: '06/20/2025 21:00', invoiceNo: 'AS0003', customerName: 'Harry', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 7700.00, totalPaid: 7700.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Delivered', totalItems: 2.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Local Pickup' },
+    { id: 'sale-1', date: '06/22/2025 21:00', invoiceNo: 'AS0004', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 750.00, totalPaid: 750.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Ordered', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Standard Shipping', taxAmount: 75.00 },
+    { id: 'sale-2', date: '06/22/2025 21:00', invoiceNo: 'AS0005', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 412.50, totalPaid: 412.50, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Packed', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Express Shipping', taxAmount: 41.25 },
+    { id: 'sale-3', date: '06/20/2025 21:00', invoiceNo: 'AS0002', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 825.00, totalPaid: 825.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Shipped', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Courier', taxAmount: 82.50 },
+    { id: 'sale-4', date: '06/20/2025 21:00', invoiceNo: 'AS0003', customerName: 'Harry', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 7700.00, totalPaid: 7700.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Delivered', totalItems: 2.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Local Pickup', taxAmount: 770.00 },
 ];
 
 export type Draft = {
@@ -496,17 +498,32 @@ export const expenseCategories: ExpenseCategory[] = [
   { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
 ];
 
-export type CompanyProfit = {
-  company: string;
-  profit: number;
+export type ProfitData = {
+    openingStockPurchase: number;
+    openingStockSale: number;
+    totalPurchase: number;
+    totalStockAdjustment: number;
+    totalExpense: number;
+    totalPurchaseShipping: number;
+    purchaseAdditionalExpense: number;
+    totalTransferShipping: number;
+    totalSellDiscount: number;
+    totalCustomerReward: number;
+    totalSellReturn: number;
+    totalPayroll: number;
+    totalProductionCost: number;
+    closingStockPurchase: number;
+    closingStockSale: number;
+    totalSales: number;
+    totalSellShipping: number;
+    sellAdditionalExpenses: number;
+    totalStockRecovered: number;
+    totalPurchaseReturn: number;
+    totalPurchaseDiscount: number;
+    totalSellRoundOff: number;
+    hmsTotal: number;
 };
-
-export const companyProfitData: CompanyProfit[] = [
-    { company: 'Global Corp', profit: 25000.00 },
-    { company: 'Innovate Inc.', profit: 18500.75 },
-];
-
-export const profitData = {
+export const profitData: ProfitData = {
   openingStockPurchase: 0.00,
   openingStockSale: 0.00,
   totalPurchase: 386936.00,
@@ -611,4 +628,10 @@ export type SubAgentProfit = { subAgentName: string; profit: number; };
 export const subAgentProfitData: SubAgentProfit[] = [
     { subAgentName: 'Jane Smith', profit: 1850.50 },
     { subAgentName: 'Peter Jones', profit: 975.00 },
+];
+
+export type CompanyProfit = { company: string; profit: number; };
+export const companyProfitData: CompanyProfit[] = [
+    { company: 'Global Corp', profit: 25000.00 },
+    { company: 'Innovate Inc.', profit: 18500.75 },
 ];
