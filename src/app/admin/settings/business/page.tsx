@@ -1195,18 +1195,24 @@ const PaymentSettingsForm = () => {
         enableOn: 'all_screens',
         enableForMethods: '',
         strictCheck: false,
+        enableStripe: false,
+        stripePublicKey: '',
+        stripeSecretKey: '',
+        enablePaypal: false,
+        paypalMode: 'sandbox',
+        paypalClientId: '',
+        paypalClientSecret: '',
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { id, value } = e.target;
-        setSettings(prev => ({ ...prev, [id]: value }));
+    const handleInputChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
     };
-    
+
     const handleSelectChange = (id: keyof typeof settings, value: string) => {
         setSettings(prev => ({ ...prev, [id]: value as any }));
     };
 
-    const handleCheckboxChange = (id: 'strictCheck', checked: boolean) => {
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
         setSettings(prev => ({ ...prev, [id]: checked }));
     };
 
@@ -1222,45 +1228,95 @@ const PaymentSettingsForm = () => {
         <Card>
             <CardHeader>
                 <CardTitle>Payment Settings</CardTitle>
-                <CardDescription>Configure cash denominations and other payment options.</CardDescription>
+                <CardDescription>Configure cash denominations and payment gateways.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 gap-y-6">
-                     <div className="space-y-2">
-                        <Label htmlFor="cashDenominations">Cash Denominations:</Label>
-                        <Input id="cashDenominations" value={settings.cashDenominations} onChange={handleInputChange} />
-                        <p className="text-xs text-muted-foreground">Comma separated values Example: 100,200,500,2000</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="pt-6 space-y-8">
+                <div>
+                    <h3 className="text-lg font-semibold mb-4">Cash Denominations</h3>
+                    <div className="space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="enableOn">Enable cash denomination on:</Label>
-                            <Select value={settings.enableOn} onValueChange={(value) => handleSelectChange('enableOn', value)}>
-                                <SelectTrigger id="enableOn">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all_screens">All Screens</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="cashDenominations">Cash Denominations:</Label>
+                            <Input id="cashDenominations" value={settings.cashDenominations} onChange={(e) => handleInputChange('cashDenominations', e.target.value)} />
+                            <p className="text-xs text-muted-foreground">Comma separated values Example: 100,200,500,2000</p>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="enableForMethods">Enable cash denomination for payment methods:</Label>
-                            <Input id="enableForMethods" value={settings.enableForMethods} onChange={handleInputChange} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="enableOn">Enable cash denomination on:</Label>
+                                <Select value={settings.enableOn} onValueChange={(value) => handleSelectChange('enableOn', value)}>
+                                    <SelectTrigger id="enableOn"><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all_screens">All Screens</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="enableForMethods">Enable cash denomination for payment methods:</Label>
+                                <Input id="enableForMethods" value={settings.enableForMethods} onChange={(e) => handleInputChange('enableForMethods', e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', !!checked)} />
+                            <Label htmlFor="strictCheck" className="font-normal flex items-center gap-1.5">
+                                Strict check
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>If checked, the system will not allow payment if the provided cash is less than the total payable.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', !!checked)} />
-                        <Label htmlFor="strictCheck" className="font-normal flex items-center gap-1.5">
-                            Strict check
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>If checked, the system will not allow payment if the provided cash is less than the total payable.</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </Label>
+                </div>
+
+                <Separator />
+
+                <div>
+                    <h3 className="text-lg font-semibold mb-4">Payment Gateways</h3>
+                    <div className="space-y-6">
+                        <div>
+                            <div className="flex items-center space-x-2 mb-4">
+                                <Checkbox id="enableStripe" checked={settings.enableStripe} onCheckedChange={(checked) => handleCheckboxChange('enableStripe', !!checked)} />
+                                <Label htmlFor="enableStripe" className="font-normal">Enable Stripe</Label>
+                            </div>
+                            {settings.enableStripe && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 ml-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripePublicKey">Stripe Public Key:</Label>
+                                        <Input id="stripePublicKey" value={settings.stripePublicKey} onChange={(e) => handleInputChange('stripePublicKey', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripeSecretKey">Stripe Secret Key:</Label>
+                                        <Input id="stripeSecretKey" type="password" value={settings.stripeSecretKey} onChange={(e) => handleInputChange('stripeSecretKey', e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                         <div>
+                             <div className="flex items-center space-x-2 mb-4">
+                                <Checkbox id="enablePaypal" checked={settings.enablePaypal} onCheckedChange={(checked) => handleCheckboxChange('enablePaypal', !!checked)} />
+                                <Label htmlFor="enablePaypal" className="font-normal">Enable PayPal</Label>
+                            </div>
+                            {settings.enablePaypal && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 ml-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paypalMode">PayPal Mode:</Label>
+                                        <Select value={settings.paypalMode} onValueChange={(value) => handleSelectChange('paypalMode', value)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="sandbox">Sandbox</SelectItem>
+                                                <SelectItem value="live">Live</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paypalClientId">PayPal Client ID:</Label>
+                                        <Input id="paypalClientId" value={settings.paypalClientId} onChange={(e) => handleInputChange('paypalClientId', e.target.value)} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paypalClientSecret">PayPal Client Secret:</Label>
+                                        <Input id="paypalClientSecret" type="password" value={settings.paypalClientSecret} onChange={(e) => handleInputChange('paypalClientSecret', e.target.value)} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </CardContent>
