@@ -157,7 +157,7 @@ export default function ListPurchaseReturnPage() {
                         <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+                            <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -200,7 +200,7 @@ export default function ListPurchaseReturnPage() {
                                 <TableCell>{item.location}</TableCell>
                                 <TableCell>{item.supplier}</TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(item.paymentStatus))}>{item.paymentStatus}</Badge></TableCell>
-                                <TableCell>${item.grandTotal.toFixed(2)}</TableCell>
+                                <TableCell>${item.totalAmount.toFixed(2)}</TableCell>
                                 <TableCell>${item.paymentDue.toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}

@@ -53,9 +53,40 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { suppliers, type Supplier } from '@/lib/data';
+import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 
 export default function SuppliersPage() {
   const totalPurchaseDue = suppliers.reduce((acc, supplier) => acc + supplier.totalPurchaseDue, 0);
+  
+  const getExportData = () => suppliers.map(s => ({
+    contactId: s.contactId,
+    businessName: s.businessName,
+    name: s.name,
+    email: s.email,
+    taxNumber: s.taxNumber,
+    payTerm: s.payTerm,
+    openingBalance: s.openingBalance,
+    advanceBalance: s.advanceBalance,
+    addedOn: s.addedOn,
+    address: s.address,
+    mobile: s.mobile,
+    totalPurchaseDue: s.totalPurchaseDue,
+    totalPurchaseReturnDue: s.totalPurchaseReturnDue,
+    customField1: s.customField1 || '',
+  }));
+  
+  const handleExportCsv = () => exportToCsv(getExportData(), 'suppliers');
+  const handleExportXlsx = () => exportToXlsx(getExportData(), 'suppliers');
+  const handlePrint = () => window.print();
+  const handleExportPdf = () => {
+    const headers = ["Contact ID", "Business Name", "Name", "Email", "Tax number", "Pay term", "Opening Balance", "Advance Balance", "Added On", "Address", "Mobile", "Total Purchase Due", "Total Purchase Return Due", "Custom Field 1"];
+    const data = suppliers.map(s => [
+        s.contactId, s.businessName, s.name, s.email, s.taxNumber, `${s.payTerm} Days`,
+        `$${s.openingBalance.toFixed(2)}`, `$${s.advanceBalance.toFixed(2)}`, s.addedOn, s.address, s.mobile,
+        `$${s.totalPurchaseDue.toFixed(2)}`, `$${s.totalPurchaseReturnDue.toFixed(2)}`, s.customField1 || ''
+    ]);
+    exportToPdf(headers, data, 'suppliers');
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -103,11 +134,11 @@ export default function SuppliersPage() {
                             <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
                         </div>
                         <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+                            <Button onClick={handleExportCsv} variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
+                            <Button onClick={handleExportXlsx} variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
+                            <Button onClick={handlePrint} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Columns3 className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
+                            <Button onClick={handleExportPdf} variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

@@ -74,7 +74,7 @@ export default function ListPosPage() {
     const cashCount = sales.filter(s => s.paymentMethod === 'Cash').length;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                 <List className="w-8 h-8" />
@@ -123,7 +123,7 @@ export default function ListPosPage() {
                         <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+                            <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
                             <Button variant="outline" size="sm" className="h-9 gap-1"><Columns3 className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
                             <Button variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
                         </div>
