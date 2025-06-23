@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,45 +8,44 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const permissionGroups = [
-    { key: 'user', title: 'User', permissions: ['view', 'add', 'edit', 'delete'] },
+    { key: 'user', title: 'User', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all users", view_own: "View own user", add: 'Add User', edit: 'Edit User', delete: 'Delete User' } },
     { key: 'role', title: 'Role', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'supplier', title: 'Supplier', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'customer', title: 'Customer', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'product', title: 'Product', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'purchase', title: 'Purchase & Stock Transfer', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'sell', title: 'Sell', permissions: ['access_pos', 'add', 'edit', 'delete'], labels: { access_pos: 'Access POS' } },
+    { key: 'supplier', title: 'Supplier', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all suppliers", view_own: "View own suppliers", add: 'Add Supplier', edit: 'Edit Supplier', delete: 'Delete Supplier' } },
+    { key: 'customer', title: 'Customer', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all customers", view_own: "View own customers", add: 'Add Customer', edit: 'Edit Customer', delete: 'Delete Customer' } },
+    { key: 'product', title: 'Product', permissions: ['view', 'add', 'edit', 'delete', 'opening_stock', 'import'], labels: { opening_stock: 'Add Opening Stock', import: 'Import Products' } },
+    { key: 'purchase', title: 'Purchase & Stock Transfer', permissions: ['add', 'edit', 'delete', 'payments', 'update_status'], hasViewRadio: true, labels: { view_all: "View all purchases & stock transfers", view_own: "View own purchases & stock transfers", payments: 'Add/Edit/Delete Payments', update_status: 'Update Status' } },
+    { key: 'sell', title: 'Sell', permissions: ['add', 'edit', 'delete', 'payments', 'access_pos', 'access_all_sales'], hasViewRadio: true, labels: { view_all: 'View all sales', view_own: 'View own sales', payments: 'Add/Edit/Delete Payments', access_pos: 'Access POS', access_all_sales: 'Access all sales' } },
+    { key: 'draft', title: 'Draft', permissions: ['edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all drafts', view_own: 'View own drafts' } },
+    { key: 'quotation', title: 'Quotation', permissions: ['edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all quotations', view_own: 'View own quotations' } },
     { key: 'brand', title: 'Brand', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'tax_rate', title: 'Tax rate', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'unit', title: 'Unit', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'category', title: 'Category', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'report', title: 'Report', permissions: ['view_purchase_sell', 'view_supplier_customer', 'view_expense', 'view_profit_loss', 'view_stock', 'view_stock_adjustment', 'view_trending_product', 'view_register', 'view_sales_representative', 'view_tax', 'view_product_stock_value'], labels: { view_purchase_sell: 'View purchase & sell report', view_supplier_customer: 'View supplier & customer report', view_expense: 'View expense report', view_profit_loss: 'View profit & loss report', view_stock: 'View stock report', view_stock_adjustment: 'View stock adjustment report', view_trending_product: 'View trending product report', view_register: 'View register report', view_sales_representative: 'View sales representative report', view_tax: 'View tax report', view_product_stock_value: 'View product stock value report' } },
+    { key: 'report', title: 'Report', permissions: ['view'] },
     { key: 'business_settings', title: 'Business Settings', permissions: ['access'] },
-    { key: 'barcode', title: 'Barcode', permissions: ['access'] },
-    { key: 'invoice', title: 'Invoice', permissions: ['access'] },
-    { key: 'expense', title: 'Expense', permissions: ['view', 'add', 'edit', 'delete'] },
+    { key: 'barcode', title: 'Barcode Settings', permissions: ['access'], labels: { access: 'Create/Edit Barcodes setting' } },
+    { key: 'invoice', title: 'Invoice Settings', permissions: ['access'], labels: { access: 'Create/Edit Invoice setting' } },
+    { key: 'expense', title: 'Expense', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all expenses', view_own: 'View own expenses' } },
     { key: 'stock_transfer', title: 'Stock Transfer', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'stock_adjustment', title: 'Stock Adjustment', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'purchase_requisition', title: 'Purchase Requisition', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'sales_order', title: 'Sales Order', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'hms', title: 'HMS', permissions: ['view', 'add', 'edit', 'delete'] },
+    { key: 'purchase_requisition', title: 'Purchase Requisition', permissions: ['add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all purchase requisitions', view_own: 'View own purchase requisitions' } },
+    { key: 'sales_order', title: 'Sales Order', permissions: ['add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all sales orders', view_own: 'View own sales orders' } },
+    { key: 'account', title: 'Account', permissions: ['access'] },
+    { key: 'hms', title: 'HMS', permissions: ['access'] },
     { key: 'manufacturing', title: 'Manufacturing', permissions: ['access'] },
     { key: 'project', title: 'Project', permissions: ['access'] },
     { key: 'woocommerce', title: 'Woocommerce', permissions: ['access'] },
-    { key: 'sales_commission_agent', title: 'Sales Commission Agent', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'restaurant', title: 'Restaurant', permissions: ['access'] },
-    { key: 'booking', title: 'Booking', permissions: ['access'] },
-    { key: 'kitchen', title: 'Kitchen', permissions: ['access'] },
-    { key: 'subscription', title: 'Subscription', permissions: ['access'] },
-    { key: 'account', title: 'Account', permissions: ['access'] },
-    { key: 'types_of_service', title: 'Types of service', permissions: ['access'] },
-    { key: 'payment_accounts', title: 'Payment Accounts', permissions: ['view', 'access', 'add', 'edit', 'delete'] },
     { key: 'essentials', title: 'Essentials', permissions: ['access'] },
-    { key: 'hrm', title: 'hrm', permissions: ['access'] },
+    { key: 'hrm', title: 'HRM', permissions: ['access'] },
+    { key: 'sales_commission_agent', title: 'Sales Commission Agent', permissions: ['view', 'add', 'edit', 'delete'] },
+    { key: 'subscription', title: 'Subscription', permissions: ['access'], labels: { access: 'Access subscription' } },
+    { key: 'types_of_service', title: 'Types of service', permissions: ['access'] },
 ];
 
-type PermissionsState = Record<string, Record<string, boolean>>;
+type PermissionsState = Record<string, Record<string, boolean | string>>;
 
 export default function AddRolePage() {
     const { toast } = useToast();
@@ -63,17 +62,40 @@ export default function AddRolePage() {
             }
         }));
     };
-
-    const handleGroupToggle = (groupKey: string, permissionsList: string[], checked: boolean) => {
-        const groupPermissions = permissionsList.reduce((acc, p) => ({ ...acc, [p]: checked }), {});
+    
+    const handleViewPermissionChange = (groupKey: string, value: string) => {
         setPermissions(prev => ({
             ...prev,
-            [groupKey]: groupPermissions
+            [groupKey]: {
+                ...prev[groupKey],
+                view: value,
+            }
         }));
     };
 
-    const isGroupChecked = (groupKey: string, permissionsList: string[]) => {
-        return permissionsList.every(p => permissions[groupKey]?.[p]);
+    const handleGroupToggle = (groupKey: string, groupPermissions: string[], hasViewRadio?: boolean, checked?: boolean) => {
+        const newGroupState: Record<string, boolean | string> = {};
+        groupPermissions.forEach(p => {
+            newGroupState[p] = !!checked;
+        });
+        if (hasViewRadio) {
+            newGroupState['view'] = checked ? 'all' : 'none';
+        }
+        setPermissions(prev => ({
+            ...prev,
+            [groupKey]: newGroupState
+        }));
+    };
+
+    const isGroupChecked = (groupKey: string, permissionsList: string[], hasViewRadio?: boolean) => {
+        const groupState = permissions[groupKey];
+        if (!groupState) return false;
+
+        const checkboxPermissions = permissionsList.every(p => groupState[p]);
+        if (hasViewRadio) {
+            return checkboxPermissions && groupState.view === 'all';
+        }
+        return checkboxPermissions;
     };
 
     const handleSaveRole = () => {
@@ -122,15 +144,33 @@ export default function AddRolePage() {
                                     <div className="flex items-center gap-4">
                                         <Checkbox 
                                             id={`group-select-${group.key}`} 
-                                            onCheckedChange={(checked) => handleGroupToggle(group.key, group.permissions, !!checked)}
-                                            checked={isGroupChecked(group.key, group.permissions)}
+                                            onCheckedChange={(checked) => handleGroupToggle(group.key, group.permissions, group.hasViewRadio, !!checked)}
+                                            checked={isGroupChecked(group.key, group.permissions, group.hasViewRadio)}
                                             onClick={(e) => e.stopPropagation()} // Prevent accordion from toggling
                                         />
                                         <span className="font-semibold">{group.title}</span>
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pl-10 pt-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6 pl-10 pt-4">
+                                        {group.hasViewRadio && (
+                                          <div className="col-span-full">
+                                              <RadioGroup
+                                                  value={permissions[group.key]?.view as string || 'none'}
+                                                  onValueChange={(value) => handleViewPermissionChange(group.key, value)}
+                                                  className="flex gap-4 mt-2"
+                                              >
+                                                  <div className="flex items-center space-x-2">
+                                                      <RadioGroupItem value="all" id={`${group.key}-view-all`} />
+                                                      <Label htmlFor={`${group.key}-view-all`} className="font-normal">{group.labels?.view_all || `View all ${group.key}s`}</Label>
+                                                  </div>
+                                                  <div className="flex items-center space-x-2">
+                                                      <RadioGroupItem value="own" id={`${group.key}-view-own`} />
+                                                      <Label htmlFor={`${group.key}-view-own`} className="font-normal">{group.labels?.view_own || `View own ${group.key}`}</Label>
+                                                  </div>
+                                              </RadioGroup>
+                                          </div>
+                                        )}
                                         {group.permissions.map(perm => (
                                             <div key={perm} className="flex items-center space-x-2">
                                                 <Checkbox 
