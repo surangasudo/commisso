@@ -2014,6 +2014,75 @@ const RewardPointSettingsForm = () => {
     );
 };
 
+const ModulesSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        serviceStaff: true,
+        bookings: false,
+        kitchen: false,
+        subscription: false,
+        typesOfService: false,
+        tables: false,
+        modifiers: false,
+        account: true,
+    });
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating modules settings:', settings);
+        toast({
+            title: 'Modules Settings Updated',
+            description: 'Your modules settings have been saved successfully.',
+        });
+    };
+    
+    const moduleCheckboxes = [
+        { id: 'serviceStaff', label: 'Service staff' },
+        { id: 'bookings', label: 'Bookings' },
+        { id: 'kitchen', label: 'Kitchen' },
+        { id: 'subscription', label: 'Subscription' },
+        { id: 'typesOfService', label: 'Types of service', tooltip: 'Enable this to add services like dine-in, parcel, home-delivery etc.' },
+        { id: 'tables', label: 'Tables' },
+        { id: 'modifiers', label: 'Modifiers' },
+        { id: 'account', label: 'Account' },
+    ] as const;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Modules</CardTitle>
+                <CardDescription>Enable or disable application modules.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {moduleCheckboxes.map(cb => (
+                        <div key={cb.id} className="flex items-center space-x-2">
+                            <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, !!checked)} />
+                            <Label htmlFor={cb.id} className="font-normal flex items-center gap-1.5">
+                                {cb.label}
+                                {cb.tooltip && (
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>{cb.tooltip}</p></TooltipContent>
+                                    </Tooltip>
+                                 )}
+                            </Label>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -2095,7 +2164,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="reward_point_settings">
                             <RewardPointSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings'].includes(t.value)).map(tab => (
+                         <TabsContent value="modules">
+                            <ModulesSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings', 'modules'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
@@ -2109,3 +2181,4 @@ export default function BusinessSettingsPage() {
         </TooltipProvider>
     );
 }
+
