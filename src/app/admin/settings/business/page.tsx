@@ -2025,6 +2025,7 @@ const ModulesSettingsForm = () => {
         tables: false,
         modifiers: false,
         account: true,
+        advancedCommission: false,
     });
 
     const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
@@ -2048,6 +2049,7 @@ const ModulesSettingsForm = () => {
         { id: 'tables', label: 'Tables' },
         { id: 'modifiers', label: 'Modifiers' },
         { id: 'account', label: 'Account' },
+        { id: 'advancedCommission', label: 'Advanced Commission Module' },
     ] as const;
 
     return (
@@ -2065,9 +2067,7 @@ const ModulesSettingsForm = () => {
                                 {cb.label}
                                 {cb.tooltip && (
                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
-                                        </TooltipTrigger>
+                                        <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
                                         <TooltipContent><p>{cb.tooltip}</p></TooltipContent>
                                     </Tooltip>
                                  )}
