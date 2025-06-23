@@ -158,6 +158,7 @@ const BusinessSettingsForm = () => {
                                 <SelectItem value="sgd">Singapore Dollar (SGD)</SelectItem>
                                 <SelectItem value="hkd">Hong Kong Dollar (HKD)</SelectItem>
                                 <SelectItem value="krw">South Korean Won (KRW)</SelectItem>
+                                <SelectItem value="lkr">Sri Lankan Rupee (LKR)</SelectItem>
                             </SelectGroup>
                             <SelectGroup>
                                 <Label className="px-2 text-xs">Oceania</Label>
@@ -237,6 +238,7 @@ const BusinessSettingsForm = () => {
                                 <SelectItem value="Asia/Hong_Kong">Asia/Hong_Kong</SelectItem>
                                 <SelectItem value="Asia/Seoul">Asia/Seoul</SelectItem>
                                 <SelectItem value="Asia/Bangkok">Asia/Bangkok</SelectItem>
+                                <SelectItem value="Asia/Colombo">Asia/Colombo</SelectItem>
                             </SelectGroup>
                             <SelectGroup>
                                 <Label className="px-2 text-xs">Australia & Pacific</Label>
