@@ -4,6 +4,7 @@
 
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -887,4 +888,15 @@ export const activityLogs: ActivityLog[] = [
   { id: 'log-6', date: '06/21/2025 17:15', user: 'Mr Demo Cashier', action: 'Register Closed', subjectType: 'Register', subjectId: 'reg-2', note: 'Slightly over.', ipAddress: '192.168.1.5' },
   { id: 'log-7', date: '06/21/2025 10:00', user: 'Mr Admin', action: 'Product Deleted', subjectType: 'Product', subjectId: 'prod-old-123', note: 'Product: Old T-Shirt', ipAddress: '192.168.1.1' },
   { id: 'log-8', date: '06/20/2025 09:00', user: 'Mr Admin', action: 'User Logged In', subjectType: 'User', subjectId: 'admin', note: '', ipAddress: '192.168.1.1' },
+];
+
+export type TaxRate = {
+  id: string;
+  name: string;
+  rate: number;
+};
+
+export const initialTaxRates: TaxRate[] = [
+  { id: 'tax-1', name: 'VAT@10%', rate: 10 },
+  { id: 'tax-2', name: 'GST@5%', rate: 5 },
 ];

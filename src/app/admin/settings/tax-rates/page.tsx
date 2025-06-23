@@ -7,17 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Percent, Plus, Pencil, Trash2 } from "lucide-react";
 import React, { useState } from 'react';
-
-type TaxRate = {
-  id: string;
-  name: string;
-  rate: number;
-};
-
-const initialTaxRates: TaxRate[] = [
-  { id: 'tax-1', name: 'VAT@10%', rate: 10 },
-  { id: 'tax-2', name: 'GST@5%', rate: 5 },
-];
+import { initialTaxRates, type TaxRate } from "@/lib/data";
 
 export default function TaxRatesPage() {
   const [taxRates, setTaxRates] = useState(initialTaxRates);

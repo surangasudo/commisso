@@ -5,7 +5,8 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter
+  CardFooter,
+  CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ import {
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
+import { initialTaxRates } from '@/lib/data';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -358,6 +361,90 @@ const BusinessSettingsForm = () => {
     )
 };
 
+const TaxSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        taxNumber1: 'GSTIN12345',
+        taxNumber2: '',
+        enableInlineTax: true,
+        defaultSalesTax: 'tax-2',
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: 'defaultSalesTax', value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+    
+    const handleCheckboxChange = (id: 'enableInlineTax', checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating tax settings:', settings);
+        toast({
+            title: 'Tax Settings Updated',
+            description: 'Your tax settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Tax Settings</CardTitle>
+                <CardDescription>Manage tax registration numbers and default tax rates.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="tax1Name">Tax 1 Name:</Label>
+                        <Input id="tax1Name" defaultValue="GSTIN" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="taxNumber1">Tax 1 No.:</Label>
+                        <Input id="taxNumber1" value={settings.taxNumber1} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="tax2Name">Tax 2 Name:</Label>
+                        <Input id="tax2Name" defaultValue="VAT" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="taxNumber2">Tax 2 No.:</Label>
+                        <Input id="taxNumber2" value={settings.taxNumber2} onChange={handleInputChange} />
+                    </div>
+                </div>
+                <div className="border-t pt-6">
+                    <div className="flex items-center space-x-2 mb-4">
+                        <Checkbox id="enableInlineTax" checked={settings.enableInlineTax} onCheckedChange={(checked) => handleCheckboxChange('enableInlineTax', !!checked)} />
+                        <Label htmlFor="enableInlineTax" className="font-normal">Enable inline tax in purchase and sell</Label>
+                    </div>
+                    <div className="space-y-2 max-w-sm">
+                        <Label htmlFor="defaultSalesTax">Default Sales Tax:</Label>
+                        <Select value={settings.defaultSalesTax} onValueChange={(value) => handleSelectChange('defaultSalesTax', value)}>
+                            <SelectTrigger id="defaultSalesTax">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                {initialTaxRates.map(tax => (
+                                    <SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -393,7 +480,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="business">
                             <BusinessSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => t.value !== 'business').map(tab => (
+                         <TabsContent value="tax">
+                            <TaxSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => t.value !== 'business' && t.value !== 'tax').map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
