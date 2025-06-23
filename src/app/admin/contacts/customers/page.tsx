@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -50,13 +50,65 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import { customers, type Customer } from '@/lib/data';
+import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 
 export default function CustomersContactPage() {
+  const [visibleColumns, setVisibleColumns] = useState({
+    action: true,
+    contactId: true,
+    customerGroup: true,
+    name: true,
+    email: true,
+    mobile: true,
+    address: true,
+    totalSaleDue: true,
+    totalSaleReturnDue: true,
+    openingBalance: true,
+    addedOn: true,
+    customField1: true,
+  });
+
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({...prev, [column]: !prev[column]}));
+  };
+
   const totalSaleDue = customers.reduce((acc, customer) => acc + customer.totalSaleDue, 0);
   const totalSaleReturnDue = customers.reduce((acc, customer) => acc + customer.totalSaleReturnDue, 0);
   const totalOpeningBalance = customers.reduce((acc, customer) => acc + customer.openingBalance, 0);
+  
+  const getExportData = () => customers.map(c => ({
+    contactId: c.contactId,
+    customerGroup: c.customerGroup,
+    name: c.name,
+    email: c.email,
+    mobile: c.mobile,
+    address: c.address,
+    totalSaleDue: c.totalSaleDue,
+    totalSaleReturnDue: c.totalSaleReturnDue,
+    openingBalance: c.openingBalance,
+    addedOn: c.addedOn,
+    customField1: c.customField1 || '',
+  }));
+  
+  const handleExportCsv = () => exportToCsv(getExportData(), 'customers');
+  const handleExportXlsx = () => exportToXlsx(getExportData(), 'customers');
+  const handlePrint = () => window.print();
+  const handleExportPdf = () => {
+    const headers = ["Contact ID", "Customer Group", "Name", "Email", "Mobile", "Address", "Total Sale Due", "Total Sale Return Due", "Opening Balance", "Added On", "Custom Field 1"];
+    const data = customers.map(c => [
+        c.contactId, c.customerGroup, c.name, c.email, c.mobile, c.address, 
+        `$${c.totalSaleDue.toFixed(2)}`, `$${c.totalSaleReturnDue.toFixed(2)}`, `$${c.openingBalance.toFixed(2)}`,
+        c.addedOn, c.customField1 || ''
+    ]);
+    exportToPdf(headers, data, 'customers');
+  };
+
+  const colSpan1 = (visibleColumns.action ? 1 : 0) + (visibleColumns.contactId ? 1 : 0) + (visibleColumns.customerGroup ? 1 : 0) + (visibleColumns.name ? 1 : 0) + (visibleColumns.email ? 1 : 0) + (visibleColumns.mobile ? 1 : 0) + (visibleColumns.address ? 1 : 0);
+  const colSpan2 = (visibleColumns.addedOn ? 1 : 0) + (visibleColumns.customField1 ? 1 : 0);
+
 
   return (
     <div className="flex flex-col gap-4">
@@ -104,11 +156,28 @@ export default function CustomersContactPage() {
                             <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
                         </div>
                         <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><Columns3 className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
-                            <Button variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
+                            <Button onClick={handleExportCsv} variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
+                            <Button onClick={handleExportXlsx} variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
+                            <Button onClick={handlePrint} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9 gap-1"><Columns3 className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {Object.keys(visibleColumns).map((column) => (
+                                        <DropdownMenuCheckboxItem
+                                            key={column}
+                                            className="capitalize"
+                                            checked={visibleColumns[column as keyof typeof visibleColumns]}
+                                            onCheckedChange={() => toggleColumn(column as keyof typeof visibleColumns)}
+                                            onSelect={(e) => e.preventDefault()}
+                                        >
+                                            {column.replace(/([A-Z])/g, ' $1')}
+                                        </DropdownMenuCheckboxItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <Button onClick={handleExportPdf} variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
                         </div>
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -119,24 +188,24 @@ export default function CustomersContactPage() {
                         <Table>
                             <TableHeader>
                             <TableRow>
-                                <TableHead>Action</TableHead>
-                                <TableHead><div className="flex items-center gap-1">Contact ID <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Customer Group <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Name <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Email <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Mobile <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead>Address</TableHead>
-                                <TableHead><div className="flex items-center gap-1">Total Sale Due <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Total Sale Return Due <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Opening Balance <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Added On <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                <TableHead><div className="flex items-center gap-1">Custom Field 1 <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                                {visibleColumns.action && <TableHead>Action</TableHead>}
+                                {visibleColumns.contactId && <TableHead><div className="flex items-center gap-1">Contact ID <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.customerGroup && <TableHead><div className="flex items-center gap-1">Customer Group <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.name && <TableHead><div className="flex items-center gap-1">Name <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.email && <TableHead><div className="flex items-center gap-1">Email <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.mobile && <TableHead><div className="flex items-center gap-1">Mobile <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.address && <TableHead>Address</TableHead>}
+                                {visibleColumns.totalSaleDue && <TableHead><div className="flex items-center gap-1">Total Sale Due <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.totalSaleReturnDue && <TableHead><div className="flex items-center gap-1">Total Sale Return Due <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.openingBalance && <TableHead><div className="flex items-center gap-1">Opening Balance <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.addedOn && <TableHead><div className="flex items-center gap-1">Added On <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
+                                {visibleColumns.customField1 && <TableHead><div className="flex items-center gap-1">Custom Field 1 <ArrowUpDown className="h-3 w-3" /></div></TableHead>}
                             </TableRow>
                             </TableHeader>
                             <TableBody>
                             {customers.map((customer) => (
                                 <TableRow key={customer.id}>
-                                <TableCell>
+                                {visibleColumns.action && <TableCell>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
@@ -153,28 +222,28 @@ export default function CustomersContactPage() {
                                             <DropdownMenuItem><FileText className="mr-2 h-4 w-4" /> Documents & Note</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
-                                </TableCell>
-                                <TableCell>{customer.contactId}</TableCell>
-                                <TableCell>{customer.customerGroup}</TableCell>
-                                <TableCell className="font-medium">{customer.name}</TableCell>
-                                <TableCell>{customer.email}</TableCell>
-                                <TableCell>{customer.mobile}</TableCell>
-                                <TableCell>{customer.address}</TableCell>
-                                <TableCell>${customer.totalSaleDue.toFixed(2)}</TableCell>
-                                <TableCell>${customer.totalSaleReturnDue.toFixed(2)}</TableCell>
-                                <TableCell>${customer.openingBalance.toFixed(2)}</TableCell>
-                                <TableCell>{customer.addedOn}</TableCell>
-                                <TableCell>{customer.customField1 || ''}</TableCell>
+                                </TableCell>}
+                                {visibleColumns.contactId && <TableCell>{customer.contactId}</TableCell>}
+                                {visibleColumns.customerGroup && <TableCell>{customer.customerGroup}</TableCell>}
+                                {visibleColumns.name && <TableCell className="font-medium">{customer.name}</TableCell>}
+                                {visibleColumns.email && <TableCell>{customer.email}</TableCell>}
+                                {visibleColumns.mobile && <TableCell>{customer.mobile}</TableCell>}
+                                {visibleColumns.address && <TableCell>{customer.address}</TableCell>}
+                                {visibleColumns.totalSaleDue && <TableCell>${customer.totalSaleDue.toFixed(2)}</TableCell>}
+                                {visibleColumns.totalSaleReturnDue && <TableCell>${customer.totalSaleReturnDue.toFixed(2)}</TableCell>}
+                                {visibleColumns.openingBalance && <TableCell>${customer.openingBalance.toFixed(2)}</TableCell>}
+                                {visibleColumns.addedOn && <TableCell>{customer.addedOn}</TableCell>}
+                                {visibleColumns.customField1 && <TableCell>{customer.customField1 || ''}</TableCell>}
                                 </TableRow>
                             ))}
                             </TableBody>
                             <TableFooter>
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalSaleDue.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${totalSaleReturnDue.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${totalOpeningBalance.toFixed(2)}</TableCell>
-                                    <TableCell colSpan={2}></TableCell>
+                                    <TableCell colSpan={colSpan1} className="text-right font-bold">Total:</TableCell>
+                                    {visibleColumns.totalSaleDue && <TableCell className="font-bold">${totalSaleDue.toFixed(2)}</TableCell>}
+                                    {visibleColumns.totalSaleReturnDue && <TableCell className="font-bold">${totalSaleReturnDue.toFixed(2)}</TableCell>}
+                                    {visibleColumns.openingBalance && <TableCell className="font-bold">${totalOpeningBalance.toFixed(2)}</TableCell>}
+                                    {colSpan2 > 0 && <TableCell colSpan={colSpan2}></TableCell>}
                                 </TableRow>
                             </TableFooter>
                         </Table>
