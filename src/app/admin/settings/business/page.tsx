@@ -444,6 +444,108 @@ const TaxSettingsForm = () => {
     );
 };
 
+const ProductSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        skuPrefix: 'AS',
+        enableExpiry: true,
+        onProductExpiry: 'keep_selling', // 'keep_selling' or 'stop_selling'
+        enableBrands: true,
+        enableCategories: true,
+        enableProductDescription: true,
+        defaultUnit: 'pcs',
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+    
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating product settings:', settings);
+        toast({
+            title: 'Product Settings Updated',
+            description: 'Your product settings have been saved successfully.',
+        });
+    };
+
+    return (
+    <Card>
+        <CardHeader>
+            <CardTitle>Product Settings</CardTitle>
+            <CardDescription>Manage default product settings and features.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="skuPrefix">SKU Prefix:</Label>
+                    <Input id="skuPrefix" value={settings.skuPrefix} onChange={handleInputChange} placeholder="e.g., SKU" />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="defaultUnit">Default unit:</Label>
+                    <Select value={settings.defaultUnit} onValueChange={(value) => handleSelectChange('defaultUnit', value)}>
+                        <SelectTrigger id="defaultUnit">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="pcs">Pieces</SelectItem>
+                            <SelectItem value="kg">Kilogram</SelectItem>
+                            <SelectItem value="box">Box</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <div className="space-y-4 border-t pt-6">
+                 <div className="flex items-center space-x-2">
+                    <Checkbox id="enableExpiry" checked={settings.enableExpiry} onCheckedChange={(checked) => handleCheckboxChange('enableExpiry', !!checked)} />
+                    <Label htmlFor="enableExpiry" className="font-normal">Enable Product Expiry?</Label>
+                </div>
+                {settings.enableExpiry && (
+                    <div className="space-y-2 pl-6">
+                        <Label htmlFor="onProductExpiry">On Product Expiry:</Label>
+                         <Select value={settings.onProductExpiry} onValueChange={(value) => handleSelectChange('onProductExpiry', value)}>
+                            <SelectTrigger id="onProductExpiry">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="keep_selling">Keep selling</SelectItem>
+                                <SelectItem value="stop_selling">Stop selling n days before</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">This will be used to calculate the expiry date of products.</p>
+                    </div>
+                )}
+            </div>
+             <div className="space-y-4 border-t pt-6">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableBrands" checked={settings.enableBrands} onCheckedChange={(checked) => handleCheckboxChange('enableBrands', !!checked)} />
+                    <Label htmlFor="enableBrands" className="font-normal">Enable Brands</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', !!checked)} />
+                    <Label htmlFor="enableCategories" className="font-normal">Enable Categories</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableProductDescription" checked={settings.enableProductDescription} onCheckedChange={(checked) => handleCheckboxChange('enableProductDescription', !!checked)} />
+                    <Label htmlFor="enableProductDescription" className="font-normal">Enable Product Description</Label>
+                </div>
+            </div>
+        </CardContent>
+        <CardFooter>
+            <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+        </CardFooter>
+    </Card>
+    )
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -483,7 +585,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="tax">
                             <TaxSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => t.value !== 'business' && t.value !== 'tax').map(tab => (
+                        <TabsContent value="product">
+                            <ProductSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
