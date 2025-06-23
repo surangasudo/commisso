@@ -455,6 +455,8 @@ const ProductSettingsForm = () => {
         enableWarranty: false,
         enableProductExpiry: false,
         addItemExpiry: '',
+        onExpiryAction: 'keep_selling',
+        onExpiryPeriod: '0',
         enableCategories: true,
         defaultUnit: '',
         enableRow: false,
@@ -539,6 +541,39 @@ const ProductSettingsForm = () => {
                             </Select>
                         </div>
                     </div>
+
+                    {settings.enableProductExpiry && (
+                        <div className="space-y-2">
+                            <Label htmlFor="onExpiryAction" className="flex items-center gap-1">On Product Expiry: 
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger>
+                                    <TooltipContent><p>Action to take on product expiry. Products will be non-sellable 'n' days before expiry.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                            <div className="flex items-center gap-2">
+                                <Select id="onExpiryAction" value={settings.onExpiryAction} onValueChange={(value) => handleSelectChange('onExpiryAction', value)}>
+                                    <SelectTrigger className="flex-1">
+                                        <SelectValue/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="keep_selling">Keep Selling</SelectItem>
+                                        <SelectItem value="stop_selling">Stop Selling</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Input 
+                                    id="onExpiryPeriod"
+                                    type="number" 
+                                    className="w-20"
+                                    value={settings.onExpiryPeriod}
+                                    onChange={handleInputChange}
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Stop selling n days before expiry.
+                            </p>
+                        </div>
+                    )}
+                    
                     <div className="flex items-center space-x-2">
                         <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', !!checked)} />
                         <Label htmlFor="enableCategories" className="font-normal">Enable Categories</Label>
