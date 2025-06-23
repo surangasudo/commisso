@@ -1,17 +1,17 @@
 'use client';
 import React, { useState, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter, Users as UsersIcon, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { commissionProfiles, users, type CommissionProfile } from '@/lib/data';
+import { commissionProfiles, type CommissionProfile } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,11 +19,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 type ReportData = {
   id: string;
   name: string;
+  entityType: string;
   totalSales: number;
   totalCommission: number;
 };
 
-const ReportTable = ({ data }: { data: ReportData[] }) => {
+const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: string }) => {
     const [searchTerm, setSearchTerm] = useState('');
     
     const filteredData = useMemo(() => {
@@ -34,7 +35,7 @@ const ReportTable = ({ data }: { data: ReportData[] }) => {
     const totalCommission = filteredData.reduce((acc, item) => acc + item.totalCommission, 0);
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
-        const filename = 'sales-rep-report';
+        const filename = `${entityType.toLowerCase().replace(' ', '-')}-report`;
         const exportData = filteredData.map(item => ({
             "Name": item.name,
             "Total Sales (Gross)": item.totalSales.toFixed(2),
@@ -87,7 +88,7 @@ const ReportTable = ({ data }: { data: ReportData[] }) => {
                             </TableRow>
                         )) : (
                            <TableRow>
-                                <TableCell colSpan={3} className="text-center h-24">No data available for this entity type.</TableCell>
+                                <TableCell colSpan={3} className="text-center h-24">No data available for the selected filters.</TableCell>
                            </TableRow> 
                         )}
                     </TableBody>
@@ -111,14 +112,15 @@ export default function SalesRepresentativeReportPage() {
       to: endOfYear(new Date()),
     };
 
-    const [filters, setFilters] = useState({
-        date: defaultDateRange as DateRange | undefined,
-        user: 'all',
-    });
+    const [dateFilter, setDateFilter] = useState<DateRange | undefined>(defaultDateRange);
+    const [selectedAgent, setSelectedAgent] = useState('all');
+    const [selectedSubAgent, setSelectedSubAgent] = useState('all');
+    const [selectedCompany, setSelectedCompany] = useState('all');
+    const [selectedSalesperson, setSelectedSalesperson] = useState('all');
 
     const reportData = useMemo(() => {
         // This is mock data generation for demonstration purposes.
-        // In a real application, this data would come from an API based on the filters.
+        // In a real application, this data would come from an API based on the dateFilter.
         return commissionProfiles.map(p => {
             const totalSales = Math.random() * 40000 + 5000;
             const specialCategory = p.commission.categories?.[0];
@@ -138,15 +140,47 @@ export default function SalesRepresentativeReportPage() {
                 totalCommission,
             };
         });
-    }, [filters]); // In a real app, filters would be a dependency here
+    }, [dateFilter]); // The mock data will "re-fetch" when the date changes.
 
-    const agentData = reportData.filter(p => p.entityType === 'Agent');
-    const subAgentData = reportData.filter(p => p.entityType === 'Sub-Agent');
-    const companyData = reportData.filter(p => p.entityType === 'Company');
-    const salespersonData = reportData.filter(p => p.entityType === 'Salesperson');
+    const agentData = useMemo(() => {
+        let data = reportData.filter(p => p.entityType === 'Agent');
+        if (selectedAgent !== 'all') {
+            data = data.filter(p => p.id === selectedAgent);
+        }
+        return data;
+    }, [reportData, selectedAgent]);
     
+    const subAgentData = useMemo(() => {
+        let data = reportData.filter(p => p.entityType === 'Sub-Agent');
+        if (selectedSubAgent !== 'all') {
+            data = data.filter(p => p.id === selectedSubAgent);
+        }
+        return data;
+    }, [reportData, selectedSubAgent]);
+    
+    const companyData = useMemo(() => {
+        let data = reportData.filter(p => p.entityType === 'Company');
+        if (selectedCompany !== 'all') {
+            data = data.filter(p => p.id === selectedCompany);
+        }
+        return data;
+    }, [reportData, selectedCompany]);
+    
+    const salespersonData = useMemo(() => {
+        let data = reportData.filter(p => p.entityType === 'Salesperson');
+        if (selectedSalesperson !== 'all') {
+            data = data.filter(p => p.id === selectedSalesperson);
+        }
+        return data;
+    }, [reportData, selectedSalesperson]);
+
     const totalSales = reportData.reduce((acc, item) => acc + item.totalSales, 0);
     const totalCommission = reportData.reduce((acc, item) => acc + item.totalCommission, 0);
+
+    const agents = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Agent'), []);
+    const subAgents = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Sub-Agent'), []);
+    const companies = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Company'), []);
+    const salespersons = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Salesperson'), []);
 
     return (
         <div className="flex flex-col gap-6">
@@ -157,45 +191,29 @@ export default function SalesRepresentativeReportPage() {
 
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle>Filters</CardTitle>
-                        <Button variant="outline" size="sm" className="gap-1.5">
-                            <Filter className="h-4 w-4" />
-                            Apply
-                        </Button>
-                    </div>
+                    <CardTitle>Filters</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <Label>User</Label>
-                        <Select value={filters.user} onValueChange={(value) => setFilters(f => ({...f, user: value}))}>
-                            <SelectTrigger><SelectValue/></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Users</SelectItem>
-                                {users.map(user => <SelectItem key={user.id} value={user.username}>{user.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
+                <CardContent>
+                     <div className="space-y-2 max-w-sm">
                         <Label>Date Range</Label>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     id="date"
                                     variant={"outline"}
-                                    className={cn("w-full justify-start text-left font-normal", !filters.date && "text-muted-foreground")}
+                                    className={cn("w-full justify-start text-left font-normal", !dateFilter && "text-muted-foreground")}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {filters.date?.from ? (filters.date.to ? (<>{format(filters.date.from, "LLL dd, y")} - {format(filters.date.to, "LLL dd, y")}</>) : (format(filters.date.from, "LLL dd, y"))) : (<span>Pick a date</span>)}
+                                    {dateFilter?.from ? (dateFilter.to ? (<>{format(dateFilter.from, "LLL dd, y")} - {format(dateFilter.to, "LLL dd, y")}</>) : (format(dateFilter.from, "LLL dd, y"))) : (<span>Pick a date</span>)}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="end">
+                            <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                     initialFocus
                                     mode="range"
-                                    defaultMonth={filters.date?.from}
-                                    selected={filters.date}
-                                    onSelect={(date) => setFilters(f => ({...f, date: date || defaultDateRange}))}
+                                    defaultMonth={dateFilter?.from}
+                                    selected={dateFilter}
+                                    onSelect={setDateFilter}
                                     numberOfMonths={2}
                                 />
                             </PopoverContent>
@@ -234,17 +252,57 @@ export default function SalesRepresentativeReportPage() {
                             <TabsTrigger value="companies">Companies</TabsTrigger>
                             <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="agents" className="mt-4">
-                           <ReportTable data={agentData} />
+                        <TabsContent value="agents" className="mt-4 space-y-4">
+                           <div className="space-y-2 max-w-sm">
+                                <Label>Filter by Agent</Label>
+                                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Agents</SelectItem>
+                                        {agents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                           </div>
+                           <ReportTable data={agentData} entityType="Agent" />
                         </TabsContent>
-                        <TabsContent value="sub_agents" className="mt-4">
-                           <ReportTable data={subAgentData} />
+                        <TabsContent value="sub_agents" className="mt-4 space-y-4">
+                           <div className="space-y-2 max-w-sm">
+                                <Label>Filter by Sub-Agent</Label>
+                                <Select value={selectedSubAgent} onValueChange={setSelectedSubAgent}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Sub-Agents</SelectItem>
+                                        {subAgents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                           </div>
+                           <ReportTable data={subAgentData} entityType="Sub-Agent" />
                         </TabsContent>
-                         <TabsContent value="companies" className="mt-4">
-                           <ReportTable data={companyData} />
+                         <TabsContent value="companies" className="mt-4 space-y-4">
+                           <div className="space-y-2 max-w-sm">
+                                <Label>Filter by Company</Label>
+                                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Companies</SelectItem>
+                                        {companies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                           </div>
+                           <ReportTable data={companyData} entityType="Company" />
                         </TabsContent>
-                         <TabsContent value="salespersons" className="mt-4">
-                           <ReportTable data={salespersonData} />
+                         <TabsContent value="salespersons" className="mt-4 space-y-4">
+                           <div className="space-y-2 max-w-sm">
+                                <Label>Filter by Salesperson</Label>
+                                <Select value={selectedSalesperson} onValueChange={setSelectedSalesperson}>
+                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Salespersons</SelectItem>
+                                        {salespersons.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                           </div>
+                           <ReportTable data={salespersonData} entityType="Salesperson" />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
