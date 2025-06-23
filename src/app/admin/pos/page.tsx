@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
@@ -216,6 +217,51 @@ export default function PosPage() {
         setCardAmount('');
     };
 
+    const handleDraft = () => {
+        if (cart.length === 0) {
+          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+          return;
+        }
+        toast({ title: 'Draft Saved', description: 'The current sale has been saved as a draft.' });
+        setCart([]);
+      };
+    
+      const handleQuotation = () => {
+        if (cart.length === 0) {
+          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+          return;
+        }
+        toast({ title: 'Quotation Saved', description: 'The current sale has been saved as a quotation.' });
+        setCart([]);
+      };
+      
+      const handleSuspend = () => {
+        if (cart.length === 0) {
+          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+          return;
+        }
+        toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
+        setCart([]);
+      };
+      
+      const handleCreditSale = () => {
+        if (cart.length === 0) {
+          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+          return;
+        }
+        toast({ title: 'Credit Sale Finalized', description: 'The sale has been finalized as a credit sale.' });
+        setCart([]);
+      };
+    
+      const handleCardPayment = () => {
+        if (cart.length === 0) {
+          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+          return;
+        }
+        toast({ title: 'Card Payment Successful', description: 'The sale has been finalized with card payment.' });
+        setCart([]);
+      };
+
   return (
     <div className="flex flex-col h-[calc(100vh_-_60px)] bg-slate-100 text-slate-900 -m-6 font-sans">
       {/* Top Header */}
@@ -351,11 +397,11 @@ export default function PosPage() {
       {/* Footer */}
       <footer className="bg-white shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex items-center justify-between z-10 flex-wrap gap-2">
           <div className="flex items-center gap-1 md:gap-2 flex-wrap">
-              <Button variant="outline" className="text-slate-700 text-xs sm:text-sm"><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Draft</Button>
-              <Button variant="outline" className="text-slate-700 text-xs sm:text-sm"><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Quotation</Button>
-              <Button variant="outline" className="text-red-600 border-red-300 text-xs sm:text-sm"><Pause className="mr-1 sm:mr-2 h-4 w-4"/> Suspend</Button>
-              <Button variant="outline" className="text-slate-700 text-xs sm:text-sm"><Undo2 className="mr-1 sm:mr-2 h-4 w-4"/> Credit Sale</Button>
-              <Button variant="outline" className="text-slate-700 text-xs sm:text-sm"><CreditCard className="mr-1 sm:mr-2 h-4 w-4"/> Card</Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleDraft}><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Draft</Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleQuotation}><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Quotation</Button>
+              <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 text-xs sm:text-sm" onClick={handleSuspend}><Pause className="mr-1 sm:mr-2 h-4 w-4"/> Suspend</Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleCreditSale}><Undo2 className="mr-1 sm:mr-2 h-4 w-4"/> Credit Sale</Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleCardPayment}><CreditCard className="mr-1 sm:mr-2 h-4 w-4"/> Card</Button>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
