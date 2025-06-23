@@ -1407,11 +1407,18 @@ const SystemSettingsForm = () => {
         isGoogleDriveEnabled: false,
         googleDriveAppId: '',
         enableRepairModule: true,
+        themeColor: 'blue',
+        defaultDatatableEntries: '25',
+        showHelpText: true,
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { id, value } = e.target;
         setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
     };
 
     const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
@@ -1434,42 +1441,84 @@ const SystemSettingsForm = () => {
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                         <Label htmlFor="appName">App Name:</Label>
                         <Input id="appName" value={settings.appName} onChange={handleInputChange} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="helpLink">Help Link:</Label>
-                        <Input id="helpLink" value={settings.helpLink} onChange={handleInputChange} />
+                        <Label htmlFor="themeColor">Theme Color:</Label>
+                        <Select value={settings.themeColor} onValueChange={(value) => handleSelectChange('themeColor', value)}>
+                            <SelectTrigger id="themeColor"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="blue">Blue</SelectItem>
+                                <SelectItem value="black">Black</SelectItem>
+                                <SelectItem value="purple">Purple</SelectItem>
+                                <SelectItem value="green">Green</SelectItem>
+                                <SelectItem value="red">Red</SelectItem>
+                                <SelectItem value="yellow">Yellow</SelectItem>
+                                <SelectItem value="blue-light">Light Blue</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultDatatableEntries">Default datatable page entries:</Label>
+                        <Select value={settings.defaultDatatableEntries} onValueChange={(value) => handleSelectChange('defaultDatatableEntries', value)}>
+                            <SelectTrigger id="defaultDatatableEntries"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="25">25</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                                <SelectItem value="200">200</SelectItem>
+                                <SelectItem value="500">500</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="googleApiKey">Google Maps API Key:</Label>
                         <Input id="googleApiKey" value={settings.googleApiKey} onChange={handleInputChange} />
                     </div>
-                    <div />
-                        <div className="lg:col-span-2 border-t pt-6 space-y-4">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', !!checked)} />
-                            <Label htmlFor="isGoogleDriveEnabled" className="font-normal">Enable Google Drive</Label>
-                        </div>
-                        {settings.isGoogleDriveEnabled && (
-                            <div className="space-y-2 ml-6 max-w-sm">
-                                <Label htmlFor="googleDriveAppId">Google Drive App ID:</Label>
-                                <Input id="googleDriveAppId" value={settings.googleDriveAppId} onChange={handleInputChange} />
-                            </div>
-                        )}
+                    <div className="space-y-2">
+                        <Label htmlFor="helpLink">Help Link:</Label>
+                        <Input id="helpLink" value={settings.helpLink} onChange={handleInputChange} />
                     </div>
-                        <div className="lg:col-span-2 border-t pt-6 space-y-4">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', !!checked)} />
-                            <Label htmlFor="enableRepairModule" className="font-normal flex items-center gap-1.5">
-                                Enable Repair Module
-                                <Tooltip>
-                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
-                                    <TooltipContent><p>Enables the job sheet & repair module in the application.</p></TooltipContent>
-                                </Tooltip>
-                            </Label>
+                </div>
+
+                <Separator />
+                
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', !!checked)} />
+                        <Label htmlFor="isGoogleDriveEnabled" className="font-normal">Enable Google Drive</Label>
+                    </div>
+                    {settings.isGoogleDriveEnabled && (
+                        <div className="space-y-2 ml-6 max-w-sm">
+                            <Label htmlFor="googleDriveAppId">Google Drive App ID:</Label>
+                            <Input id="googleDriveAppId" value={settings.googleDriveAppId} onChange={handleInputChange} />
                         </div>
+                    )}
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', !!checked)} />
+                        <Label htmlFor="enableRepairModule" className="font-normal flex items-center gap-1.5">
+                            Enable Repair Module
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent><p>Enables the job sheet & repair module in the application.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                </div>
+                
+                <Separator />
+
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="showHelpText" checked={settings.showHelpText} onCheckedChange={(checked) => handleCheckboxChange('showHelpText', !!checked)} />
+                        <Label htmlFor="showHelpText" className="font-normal">Show help text</Label>
                     </div>
                 </div>
             </CardContent>
