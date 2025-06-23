@@ -2,12 +2,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Info } from "lucide-react";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 const initialProductState = {
     id: '',
@@ -26,6 +28,8 @@ const initialProductState = {
 };
 
 export default function AddProductPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [product, setProduct] = useState(initialProductState);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -40,6 +44,24 @@ export default function AddProductPage() {
   
   const handleCheckboxChange = (name: string, checked: boolean) => {
     // Placeholder for future implementation
+  };
+
+  const handleSaveProduct = () => {
+    if (!product.name.trim() || !product.unit || !product.sellingPrice) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields: Product Name, Unit, and Selling Price.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // In a real app, you would send this data to a server.
+    console.log("Saving new product:", product);
+    toast({
+      title: "Product Saved",
+      description: `"${product.name}" has been successfully added.`,
+    });
+    router.push('/admin/products/list');
   };
 
   return (
@@ -192,7 +214,7 @@ export default function AddProductPage() {
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button size="lg">Save Product</Button>
+                <Button size="lg" onClick={handleSaveProduct}>Save Product</Button>
             </div>
         </div>
     </div>
