@@ -54,8 +54,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { customers, type Customer } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
+import { useCurrency } from '@/hooks/use-currency';
 
 export default function CustomersContactPage() {
+  const { formatCurrency } = useCurrency();
   const [visibleColumns, setVisibleColumns] = useState({
     action: true,
     contactId: true,
@@ -100,7 +102,7 @@ export default function CustomersContactPage() {
     const headers = ["Contact ID", "Customer Group", "Name", "Email", "Mobile", "Address", "Total Sale Due", "Total Sale Return Due", "Opening Balance", "Added On", "Custom Field 1"];
     const data = customers.map(c => [
         c.contactId, c.customerGroup, c.name, c.email, c.mobile, c.address, 
-        `$${c.totalSaleDue.toFixed(2)}`, `$${c.totalSaleReturnDue.toFixed(2)}`, `$${c.openingBalance.toFixed(2)}`,
+        formatCurrency(c.totalSaleDue), formatCurrency(c.totalSaleReturnDue), formatCurrency(c.openingBalance),
         c.addedOn, c.customField1 || ''
     ]);
     exportToPdf(headers, data, 'customers');
@@ -229,9 +231,9 @@ export default function CustomersContactPage() {
                                 {visibleColumns.email && <TableCell>{customer.email}</TableCell>}
                                 {visibleColumns.mobile && <TableCell>{customer.mobile}</TableCell>}
                                 {visibleColumns.address && <TableCell>{customer.address}</TableCell>}
-                                {visibleColumns.totalSaleDue && <TableCell>${customer.totalSaleDue.toFixed(2)}</TableCell>}
-                                {visibleColumns.totalSaleReturnDue && <TableCell>${customer.totalSaleReturnDue.toFixed(2)}</TableCell>}
-                                {visibleColumns.openingBalance && <TableCell>${customer.openingBalance.toFixed(2)}</TableCell>}
+                                {visibleColumns.totalSaleDue && <TableCell>{formatCurrency(customer.totalSaleDue)}</TableCell>}
+                                {visibleColumns.totalSaleReturnDue && <TableCell>{formatCurrency(customer.totalSaleReturnDue)}</TableCell>}
+                                {visibleColumns.openingBalance && <TableCell>{formatCurrency(customer.openingBalance)}</TableCell>}
                                 {visibleColumns.addedOn && <TableCell>{customer.addedOn}</TableCell>}
                                 {visibleColumns.customField1 && <TableCell>{customer.customField1 || ''}</TableCell>}
                                 </TableRow>
@@ -240,9 +242,9 @@ export default function CustomersContactPage() {
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={colSpan1} className="text-right font-bold">Total:</TableCell>
-                                    {visibleColumns.totalSaleDue && <TableCell className="font-bold">${totalSaleDue.toFixed(2)}</TableCell>}
-                                    {visibleColumns.totalSaleReturnDue && <TableCell className="font-bold">${totalSaleReturnDue.toFixed(2)}</TableCell>}
-                                    {visibleColumns.openingBalance && <TableCell className="font-bold">${totalOpeningBalance.toFixed(2)}</TableCell>}
+                                    {visibleColumns.totalSaleDue && <TableCell className="font-bold">{formatCurrency(totalSaleDue)}</TableCell>}
+                                    {visibleColumns.totalSaleReturnDue && <TableCell className="font-bold">{formatCurrency(totalSaleReturnDue)}</TableCell>}
+                                    {visibleColumns.openingBalance && <TableCell className="font-bold">{formatCurrency(totalOpeningBalance)}</TableCell>}
                                     {colSpan2 > 0 && <TableCell colSpan={colSpan2}></TableCell>}
                                 </TableRow>
                             </TableFooter>

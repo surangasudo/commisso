@@ -62,6 +62,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCurrency } from '@/hooks/use-currency';
 
 
 const productHints: { [key: string]: string } = {
@@ -132,6 +133,7 @@ const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
 
 const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boolean, onOpenChange: (open: boolean) => void, totalPayable: number }) => {
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
     const [closingCash, setClosingCash] = useState('');
     const openingCash = 100.00; // Mock data
     const totalCashSales = totalPayable; // Simplified for demo
@@ -141,7 +143,7 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
     const handleCloseRegister = () => {
         toast({
             title: "Register Closed",
-            description: `Register closed with a difference of $${difference.toFixed(2)}.`,
+            description: `Register closed with a difference of ${formatCurrency(difference)}.`,
         });
         onOpenChange(false);
     };
@@ -153,15 +155,15 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
                     <DialogTitle>Close Register</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="flex justify-between"><span>Opening Cash:</span><span>${openingCash.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Total Cash Sales:</span><span>${totalCashSales.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Opening Cash:</span><span>{formatCurrency(openingCash)}</span></div>
+                    <div className="flex justify-between"><span>Total Cash Sales:</span><span>{formatCurrency(totalCashSales)}</span></div>
                     <Separator/>
-                    <div className="flex justify-between font-bold"><span>Expected In Register:</span><span>${expected.toFixed(2)}</span></div>
+                    <div className="flex justify-between font-bold"><span>Expected In Register:</span><span>{formatCurrency(expected)}</span></div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="closing-cash" className="text-right">Closing Cash</Label>
                         <Input id="closing-cash" type="number" className="col-span-3" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} />
                     </div>
-                     <div className="flex justify-between font-bold text-red-500"><span>Difference:</span><span>${difference.toFixed(2)}</span></div>
+                     <div className="flex justify-between font-bold text-red-500"><span>Difference:</span><span>{formatCurrency(difference)}</span></div>
                      <Textarea placeholder="Closing note..." />
                 </div>
                 <DialogFooter>
@@ -176,6 +178,7 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
 
 const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
     const handleReturn = (saleId: string) => {
         toast({
             title: "Return Initiated",
@@ -204,7 +207,7 @@ const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpe
                             <TableRow key={sale.id}>
                                 <TableCell>{sale.invoiceNo}</TableCell>
                                 <TableCell>{sale.customerName}</TableCell>
-                                <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                                 <TableCell>
                                     <Button size="sm" variant="outline" onClick={() => handleReturn(sale.invoiceNo)}>Return</Button>
                                 </TableCell>
@@ -279,6 +282,7 @@ export default function PosPage() {
   const [time, setTime] = useState('');
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
 
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
@@ -427,7 +431,7 @@ export default function PosPage() {
         if (totalPaid < totalPayable) {
             toast({
                 title: 'Insufficient Payment',
-                description: `Paid amount is less than the total payable of $${totalPayable.toFixed(2)}.`,
+                description: `Paid amount is less than the total payable of ${formatCurrency(totalPayable)}.`,
                 variant: 'destructive',
             });
             return;
@@ -435,7 +439,7 @@ export default function PosPage() {
 
         toast({
             title: 'Sale Finalized',
-            description: `Payment of $${totalPaid.toFixed(2)} received. Cart has been cleared.`,
+            description: `Payment of ${formatCurrency(totalPaid)} received. Cart has been cleared.`,
         });
         setCart([]);
         setIsMultiPayOpen(false);
@@ -598,8 +602,8 @@ export default function PosPage() {
                                 <div className="col-span-2">
                                     <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
                                 </div>
-                                <div className="col-span-2">${item.product.price.toFixed(2)}</div>
-                                <div className="col-span-2 font-semibold">${(item.product.price * item.quantity).toFixed(2)}</div>
+                                <div className="col-span-2">{formatCurrency(item.product.price)}</div>
+                                <div className="col-span-2 font-semibold">{formatCurrency(item.product.price * item.quantity)}</div>
                                 <div className="col-span-1 text-center">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.product.id)}><X className="w-4 h-4"/></Button>
                                 </div>
@@ -614,28 +618,28 @@ export default function PosPage() {
                 <div className="border-t p-3 mt-auto text-sm space-y-2 bg-slate-50">
                     <div className="flex justify-between">
                         <span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> 
-                        <span>Total: <span className="font-semibold">${subtotal.toFixed(2)}</span></span>
+                        <span>Total: <span className="font-semibold">{formatCurrency(subtotal)}</span></span>
                     </div>
                      <div className="flex justify-between items-center text-slate-600">
                         <span className="flex items-center gap-1">Discount (-): 
                             <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>
                             <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsDiscountModalOpen(true)}/>
                         </span> 
-                        <span>${discount.toFixed(2)}</span>
+                        <span>{formatCurrency(discount)}</span>
                     </div>
                      <div className="flex justify-between items-center text-slate-600">
                         <span className="flex items-center gap-1">Order Tax (+):
                              <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>
                             <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsTaxModalOpen(true)}/>
                         </span> 
-                        <span>${orderTax.toFixed(2)}</span>
+                        <span>{formatCurrency(orderTax)}</span>
                     </div>
                      <div className="flex justify-between items-center text-slate-600">
                         <span className="flex items-center gap-1">Shipping (+):
                              <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>
                             <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsShippingModalOpen(true)}/>
                         </span>
-                        <span>${shipping.toFixed(2)}</span>
+                        <span>{formatCurrency(shipping)}</span>
                     </div>
                 </div>
             </Card>
@@ -664,7 +668,7 @@ export default function PosPage() {
                             <div className="p-2 text-center bg-white">
                                 <p className="text-xs font-semibold truncate">{product.name}</p>
                                 <p className="text-xs text-slate-500">({product.sku})</p>
-                                <p className="text-sm font-bold text-indigo-600">${product.price.toFixed(2)}</p>
+                                <p className="text-sm font-bold text-indigo-600">{formatCurrency(product.price)}</p>
                                 <p className="text-xs text-green-600">{product.stock} Pc(s) in stock</p>
                             </div>
                         </Card>
@@ -693,7 +697,7 @@ export default function PosPage() {
                     <DialogHeader>
                         <DialogTitle>Finalize Payment</DialogTitle>
                         <DialogDescription>
-                            Split the payment across multiple methods. Total payable is <strong>${totalPayable.toFixed(2)}</strong>.
+                            Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -705,8 +709,8 @@ export default function PosPage() {
                             <Label htmlFor="card-amount" className="text-right">Card</Label>
                             <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
                         </div>
-                        <div className="text-right font-medium">Remaining: ${Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)).toFixed(2)}</div>
-                        <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">${changeDue.toFixed(2)}</span></div>
+                        <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
+                        <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
                     </div>
                     <DialogFooter>
                         <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
@@ -719,7 +723,7 @@ export default function PosPage() {
                     <DialogHeader>
                         <DialogTitle>Card Payment</DialogTitle>
                         <DialogDescription>
-                            Enter card details for a total of <strong>${totalPayable.toFixed(2)}</strong>.
+                            Enter card details for a total of <strong>{formatCurrency(totalPayable)}</strong>.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -757,7 +761,7 @@ export default function PosPage() {
           </div>
           <div className="text-right">
               <span className="text-xs sm:text-sm text-slate-500">Total Payable:</span>
-              <h3 className="text-lg sm:text-2xl font-bold text-green-600">${totalPayable.toFixed(2)}</h3>
+              <h3 className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
           </div>
       </footer>
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />

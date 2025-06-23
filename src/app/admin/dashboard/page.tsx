@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Calendar, ShoppingCart, Landmark, FileText, RefreshCw, Truck, AlertTriangle, Undo, Wallet, BarChart2 } from "lucide-react";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { useCurrency } from '@/hooks/use-currency';
 
 const salesData = [
   { date: '24 May', sales: 1500 },
@@ -47,17 +48,19 @@ const chartConfig = {
 };
 
 const stats = [
-    { title: 'Total Sales', value: '$ 1,162.50', icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
-    { title: 'Net', value: '$ 1,162.50', icon: Landmark, color: 'bg-green-100 text-green-600' },
-    { title: 'Invoice due', value: '$ 0.00', icon: FileText, color: 'bg-orange-100 text-orange-600' },
-    { title: 'Total Sell Return', value: '$ 0.00', icon: RefreshCw, color: 'bg-blue-100 text-blue-600' },
-    { title: 'Total purchase', value: '$ 235,656.00', icon: Truck, color: 'bg-sky-100 text-sky-600' },
-    { title: 'Purchase due', value: '$ 235,656.00', icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-600' },
-    { title: 'Total Purchase Return', value: '$ 0.00', icon: Undo, color: 'bg-red-100 text-red-600' },
-    { title: 'Expense', value: '$ 0.00', icon: Wallet, color: 'bg-red-100 text-red-600' },
+    { title: 'Total Sales', value: 1162.50, icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
+    { title: 'Net', value: 1162.50, icon: Landmark, color: 'bg-green-100 text-green-600' },
+    { title: 'Invoice due', value: 0.00, icon: FileText, color: 'bg-orange-100 text-orange-600' },
+    { title: 'Total Sell Return', value: 0.00, icon: RefreshCw, color: 'bg-blue-100 text-blue-600' },
+    { title: 'Total purchase', value: 235656.00, icon: Truck, color: 'bg-sky-100 text-sky-600' },
+    { title: 'Purchase due', value: 235656.00, icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-600' },
+    { title: 'Total Purchase Return', value: 0.00, icon: Undo, color: 'bg-red-100 text-red-600' },
+    { title: 'Expense', value: 0.00, icon: Wallet, color: 'bg-red-100 text-red-600' },
 ]
 
 export default function DashboardPage() {
+  const { formatCurrency } = useCurrency();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -77,7 +80,7 @@ export default function DashboardPage() {
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground">{stat.title}</p>
-                        <p className="text-xl font-bold">{stat.value}</p>
+                        <p className="text-xl font-bold">{formatCurrency(stat.value)}</p>
                     </div>
                 </CardContent>
             </Card>

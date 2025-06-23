@@ -54,8 +54,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { suppliers, type Supplier } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
+import { useCurrency } from '@/hooks/use-currency';
 
 export default function SuppliersPage() {
+  const { formatCurrency } = useCurrency();
   const totalPurchaseDue = suppliers.reduce((acc, supplier) => acc + supplier.totalPurchaseDue, 0);
   
   const getExportData = () => suppliers.map(s => ({
@@ -82,8 +84,8 @@ export default function SuppliersPage() {
     const headers = ["Contact ID", "Business Name", "Name", "Email", "Tax number", "Pay term", "Opening Balance", "Advance Balance", "Added On", "Address", "Mobile", "Total Purchase Due", "Total Purchase Return Due", "Custom Field 1"];
     const data = suppliers.map(s => [
         s.contactId, s.businessName, s.name, s.email, s.taxNumber, `${s.payTerm} Days`,
-        `$${s.openingBalance.toFixed(2)}`, `$${s.advanceBalance.toFixed(2)}`, s.addedOn, s.address, s.mobile,
-        `$${s.totalPurchaseDue.toFixed(2)}`, `$${s.totalPurchaseReturnDue.toFixed(2)}`, s.customField1 || ''
+        formatCurrency(s.openingBalance), formatCurrency(s.advanceBalance), s.addedOn, s.address, s.mobile,
+        formatCurrency(s.totalPurchaseDue), formatCurrency(s.totalPurchaseReturnDue), s.customField1 || ''
     ]);
     exportToPdf(headers, data, 'suppliers');
   };
@@ -194,13 +196,13 @@ export default function SuppliersPage() {
                                 <TableCell>{supplier.email}</TableCell>
                                 <TableCell>{supplier.taxNumber}</TableCell>
                                 <TableCell>{supplier.payTerm} Days</TableCell>
-                                <TableCell>${supplier.openingBalance.toFixed(2)}</TableCell>
-                                <TableCell>${supplier.advanceBalance.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(supplier.openingBalance)}</TableCell>
+                                <TableCell>{formatCurrency(supplier.advanceBalance)}</TableCell>
                                 <TableCell>{supplier.addedOn}</TableCell>
                                 <TableCell>{supplier.address}</TableCell>
                                 <TableCell>{supplier.mobile}</TableCell>
-                                <TableCell>${supplier.totalPurchaseDue.toFixed(2)}</TableCell>
-                                <TableCell>${supplier.totalPurchaseReturnDue.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(supplier.totalPurchaseDue)}</TableCell>
+                                <TableCell>{formatCurrency(supplier.totalPurchaseReturnDue)}</TableCell>
                                 <TableCell>{supplier.customField1 || ''}</TableCell>
                                 </TableRow>
                             ))}
@@ -208,8 +210,8 @@ export default function SuppliersPage() {
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={12} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalPurchaseDue.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">$0.00</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalPurchaseDue)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(0)}</TableCell>
                                     <TableCell></TableCell>
                                 </TableRow>
                             </TableFooter>
