@@ -10,7 +10,7 @@ import {
   Pencil,
   Trash2,
   Eye,
-  Columns,
+  Columns3,
   PlusCircle,
 } from 'lucide-react';
 
@@ -49,12 +49,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    username: true,
+    name: true,
+    role: true,
+    email: true,
+    action: true,
+  });
+
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({...prev, [column]: !prev[column]}));
+  };
 
   const handleEdit = (userId: string) => {
     router.push(`/admin/users/edit/${userId}`);
@@ -75,6 +94,24 @@ export default function UsersPage() {
       setIsDeleteDialogOpen(false);
       setUserToDelete(null);
     }
+  };
+  
+  const getExportData = () => users.map(u => ({
+    username: u.username,
+    name: u.name,
+    role: u.role,
+    email: u.email,
+  }));
+  
+  const handleExportCsv = () => exportToCsv(getExportData(), 'users');
+  const handleExportXlsx = () => exportToXlsx(getExportData(), 'users');
+  const handlePrint = () => window.print();
+  const handleExportPdf = () => {
+    const headers = ["Username", "Name", "Role", "Email"];
+    const data = users.map(u => [
+        u.username, u.name, u.role, u.email
+    ]);
+    exportToPdf(headers, data, 'users');
   };
 
   return (
@@ -99,20 +136,37 @@ export default function UsersPage() {
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="10">Show 10</SelectItem>
-                        <SelectItem value="25">Show 25</SelectItem>
-                        <SelectItem value="50">Show 50</SelectItem>
-                        <SelectItem value="100">Show 100</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
                     </SelectContent>
                 </Select>
                 <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
             </div>
             <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
-              <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
-              <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
-              <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
-              <Button variant="outline" size="sm" className="h-9 gap-1"><Columns className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
-              <Button variant="outline" size="sm" className="h-9 gap-1"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
+              <Button variant="outline" size="sm" className="h-9 gap-1" onClick={handleExportCsv}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
+              <Button variant="outline" size="sm" className="h-9 gap-1" onClick={handleExportXlsx}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export Excel</span></Button>
+              <Button onClick={handlePrint} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 gap-1"><Columns3 className="h-4 w-4" /> <span className="hidden sm:inline">Column visibility</span></Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {Object.keys(visibleColumns).map((column) => (
+                        <DropdownMenuCheckboxItem
+                            key={column}
+                            className="capitalize"
+                            checked={visibleColumns[column as keyof typeof visibleColumns]}
+                            onCheckedChange={() => toggleColumn(column as keyof typeof visibleColumns)}
+                            onSelect={(e) => e.preventDefault()}
+                        >
+                            {column.replace(/([A-Z])/g, ' $1')}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button variant="outline" size="sm" className="h-9 gap-1" onClick={handleExportPdf}><FileText className="h-4 w-4" /> <span className="hidden sm:inline">Export PDF</span></Button>
             </div>
             <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -123,21 +177,21 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Action</TableHead>
+                  {visibleColumns.username && <TableHead>Username</TableHead>}
+                  {visibleColumns.name && <TableHead>Name</TableHead>}
+                  {visibleColumns.role && <TableHead>Role</TableHead>}
+                  {visibleColumns.email && <TableHead>Email</TableHead>}
+                  {visibleColumns.action && <TableHead>Action</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
+                    {visibleColumns.username && <TableCell className="font-medium">{user.username}</TableCell>}
+                    {visibleColumns.name && <TableCell>{user.name}</TableCell>}
+                    {visibleColumns.role && <TableCell>{user.role}</TableCell>}
+                    {visibleColumns.email && <TableCell>{user.email}</TableCell>}
+                    {visibleColumns.action && <TableCell>
                         <div className="flex gap-1">
                             <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEdit(user.id)}>
                                 <Pencil className="mr-1 h-3 w-3" /> Edit
@@ -149,7 +203,7 @@ export default function UsersPage() {
                                 <Trash2 className="mr-1 h-3 w-3" /> Delete
                             </Button>
                         </div>
-                    </TableCell>
+                    </TableCell>}
                   </TableRow>
                 ))}
               </TableBody>
