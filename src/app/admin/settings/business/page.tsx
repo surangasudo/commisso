@@ -692,6 +692,132 @@ const ContactSettingsForm = () => {
     );
 };
 
+const SaleSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        defaultSaleDiscount: '0',
+        defaultSellingPriceGroup: 'default',
+        commissionAgent: 'none',
+        commissionCalculationType: 'invoice_value',
+        itemAdditionMethod: 'increase_quantity',
+        amountRoundingMethod: 'round_to_nearest_whole',
+        enableSalesOrder: false,
+        enableRecurringInvoice: false,
+        isPayTermRequired: false,
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+    
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating sale settings:', settings);
+        toast({
+            title: 'Sale Settings Updated',
+            description: 'Your sale settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Sale Settings</CardTitle>
+                <CardDescription>Configure default settings for sales and invoices.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultSaleDiscount">Default Sale Discount:</Label>
+                        <Input id="defaultSaleDiscount" type="number" value={settings.defaultSaleDiscount} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultSellingPriceGroup">Default Selling Price Group:</Label>
+                        <Select value={settings.defaultSellingPriceGroup} onValueChange={(value) => handleSelectChange('defaultSellingPriceGroup', value)}>
+                            <SelectTrigger id="defaultSellingPriceGroup"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="default">Default Selling Price</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="commissionAgent">Commission Agent:</Label>
+                        <Select value={settings.commissionAgent} onValueChange={(value) => handleSelectChange('commissionAgent', value)}>
+                            <SelectTrigger id="commissionAgent"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="select_from_users_list">Select from users list</SelectItem>
+                                <SelectItem value="logged_in_user">Logged in user</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="commissionCalculationType" className="flex items-center gap-1">
+                            Commission Calculation Type:
+                            <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger><TooltipContent><p>Calculate commission on invoice value or payment received.</p></TooltipContent></Tooltip>
+                        </Label>
+                        <Select value={settings.commissionCalculationType} onValueChange={(value) => handleSelectChange('commissionCalculationType', value)}>
+                            <SelectTrigger id="commissionCalculationType"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="invoice_value">On Invoice Value</SelectItem>
+                                <SelectItem value="payment_received">On Payment Received</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="itemAdditionMethod">Item addition method:</Label>
+                         <Select value={settings.itemAdditionMethod} onValueChange={(value) => handleSelectChange('itemAdditionMethod', value)}>
+                            <SelectTrigger id="itemAdditionMethod"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="increase_quantity">Increase item quantity if it already exists</SelectItem>
+                                <SelectItem value="add_new_row">Add item in new row</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="amountRoundingMethod">Amount rounding method:</Label>
+                         <Select value={settings.amountRoundingMethod} onValueChange={(value) => handleSelectChange('amountRoundingMethod', value)}>
+                            <SelectTrigger id="amountRoundingMethod"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="round_to_nearest_whole">Round to nearest whole number</SelectItem>
+                                <SelectItem value="round_to_nearest_decimal_2">Round to nearest decimal (multiple of 0.05)</SelectItem>
+                                <SelectItem value="round_to_nearest_decimal_10">Round to nearest decimal (multiple of 0.10)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                 <div className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableSalesOrder" checked={settings.enableSalesOrder} onCheckedChange={(checked) => handleCheckboxChange('enableSalesOrder', !!checked)} />
+                        <Label htmlFor="enableSalesOrder" className="font-normal">Enable Sales Order</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="enableRecurringInvoice" checked={settings.enableRecurringInvoice} onCheckedChange={(checked) => handleCheckboxChange('enableRecurringInvoice', !!checked)} />
+                        <Label htmlFor="enableRecurringInvoice" className="font-normal flex items-center gap-1">Enable Recurring Invoice <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    </div>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="isPayTermRequired" checked={settings.isPayTermRequired} onCheckedChange={(checked) => handleCheckboxChange('isPayTermRequired', !!checked)} />
+                        <Label htmlFor="isPayTermRequired" className="font-normal">Is pay term required?</Label>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -717,7 +843,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="contact" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="sale" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
@@ -743,7 +869,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="contact">
                             <ContactSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact'].includes(t.value)).map(tab => (
+                        <TabsContent value="sale">
+                            <SaleSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
