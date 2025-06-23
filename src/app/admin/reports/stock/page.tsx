@@ -25,12 +25,21 @@ type StockReportRow = {
 };
 
 export default function StockReportPage() {
-    const [filters, setFilters] = useState({
+    const [pendingFilters, setPendingFilters] = useState({
+        location: 'all',
+        category: 'all',
+        brand: 'all',
+    });
+    const [activeFilters, setActiveFilters] = useState({
         location: 'all',
         category: 'all',
         brand: 'all',
     });
     const [searchTerm, setSearchTerm] = useState('');
+
+    const handleApplyFilters = () => {
+        setActiveFilters(pendingFilters);
+    };
 
     const reportData: StockReportRow[] = useMemo(() => {
         return detailedProducts.map(p => {
@@ -58,16 +67,16 @@ export default function StockReportPage() {
                 item.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.sku.toLowerCase().includes(searchTerm.toLowerCase());
             
-            const locationMatch = filters.location === 'all' || item.location === filters.location;
+            const locationMatch = activeFilters.location === 'all' || item.location === activeFilters.location;
             
             // For category and brand, need to find original product
             const originalProduct = detailedProducts.find(p => p.sku === item.sku);
-            const categoryMatch = filters.category === 'all' || originalProduct?.category === filters.category;
-            const brandMatch = filters.brand === 'all' || originalProduct?.brand === filters.brand;
+            const categoryMatch = activeFilters.category === 'all' || originalProduct?.category === activeFilters.category;
+            const brandMatch = activeFilters.brand === 'all' || originalProduct?.brand === activeFilters.brand;
             
             return searchMatch && locationMatch && categoryMatch && brandMatch;
         });
-    }, [reportData, searchTerm, filters]);
+    }, [reportData, searchTerm, activeFilters]);
     
     const totals = useMemo(() => {
         return {
@@ -116,7 +125,7 @@ export default function StockReportPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Filters</CardTitle>
-                        <Button variant="outline" size="sm" className="gap-1.5">
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleApplyFilters}>
                             <Filter className="h-4 w-4" />
                             Apply
                         </Button>
@@ -125,7 +134,7 @@ export default function StockReportPage() {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2">
                         <Label>Location</Label>
-                        <Select value={filters.location} onValueChange={(value) => setFilters(f => ({...f, location: value}))}>
+                        <Select value={pendingFilters.location} onValueChange={(value) => setPendingFilters(f => ({...f, location: value}))}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All locations</SelectItem>
@@ -135,7 +144,7 @@ export default function StockReportPage() {
                     </div>
                      <div className="space-y-2">
                         <Label>Category</Label>
-                        <Select value={filters.category} onValueChange={(value) => setFilters(f => ({...f, category: value}))}>
+                        <Select value={pendingFilters.category} onValueChange={(value) => setPendingFilters(f => ({...f, category: value}))}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Categories</SelectItem>
@@ -145,7 +154,7 @@ export default function StockReportPage() {
                     </div>
                      <div className="space-y-2">
                         <Label>Brand</Label>
-                        <Select value={filters.brand} onValueChange={(value) => setFilters(f => ({...f, brand: value}))}>
+                        <Select value={pendingFilters.brand} onValueChange={(value) => setPendingFilters(f => ({...f, brand: value}))}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Brands</SelectItem>

@@ -22,13 +22,32 @@ type CustomerGroupReportData = {
 };
 
 export default function CustomerGroupsReportPage() {
-    const [date, setDate] = useState<DateRange | undefined>({
+    const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
-    });
+    };
+    
+    const [pendingDate, setPendingDate] = useState<DateRange | undefined>(defaultDateRange);
+    const [pendingLocation, setPendingLocation] = useState('all');
+
+    const [activeDate, setActiveDate] = useState<DateRange | undefined>(defaultDateRange);
+    const [activeLocation, setActiveLocation] = useState('all');
+
     const [searchTerm, setSearchTerm] = useState('');
 
+    const handleApplyFilters = () => {
+        setActiveDate(pendingDate);
+        setActiveLocation(pendingLocation);
+    };
+
     const reportData = useMemo(() => {
+        const filteredSales = sales.filter(s => {
+            const saleDate = new Date(s.date);
+            const dateMatch = activeDate?.from && activeDate?.to ? (saleDate >= activeDate.from && saleDate <= activeDate.to) : true;
+            const locationMatch = activeLocation === 'all' || s.location === activeLocation;
+            return dateMatch && locationMatch;
+        });
+        
         const groups = [...new Set(customers.map(c => c.customerGroup))];
         
         const data: CustomerGroupReportData[] = groups.map(group => {
@@ -37,7 +56,7 @@ export default function CustomerGroupsReportPage() {
 
             const totalSaleDue = customersInGroup.reduce((acc, c) => acc + c.totalSaleDue, 0);
             
-            const totalSale = sales
+            const totalSale = filteredSales
                 .filter(s => customerNamesInGroup.includes(s.customerName))
                 .reduce((acc, s) => acc + s.totalAmount, 0);
 
@@ -49,7 +68,7 @@ export default function CustomerGroupsReportPage() {
         });
 
         return data;
-    }, []);
+    }, [activeDate, activeLocation]);
 
     const filteredData = useMemo(() => {
         if (!searchTerm) return reportData;
@@ -87,7 +106,7 @@ export default function CustomerGroupsReportPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Filters</CardTitle>
-                        <Button variant="outline" size="sm" className="gap-1.5">
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleApplyFilters}>
                             <Filter className="h-4 w-4" />
                             Apply
                         </Button>
@@ -96,7 +115,7 @@ export default function CustomerGroupsReportPage() {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <Label>Location</Label>
-                        <Select defaultValue="all">
+                        <Select value={pendingLocation} onValueChange={setPendingLocation}>
                             <SelectTrigger>
                                 <SelectValue placeholder="All locations" />
                             </SelectTrigger>
@@ -115,18 +134,18 @@ export default function CustomerGroupsReportPage() {
                                     variant={"outline"}
                                     className={cn(
                                         "w-full justify-start text-left font-normal",
-                                        !date && "text-muted-foreground"
+                                        !pendingDate && "text-muted-foreground"
                                     )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date?.from ? (
-                                    date.to ? (
+                                    {pendingDate?.from ? (
+                                    pendingDate.to ? (
                                         <>
-                                        {format(date.from, "LLL dd, y")} -{" "}
-                                        {format(date.to, "LLL dd, y")}
+                                        {format(pendingDate.from, "LLL dd, y")} -{" "}
+                                        {format(pendingDate.to, "LLL dd, y")}
                                         </>
                                     ) : (
-                                        format(date.from, "LLL dd, y")
+                                        format(pendingDate.from, "LLL dd, y")
                                     )
                                     ) : (
                                     <span>Pick a date</span>
@@ -137,9 +156,9 @@ export default function CustomerGroupsReportPage() {
                                 <Calendar
                                     initialFocus
                                     mode="range"
-                                    defaultMonth={date?.from}
-                                    selected={date}
-                                    onSelect={setDate}
+                                    defaultMonth={pendingDate?.from}
+                                    selected={pendingDate}
+                                    onSelect={setPendingDate}
                                     numberOfMonths={2}
                                 />
                             </PopoverContent>

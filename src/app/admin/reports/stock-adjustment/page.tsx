@@ -17,20 +17,39 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 
 export default function StockAdjustmentReportPage() {
-    const [date, setDate] = useState<DateRange | undefined>({
+    const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
-    });
+    };
+
+    const [pendingDate, setPendingDate] = useState<DateRange | undefined>(defaultDateRange);
+    const [pendingLocation, setPendingLocation] = useState('all');
+    
+    const [activeDate, setActiveDate] = useState<DateRange | undefined>(defaultDateRange);
+    const [activeLocation, setActiveLocation] = useState('all');
+    
     const [searchTerm, setSearchTerm] = useState('');
 
+    const handleApplyFilters = () => {
+        setActiveDate(pendingDate);
+        setActiveLocation(pendingLocation);
+    };
+
     const filteredData = useMemo(() => {
-        if (!searchTerm) return stockAdjustments;
-        return stockAdjustments.filter(item => 
-            item.referenceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.addedBy.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [searchTerm]);
+        return stockAdjustments.filter(item => {
+            const searchMatch = searchTerm === '' ||
+                item.referenceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.addedBy.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const itemDate = new Date(item.date);
+            const dateMatch = activeDate?.from && activeDate.to ? (itemDate >= activeDate.from && itemDate <= activeDate.to) : true;
+
+            const locationMatch = activeLocation === 'all' || item.location === activeLocation;
+            
+            return searchMatch && dateMatch && locationMatch;
+        });
+    }, [searchTerm, activeDate, activeLocation]);
 
     const totalAmount = filteredData.reduce((acc, item) => acc + item.totalAmount, 0);
     const totalAmountRecovered = filteredData.reduce((acc, item) => acc + item.totalAmountRecovered, 0);
@@ -77,7 +96,7 @@ export default function StockAdjustmentReportPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Filters</CardTitle>
-                        <Button variant="outline" size="sm" className="gap-1.5">
+                        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleApplyFilters}>
                             <Filter className="h-4 w-4" />
                             Apply
                         </Button>
@@ -86,7 +105,7 @@ export default function StockAdjustmentReportPage() {
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <Label>Location</Label>
-                        <Select defaultValue="all">
+                        <Select value={pendingLocation} onValueChange={setPendingLocation}>
                             <SelectTrigger>
                                 <SelectValue placeholder="All locations" />
                             </SelectTrigger>
@@ -105,18 +124,18 @@ export default function StockAdjustmentReportPage() {
                                     variant={"outline"}
                                     className={cn(
                                         "w-full justify-start text-left font-normal",
-                                        !date && "text-muted-foreground"
+                                        !pendingDate && "text-muted-foreground"
                                     )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date?.from ? (
-                                    date.to ? (
+                                    {pendingDate?.from ? (
+                                    pendingDate.to ? (
                                         <>
-                                        {format(date.from, "LLL dd, y")} -{" "}
-                                        {format(date.to, "LLL dd, y")}
+                                        {format(pendingDate.from, "LLL dd, y")} -{" "}
+                                        {format(pendingDate.to, "LLL dd, y")}
                                         </>
                                     ) : (
-                                        format(date.from, "LLL dd, y")
+                                        format(pendingDate.from, "LLL dd, y")
                                     )
                                     ) : (
                                     <span>Pick a date</span>
@@ -127,9 +146,9 @@ export default function StockAdjustmentReportPage() {
                                 <Calendar
                                     initialFocus
                                     mode="range"
-                                    defaultMonth={date?.from}
-                                    selected={date}
-                                    onSelect={setDate}
+                                    defaultMonth={pendingDate?.from}
+                                    selected={pendingDate}
+                                    onSelect={setPendingDate}
                                     numberOfMonths={2}
                                 />
                             </PopoverContent>
