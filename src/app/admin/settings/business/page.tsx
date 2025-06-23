@@ -697,6 +697,7 @@ const SaleSettingsForm = () => {
     const [settings, setSettings] = useState({
         defaultSaleDiscount: '0',
         defaultSellingPriceGroup: 'default',
+        enableCommissionAgent: false,
         commissionAgent: 'none',
         commissionCalculationType: 'invoice_value',
         itemAdditionMethod: 'increase_quantity',
@@ -781,33 +782,39 @@ const SaleSettingsForm = () => {
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
-                    <h4 className="font-semibold text-lg">Commission Agent Settings</h4>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-                        <div className="space-y-2">
-                            <Label htmlFor="commissionAgent">Commission Agent:</Label>
-                            <Select value={settings.commissionAgent} onValueChange={(value) => handleSelectChange('commissionAgent', value)}>
-                                <SelectTrigger id="commissionAgent"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="select_from_users_list">Select from users list</SelectItem>
-                                    <SelectItem value="logged_in_user">Logged in user</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="commissionCalculationType" className="flex items-center gap-1">
-                                Commission Calculation Type:
-                                <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger><TooltipContent><p>Calculate commission on invoice value or payment received.</p></TooltipContent></Tooltip>
-                            </Label>
-                            <Select value={settings.commissionCalculationType} onValueChange={(value) => handleSelectChange('commissionCalculationType', value)}>
-                                <SelectTrigger id="commissionCalculationType"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="invoice_value">On Invoice Value</SelectItem>
-                                    <SelectItem value="payment_received">On Payment Received</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="flex items-center space-x-2 mb-4">
+                        <Checkbox id="enableCommissionAgent" checked={settings.enableCommissionAgent} onCheckedChange={(checked) => handleCheckboxChange('enableCommissionAgent', !!checked)} />
+                        <Label htmlFor="enableCommissionAgent" className="font-normal text-lg">Enable Commission Agent</Label>
                     </div>
+                    
+                    {settings.enableCommissionAgent && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6 ml-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="commissionAgent">Commission Agent:</Label>
+                                <Select value={settings.commissionAgent} onValueChange={(value) => handleSelectChange('commissionAgent', value)}>
+                                    <SelectTrigger id="commissionAgent"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="select_from_users_list">Select from users list</SelectItem>
+                                        <SelectItem value="logged_in_user">Logged in user</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="commissionCalculationType" className="flex items-center gap-1">
+                                    Commission Calculation Type:
+                                    <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger><TooltipContent><p>Calculate commission on invoice value or payment received.</p></TooltipContent></Tooltip>
+                                </Label>
+                                <Select value={settings.commissionCalculationType} onValueChange={(value) => handleSelectChange('commissionCalculationType', value)}>
+                                    <SelectTrigger id="commissionCalculationType"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="invoice_value">On Invoice Value</SelectItem>
+                                        <SelectItem value="payment_received">On Payment Received</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="border-t pt-6 space-y-4">
