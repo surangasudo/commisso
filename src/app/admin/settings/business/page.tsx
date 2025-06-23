@@ -366,7 +366,7 @@ const BusinessSettingsForm = () => {
              </div>
         </CardContent>
         <CardFooter>
-            <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            <Button onClick={handleUpdateSettings}>Update Settings</Button>
         </CardFooter>
     </Card>
     )
@@ -449,7 +449,7 @@ const TaxSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -629,7 +629,7 @@ const ProductSettingsForm = () => {
             </div>
         </CardContent>
         <CardFooter>
-            <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            <Button onClick={handleUpdateSettings}>Update Settings</Button>
         </CardFooter>
     </Card>
     )
@@ -695,7 +695,7 @@ const ContactSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -909,7 +909,7 @@ const SaleSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1109,7 +1109,7 @@ const PosSettingsForm = () => {
 
             </CardContent>
              <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1202,7 +1202,7 @@ const PurchaseSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1341,7 +1341,7 @@ const PaymentSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1412,7 +1412,7 @@ const DashboardSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1543,7 +1543,7 @@ const SystemSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1624,7 +1624,7 @@ const PrefixesSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1714,7 +1714,7 @@ const EmailSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -1907,7 +1907,7 @@ const SmsSettingsForm = () => {
                 )}
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -2027,7 +2027,7 @@ const RewardPointSettingsForm = () => {
                 )}
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -2096,7 +2096,7 @@ const ModulesSettingsForm = () => {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
@@ -2179,7 +2179,7 @@ const CustomLabelsSettingsForm = () => {
                 </Accordion>
             </CardContent>
             <CardFooter>
-                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
         </Card>
     );
