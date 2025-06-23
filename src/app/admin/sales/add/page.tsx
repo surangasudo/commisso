@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 type SaleItem = {
   product: DetailedProduct;
@@ -40,6 +41,10 @@ export default function AddSalePage() {
     const [newCustomerMobile, setNewCustomerMobile] = useState('');
     const [newCustomerEmail, setNewCustomerEmail] = useState('');
     const [newCustomerAddress, setNewCustomerAddress] = useState('');
+
+    const [discount, setDiscount] = useState(0);
+    const [taxPercentage, setTaxPercentage] = useState(0);
+    const [shipping, setShipping] = useState(0);
 
 
     useEffect(() => {
@@ -84,6 +89,9 @@ export default function AddSalePage() {
     
     const totalItems = saleItems.reduce((acc, item) => acc + item.quantity, 0);
     const subtotal = saleItems.reduce((acc, item) => acc + calculateSubtotal(item), 0);
+
+    const taxAmount = useMemo(() => subtotal * (taxPercentage / 100), [subtotal, taxPercentage]);
+    const totalPayable = useMemo(() => subtotal - discount + taxAmount + shipping, [subtotal, discount, taxAmount, shipping]);
 
     const handleSaveCustomer = () => {
         if (!newCustomerName || !newCustomerMobile) {
@@ -248,35 +256,60 @@ export default function AddSalePage() {
                             </TableBody>
                         </Table>
                     </div>
-                    <div className="mt-4 border rounded-md p-4 space-y-4">
-                        <div className="flex justify-between">
-                            <span className="font-medium">Items: {totalItems.toFixed(2)}</span>
-                            <span className="font-medium">Total: ${subtotal.toFixed(2)}</span>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="discount-amount" className="flex items-center gap-1">Discount (-):</Label>
+                                    <Input 
+                                        id="discount-amount" 
+                                        type="number" 
+                                        placeholder="0.00" 
+                                        value={discount || ''}
+                                        onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="order-tax" className="flex items-center gap-1">Order Tax (+):</Label>
+                                    <Select onValueChange={(value) => setTaxPercentage(Number(value))}>
+                                        <SelectTrigger id="order-tax"><SelectValue placeholder="Select Tax"/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">None</SelectItem>
+                                            <SelectItem value="5">GST@5%</SelectItem>
+                                            <SelectItem value="10">VAT@10%</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="shipping-charges" className="flex items-center gap-1">Shipping (+):</Label>
+                                    <Input 
+                                        id="shipping-charges" 
+                                        type="number" 
+                                        placeholder="0.00" 
+                                        value={shipping || ''}
+                                        onChange={(e) => setShipping(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="discount-amount" className="flex items-center gap-1">Discount (-): <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                                <Input id="discount-amount" type="number" placeholder="0.00" />
+                        <div className="bg-slate-50 p-4 rounded-md space-y-2 text-sm">
+                            <div className="flex justify-between"><span>Items: <b>{totalItems}</b> ({totalItems})</span> <span>Total: <b>${subtotal.toFixed(2)}</b></span></div>
+                            <Separator/>
+                            <div className="flex justify-between"><span>Discount:</span><span>(-) ${discount.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Order Tax:</span><span>(+) ${taxAmount.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span>Shipping:</span><span>(+) ${shipping.toFixed(2)}</span></div>
+                            <Separator/>
+                            <div className="flex justify-between font-bold text-base">
+                                <span>Total Payable:</span>
+                                <span>${totalPayable.toFixed(2)}</span>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="order-tax" className="flex items-center gap-1">Order Tax (+): <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                                <Select><SelectTrigger id="order-tax"><SelectValue placeholder="Select Tax"/></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem></SelectContent></Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="shipping-charges" className="flex items-center gap-1">Shipping (+): <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                                <Input id="shipping-charges" type="number" placeholder="0.00" />
-                            </div>
-                        </div>
-                        <div className="text-right text-xl font-bold">
-                            Total Payable: $0.00
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
             <div className="flex justify-end gap-2">
-                <Button size="lg" variant="default">Save</Button>
-                <Button size="lg" variant="default" className="bg-green-600 hover:bg-green-700">Save and print</Button>
+                <Button size="lg" className="bg-green-600 hover:bg-green-700">Add to POS</Button>
             </div>
 
             <div className="text-center text-xs text-slate-400 p-1">
