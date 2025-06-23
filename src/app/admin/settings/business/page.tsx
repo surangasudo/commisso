@@ -1711,6 +1711,8 @@ const SmsSettingsForm = () => {
         nexmoKey: '',
         nexmoSecret: '',
         nexmoFrom: '',
+        textlkApiKey: '',
+        textlkSenderId: '',
         otherUrl: '',
         sendToParam: 'to',
         msgParam: 'body',
@@ -1776,6 +1778,7 @@ const SmsSettingsForm = () => {
                         <SelectContent>
                             <SelectItem value="twilio">Twilio</SelectItem>
                             <SelectItem value="nexmo">Nexmo</SelectItem>
+                            <SelectItem value="textlk">Text.lk</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                     </Select>
@@ -1813,6 +1816,20 @@ const SmsSettingsForm = () => {
                         <div className="space-y-2">
                             <Label htmlFor="nexmoFrom">From (Nexmo Number)</Label>
                             <Input id="nexmoFrom" value={settings.nexmoFrom} onChange={(e) => handleInputChange('nexmoFrom', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+
+                {settings.smsService === 'textlk' && (
+                    <div className="space-y-4 p-4 border rounded-md">
+                         <h4 className="font-semibold">Text.lk Settings</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="textlkApiKey">API Key</Label>
+                            <Input id="textlkApiKey" value={settings.textlkApiKey} onChange={(e) => handleInputChange('textlkApiKey', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="textlkSenderId">Sender ID</Label>
+                            <Input id="textlkSenderId" value={settings.textlkSenderId} onChange={(e) => handleInputChange('textlkSenderId', e.target.value)} />
                         </div>
                     </div>
                 )}
