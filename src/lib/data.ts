@@ -1,5 +1,6 @@
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -250,7 +251,7 @@ export const customers: Customer[] = [
     {
         id: 'cus-3',
         contactId: 'CO0005',
-        name: 'Walk-in Customer',
+        name: 'Walk-In Customer',
         email: null,
         taxNumber: '',
         customerGroup: 'Retail',
@@ -346,6 +347,13 @@ export const purchaseReturns: PurchaseReturn[] = [
     { id: 'pr-2', date: '06/21/2025 14:30', referenceNo: 'PR2025/0002', parentPurchase: 'PO2018/0001', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', paymentStatus: 'Paid', grandTotal: 200.00, paymentDue: 0.00 },
 ];
 
+export type SaleItem = {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  tax: number;
+};
+
 export type Sale = {
     id: string;
     date: string;
@@ -366,13 +374,101 @@ export type Sale = {
     staffNote: string | null;
     shippingDetails: string | null;
     taxAmount?: number;
+    items: SaleItem[];
 };
 
 export const sales: Sale[] = [
-    { id: 'sale-1', date: '06/22/2025 21:00', invoiceNo: 'AS0004', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 750.00, totalPaid: 750.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Ordered', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Standard Shipping', taxAmount: 75.00 },
-    { id: 'sale-2', date: '06/22/2025 21:00', invoiceNo: 'AS0005', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 412.50, totalPaid: 412.50, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Packed', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Express Shipping', taxAmount: 41.25 },
-    { id: 'sale-3', date: '06/20/2025 21:00', invoiceNo: 'AS0002', customerName: 'Walk-In Customer', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 825.00, totalPaid: 825.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Shipped', totalItems: 1.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Courier', taxAmount: 82.50 },
-    { id: 'sale-4', date: '06/20/2025 21:00', invoiceNo: 'AS0003', customerName: 'Harry', contactNumber: '(378) 400-1234', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalAmount: 7700.00, totalPaid: 7700.00, sellDue: 0.00, sellReturnDue: 0.00, shippingStatus: 'Delivered', totalItems: 2.00, addedBy: 'Mr Admin', sellNote: null, staffNote: null, shippingDetails: 'Local Pickup', taxAmount: 770.00 },
+    { 
+        id: 'sale-1', 
+        date: '06/22/2025 21:00', 
+        invoiceNo: 'AS0004', 
+        customerName: 'Walk-In Customer', 
+        contactNumber: '(378) 400-1234', 
+        location: 'Awesome Shop', 
+        paymentStatus: 'Paid', 
+        paymentMethod: 'Cash', 
+        totalAmount: 750.00, 
+        totalPaid: 750.00, 
+        sellDue: 0.00, 
+        sellReturnDue: 0.00, 
+        shippingStatus: 'Ordered', 
+        totalItems: 1.00, 
+        addedBy: 'Mr Admin', 
+        sellNote: null, 
+        staffNote: null, 
+        shippingDetails: 'Standard Shipping', 
+        taxAmount: 75.00,
+        items: [{ productId: 'prod-5', quantity: 1, unitPrice: 750.00, tax: 0 }] 
+    },
+    { 
+        id: 'sale-2', 
+        date: '06/22/2025 21:00', 
+        invoiceNo: 'AS0005', 
+        customerName: 'Walk-In Customer', 
+        contactNumber: '(378) 400-1234', 
+        location: 'Awesome Shop', 
+        paymentStatus: 'Paid', 
+        paymentMethod: 'Cash', 
+        totalAmount: 412.50, 
+        totalPaid: 412.50, 
+        sellDue: 0.00, 
+        sellReturnDue: 0.00, 
+        shippingStatus: 'Packed', 
+        totalItems: 1.00, 
+        addedBy: 'Mr Admin', 
+        sellNote: null, 
+        staffNote: null, 
+        shippingDetails: 'Express Shipping', 
+        taxAmount: 41.25,
+        items: [{ productId: 'prod-9', quantity: 1, unitPrice: 412.50, tax: 0 }] 
+    },
+    { 
+        id: 'sale-3', 
+        date: '06/20/2025 21:00', 
+        invoiceNo: 'AS0002', 
+        customerName: 'Walk-In Customer', 
+        contactNumber: '(378) 400-1234', 
+        location: 'Awesome Shop', 
+        paymentStatus: 'Paid', 
+        paymentMethod: 'Cash', 
+        totalAmount: 825.00, 
+        totalPaid: 825.00, 
+        sellDue: 0.00, 
+        sellReturnDue: 0.00, 
+        shippingStatus: 'Shipped', 
+        totalItems: 1.00, 
+        addedBy: 'Mr Admin', 
+        sellNote: null, 
+        staffNote: null, 
+        shippingDetails: 'Courier', 
+        taxAmount: 82.50,
+        items: [{ productId: 'prod-1', quantity: 1, unitPrice: 825.00, tax: 0 }] 
+    },
+    { 
+        id: 'sale-4', 
+        date: '06/20/2025 21:00', 
+        invoiceNo: 'AS0003', 
+        customerName: 'Harry', 
+        contactNumber: '(378) 400-1234', 
+        location: 'Awesome Shop', 
+        paymentStatus: 'Paid', 
+        paymentMethod: 'Cash', 
+        totalAmount: 7700.00, 
+        totalPaid: 7700.00, 
+        sellDue: 0.00, 
+        sellReturnDue: 0.00, 
+        shippingStatus: 'Delivered', 
+        totalItems: 2.00, 
+        addedBy: 'Mr Admin', 
+        sellNote: null, 
+        staffNote: null, 
+        shippingDetails: 'Local Pickup', 
+        taxAmount: 770.00,
+        items: [
+            { productId: 'prod-2', quantity: 1, unitPrice: 3850, tax: 0 },
+            { productId: 'prod-8', quantity: 1, unitPrice: 3850, tax: 0 },
+        ]
+    },
 ];
 
 export type Draft = {
@@ -527,6 +623,20 @@ export type ProfitData = {
     totalSellRoundOff: number;
     hmsTotal: number;
 };
+
+export type ProductProfit = { product: string; profit: number; };
+export type CategoryProfit = { category: string; profit: number; };
+export type BrandProfit = { brand: string; profit: number; };
+export type LocationProfit = { location: string; profit: number; };
+export type InvoiceProfit = { invoiceNo: string; customer: string; profit: number; };
+export type DateProfit = { date: string; profit: number; };
+export type CustomerProfit = { customer: string; profit: number; };
+export type DayProfit = { day: string; profit: number; };
+export type ServiceStaffProfit = { staffName: string; profit: number; };
+export type AgentProfit = { agentName: string; profit: number; };
+export type SubAgentProfit = { subAgentName: string; profit: number; };
+export type CompanyProfit = { company: string; profit: number; };
+
 export const profitData: ProfitData = {
   openingStockPurchase: 0.00,
   openingStockSale: 0.00,
@@ -553,7 +663,6 @@ export const profitData: ProfitData = {
   hmsTotal: 0.00,
 };
 
-export type ProductProfit = { product: string; profit: number; };
 export const productProfitData: ProductProfit[] = [
     { product: 'Barilla Pasta (AS0028)', profit: 0.00 },
     { product: 'Butter Cookies (AS0027)', profit: 0.00 },
@@ -562,7 +671,6 @@ export const productProfitData: ProductProfit[] = [
     { product: 'Pair Of Dumbbells (AS0021)', profit: 0.00 },
 ];
 
-export type CategoryProfit = { category: string; profit: number; };
 export const categoryProfitData: CategoryProfit[] = [
     { category: 'Accessories -- Shoes', profit: 588.50 },
     { category: 'Food & Grocery', profit: 475.00 },
@@ -570,7 +678,6 @@ export const categoryProfitData: CategoryProfit[] = [
     { category: 'Uncategorized', profit: 0.00 },
 ];
 
-export type BrandProfit = { brand: string; profit: number; };
 export const brandProfitData: BrandProfit[] = [
     { brand: 'Nike', profit: 300.00 },
     { brand: 'Puma', profit: 250.50 },
@@ -579,12 +686,10 @@ export const brandProfitData: BrandProfit[] = [
     { brand: 'Unbranded', profit: 0.00 },
 ];
 
-export type LocationProfit = { location: string; profit: number; };
 export const locationProfitData: LocationProfit[] = [
     { location: 'Awesome Shop', profit: 1182.00 },
 ];
 
-export type InvoiceProfit = { invoiceNo: string; customer: string; profit: number; };
 export const invoiceProfitData: InvoiceProfit[] = [
     { invoiceNo: 'AS0004', customer: 'Walk-In Customer', profit: 75.00 },
     { invoiceNo: 'AS0005', customer: 'Walk-In Customer', profit: 41.25 },
@@ -592,20 +697,17 @@ export const invoiceProfitData: InvoiceProfit[] = [
     { invoiceNo: 'AS0003', customer: 'Harry', profit: 770.00 },
 ];
 
-export type DateProfit = { date: string; profit: number; };
 export const dateProfitData: DateProfit[] = [
     { date: '06/22/2025', profit: 825.00 },
     { date: '06/21/2025', profit: 0.00 },
     { date: '06/20/2025', profit: 8112.50 },
 ];
 
-export type CustomerProfit = { customer: string; profit: number; };
 export const customerProfitData: CustomerProfit[] = [
     { customer: 'Walk-In Customer', profit: 198.75 },
     { customer: 'Harry', profit: 770.00 },
 ];
 
-export type DayProfit = { day: string; profit: number; };
 export const dayProfitData: DayProfit[] = [
     { day: 'Sunday', profit: 1500.00 },
     { day: 'Monday', profit: 2200.00 },
@@ -616,25 +718,21 @@ export const dayProfitData: DayProfit[] = [
     { day: 'Saturday', profit: 5500.00 },
 ];
 
-export type ServiceStaffProfit = { staffName: string; profit: number; };
 export const serviceStaffProfitData: ServiceStaffProfit[] = [
     { staffName: 'Mr Admin', profit: 5500.00 },
     { staffName: 'Mr Demo Cashier', profit: 3250.75 },
 ];
 
-export type AgentProfit = { agentName: string; profit: number; };
 export const agentProfitData: AgentProfit[] = [
     { agentName: 'John Doe', profit: 4500.00 },
     { agentName: 'Alex Ray', profit: 2800.50 },
 ];
 
-export type SubAgentProfit = { subAgentName: string; profit: number; };
 export const subAgentProfitData: SubAgentProfit[] = [
     { subAgentName: 'Jane Smith', profit: 1850.50 },
     { subAgentName: 'Peter Jones', profit: 975.00 },
 ];
 
-export type CompanyProfit = { company: string; profit: number; };
 export const companyProfitData: CompanyProfit[] = [
     { company: 'Global Corp', profit: 25000.00 },
     { company: 'Innovate Inc.', profit: 18500.75 },
