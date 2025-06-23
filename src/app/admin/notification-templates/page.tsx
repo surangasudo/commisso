@@ -31,7 +31,15 @@ const availableTags = {
     "{contact_custom_field_8}", "{contact_custom_field_9}", "{contact_custom_field_10}",
     "{shipping_custom_field_1}", "{shipping_custom_field_2}", "{shipping_custom_field_3}",
     "{shipping_custom_field_4}", "{shipping_custom_field_5}",
-  ]
+  ],
+  salesRepresentative: [
+    "{representative_name}",
+    "{business_name}",
+    "{commission_amount}",
+    "{total_sale_amount}",
+    "{reporting_period_start}",
+    "{reporting_period_end}",
+  ],
 };
 
 const TemplateEditor = ({ tags, subject, emailBody, smsBody, whatsappText }: {
@@ -219,6 +227,63 @@ export default function NotificationTemplatesPage() {
         </CardContent>
       </Card>
       
+      {/* Sales Representative Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sales Representative Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="agent-commission" className="w-full">
+            <TabsList className="flex-wrap h-auto justify-start">
+              <TabsTrigger value="agent-commission">Agent Commission</TabsTrigger>
+              <TabsTrigger value="subagent-commission">Sub-Agent Commission</TabsTrigger>
+              <TabsTrigger value="company-commission">Company Commission</TabsTrigger>
+            </TabsList>
+            <TabsContent value="agent-commission" className="pt-4">
+              <TemplateEditor
+                tags={availableTags.salesRepresentative}
+                subject="Your Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+              />
+            </TabsContent>
+            <TabsContent value="subagent-commission" className="pt-4">
+               <TemplateEditor
+                tags={availableTags.salesRepresentative}
+                subject="Your Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+              />
+            </TabsContent>
+            <TabsContent value="company-commission" className="pt-4">
+               <TemplateEditor
+                tags={availableTags.salesRepresentative}
+                subject="Your Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+              />
+            </TabsContent>
+          </Tabs>
+           <div className="mt-4 flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox id="auto-email-representative" />
+                <Label htmlFor="auto-email-representative" className="font-normal">Auto Email</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="auto-sms-representative" />
+                <Label htmlFor="auto-sms-representative" className="font-normal">Auto Send SMS</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="auto-whatsapp-representative" />
+                <Label htmlFor="auto-whatsapp-representative" className="font-normal">Auto send Whatsapp notification</Label>
+              </div>
+            </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-col items-center gap-4">
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 w-full flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
@@ -232,5 +297,3 @@ export default function NotificationTemplatesPage() {
     </div>
   );
 }
-
-    
