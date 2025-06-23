@@ -64,6 +64,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCurrency } from '@/hooks/use-currency';
 
 const productHints: { [key: string]: string } = {
     'prod-1': 'fashion sneaker',
@@ -79,6 +80,7 @@ const productHints: { [key: string]: string } = {
 
 export default function ListProductsPage() {
   const router = useRouter();
+  const { formatCurrency } = useCurrency();
   const [products, setProducts] = useState<DetailedProduct[]>(initialProducts);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<DetailedProduct | null>(null);
@@ -216,8 +218,8 @@ export default function ListProductsPage() {
                                         </TableCell>
                                         <TableCell className="font-medium">{product.name}</TableCell>
                                         <TableCell>{product.businessLocation}</TableCell>
-                                        <TableCell>${product.unitPurchasePrice.toFixed(2)}</TableCell>
-                                        <TableCell>${product.sellingPrice.toFixed(2)}</TableCell>
+                                        <TableCell>{formatCurrency(product.unitPurchasePrice)}</TableCell>
+                                        <TableCell>{formatCurrency(product.sellingPrice)}</TableCell>
                                         <TableCell>{product.currentStock} Pieces</TableCell>
                                         <TableCell>{product.productType}</TableCell>
                                         <TableCell>{product.category}</TableCell>
