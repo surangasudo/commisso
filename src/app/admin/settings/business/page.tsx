@@ -50,6 +50,7 @@ import { useToast } from '@/hooks/use-toast';
 import { initialTaxRates } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -1700,6 +1701,182 @@ const EmailSettingsForm = () => {
     );
 };
 
+const SmsSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        smsService: 'twilio',
+        twilioSid: '',
+        twilioToken: '',
+        twilioFrom: '',
+        nexmoKey: '',
+        nexmoSecret: '',
+        nexmoFrom: '',
+        otherUrl: '',
+        sendToParam: 'to',
+        msgParam: 'body',
+        requestMethod: 'get',
+        header1Key: '', header1Val: '',
+        header2Key: '', header2Val: '',
+        header3Key: '', header3Val: '',
+        param1Key: '', param1Val: '',
+        param2Key: '', param2Val: '',
+        param3Key: '', param3Val: '',
+        param4Key: '', param4Val: '',
+        param5Key: '', param5Val: '',
+        param6Key: '', param6Val: '',
+        param7Key: '', param7Val: '',
+        param8Key: '', param8Val: '',
+        param9Key: '', param9Val: '',
+        param10Key: '', param10Val: '',
+    });
+
+    const handleInputChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating SMS settings:', settings);
+        toast({
+            title: 'SMS Settings Updated',
+            description: 'Your SMS settings have been saved successfully.',
+        });
+    };
+    
+    const renderParameterInputs = (count: number) => {
+        return Array.from({ length: count }, (_, i) => (
+            <div key={i} className="flex gap-2">
+                <Input
+                    placeholder={`Parameter ${i + 1} key`}
+                    value={settings[`param${i + 1}Key` as keyof typeof settings]}
+                    onChange={(e) => handleInputChange(`param${i + 1}Key`, e.target.value)}
+                />
+                <Input
+                    placeholder={`Parameter ${i + 1} value`}
+                    value={settings[`param${i + 1}Val` as keyof typeof settings]}
+                    onChange={(e) => handleInputChange(`param${i + 1}Val`, e.target.value)}
+                />
+            </div>
+        ));
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>SMS Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="space-y-2 max-w-sm">
+                    <Label htmlFor="smsService">SMS Service</Label>
+                    <Select value={settings.smsService} onValueChange={(value) => handleSelectChange('smsService', value)}>
+                        <SelectTrigger id="smsService"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="twilio">Twilio</SelectItem>
+                            <SelectItem value="nexmo">Nexmo</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {settings.smsService === 'twilio' && (
+                    <div className="space-y-4 p-4 border rounded-md">
+                        <h4 className="font-semibold">Twilio Settings</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="twilioSid">Twilio Account SID</Label>
+                            <Input id="twilioSid" value={settings.twilioSid} onChange={(e) => handleInputChange('twilioSid', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="twilioToken">Twilio Auth Token</Label>
+                            <Input id="twilioToken" type="password" value={settings.twilioToken} onChange={(e) => handleInputChange('twilioToken', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="twilioFrom">From (Twilio Number)</Label>
+                            <Input id="twilioFrom" value={settings.twilioFrom} onChange={(e) => handleInputChange('twilioFrom', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+                
+                {settings.smsService === 'nexmo' && (
+                    <div className="space-y-4 p-4 border rounded-md">
+                         <h4 className="font-semibold">Nexmo Settings</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="nexmoKey">Nexmo API Key</Label>
+                            <Input id="nexmoKey" value={settings.nexmoKey} onChange={(e) => handleInputChange('nexmoKey', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nexmoSecret">Nexmo API Secret</Label>
+                            <Input id="nexmoSecret" type="password" value={settings.nexmoSecret} onChange={(e) => handleInputChange('nexmoSecret', e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="nexmoFrom">From (Nexmo Number)</Label>
+                            <Input id="nexmoFrom" value={settings.nexmoFrom} onChange={(e) => handleInputChange('nexmoFrom', e.target.value)} />
+                        </div>
+                    </div>
+                )}
+                
+                 {settings.smsService === 'other' && (
+                    <div className="space-y-6 p-4 border rounded-md">
+                        <h4 className="font-semibold">Other SMS Service Configuration</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="otherUrl">URL</Label>
+                            <Input id="otherUrl" placeholder="https://api.sms-provider.com/send" value={settings.otherUrl} onChange={(e) => handleInputChange('otherUrl', e.target.value)} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="sendToParam">Send to parameter name</Label>
+                                <Input id="sendToParam" value={settings.sendToParam} onChange={(e) => handleInputChange('sendToParam', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="msgParam">Message parameter name</Label>
+                                <Input id="msgParam" value={settings.msgParam} onChange={(e) => handleInputChange('msgParam', e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="requestMethod">Request Method</Label>
+                                <Select value={settings.requestMethod} onValueChange={(value) => handleSelectChange('requestMethod', value)}>
+                                    <SelectTrigger id="requestMethod"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="get">GET</SelectItem>
+                                        <SelectItem value="post">POST</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div>
+                            <Label className="mb-2 block">Headers</Label>
+                            <div className="space-y-2">
+                                <div className="flex gap-2">
+                                    <Input placeholder="Header 1 key" value={settings.header1Key} onChange={(e) => handleInputChange('header1Key', e.target.value)}/>
+                                    <Input placeholder="Header 1 value" value={settings.header1Val} onChange={(e) => handleInputChange('header1Val', e.target.value)}/>
+                                </div>
+                                 <div className="flex gap-2">
+                                    <Input placeholder="Header 2 key" value={settings.header2Key} onChange={(e) => handleInputChange('header2Key', e.target.value)}/>
+                                    <Input placeholder="Header 2 value" value={settings.header2Val} onChange={(e) => handleInputChange('header2Val', e.target.value)}/>
+                                </div>
+                                 <div className="flex gap-2">
+                                    <Input placeholder="Header 3 key" value={settings.header3Key} onChange={(e) => handleInputChange('header3Key', e.target.value)}/>
+                                    <Input placeholder="Header 3 value" value={settings.header3Val} onChange={(e) => handleInputChange('header3Val', e.target.value)}/>
+                                </div>
+                            </div>
+                        </div>
+                         <div>
+                            <Label className="mb-2 block">Parameters (max 10)</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                                {renderParameterInputs(10)}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -1775,7 +1952,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="email_settings">
                             <EmailSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings'].includes(t.value)).map(tab => (
+                         <TabsContent value="sms_settings">
+                            <SmsSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
