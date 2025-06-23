@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useParams } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { ChevronDown } from "lucide-react";
 
 const permissionGroups = [
     { key: 'user', title: 'User', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all users", view_own: "View own user", add: 'Add User', edit: 'Edit User', delete: 'Delete User' } },
@@ -174,17 +176,21 @@ export default function EditRolePage() {
                     <Accordion type="multiple" className="w-full" defaultValue={Object.keys(permissions)}>
                         {permissionGroups.map(group => (
                             <AccordionItem value={group.key} key={group.key}>
-                                <AccordionTrigger>
-                                    <div className="flex items-center gap-4">
+                                <AccordionPrimitive.Header className="flex w-full items-center">
+                                    <div className="flex items-center py-4 pl-4">
                                         <Checkbox 
                                             id={`group-select-${group.key}`} 
                                             onCheckedChange={(checked) => handleGroupToggle(group.key, group.permissions, group.hasViewRadio, !!checked)}
                                             checked={isGroupChecked(group.key, group.permissions, group.hasViewRadio)}
-                                            onClick={(e) => e.stopPropagation()}
                                         />
-                                        <span className="font-semibold">{group.title}</span>
                                     </div>
-                                </AccordionTrigger>
+                                    <AccordionPrimitive.Trigger
+                                        className="flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180 px-4"
+                                    >
+                                        <span className="font-semibold">{group.title}</span>
+                                        <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
+                                    </AccordionPrimitive.Trigger>
+                                </AccordionPrimitive.Header>
                                 <AccordionContent>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-6 pl-10 pt-4">
                                        {group.hasViewRadio && (
