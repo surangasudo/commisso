@@ -1398,6 +1398,88 @@ const DashboardSettingsForm = () => {
     );
 };
 
+const SystemSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        appName: 'Ultimate POS',
+        helpLink: 'https://ultimatepos.com/docs',
+        googleApiKey: '',
+        isGoogleDriveEnabled: false,
+        googleDriveAppId: '',
+        enableRepairModule: true,
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating system settings:', settings);
+        toast({
+            title: 'System Settings Updated',
+            description: 'Your system settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+                <CardDescription>General system-wide configurations.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="appName">App Name:</Label>
+                        <Input id="appName" value={settings.appName} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="helpLink">Help Link:</Label>
+                        <Input id="helpLink" value={settings.helpLink} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="googleApiKey">Google Maps API Key:</Label>
+                        <Input id="googleApiKey" value={settings.googleApiKey} onChange={handleInputChange} />
+                    </div>
+                    <div />
+                        <div className="lg:col-span-2 border-t pt-6 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', !!checked)} />
+                            <Label htmlFor="isGoogleDriveEnabled" className="font-normal">Enable Google Drive</Label>
+                        </div>
+                        {settings.isGoogleDriveEnabled && (
+                            <div className="space-y-2 ml-6 max-w-sm">
+                                <Label htmlFor="googleDriveAppId">Google Drive App ID:</Label>
+                                <Input id="googleDriveAppId" value={settings.googleDriveAppId} onChange={handleInputChange} />
+                            </div>
+                        )}
+                    </div>
+                        <div className="lg:col-span-2 border-t pt-6 space-y-4">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', !!checked)} />
+                            <Label htmlFor="enableRepairModule" className="font-normal flex items-center gap-1.5">
+                                Enable Repair Module
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Enables the job sheet & repair module in the application.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -1464,7 +1546,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="dashboard">
                             <DashboardSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard'].includes(t.value)).map(tab => (
+                        <TabsContent value="system">
+                            <SystemSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
