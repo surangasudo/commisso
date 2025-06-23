@@ -1529,6 +1529,86 @@ const SystemSettingsForm = () => {
     );
 };
 
+const PrefixesSettingsForm = () => {
+    const { toast } = useToast();
+    const [prefixes, setPrefixes] = useState({
+        purchase: 'PO',
+        purchaseReturn: '',
+        purchaseRequisition: '',
+        purchaseOrder: '',
+        stockTransfer: 'ST',
+        stockAdjustment: 'SA',
+        sellReturn: 'CN',
+        expenses: 'EP',
+        contacts: 'CO',
+        purchasePayment: 'PP',
+        sellPayment: 'SP',
+        expensePayment: '',
+        businessLocation: 'BL',
+        username: '',
+        subscriptionNo: '',
+        draft: '',
+        salesOrder: '',
+    });
+
+    const handleInputChange = (id: keyof typeof prefixes, value: string) => {
+        setPrefixes(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating prefixes:', prefixes);
+        toast({
+            title: 'Prefixes Updated',
+            description: 'Your prefix settings have been saved successfully.',
+        });
+    };
+
+    const prefixFields = [
+        { id: 'purchase', label: 'Purchase:' },
+        { id: 'purchaseOrder', label: 'Purchase Order:' },
+        { id: 'sellReturn', label: 'Sell Return:' },
+        { id: 'purchasePayment', label: 'Purchase Payment:' },
+        { id: 'businessLocation', label: 'Business Location:' },
+        { id: 'draft', label: 'Draft:' },
+        { id: 'purchaseReturn', label: 'Purchase Return:' },
+        { id: 'stockTransfer', label: 'Stock Transfer:' },
+        { id: 'expenses', label: 'Expenses:' },
+        { id: 'sellPayment', label: 'Sell Payment:' },
+        { id: 'username', label: 'Username:' },
+        { id: 'salesOrder', label: 'Sales Order:' },
+        { id: 'purchaseRequisition', label: 'Purchase Requisition:' },
+        { id: 'stockAdjustment', label: 'Stock Adjustment:' },
+        { id: 'contacts', label: 'Contacts:' },
+        { id: 'expensePayment', label: 'Expense Payment:' },
+        { id: 'subscriptionNo', label: 'Subscription No.:' },
+    ] as const;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Prefixes</CardTitle>
+                <CardDescription>Manage prefixes for different document types and identifiers in your business.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
+                    {prefixFields.map(field => (
+                        <div key={field.id} className="space-y-2">
+                            <Label htmlFor={field.id}>{field.label}</Label>
+                            <Input
+                                id={field.id}
+                                value={prefixes[field.id]}
+                                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -1598,7 +1678,10 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="system">
                             <SystemSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system'].includes(t.value)).map(tab => (
+                        <TabsContent value="prefixes">
+                            <PrefixesSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
