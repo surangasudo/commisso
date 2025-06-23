@@ -54,7 +54,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { detailedProducts } from '@/lib/data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
+import { format, startOfYear, endOfYear, subDays, startOfMonth, endOfMonth, subMonths, subYears, startOfToday, endOfToday, startOfYesterday, endOfYesterday } from 'date-fns';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -2170,7 +2174,6 @@ const CustomLabelsSettingsForm = () => {
     );
 };
 
-
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
         <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
@@ -2182,9 +2185,7 @@ const PlaceholderContent = ({ title }: { title: string }) => (
     </Card>
 );
 
-
 export default function BusinessSettingsPage() {
-
     return (
         <TooltipProvider>
             <div className="flex flex-col gap-6">
@@ -2195,7 +2196,7 @@ export default function BusinessSettingsPage() {
                         <Input placeholder="Search settings..." className="pl-8" />
                     </div>
                 </div>
-                <Tabs defaultValue="dashboard" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <Tabs defaultValue="business" className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
                     <TabsList className="flex flex-col h-auto p-2 gap-1 items-stretch bg-card border rounded-lg lg:col-span-1">
                         {settingsTabs.map(tab => (
                             <TabsTrigger 
