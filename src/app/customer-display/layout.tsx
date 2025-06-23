@@ -12,7 +12,7 @@ export default function CustomerDisplayLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-        <body>{children}</body>
+        <body className="font-body antialiased">{children}</body>
     </html>
   );
 }
