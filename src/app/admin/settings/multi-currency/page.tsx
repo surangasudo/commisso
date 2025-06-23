@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Coins, Plus, Pencil, Trash2 } from "lucide-react";
-import React, { useState } from 'react';
+import { Coins, Plus, Pencil, Trash2, CheckCircle } from "lucide-react";
+import React, { useState, useMemo } from 'react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 
@@ -37,6 +37,8 @@ export default function MultiCurrencyPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCurrency, setEditingCurrency] = useState<Currency | null>(null);
   const [editedCurrency, setEditedCurrency] = useState({ name: '', code: '', symbol: '', exchangeRate: '' });
+
+  const baseCurrency = useMemo(() => currencies.find(c => c.isBaseCurrency)!, [currencies]);
 
   const handleAddCurrency = () => {
     if (newCurrency.name.trim() && newCurrency.code.trim() && newCurrency.symbol.trim() && newCurrency.exchangeRate) {
@@ -87,6 +89,24 @@ export default function MultiCurrencyPage() {
     setCurrencies(currencies.filter(c => c.id !== id && !c.isBaseCurrency));
   };
   
+  const handleSetAsBase = (id: string) => {
+    const newBase = currencies.find(c => c.id === id);
+    if (!newBase || newBase.isBaseCurrency) return;
+
+    const oldBaseRate = newBase.exchangeRate;
+
+    const updatedCurrencies = currencies.map(c => {
+        const newRate = c.exchangeRate / oldBaseRate;
+        return {
+            ...c,
+            exchangeRate: newRate,
+            isBaseCurrency: c.id === id,
+        }
+    });
+
+    setCurrencies(updatedCurrencies);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
@@ -109,7 +129,7 @@ export default function MultiCurrencyPage() {
                     <DialogHeader>
                         <DialogTitle>Add New Currency</DialogTitle>
                         <DialogDescription>
-                          Add a new currency and its exchange rate against your base currency (USD).
+                          Add a new currency and its exchange rate against your base currency ({baseCurrency.code}).
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
@@ -128,7 +148,7 @@ export default function MultiCurrencyPage() {
                          <div className="space-y-2">
                             <Label htmlFor="curr-rate">Exchange Rate *</Label>
                             <Input id="curr-rate" type="number" placeholder="e.g. 83.50" value={newCurrency.exchangeRate} onChange={(e) => setNewCurrency(p => ({...p, exchangeRate: e.target.value}))} />
-                             <p className="text-xs text-muted-foreground">1 USD = ? [Your Currency]</p>
+                             <p className="text-xs text-muted-foreground">1 {baseCurrency.code} = ? [Your Currency]</p>
                         </div>
                     </div>
                     <DialogFooter>
@@ -139,7 +159,7 @@ export default function MultiCurrencyPage() {
               </Dialog>
             </div>
             <CardDescription className="pt-2">
-                Manage currencies for use in transactions. Your base currency is USD.
+                Manage currencies for use in transactions. Your base currency is {baseCurrency.name} ({baseCurrency.code}).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -151,7 +171,7 @@ export default function MultiCurrencyPage() {
                     <TableHead>Code</TableHead>
                     <TableHead>Symbol</TableHead>
                     <TableHead>Exchange Rate</TableHead>
-                    <TableHead className="w-[180px]">Action</TableHead>
+                    <TableHead className="w-[280px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -163,7 +183,7 @@ export default function MultiCurrencyPage() {
                       </TableCell>
                       <TableCell>{currency.code}</TableCell>
                       <TableCell>{currency.symbol}</TableCell>
-                      <TableCell>{currency.exchangeRate}</TableCell>
+                      <TableCell>{currency.exchangeRate.toFixed(4)}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEditClick(currency)} disabled={currency.isBaseCurrency}>
@@ -172,6 +192,11 @@ export default function MultiCurrencyPage() {
                           <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteCurrency(currency.id)} disabled={currency.isBaseCurrency}>
                             <Trash2 className="mr-1 h-3 w-3" /> Delete
                           </Button>
+                           {!currency.isBaseCurrency && (
+                            <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => handleSetAsBase(currency.id)}>
+                              <CheckCircle className="mr-1 h-3 w-3" /> Set as Base
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
