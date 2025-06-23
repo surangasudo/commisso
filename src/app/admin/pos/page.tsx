@@ -25,7 +25,11 @@ import {
   LayoutGrid,
   Copyright,
   Undo2,
-  WalletCards
+  WalletCards,
+  Monitor,
+  Briefcase,
+  Shrink,
+  Lock,
 } from 'lucide-react';
 import {
   Card,
@@ -34,7 +38,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { products, type Product } from '@/lib/data';
+import { products, type Product, sales as recentSalesData } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -54,6 +58,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Separator } from '@/components/ui/separator';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -75,6 +80,141 @@ type CartItem = {
   quantity: number;
 };
 
+const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const [display, setDisplay] = useState('0');
+
+    const handleButtonClick = (value: string) => {
+        if (display === '0' && value !== '.') {
+            setDisplay(value);
+        } else if (value === 'C') {
+            setDisplay('0');
+        } else if (value === '=') {
+            try {
+                // Using eval is generally unsafe, but acceptable for this simple, non-production calculator.
+                setDisplay(eval(display.replace(/--/g, '+')).toString());
+            } catch {
+                setDisplay('Error');
+            }
+        } else {
+            setDisplay(display + value);
+        }
+    };
+
+    const buttons = ['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', '0', '.', '=', '+', 'C'];
+    
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-xs">
+                <DialogHeader>
+                    <DialogTitle>Calculator</DialogTitle>
+                </DialogHeader>
+                <div className="p-4 bg-muted rounded-md text-right text-3xl font-mono mb-4">{display}</div>
+                <div className="grid grid-cols-4 gap-2">
+                    {buttons.map(btn => (
+                        <Button 
+                            key={btn} 
+                            onClick={() => handleButtonClick(btn)}
+                            variant={btn === '=' || btn === 'C' ? 'destructive' : 'secondary'}
+                            className="text-xl h-14"
+                        >
+                            {btn}
+                        </Button>
+                    ))}
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boolean, onOpenChange: (open: boolean) => void, totalPayable: number }) => {
+    const { toast } = useToast();
+    const [closingCash, setClosingCash] = useState('');
+    const openingCash = 100.00; // Mock data
+    const totalCashSales = totalPayable; // Simplified for demo
+    const expected = openingCash + totalCashSales;
+    const difference = parseFloat(closingCash) - expected || 0;
+
+    const handleCloseRegister = () => {
+        toast({
+            title: "Register Closed",
+            description: `Register closed with a difference of $${difference.toFixed(2)}.`,
+        });
+        onOpenChange(false);
+    };
+    
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Close Register</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="flex justify-between"><span>Opening Cash:</span><span>${openingCash.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Total Cash Sales:</span><span>${totalCashSales.toFixed(2)}</span></div>
+                    <Separator/>
+                    <div className="flex justify-between font-bold"><span>Expected In Register:</span><span>${expected.toFixed(2)}</span></div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="closing-cash" className="text-right">Closing Cash</Label>
+                        <Input id="closing-cash" type="number" className="col-span-3" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} />
+                    </div>
+                     <div className="flex justify-between font-bold text-red-500"><span>Difference:</span><span>${difference.toFixed(2)}</span></div>
+                     <Textarea placeholder="Closing note..." />
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleCloseRegister}>Close Register</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
+const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { toast } = useToast();
+    const handleReturn = (saleId: string) => {
+        toast({
+            title: "Return Initiated",
+            description: `Sell return process started for sale ${saleId}. This is a demo.`,
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Recent Transactions</DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh]">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Invoice No.</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Action</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {recentSalesData.map(sale => (
+                            <TableRow key={sale.id}>
+                                <TableCell>{sale.invoiceNo}</TableCell>
+                                <TableCell>{sale.customerName}</TableCell>
+                                <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Button size="sm" variant="outline" onClick={() => handleReturn(sale.invoiceNo)}>Return</Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                </ScrollArea>
+            </DialogContent>
+        </Dialog>
+    )
+};
+
+
 export default function PosPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -82,13 +222,11 @@ export default function PosPage() {
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
 
-  // State for multi-pay dialog
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
   const [cardAmount, setCardAmount] = useState('');
   const [changeDue, setChangeDue] = useState(0);
   
-  // State for card payment dialog
   const [isCardPaymentOpen, setIsCardPaymentOpen] = useState(false);
   const [cardDetails, setCardDetails] = useState({
     number: '',
@@ -97,7 +235,12 @@ export default function PosPage() {
     year: '',
     cvv: '',
   });
-
+  
+  // States for new header functions
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
 
   useEffect(() => {
     const updateCurrentTime = () => {
@@ -115,11 +258,19 @@ export default function PosPage() {
     return () => clearInterval(timer);
   }, []);
   
+  useEffect(() => {
+    const onFullscreenChange = () => {
+        setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
   }, [cart]);
 
-  const tax = useMemo(() => subtotal * 0.08, [subtotal]); // 8% tax example
+  const tax = useMemo(() => subtotal * 0.08, [subtotal]);
   const totalPayable = useMemo(() => subtotal + tax, [subtotal, tax]);
 
   useEffect(() => {
@@ -272,7 +423,6 @@ export default function PosPage() {
       };
 
       const handleFinalizeCardPayment = () => {
-        // Basic validation
         if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
             toast({
                 title: 'Missing Card Details',
@@ -291,9 +441,23 @@ export default function PosPage() {
         setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
       };
 
+      const handleToggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    };
+
+    const handleRefresh = () => window.location.reload();
+    const handleCustomerDisplay = () => window.open('/customer-display', '_blank', 'noopener,noreferrer');
+
   return (
     <div className="flex flex-col h-[calc(100vh_-_60px)] bg-slate-100 text-slate-900 -m-6 font-sans">
-      {/* Top Header */}
       <header className="bg-white shadow-sm p-2 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
@@ -303,12 +467,13 @@ export default function PosPage() {
             </div>
         </div>
         <div className="flex items-center gap-1">
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><Rewind /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><X className="text-red-500" /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><Save /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><Calculator /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><RefreshCw /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex"><Expand /></Button>
+             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
+             <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={clearCart}><X /></Button>
+             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
+             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
+             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
+             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
+             <Button variant="ghost" size="icon" className="text-slate-600" onClick={handleCustomerDisplay}><Monitor /></Button>
              <Button variant="ghost" size="icon" className="text-slate-600"><HelpCircle /></Button>
              <Button className="bg-red-500 hover:bg-red-600 text-white h-9 text-xs sm:text-sm">
                 <PlusCircle className="mr-2 h-4 w-4"/> Add Expense
@@ -508,11 +673,9 @@ export default function PosPage() {
               <h3 className="text-lg sm:text-2xl font-bold text-green-600">${totalPayable.toFixed(2)}</h3>
           </div>
       </footer>
-      <div className="absolute bottom-20 right-4 flex flex-col gap-2">
-        <Button className="bg-indigo-600 hover:bg-indigo-700 rounded-full shadow-lg h-12">
-            <History className="mr-2"/> Recent Transactions
-        </Button>
-      </div>
+      <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
+      <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
+      <RecentTransactionsDialog open={isRecentTransactionsOpen} onOpenChange={setIsRecentTransactionsOpen} />
       <div className="text-center text-xs text-slate-400 p-1 bg-slate-100">
         Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
       </div>
