@@ -3,6 +3,7 @@
 
 
 
+
 export type User = {
   id: string;
   username: string;
@@ -376,7 +377,7 @@ export const purchases: Purchase[] = [
         items: []
     },
     { 
-        id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Received', paymentStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin', taxAmount: 302.50,
+        id: 'pur-6', date: '05/23/2025 21:00', referenceNo: '35001BCVJ', location: 'Awesome Shop', supplier: 'Univer Suppliers, Jackson Hill', purchaseStatus: 'Partial', grandTotal: 6050.00, paymentDue: 3050.00, addedBy: 'Mr Admin', taxAmount: 302.50,
         items: [
             { productId: 'prod-6', quantity: 10, unitPrice: 35.00, tax: 0 },
             { productId: 'prod-9', quantity: 15, unitPrice: 34.00, tax: 0 },
@@ -864,4 +865,26 @@ export const registerLogs: RegisterLog[] = [
         openingCash: 100.00,
         closingCash: 0,
     },
+];
+
+export type ActivityLog = {
+  id: string;
+  date: string;
+  user: string;
+  action: string;
+  subjectType: string;
+  subjectId: string;
+  note: string;
+  ipAddress: string;
+};
+
+export const activityLogs: ActivityLog[] = [
+  { id: 'log-1', date: '06/23/2025 10:15', user: 'Mr Admin', action: 'Sale Created', subjectType: 'Sale', subjectId: 'AS0005', note: '', ipAddress: '192.168.1.1' },
+  { id: 'log-2', date: '06/23/2025 09:30', user: 'Mr Admin', action: 'Purchase Created', subjectType: 'Purchase', subjectId: 'PO2018/0002', note: '', ipAddress: '192.168.1.1' },
+  { id: 'log-3', date: '06/22/2025 14:00', user: 'Mr Demo Cashier', action: 'User Logged In', subjectType: 'User', subjectId: 'cashier', note: '', ipAddress: '192.168.1.5' },
+  { id: 'log-4', date: '06/22/2025 11:20', user: 'Mr Admin', action: 'Stock Adjustment Added', subjectType: 'Stock Adjustment', subjectId: 'SA2025/0001', note: 'Reason: Stock correction', ipAddress: '192.168.1.1' },
+  { id: 'log-5', date: '06/22/2025 11:08', user: 'Mr Admin', action: 'Stock Transfer Added', subjectType: 'Stock Transfer', subjectId: 'ST2025/0001', note: 'From Awesome Shop to Warehouse A', ipAddress: '192.168.1.1' },
+  { id: 'log-6', date: '06/21/2025 17:15', user: 'Mr Demo Cashier', action: 'Register Closed', subjectType: 'Register', subjectId: 'reg-2', note: 'Slightly over.', ipAddress: '192.168.1.5' },
+  { id: 'log-7', date: '06/21/2025 10:00', user: 'Mr Admin', action: 'Product Deleted', subjectType: 'Product', subjectId: 'prod-old-123', note: 'Product: Old T-Shirt', ipAddress: '192.168.1.1' },
+  { id: 'log-8', date: '06/20/2025 09:00', user: 'Mr Admin', action: 'User Logged In', subjectType: 'User', subjectId: 'admin', note: '', ipAddress: '192.168.1.1' },
 ];
