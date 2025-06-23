@@ -43,6 +43,8 @@ import {
   Clock,
   Calculator,
   Search,
+  X,
+  PlusCircle,
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -51,6 +53,8 @@ import { initialTaxRates } from '@/lib/data';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { detailedProducts } from '@/lib/data';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -2083,6 +2087,89 @@ const ModulesSettingsForm = () => {
     );
 };
 
+const CustomLabelsSettingsForm = () => {
+    const { toast } = useToast();
+    const [labels, setLabels] = useState({
+        contacts: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '', cf7: '', cf8: '', cf9: '', cf10: '' },
+        products: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        locations: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        users: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        purchase: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        sell: { cf1: '', cf2: '', cf3: '', cf4: '' },
+        shipping: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '' },
+        typesOfService: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '' },
+    });
+
+    const handleInputChange = (section: keyof typeof labels, field: string, value: string) => {
+        setLabels(prev => ({
+            ...prev,
+            [section]: {
+                ...prev[section],
+                [field]: value
+            }
+        }));
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating custom labels:', labels);
+        toast({
+            title: 'Custom Labels Updated',
+            description: 'Your custom labels have been saved successfully.',
+        });
+    };
+
+    const labelSections: { key: keyof typeof labels; title: string; count: number }[] = [
+        { key: 'contacts', title: 'Contacts', count: 10 },
+        { key: 'products', title: 'Products', count: 4 },
+        { key: 'locations', title: 'Locations', count: 4 },
+        { key: 'users', title: 'Users', count: 4 },
+        { key: 'purchase', title: 'Purchase', count: 4 },
+        { key: 'sell', title: 'Sell', count: 4 },
+        { key: 'shipping', title: 'Shipping', count: 5 },
+        { key: 'typesOfService', title: 'Types of Service', count: 6 },
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Custom Labels</CardTitle>
+                <CardDescription>
+                    Customize the labels for various custom fields throughout the application. Leave blank to use the default label.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                <Accordion type="multiple" className="w-full">
+                    {labelSections.map(section => (
+                        <AccordionItem value={section.key} key={section.key}>
+                            <AccordionTrigger>{section.title}</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
+                                    {Array.from({ length: section.count }, (_, i) => {
+                                        const fieldKey = `cf${i + 1}`;
+                                        return (
+                                            <div key={fieldKey} className="space-y-2">
+                                                <Label htmlFor={`${section.key}-${fieldKey}`}>Custom Field {i + 1}</Label>
+                                                <Input
+                                                    id={`${section.key}-${fieldKey}`}
+                                                    value={labels[section.key][fieldKey as keyof typeof labels[typeof section.key]]}
+                                                    onChange={(e) => handleInputChange(section.key, fieldKey, e.target.value)}
+                                                />
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
@@ -2167,7 +2254,10 @@ export default function BusinessSettingsPage() {
                          <TabsContent value="modules">
                             <ModulesSettingsForm />
                         </TabsContent>
-                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings', 'modules'].includes(t.value)).map(tab => (
+                        <TabsContent value="custom_labels">
+                           <CustomLabelsSettingsForm />
+                        </TabsContent>
+                        {settingsTabs.filter(t => !['business', 'tax', 'product', 'contact', 'sale', 'pos', 'purchases', 'payment', 'dashboard', 'system', 'prefixes', 'email_settings', 'sms_settings', 'reward_point_settings', 'modules', 'custom_labels'].includes(t.value)).map(tab => (
                              <TabsContent key={tab.value} value={tab.value}>
                                 <PlaceholderContent title={tab.label} />
                             </TabsContent>
@@ -2181,4 +2271,3 @@ export default function BusinessSettingsPage() {
         </TooltipProvider>
     );
 }
-
