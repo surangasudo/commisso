@@ -1102,6 +1102,7 @@ const PurchaseSettingsForm = () => {
         enablePurchaseStatus: true,
         enableLotNumber: false,
         enablePurchaseOrder: false,
+        enablePurchaseRequisition: false,
     });
 
     const handleCheckboxChange = (id: keyof typeof settings, checked: boolean) => {
@@ -1123,46 +1124,60 @@ const PurchaseSettingsForm = () => {
                 <CardDescription>Configure default settings for your purchases.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', !!checked)} />
-                        <Label htmlFor="enableEditingProductPrice" className="font-normal flex items-center gap-1.5">
-                            Enable editing product price from purchase screen
-                            <Tooltip>
-                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
-                                <TooltipContent><p>Allow users to change the purchase price of a product when adding a purchase.</p></TooltipContent>
-                            </Tooltip>
-                        </Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                    <div className="space-y-6">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', !!checked)} />
+                            <Label htmlFor="enableEditingProductPrice" className="font-normal flex items-center gap-1.5">
+                                Enable editing product price from purchase screen
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Allow users to change the purchase price of a product when adding a purchase.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', !!checked)} />
+                            <Label htmlFor="enableLotNumber" className="font-normal flex items-center gap-1.5">
+                                Enable Lot Number
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Enable Lot number input in purchase screen.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enablePurchaseRequisition" checked={settings.enablePurchaseRequisition} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseRequisition', !!checked)} />
+                            <Label htmlFor="enablePurchaseRequisition" className="font-normal flex items-center gap-1.5">
+                                Enable Purchase Requisition
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Allows creating purchase requisitions which can be converted to purchase orders.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
                     </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', !!checked)} />
-                        <Label htmlFor="enablePurchaseStatus" className="font-normal flex items-center gap-1.5">
-                            Enable Purchase Status
-                            <Tooltip>
-                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
-                                <TooltipContent><p>Track the status of purchases (e.g., Received, Pending, Ordered).</p></TooltipContent>
-                            </Tooltip>
-                        </Label>
-                    </div>
-                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', !!checked)} />
-                        <Label htmlFor="enableLotNumber" className="font-normal flex items-center gap-1.5">
-                            Enable Lot Number
-                             <Tooltip>
-                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
-                                <TooltipContent><p>Enable Lot number input in purchase screen.</p></TooltipContent>
-                            </Tooltip>
-                        </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', !!checked)} />
-                        <Label htmlFor="enablePurchaseOrder" className="font-normal flex items-center gap-1.5">
-                            Enable Purchase Order
-                             <Tooltip>
-                                <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
-                                <TooltipContent><p>Allows creating and managing purchase orders.</p></TooltipContent>
-                            </Tooltip>
-                        </Label>
+                    <div className="space-y-6">
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', !!checked)} />
+                            <Label htmlFor="enablePurchaseStatus" className="font-normal flex items-center gap-1.5">
+                                Enable Purchase Status
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Track the status of purchases (e.g., Received, Pending, Ordered).</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', !!checked)} />
+                            <Label htmlFor="enablePurchaseOrder" className="font-normal flex items-center gap-1.5">
+                                Enable Purchase Order
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                    <TooltipContent><p>Allows creating and managing purchase orders.</p></TooltipContent>
+                                </Tooltip>
+                            </Label>
+                        </div>
                     </div>
                 </div>
             </CardContent>
