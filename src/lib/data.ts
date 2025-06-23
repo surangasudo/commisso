@@ -1,11 +1,4 @@
 
-
-
-
-
-
-
-
 export type User = {
   id: string;
   username: string;
@@ -902,6 +895,12 @@ export const initialTaxRates: TaxRate[] = [
   { id: 'tax-2', name: 'GST@5%', rate: 5 },
 ];
 
+export type PaymentOption = {
+  method: string;
+  enabled: boolean;
+  defaultAccount?: string;
+};
+
 export type BusinessLocation = {
   id: string;
   name: string;
@@ -912,9 +911,36 @@ export type BusinessLocation = {
   state: string;
   country: string;
   mobile: string;
+  alternateContactNumber?: string;
   email: string;
   website: string;
+  invoiceSchemeForPos?: string;
+  invoiceSchemeForSale?: string;
+  invoiceLayoutForPos?: string;
+  invoiceLayoutForSale?: string;
+  defaultSellingPriceGroup?: string;
+  customField1?: string;
+  customField2?: string;
+  customField3?: string;
+  customField4?: string;
+  posFeaturedProducts?: string;
+  paymentOptions?: PaymentOption[];
 };
+
+const defaultPaymentOptions: PaymentOption[] = [
+    { method: 'Cash', enabled: true },
+    { method: 'Card', enabled: true },
+    { method: 'Cheque', enabled: true },
+    { method: 'Bank Transfer', enabled: true },
+    { method: 'Other', enabled: true },
+    { method: 'Custom Payment 1', enabled: false },
+    { method: 'Custom Payment 2', enabled: false },
+    { method: 'Custom Payment 3', enabled: false },
+    { method: 'Custom Payment 4', enabled: false },
+    { method: 'Custom Payment 5', enabled: false },
+    { method: 'Custom Payment 6', enabled: false },
+    { method: 'Custom Payment 7', enabled: false },
+];
 
 export const businessLocations: BusinessLocation[] = [
   {
@@ -929,6 +955,8 @@ export const businessLocations: BusinessLocation[] = [
     mobile: '555-123-4567',
     email: 'contact@awesomeshop.com',
     website: 'https://www.awesomeshop.com',
+    invoiceLayoutForSale: 'Default',
+    paymentOptions: defaultPaymentOptions,
   },
    {
     id: 'loc-2',
@@ -942,6 +970,7 @@ export const businessLocations: BusinessLocation[] = [
     mobile: '555-111-2222',
     email: 'warehouse-a@awesomeshop.com',
     website: '',
+    paymentOptions: defaultPaymentOptions,
   },
     {
     id: 'loc-3',
@@ -955,5 +984,6 @@ export const businessLocations: BusinessLocation[] = [
     mobile: '555-333-4444',
     email: 'warehouse-b@awesomeshop.com',
     website: '',
+    paymentOptions: defaultPaymentOptions,
   },
 ];
