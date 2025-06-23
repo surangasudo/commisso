@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -36,12 +36,13 @@ import {
   Award,
   Book,
   Tags,
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   Calculator
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -63,131 +64,214 @@ const settingsTabs = [
   { value: "custom_labels", label: "Custom Labels", icon: Tags },
 ];
 
-const BusinessSettingsForm = () => (
+const BusinessSettingsForm = () => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState({
+        businessName: 'Awesome Shop',
+        startDate: '2018-01-01',
+        profitPercent: '25.00',
+        currency: 'usd',
+        currencyPlacement: 'before',
+        timeZone: 'America/Phoenix',
+        logo: null as File | null,
+        fyStartMonth: 'january',
+        stockAccountingMethod: 'fifo',
+        transactionEditDays: '30',
+        dateFormat: 'mmddyyyy',
+        timeFormat: '24-hour',
+        currencyPrecision: '2',
+        quantityPrecision: '2',
+    });
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof typeof settings, value: string) => {
+        setSettings(prev => ({ ...prev, [id]: value as any }));
+    };
+    
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setSettings(prev => ({ ...prev, logo: e.target.files![0] }));
+        }
+    };
+
+    const handleUpdateSettings = () => {
+        console.log('Updating settings:', settings);
+        toast({
+            title: 'Settings Updated',
+            description: 'Your business settings have been saved successfully.',
+        });
+    };
+
+    return (
     <Card>
         <CardContent className="pt-6">
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="business-name">Business Name:*</Label>
-                    <Input id="business-name" defaultValue="Awesome Shop" />
+                    <Label htmlFor="businessName">Business Name:*</Label>
+                    <Input id="businessName" value={settings.businessName} onChange={handleInputChange} />
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Start Date:</Label>
+                    <Label htmlFor="startDate">Start Date:</Label>
                     <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        <Input id="start-date" type="date" defaultValue="2018-01-01" className="pl-10" />
+                        <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input id="startDate" type="date" value={settings.startDate} onChange={handleInputChange} className="pl-10" />
                     </div>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="profit-percent" className="flex items-center gap-1">Default profit percent:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                    <Input id="profit-percent" type="number" defaultValue="25.00" />
+                    <Label htmlFor="profitPercent" className="flex items-center gap-1">Default profit percent:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    <Input id="profitPercent" type="number" value={settings.profitPercent} onChange={handleInputChange} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="currency">Currency:*</Label>
-                     <Select defaultValue="usd">
+                     <Select value={settings.currency} onValueChange={(value) => handleSelectChange('currency', value)}>
                         <SelectTrigger id="currency">
                              <div className="flex items-center gap-2">
                                 <Landmark className="h-4 w-4 text-muted-foreground" />
                                 <SelectValue/>
                             </div>
                         </SelectTrigger>
-                        <SelectContent><SelectItem value="usd">America - Dollars(USD)</SelectItem></SelectContent>
+                        <SelectContent>
+                            <SelectItem value="usd">America - Dollars(USD)</SelectItem>
+                            <SelectItem value="eur">Europe - Euro(EUR)</SelectItem>
+                            <SelectItem value="gbp">United Kingdom - Pounds(GBP)</SelectItem>
+                            <SelectItem value="jpy">Japan - Yen(JPY)</SelectItem>
+                            <SelectItem value="inr">India - Rupees(INR)</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="currency-placement">Currency Symbol Placement:</Label>
-                     <Select defaultValue="before">
-                        <SelectTrigger id="currency-placement"><SelectValue/></SelectTrigger>
-                        <SelectContent><SelectItem value="before">Before amount</SelectItem></SelectContent>
+                    <Label htmlFor="currencyPlacement">Currency Symbol Placement:</Label>
+                     <Select value={settings.currencyPlacement} onValueChange={(value) => handleSelectChange('currencyPlacement', value)}>
+                        <SelectTrigger id="currencyPlacement"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="before">Before amount</SelectItem>
+                            <SelectItem value="after">After amount</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="time-zone">Time zone:</Label>
-                     <Select defaultValue="phoenix">
-                        <SelectTrigger id="time-zone">
+                    <Label htmlFor="timeZone">Time zone:</Label>
+                     <Select value={settings.timeZone} onValueChange={(value) => handleSelectChange('timeZone', value)}>
+                        <SelectTrigger id="timeZone">
                              <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                        <SelectContent><SelectItem value="phoenix">America/Phoenix</SelectItem></SelectContent>
+                         <SelectContent>
+                            <SelectItem value="America/Phoenix">America/Phoenix</SelectItem>
+                            <SelectItem value="America/New_York">America/New_York (EST)</SelectItem>
+                            <SelectItem value="America/Chicago">America/Chicago (CST)</SelectItem>
+                            <SelectItem value="America/Denver">America/Denver (MST)</SelectItem>
+                            <SelectItem value="America/Los_Angeles">America/Los_Angeles (PST)</SelectItem>
+                            <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+                            <SelectItem value="Europe/Paris">Europe/Paris (CET)</SelectItem>
+                            <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="upload-logo">Upload Logo:</Label>
+                    <Label htmlFor="logo">Upload Logo:</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="upload-logo" type="file" className="flex-1"/>
+                        <Input id="logo" type="file" className="flex-1" onChange={handleFileChange} />
                     </div>
                     <p className="text-xs text-muted-foreground">Previous logo (if exists) will be replaced</p>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="fy-start" className="flex items-center gap-1">Financial year start month: <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                     <Select defaultValue="january">
-                        <SelectTrigger id="fy-start">
+                    <Label htmlFor="fyStartMonth" className="flex items-center gap-1">Financial year start month: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                     <Select value={settings.fyStartMonth} onValueChange={(value) => handleSelectChange('fyStartMonth', value)}>
+                        <SelectTrigger id="fyStartMonth">
                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-muted-foreground" />
+                                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                        <SelectContent><SelectItem value="january">January</SelectItem></SelectContent>
+                        <SelectContent>
+                             {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
+                                <SelectItem key={month} value={month.toLowerCase()}>{month}</SelectItem>
+                            ))}
+                        </SelectContent>
                     </Select>
                 </div>
                  <div className="space-y-2">
-                    <Label htmlFor="stock-method" className="flex items-center gap-1">Stock Accounting Method:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                     <Select defaultValue="fifo">
-                        <SelectTrigger id="stock-method">
+                    <Label htmlFor="stockAccountingMethod" className="flex items-center gap-1">Stock Accounting Method:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                     <Select value={settings.stockAccountingMethod} onValueChange={(value) => handleSelectChange('stockAccountingMethod', value)}>
+                        <SelectTrigger id="stockAccountingMethod">
                             <div className="flex items-center gap-2">
                                 <Calculator className="h-4 w-4 text-muted-foreground" />
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                        <SelectContent><SelectItem value="fifo">FIFO (First In First Out)</SelectItem></SelectContent>
+                        <SelectContent>
+                            <SelectItem value="fifo">FIFO (First In First Out)</SelectItem>
+                            <SelectItem value="lifo">LIFO (Last In First Out)</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="transaction-edit-days" className="flex items-center gap-1">Transaction Edit Days:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                    <Input id="transaction-edit-days" type="number" defaultValue="30" />
+                    <Label htmlFor="transactionEditDays" className="flex items-center gap-1">Transaction Edit Days:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    <Input id="transactionEditDays" type="number" value={settings.transactionEditDays} onChange={handleInputChange} />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="date-format">Date Format:*</Label>
-                    <Select defaultValue="mmddyyyy">
-                        <SelectTrigger id="date-format"><SelectValue/></SelectTrigger>
-                        <SelectContent><SelectItem value="mmddyyyy">mm/dd/yyyy</SelectItem></SelectContent>
+                    <Label htmlFor="dateFormat">Date Format:*</Label>
+                    <Select value={settings.dateFormat} onValueChange={(value) => handleSelectChange('dateFormat', value)}>
+                        <SelectTrigger id="dateFormat"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="mmddyyyy">mm/dd/yyyy</SelectItem>
+                            <SelectItem value="ddmmyyyy">dd-mm-yyyy</SelectItem>
+                            <SelectItem value="yyyymmdd">yyyy-mm-dd</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="time-format">Time Format:*</Label>
-                    <Select defaultValue="24-hour">
-                        <SelectTrigger id="time-format">
+                    <Label htmlFor="timeFormat">Time Format:*</Label>
+                    <Select value={settings.timeFormat} onValueChange={(value) => handleSelectChange('timeFormat', value)}>
+                        <SelectTrigger id="timeFormat">
                             <div className="flex items-center gap-2">
                                 <Clock className="h-4 w-4 text-muted-foreground" />
                                 <SelectValue />
                             </div>
                         </SelectTrigger>
-                        <SelectContent><SelectItem value="24-hour">24 Hour</SelectItem></SelectContent>
+                        <SelectContent>
+                            <SelectItem value="12-hour">12 Hour</SelectItem>
+                            <SelectItem value="24-hour">24 Hour</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="currency-precision" className="flex items-center gap-1">Currency precision:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                    <Select defaultValue="2">
-                        <SelectTrigger id="currency-precision"><SelectValue/></SelectTrigger>
-                        <SelectContent><SelectItem value="2">2</SelectItem></SelectContent>
+                    <Label htmlFor="currencyPrecision" className="flex items-center gap-1">Currency precision:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    <Select value={settings.currencyPrecision} onValueChange={(value) => handleSelectChange('currencyPrecision', value)}>
+                        <SelectTrigger id="currencyPrecision"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="2">2</SelectItem>
+                            <SelectItem value="3">3</SelectItem>
+                            <SelectItem value="4">4</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="quantity-precision" className="flex items-center gap-1">Quantity precision:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
-                     <Select defaultValue="2">
-                        <SelectTrigger id="quantity-precision"><SelectValue/></SelectTrigger>
-                        <SelectContent><SelectItem value="2">2</SelectItem></SelectContent>
+                    <Label htmlFor="quantityPrecision" className="flex items-center gap-1">Quantity precision:* <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                     <Select value={settings.quantityPrecision} onValueChange={(value) => handleSelectChange('quantityPrecision', value)}>
+                        <SelectTrigger id="quantityPrecision"><SelectValue/></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="2">2</SelectItem>
+                            <SelectItem value="3">3</SelectItem>
+                            <SelectItem value="4">4</SelectItem>
+                        </SelectContent>
                     </Select>
                 </div>
              </div>
         </CardContent>
         <CardFooter>
-            <Button className="bg-red-500 hover:bg-red-600">Update Settings</Button>
+            <Button onClick={handleUpdateSettings} className="bg-red-500 hover:bg-red-600">Update Settings</Button>
         </CardFooter>
     </Card>
-);
+    )
+};
 
 const PlaceholderContent = ({ title }: { title: string }) => (
     <Card>
