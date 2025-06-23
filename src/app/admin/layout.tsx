@@ -25,6 +25,7 @@ import {
   CalendarDays,
   PlusCircle,
   ChevronDown,
+  Box,
 } from 'lucide-react';
 
 import {
@@ -175,6 +176,7 @@ const sidebarNav = [
             { href: "/admin/settings/barcode", label: "Barcode Settings" },
             { href: "/admin/settings/receipt-printers", label: "Receipt Printers" },
             { href: "/admin/settings/tax-rates", label: "Tax Rates" },
+            { href: "/admin/settings/package-subscription", label: "Package Subscription" },
         ]
     },
 ];
