@@ -1191,15 +1191,10 @@ const PurchaseSettingsForm = () => {
 const PaymentSettingsForm = () => {
     const { toast } = useToast();
     const [settings, setSettings] = useState({
-        stripeKey: '',
-        stripeSecret: '',
-        paypalClientId: '',
-        paypalSecret: '',
-        cashAccountId: 'none',
-        cardAccountId: 'none',
-        chequeAccountId: 'none',
-        bankTransferAccountId: 'none',
-        otherAccountId: 'none',
+        cashDenominations: '10, 20, 50, 100, 200, 500, 2000',
+        enableOn: 'all_screens',
+        enableForMethods: '',
+        strictCheck: false,
     });
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1211,6 +1206,10 @@ const PaymentSettingsForm = () => {
         setSettings(prev => ({ ...prev, [id]: value as any }));
     };
 
+    const handleCheckboxChange = (id: 'strictCheck', checked: boolean) => {
+        setSettings(prev => ({ ...prev, [id]: checked }));
+    };
+
     const handleUpdateSettings = () => {
         console.log('Updating payment settings:', settings);
         toast({
@@ -1219,64 +1218,50 @@ const PaymentSettingsForm = () => {
         });
     };
 
-    const paymentAccounts = [
-        { id: 'cashAccountId', label: 'Cash:' },
-        { id: 'cardAccountId', label: 'Card:' },
-        { id: 'chequeAccountId', label: 'Cheque:' },
-        { id: 'bankTransferAccountId', label: 'Bank Transfer:' },
-        { id: 'otherAccountId', label: 'Other:' },
-    ] as const;
-
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Payment Settings</CardTitle>
-                <CardDescription>Configure payment gateways and default accounts.</CardDescription>
+                <CardDescription>Configure cash denominations and other payment options.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-8">
-                <div className="space-y-6">
-                    <h3 className="text-lg font-semibold">Payment Gateways</h3>
-                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+            <CardContent className="pt-6 space-y-6">
+                <div className="grid grid-cols-1 gap-y-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="cashDenominations">Cash Denominations:</Label>
+                        <Input id="cashDenominations" value={settings.cashDenominations} onChange={handleInputChange} />
+                        <p className="text-xs text-muted-foreground">Comma separated values Example: 100,200,500,2000</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="stripeKey">Stripe Key:</Label>
-                            <Input id="stripeKey" value={settings.stripeKey} onChange={handleInputChange} />
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="stripeSecret">Stripe Secret:</Label>
-                            <Input id="stripeSecret" type="password" value={settings.stripeSecret} onChange={handleInputChange} />
+                            <Label htmlFor="enableOn">Enable cash denomination on:</Label>
+                            <Select value={settings.enableOn} onValueChange={(value) => handleSelectChange('enableOn', value)}>
+                                <SelectTrigger id="enableOn">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all_screens">All Screens</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="paypalClientId">PayPal App Client ID:</Label>
-                            <Input id="paypalClientId" value={settings.paypalClientId} onChange={handleInputChange} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="paypalSecret">PayPal App Secret:</Label>
-                            <Input id="paypalSecret" type="password" value={settings.paypalSecret} onChange={handleInputChange} />
+                            <Label htmlFor="enableForMethods">Enable cash denomination for payment methods:</Label>
+                            <Input id="enableForMethods" value={settings.enableForMethods} onChange={handleInputChange} />
                         </div>
                     </div>
-                </div>
-
-                <Separator />
-                
-                <div>
-                     <h3 className="text-lg font-semibold">Default payment accounts</h3>
-                     <p className="text-sm text-muted-foreground mb-4">Choose a default payment account for different payment methods.</p>
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-                        {paymentAccounts.map(account => (
-                            <div key={account.id} className="space-y-2">
-                                <Label htmlFor={account.id}>{account.label}</Label>
-                                <Select value={settings[account.id]} onValueChange={(value) => handleSelectChange(account.id, value)}>
-                                    <SelectTrigger id={account.id}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">None</SelectItem>
-                                        <SelectItem value="test_account">Test Account (Cash)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        ))}
-                      </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', !!checked)} />
+                        <Label htmlFor="strictCheck" className="font-normal flex items-center gap-1.5">
+                            Strict check
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>If checked, the system will not allow payment if the provided cash is less than the total payable.</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
                 </div>
             </CardContent>
             <CardFooter>
