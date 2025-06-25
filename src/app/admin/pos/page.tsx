@@ -738,7 +738,7 @@ export default function PosPage() {
                                   <p className="text-xs font-semibold truncate">{product.name}</p>
                                   <p className="text-xs text-muted-foreground">({product.sku})</p>
                                   <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
-                                  <p className="text-xs text-green-600">{product.currentStock} {product.unit}(s) in stock</p>
+                                  <p className="text-xs text-green-600 dark:text-green-500">{product.currentStock} {product.unit} in stock</p>
                               </div>
                           </Card>
                       ))
