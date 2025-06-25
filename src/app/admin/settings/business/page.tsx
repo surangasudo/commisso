@@ -82,7 +82,7 @@ const initialSettings = {
         currency: 'usd',
         currencyPlacement: 'before',
         timeZone: 'America/Phoenix',
-        logo: null as File | null,
+        logo: null as string | null,
         fyStartMonth: 'january',
         stockAccountingMethod: 'fifo',
         transactionEditDays: '30',
@@ -315,12 +315,17 @@ const BusinessSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
     };
 
     const handleSelectChange = (id: keyof AllSettings['business'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
     
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            updateSettings({ logo: e.target.files[0] });
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                updateSettings({ logo: reader.result as string });
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -486,7 +491,10 @@ const BusinessSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                 <div className="space-y-2">
                     <Label htmlFor="logo">Upload Logo:</Label>
                     <div className="flex items-center gap-2">
-                        <Input id="logo" type="file" className="flex-1" onChange={handleFileChange} />
+                        <Input id="logo" type="file" className="flex-1" onChange={handleFileChange} accept="image/*" />
+                         {settings.logo && (
+                            <img src={settings.logo} alt="Logo Preview" className="h-10 w-10 rounded-md object-contain border" />
+                        )}
                     </div>
                     <p className="text-xs text-muted-foreground">Previous logo (if exists) will be replaced</p>
                 </div>
@@ -591,7 +599,7 @@ const TaxSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
     };
 
     const handleSelectChange = (id: keyof AllSettings['tax'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
     
     const handleCheckboxChange = (id: keyof AllSettings['tax'], checked: boolean) => {
@@ -671,7 +679,7 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
     };
 
     const handleSelectChange = (id: keyof AllSettings['product'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {
@@ -828,7 +836,7 @@ const ContactSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
     };
 
     const handleSelectChange = (id: keyof AllSettings['contact'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {
@@ -887,7 +895,7 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
     };
 
     const handleSelectChange = (id: keyof AllSettings['sale'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
     
     const handleCheckboxChange = (id: keyof AllSettings['sale'], checked: boolean) => {
@@ -1697,7 +1705,7 @@ const EmailSettingsForm = ({ settings, updateSettings }: { settings: AllSettings
     };
 
     const handleSelectChange = (id: keyof AllSettings['email'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {
@@ -1776,7 +1784,7 @@ const SmsSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
     };
 
     const handleSelectChange = (id: keyof AllSettings['sms'], value: string) => {
-        updateSettings({ [id]: value });
+        updateSettings({ [id]: value as any });
     };
 
     const handleUpdateSettings = () => {

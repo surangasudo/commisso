@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const getCurrencySymbol = (currencyCode: string): string => {
     const currencyMap: { [key: string]: string } = {
@@ -21,7 +21,7 @@ type CurrencySettings = {
 export const useCurrency = (): CurrencySettings & { formatCurrency: (value: number) => string } => {
     const [settings, setSettings] = useState<CurrencySettings>({ symbol: '$', placement: 'before' });
 
-    useEffect(() => {
+    const loadSettings = useCallback(() => {
         try {
             const savedSettings = localStorage.getItem('businessSettings');
             if (savedSettings) {
@@ -40,6 +40,22 @@ export const useCurrency = (): CurrencySettings & { formatCurrency: (value: numb
             setSettings({ symbol: '$', placement: 'before' });
         }
     }, []);
+
+    useEffect(() => {
+        loadSettings(); // Initial load
+
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === 'businessSettings') {
+                loadSettings();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, [loadSettings]);
     
     const formatCurrency = (value: number) => {
         if (typeof value !== 'number') {
