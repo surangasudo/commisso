@@ -7,37 +7,39 @@ import { Timestamp } from 'firebase/firestore';
  * @param data The data to sanitize.
  * @returns The sanitized data.
  */
-function convertTimestamps(data: any): any {
-  if (data instanceof Timestamp) {
+function sanitize(data: any): any {
+  // Handle null, undefined, and non-objects
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  // Duck-type for Firestore Timestamp. This is more robust than `instanceof`.
+  // Checks if the object has a toDate method, which is characteristic of Timestamps.
+  if (typeof data.toDate === 'function') {
     return data.toDate().toISOString();
   }
 
+  // Handle Arrays by mapping over each item and sanitizing it.
   if (Array.isArray(data)) {
-    return data.map(convertTimestamps);
+    return data.map(item => sanitize(item));
   }
-
-  if (data !== null && typeof data === 'object') {
-    const sanitizedObject: { [key: string]: any } = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        sanitizedObject[key] = convertTimestamps(data[key]);
-      }
+  
+  // Handle plain objects. We create a new plain object {} to ensure it has a standard prototype.
+  const newObj: { [key: string]: any } = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      newObj[key] = sanitize(data[key]);
     }
-    return sanitizedObject;
   }
-
-  return data;
+  return newObj;
 }
 
 /**
  * Sanitizes data from Firestore to be client-safe. It converts Timestamps and
- * then performs a JSON cycle to ensure a plain object.
+ * ensures the returned object is a plain JavaScript object with a standard prototype.
  * @param data The data to be sanitized.
  * @returns A fully sanitized, serializable object.
  */
 export function sanitizeForClient<T>(data: any): T {
-  const sanitizedData = convertTimestamps(data);
-  // The JSON cycle is a robust way to strip any remaining non-serializable properties
-  // like class instances or functions, ensuring the object is plain.
-  return JSON.parse(JSON.stringify(sanitizedData));
+  return sanitize(data);
 }
