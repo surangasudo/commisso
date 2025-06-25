@@ -33,7 +33,6 @@ export default function AddExpensePage() {
         location: 'Awesome Shop',
         paymentStatus: 'Paid',
         tax: 0,
-        totalAmount: 0,
         paymentDue: 0,
         addedBy: 'Admin', // Assume logged in user
     });
@@ -78,23 +77,27 @@ export default function AddExpensePage() {
     };
 
     const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value) || 0;
-        setPaidAmount(value);
-        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: 0 }));
+        const newTotalAmount = parseFloat(e.target.value) || 0;
+        
+        // This is a common UX for quick entry. User enters total, we assume it's paid in full.
+        setPaidAmount(newTotalAmount || ''); // Update paid amount state. Use '' if 0 to clear input.
+        setExpenseData(prev => ({
+            ...prev,
+            totalAmount: newTotalAmount,
+            paymentDue: 0 // Since paid amount now matches total amount
+        }));
     };
     
     const handlePaidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        if(value === '') {
-            setPaidAmount('');
-            setExpenseData(prev => ({...prev, paymentDue: prev.totalAmount || 0}));
-        } else {
-            const numericValue = parseFloat(value);
-            if (!isNaN(numericValue)) {
-                setPaidAmount(numericValue);
-                setExpenseData(prev => ({...prev, paymentDue: Math.max(0, (prev.totalAmount || 0) - numericValue)}));
-            }
-        }
+        const newPaidAmountStr = e.target.value;
+        const newPaidAmount = parseFloat(newPaidAmountStr) || 0;
+        const currentTotalAmount = expenseData.totalAmount || 0;
+        
+        setPaidAmount(newPaidAmountStr === '' ? '' : newPaidAmount);
+        setExpenseData(prev => ({
+            ...prev, 
+            paymentDue: Math.max(0, currentTotalAmount - newPaidAmount)
+        }));
     };
     
     const handleSave = async () => {
