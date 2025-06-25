@@ -545,8 +545,8 @@ export default function PosPage() {
              <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
              <Button variant="ghost" size="icon" className="text-slate-600" onClick={handleCustomerDisplay}><Monitor /></Button>
              <Button variant="ghost" size="icon" className="text-slate-600"><HelpCircle /></Button>
-             <Button className="bg-red-500 hover:bg-red-600 text-white h-9 text-xs sm:text-sm">
-                <PlusCircle className="mr-2 h-4 w-4"/> Add Expense
+             <Button className="bg-red-500 hover:bg-red-600 text-white h-9 px-3">
+                <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
             </Button>
         </div>
       </header>
@@ -680,18 +680,18 @@ export default function PosPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex items-center justify-between z-10 flex-wrap gap-2">
-          <div className="flex items-center gap-1 md:gap-2 flex-wrap">
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleDraft}><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Draft</Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleQuotation}><FileText className="mr-1 sm:mr-2 h-4 w-4"/> Quotation</Button>
-              <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 text-xs sm:text-sm" onClick={handleSuspend}><Pause className="mr-1 sm:mr-2 h-4 w-4"/> Suspend</Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleCreditSale}><Undo2 className="mr-1 sm:mr-2 h-4 w-4"/> Credit Sale</Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 text-xs sm:text-sm" onClick={handleCardPayment}><CreditCard className="mr-1 sm:mr-2 h-4 w-4"/> Card</Button>
+      <footer className="bg-white shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
+          <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
+              <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>
+              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
           </div>
-          <div className="flex items-center gap-1 md:gap-2">
+          <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
             <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
                 <DialogTrigger asChild>
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"><WalletCards className="mr-1 sm:mr-2 h-4 w-4"/> Multiple Pay</Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-2 sm:px-4"><WalletCards className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Multiple Pay</span></Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
@@ -759,7 +759,7 @@ export default function PosPage() {
             <Button className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
             <Button className="bg-red-500 hover:bg-red-600 text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
           </div>
-          <div className="text-right">
+          <div className="text-center md:text-right w-full md:w-auto">
               <span className="text-xs sm:text-sm text-slate-500">Total Payable:</span>
               <h3 className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
           </div>
