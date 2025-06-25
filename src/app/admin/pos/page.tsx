@@ -39,8 +39,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { sales as recentSalesData, type DetailedProduct, type Sale } from '@/lib/data';
-import { addSale } from '@/services/saleService';
+import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase } from '@/lib/data';
+import { addSale, getSales } from '@/services/saleService';
+import { getPurchases } from '@/services/purchaseService';
 import {
   Select,
   SelectContent,
@@ -319,22 +320,46 @@ export default function PosPage() {
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAndCalculateStock = async () => {
       try {
-        const productsData = await getProducts();
-        setProducts(productsData);
+        const [productsData, salesData, purchasesData] = await Promise.all([
+          getProducts(),
+          getSales(),
+          getPurchases(),
+        ]);
+
+        const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
+          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const purchasesByProduct = purchasesData.flatMap(p => p.items).reduce((acc, item) => {
+          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const productsWithCalculatedStock = productsData.map(product => {
+          const purchased = purchasesByProduct[product.id] || 0;
+          const sold = salesByProduct[product.id] || 0;
+          // Opening stock + purchases - sales
+          const calculatedStock = (product.currentStock || 0) + purchased - sold;
+          return { ...product, currentStock: calculatedStock };
+        });
+
+        setProducts(productsWithCalculatedStock);
       } catch (error) {
-        console.error("Failed to fetch products:", error);
+        console.error("Failed to fetch data and calculate stock:", error);
         toast({
           title: "Error",
-          description: "Could not fetch products from the database.",
-          variant: "destructive"
+          description: "Could not load stock levels. Please try refreshing.",
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
       }
     };
-    fetchProducts();
+
+    fetchAndCalculateStock();
   }, [toast]);
 
   useEffect(() => {
@@ -738,9 +763,7 @@ export default function PosPage() {
                                   <p className="text-xs font-semibold truncate">{product.name}</p>
                                   <p className="text-xs text-muted-foreground">({product.sku})</p>
                                   <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
-                                  <p className="text-xs text-green-600 dark:text-green-400">
-                                    <span className="font-bold">{product.currentStock ?? 0}</span> {product.unit} in stock
-                                  </p>
+                                  <p className="text-xs text-green-600 dark:text-green-400 font-bold">{product.currentStock ?? 0} {product.unit} in stock</p>
                               </div>
                           </Card>
                       ))
@@ -868,3 +891,4 @@ export default function PosPage() {
     </TooltipProvider>
   );
 }
+
