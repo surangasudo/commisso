@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function EditUserPage() {
     const router = useRouter();
-    const { id } = React.use(useParams());
+    const { id } = useParams();
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
 

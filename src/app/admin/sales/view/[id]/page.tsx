@@ -55,7 +55,7 @@ type SaleItemWithDetails = {
 
 export default function ViewSalePage() {
   const router = useRouter();
-  const { id } = React.use(useParams());
+  const { id } = useParams();
 
   const [sale, setSale] = useState<Sale | null>(null);
   const [saleItems, setSaleItems] = useState<SaleItemWithDetails[]>([]);

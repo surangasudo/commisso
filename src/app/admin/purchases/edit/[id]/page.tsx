@@ -1,11 +1,10 @@
 'use client';
-import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Pencil } from "lucide-react";
 import { useParams } from 'next/navigation';
 
 export default function EditPurchasePage() {
-  const { id } = React.use(useParams());
+  const { id } = useParams();
 
   return (
     <div className="flex flex-col gap-6">
