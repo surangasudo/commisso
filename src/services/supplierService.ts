@@ -9,10 +9,8 @@ const suppliersCollection = collection(db, 'suppliers');
 
 export async function getSuppliers(): Promise<Supplier[]> {
   const snapshot = await getDocs(suppliersCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<Supplier>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<Supplier[]>(data);
 }
 
 export async function addSupplier(supplier: Omit<Supplier, 'id'>): Promise<DocumentData> {

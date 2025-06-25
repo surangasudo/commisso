@@ -9,10 +9,8 @@ const expensesCollection = collection(db, 'expenses');
 
 export async function getExpenses(): Promise<Expense[]> {
   const snapshot = await getDocs(expensesCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<Expense>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<Expense[]>(data);
 }
 
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<DocumentData> {

@@ -9,10 +9,8 @@ const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
 export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<CommissionProfile>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<CommissionProfile[]>(data);
 }
 
 export async function getCommissionProfile(id: string): Promise<CommissionProfile | null> {

@@ -9,10 +9,8 @@ const salesCollection = collection(db, 'sales');
 
 export async function getSales(): Promise<Sale[]> {
   const snapshot = await getDocs(salesCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<Sale>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<Sale[]>(data);
 }
 
 export async function getSale(id: string): Promise<Sale | null> {

@@ -9,10 +9,8 @@ const productsCollection = collection(db, 'products');
 
 export async function getProducts(): Promise<DetailedProduct[]> {
     const snapshot = await getDocs(productsCollection);
-    return snapshot.docs.map(doc => {
-        const data = { id: doc.id, ...doc.data() };
-        return sanitizeForClient<DetailedProduct>(data);
-    });
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return sanitizeForClient<DetailedProduct[]>(data);
 }
 
 export async function addProduct(product: Omit<DetailedProduct, 'id'>): Promise<DocumentData> {

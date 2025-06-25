@@ -9,10 +9,8 @@ const purchasesCollection = collection(db, 'purchases');
 
 export async function getPurchases(): Promise<Purchase[]> {
   const snapshot = await getDocs(purchasesCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<Purchase>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<Purchase[]>(data);
 }
 
 export async function getPurchase(id: string): Promise<Purchase | null> {

@@ -9,10 +9,8 @@ const customersCollection = collection(db, 'customers');
 
 export async function getCustomers(): Promise<Customer[]> {
   const snapshot = await getDocs(customersCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<Customer>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<Customer[]>(data);
 }
 
 export async function addCustomer(customer: Omit<Customer, 'id'>): Promise<DocumentData> {

@@ -9,10 +9,8 @@ const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   const snapshot = await getDocs(expenseCategoriesCollection);
-  return snapshot.docs.map(doc => {
-    const data = { id: doc.id, ...doc.data() };
-    return sanitizeForClient<ExpenseCategory>(data);
-  });
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sanitizeForClient<ExpenseCategory[]>(data);
 }
 
 export async function addExpenseCategory(category: Omit<ExpenseCategory, 'id'>): Promise<DocumentData> {
