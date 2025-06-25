@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -80,8 +79,8 @@ export default function AddExpensePage() {
 
     const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value) || 0;
-        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: value - (Number(paidAmount) || 0) }));
         setPaidAmount(value);
+        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: 0 }));
     };
     
     const handlePaidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +92,7 @@ export default function AddExpensePage() {
             const numericValue = parseFloat(value);
             if (!isNaN(numericValue)) {
                 setPaidAmount(numericValue);
-                setExpenseData(prev => ({...prev, paymentDue: (prev.totalAmount || 0) - numericValue}));
+                setExpenseData(prev => ({...prev, paymentDue: Math.max(0, (prev.totalAmount || 0) - numericValue)}));
             }
         }
     };
