@@ -26,6 +26,7 @@ import {
   PlusCircle,
   ChevronDown,
   Box,
+  HelpCircle,
 } from 'lucide-react';
 
 import {
@@ -50,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useSettings } from '@/hooks/use-settings';
 
 const sidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home" },
@@ -190,6 +192,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const { appName, helpLink } = useSettings();
 
   useEffect(() => {
     const activeParent = sidebarNav.find(item => 
@@ -272,7 +275,7 @@ export default function AdminLayout({
              <SidebarTrigger className="lg:hidden text-primary-foreground" />
              <div className="hidden items-center gap-2 lg:flex">
                 <Logo className="size-7" />
-                <span className="font-headline text-lg">Awesome Shop</span>
+                <span className="font-headline text-lg">{appName}</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -289,6 +292,9 @@ export default function AdminLayout({
             <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Toggle notifications</span>
+            </Button>
+            <Button asChild variant="ghost" size="icon" className="rounded-full">
+              <a href={helpLink} target="_blank" rel="noopener noreferrer"><HelpCircle className="h-5 w-5" /></a>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

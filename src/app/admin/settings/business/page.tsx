@@ -201,7 +201,7 @@ const initialSettings = {
         enableStockExpiryAlert: true,
     },
     system: {
-        appName: 'Ultimate POS',
+        appName: 'Awesome Shop',
         helpLink: 'https://ultimatepos.com/docs',
         googleApiKey: '',
         isGoogleDriveEnabled: false,
@@ -2213,6 +2213,7 @@ export default function BusinessSettingsPage() {
     useEffect(() => {
         try {
             localStorage.setItem('businessSettings', JSON.stringify(settings));
+            window.dispatchEvent(new CustomEvent('settingsUpdated'));
         } catch (error) {
             console.error("Failed to save settings to localStorage", error);
         }
