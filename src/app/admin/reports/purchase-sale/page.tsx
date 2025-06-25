@@ -37,7 +37,7 @@ const getPaymentStatusBadge = (status: string) => {
 }
 
 // Reusable table component for this page
-const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport }: { title: string, data: any[], columns: { key: string, header: string }[], footerData: { label: string, value: string }[], handleExport: (format: 'csv' | 'xlsx' | 'pdf') => void }) => {
+const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport, formatCurrency }: { title: string, data: any[], columns: { key: string, header: string }[], footerData: { label: string, value: string }[], handleExport: (format: 'csv' | 'xlsx' | 'pdf') => void, formatCurrency: (value: number) => string }) => {
     return (
         <Card>
             <CardHeader>
@@ -64,7 +64,7 @@ const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport }: {
                                         {col.key === 'paymentStatus' ? (
                                             <Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(item[col.key]))}>{item[col.key]}</Badge>
                                         ) : (
-                                            col.key.toLowerCase().includes('amount') || col.key.toLowerCase().includes('total') ? `$${item[col.key].toFixed(2)}` : item[col.key]
+                                            col.key.toLowerCase().includes('amount') || col.key.toLowerCase().includes('total') ? formatCurrency(item[col.key]) : item[col.key]
                                         )}
                                     </TableCell>
                                 ))}
@@ -283,6 +283,7 @@ export default function PurchaseSaleReportPage() {
                 columns={purchaseColumns}
                 footerData={[{ label: 'Total Purchases', value: formatCurrency(totalPurchase)}]}
                 handleExport={handlePurchaseExport}
+                formatCurrency={formatCurrency}
             />
             <PurchaseSaleTable 
                 title="Sales"
@@ -290,10 +291,10 @@ export default function PurchaseSaleReportPage() {
                 columns={saleColumns}
                 footerData={[{ label: 'Total Sales', value: formatCurrency(totalSale)}]}
                 handleExport={handleSaleExport}
+                formatCurrency={formatCurrency}
             />
         </div>
 
     </div>
   );
 }
-
