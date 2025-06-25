@@ -1,11 +1,12 @@
+
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FileText, Printer, Calendar as CalendarIcon, Download, Columns3 } from 'lucide-react';
+import { FileText, Printer, Calendar as CalendarIcon, Download, Columns3, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -35,19 +36,26 @@ import {
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
-import { profitData, productProfitData, categoryProfitData, brandProfitData, locationProfitData, invoiceProfitData, dateProfitData, customerProfitData, dayProfitData, serviceStaffProfitData, agentProfitData, subAgentProfitData, companyProfitData, type ProductProfit, type CategoryProfit, type BrandProfit, type LocationProfit, type InvoiceProfit, type DateProfit, type CustomerProfit, type DayProfit, type ServiceStaffProfit, type AgentProfit, type SubAgentProfit, type CompanyProfit } from '@/lib/data';
+import { getSales } from '@/services/saleService';
+import { getPurchases } from '@/services/purchaseService';
+import { getExpenses } from '@/services/expenseService';
+import { getProducts } from '@/services/productService';
+import { type Sale, type Purchase, type Expense, type DetailedProduct, type CustomerProfit, type AgentProfit, type BrandProfit, type CategoryProfit, type CompanyProfit, type DateProfit, type DayProfit, type InvoiceProfit, type LocationProfit, type ProductProfit, type ServiceStaffProfit, type SubAgentProfit } from '@/lib/data';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const ReportItem = ({ label, value, note }: { label: string; value: string; note?: string }) => (
+const ReportItem = ({ label, value, note, isLoading }: { label: string; value: string; note?: string, isLoading?: boolean }) => (
     <div className="flex justify-between items-center py-2 border-b">
         <div>
             <p className="font-medium text-sm">{label}</p>
             {note && <p className="text-xs text-muted-foreground">{note}</p>}
         </div>
-        <p className="font-semibold text-sm">{value}</p>
+        {isLoading ? <Skeleton className="h-5 w-24" /> : <p className="font-semibold text-sm">{value}</p>}
     </div>
 );
 
-const ReportTable = <T extends {}>({ title, data, columns, getPdfData }: { title: string, data: T[], columns: { key: keyof T, header: string, isNumeric?: boolean }[], getPdfData: (d: T[]) => any[][] }) => {
+const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading }: { title: string, data: T[], columns: { key: keyof T, header: string, isNumeric?: boolean }[], getPdfData: (d: T[]) => any[][], isLoading?: boolean }) => {
+    const { formatCurrency } = useCurrency();
     const [columnVisibility, setColumnVisibility] = useState(
         columns.reduce((acc, col) => ({...acc, [col.key]: true}), {} as Record<keyof T, boolean>)
     );
@@ -106,11 +114,25 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData }: { title
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {data.map((item, index) => (
+                    {isLoading ? (
+                         Array.from({length: 3}).map((_, i) => (
+                            <TableRow key={i}>
+                                {columns.map((col, j) => columnVisibility[col.key] && <TableCell key={j}><Skeleton className="h-5 w-full"/></TableCell>)}
+                            </TableRow>
+                        ))
+                    ) : data.length > 0 ? data.map((item, index) => (
                         <TableRow key={index}>
-                            {columns.map(col => columnVisibility[col.key] && <TableCell key={String(col.key)} className={cn(col.isNumeric && 'text-right')}>{String(item[col.key])}</TableCell>)}
+                            {columns.map(col => columnVisibility[col.key] && (
+                                <TableCell key={String(col.key)} className={cn(col.isNumeric && 'text-right')}>
+                                    {col.isNumeric ? formatCurrency(Number(item[col.key] || 0)) : String(item[col.key])}
+                                </TableCell>
+                            ))}
                         </TableRow>
-                    ))}
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={columns.length} className="text-center h-24">No data available</TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
             <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
@@ -127,72 +149,130 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData }: { title
 
 
 export default function ProfitLossReportPage() {
-    const [date, setDate] = useState<DateRange | undefined>({
+    const [activeDate, setActiveDate] = useState<DateRange | undefined>({
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
     });
     const [selectedPreset, setSelectedPreset] = useState<string>('This Year');
+
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [purchases, setPurchases] = useState<Purchase[]>([]);
+    const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { formatCurrency } = useCurrency();
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [salesData, purchasesData, expensesData, productsData] = await Promise.all([
+                    getSales(),
+                    getPurchases(),
+                    getExpenses(),
+                    getProducts(),
+                ]);
+                setSales(salesData);
+                setPurchases(purchasesData);
+                setExpenses(expensesData);
+                setProducts(productsData);
+            } catch (error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const reportData = useMemo(() => {
+        if (isLoading) return null;
+
+        const dateFilter = (item: { date: string }) => {
+            const itemDate = new Date(item.date);
+            return activeDate?.from && activeDate?.to && itemDate >= activeDate.from && itemDate <= activeDate.to;
+        };
+
+        const filteredSales = sales.filter(dateFilter);
+        const filteredPurchases = purchases.filter(dateFilter);
+        const filteredExpenses = expenses.filter(dateFilter);
+
+        const productsById = new Map(products.map(p => [p.id, p]));
+
+        const totalSales = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+        const totalPurchases = filteredPurchases.reduce((sum, p) => sum + p.grandTotal, 0);
+        const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.totalAmount, 0);
+
+        let costOfGoodsSold = 0;
+        filteredSales.forEach(sale => {
+            (sale.items || []).forEach(item => {
+                const product = productsById.get(item.productId);
+                if (product) {
+                    costOfGoodsSold += item.quantity * product.unitPurchasePrice;
+                }
+            });
+        });
+
+        const grossProfit = totalSales - costOfGoodsSold;
+        const netProfit = grossProfit - totalExpenses;
+
+        const productProfitMap = new Map<string, number>();
+        filteredSales.forEach(sale => {
+            (sale.items || []).forEach(item => {
+                const product = productsById.get(item.productId);
+                if (product) {
+                    const profit = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
+                    const currentProfit = productProfitMap.get(product.name) || 0;
+                    productProfitMap.set(product.name, currentProfit + profit);
+                }
+            });
+        });
+        const productProfitData: ProductProfit[] = Array.from(productProfitMap, ([product, profit]) => ({ product, profit }));
+
+
+        return {
+            totalSales,
+            totalPurchases,
+            totalExpenses,
+            grossProfit,
+            netProfit,
+            productProfitData
+        };
+
+    }, [isLoading, sales, purchases, expenses, products, activeDate]);
 
     const handlePresetSelect = (preset: string) => {
         const today = new Date();
         let newDate: DateRange | undefined;
         
         switch (preset) {
-            case 'Today':
-                newDate = { from: startOfToday(), to: endOfToday() };
-                break;
-            case 'Yesterday':
-                const yesterdayStart = startOfYesterday();
-                const yesterdayEnd = endOfYesterday();
-                newDate = { from: yesterdayStart, to: yesterdayEnd };
-                break;
-            case 'Last 7 Days':
-                newDate = { from: subDays(today, 6), to: today };
-                break;
-            case 'Last 30 Days':
-                newDate = { from: subDays(today, 29), to: today };
-                break;
-            case 'This Month':
-                newDate = { from: startOfMonth(today), to: endOfMonth(today) };
-                break;
-            case 'Last Month':
-                const lastMonth = subMonths(today, 1);
-                newDate = { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
-                break;
-            case 'This month last year':
-                const thisMonthLastYear = subYears(today, 1);
-                newDate = { from: startOfMonth(thisMonthLastYear), to: endOfMonth(thisMonthLastYear) };
-                break;
-            case 'This Year':
-                newDate = { from: startOfYear(today), to: endOfYear(today) };
-                break;
-            case 'Last Year':
-                const lastYear = subYears(today, 1);
-                newDate = { from: startOfYear(lastYear), to: endOfYear(lastYear) };
-                break;
-            case 'Current financial year': // Assuming same as calendar year
-                newDate = { from: startOfYear(today), to: endOfYear(today) };
-                break;
-            case 'Last financial year': // Assuming same as calendar year
-                const prevYear = subYears(today, 1);
-                newDate = { from: startOfYear(prevYear), to: endOfYear(prevYear) };
-                break;
-            default:
-                break;
+            case 'Today': newDate = { from: startOfToday(), to: endOfToday() }; break;
+            case 'Yesterday': newDate = { from: startOfYesterday(), to: endOfYesterday() }; break;
+            case 'Last 7 Days': newDate = { from: subDays(today, 6), to: today }; break;
+            case 'Last 30 Days': newDate = { from: subDays(today, 29), to: today }; break;
+            case 'This Month': newDate = { from: startOfMonth(today), to: endOfMonth(today) }; break;
+            case 'Last Month': const lastMonth = subMonths(today, 1); newDate = { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) }; break;
+            case 'This month last year': const thisMonthLastYear = subYears(today, 1); newDate = { from: startOfMonth(thisMonthLastYear), to: endOfMonth(thisMonthLastYear) }; break;
+            case 'This Year': newDate = { from: startOfYear(today), to: endOfYear(today) }; break;
+            case 'Last Year': const lastYear = subYears(today, 1); newDate = { from: startOfYear(lastYear), to: endOfYear(lastYear) }; break;
+            case 'Current financial year': newDate = { from: startOfYear(today), to: endOfYear(today) }; break;
+            case 'Last financial year': const prevYear = subYears(today, 1); newDate = { from: startOfYear(prevYear), to: endOfYear(prevYear) }; break;
+            default: break;
         }
 
         if (newDate) {
-            setDate(newDate);
+            setActiveDate(newDate);
         }
         setSelectedPreset(preset);
     }
     
     const handleCustomDateSelect = (newDate: DateRange | undefined) => {
-      setDate(newDate);
+      setActiveDate(newDate);
       setSelectedPreset('Custom Range');
     }
 
     const displayLabel = () => {
+        const date = activeDate;
         if (selectedPreset === 'Custom Range' && date?.from) {
             if (date.to) {
                  if (format(date.from, 'PPP') === format(date.to, 'PPP')) {
@@ -254,8 +334,8 @@ export default function ProfitLossReportPage() {
                                     <Calendar
                                         initialFocus
                                         mode="range"
-                                        defaultMonth={date?.from}
-                                        selected={date}
+                                        defaultMonth={activeDate?.from}
+                                        selected={activeDate}
                                         onSelect={handleCustomDateSelect}
                                         numberOfMonths={2}
                                     />
@@ -268,42 +348,41 @@ export default function ProfitLossReportPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-4">
-                    <ReportItem label="Opening Stock" value={`$${profitData.openingStockPurchase.toFixed(2)}`} note="(By purchase price):" />
-                    <ReportItem label="Opening Stock" value={`$${profitData.openingStockSale.toFixed(2)}`} note="(By sale price):" />
-                    <ReportItem label="Total purchase:" value={`$${profitData.totalPurchase.toFixed(2)}`} note="(Exc. tax, Discount)" />
-                    <ReportItem label="Total Stock Adjustment:" value={`$${profitData.totalStockAdjustment.toFixed(2)}`} />
-                    <ReportItem label="Total Expense:" value={`$${profitData.totalExpense.toFixed(2)}`} />
-                    <ReportItem label="Total purchase shipping charge:" value={`$${profitData.totalPurchaseShipping.toFixed(2)}`} />
-                    <ReportItem label="Purchase additional expenses:" value={`$${profitData.purchaseAdditionalExpense.toFixed(2)}`} />
-                    <ReportItem label="Total transfer shipping charge:" value={`$${profitData.totalTransferShipping.toFixed(2)}`} />
-                    <ReportItem label="Total Sell discount:" value={`$${profitData.totalSellDiscount.toFixed(2)}`} />
-                    <ReportItem label="Total customer reward:" value={`$${profitData.totalCustomerReward.toFixed(2)}`} />
-                    <ReportItem label="Total Sell Return:" value={`$${profitData.totalSellReturn.toFixed(2)}`} />
-                    <ReportItem label="Total Payroll:" value={`$${profitData.totalPayroll.toFixed(2)}`} />
-                    <ReportItem label="Total Production Cost:" value={`$${profitData.totalProductionCost.toFixed(2)}`} />
+                    <ReportItem isLoading={isLoading} label="Total Sales:" value={formatCurrency(reportData?.totalSales || 0)} note="(Exc. tax, Discount)" />
+                    <ReportItem isLoading={isLoading} label="Total purchase:" value={formatCurrency(reportData?.totalPurchases || 0)} note="(Exc. tax, Discount)" />
+                    <ReportItem isLoading={isLoading} label="Total Expense:" value={formatCurrency(reportData?.totalExpenses || 0)} />
+                    <ReportItem isLoading={isLoading} label="Total Sell Return:" value={formatCurrency(0)} />
+                    <ReportItem isLoading={isLoading} label="Total Purchase Return:" value={formatCurrency(0)} />
                 </Card>
                  <Card className="p-4">
-                    <ReportItem label="Closing stock" value={`$${profitData.closingStockPurchase.toFixed(2)}`} note="(By purchase price):" />
-                    <ReportItem label="Closing stock" value={`$${profitData.closingStockSale.toFixed(2)}`} note="(By sale price):" />
-                    <ReportItem label="Total Sales:" value={`$${profitData.totalSales.toFixed(2)}`} note="(Exc. tax, Discount)" />
-                    <ReportItem label="Total sell shipping charge:" value={`$${profitData.totalSellShipping.toFixed(2)}`} />
-                    <ReportItem label="Sell additional expenses:" value={`$${profitData.sellAdditionalExpenses.toFixed(2)}`} />
-                    <ReportItem label="Total Stock Recovered:" value={`$${profitData.totalStockRecovered.toFixed(2)}`} />
-                    <ReportItem label="Total Purchase Return:" value={`$${profitData.totalPurchaseReturn.toFixed(2)}`} />
-                    <ReportItem label="Total Purchase discount:" value={`$${profitData.totalPurchaseDiscount.toFixed(2)}`} />
-                    <ReportItem label="Total sell round off:" value={`$${profitData.totalSellRoundOff.toFixed(2)}`} />
-                    <ReportItem label="Hms Total:" value={`$${profitData.hmsTotal.toFixed(2)}`} />
-                </Card>
+                    <ReportItem isLoading={isLoading} label="Opening Stock" value={formatCurrency(0)} note="(By purchase price):" />
+                    <ReportItem isLoading={isLoading} label="Closing stock" value={formatCurrency(0)} note="(By purchase price):" />
+                    <ReportItem isLoading={isLoading} label="Total Stock Adjustment:" value={formatCurrency(0)} />
+                    <ReportItem isLoading={isLoading} label="Total Stock Recovered:" value={formatCurrency(0)} />
+                 </Card>
             </div>
 
             <Card>
                 <CardContent className="p-6">
-                    <h3 className="font-bold text-lg">COGS: <span className="font-mono">$0.00</span></h3>
-                    <p className="text-xs text-muted-foreground">Cost of Goods Sold = Starting inventory(opening stock) + purchases - ending inventory(closing stock)</p>
-                    <h3 className="font-bold text-lg mt-4">Gross Profit: <span className="font-mono">$0.00</span></h3>
-                    <p className="text-xs text-muted-foreground">(Total sell price - Total purchase price) + Hms Total + Project Invoice</p>
-                    <h3 className="font-bold text-lg mt-4">Net Profit: <span className="font-mono">$0.00</span></h3>
-                    <p className="text-xs text-muted-foreground">Gross Profit + (Total sell shipping charge + Sell additional expenses + Total Stock Recovered + Total Purchase discount + Total sell round off + Hms Total ) - ( Total Stock Adjustment + Total Expense + Total purchase shipping charge + Total transfer shipping charge + Purchase additional expenses + Total Sell discount + Total customer reward + Total Payroll + Total Production Cost )</p>
+                    {isLoading ? (
+                        <>
+                            <h3 className="font-bold text-lg flex items-center gap-2">COGS: <Skeleton className="h-6 w-32" /></h3>
+                            <Skeleton className="h-4 w-full mt-1 max-w-lg"/>
+                             <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Gross Profit: <Skeleton className="h-6 w-32" /></h3>
+                             <Skeleton className="h-4 w-full mt-1 max-w-md"/>
+                             <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Net Profit: <Skeleton className="h-6 w-32" /></h3>
+                             <Skeleton className="h-4 w-full mt-1 max-w-xl"/>
+                        </>
+                    ) : (
+                         <>
+                            <h3 className="font-bold text-lg">COGS: <span className="font-mono">{formatCurrency(reportData?.totalPurchases || 0)}</span></h3>
+                            <p className="text-xs text-muted-foreground">Cost of Goods Sold (simplified as Total Purchases)</p>
+                            <h3 className="font-bold text-lg mt-4">Gross Profit: <span className="font-mono">{formatCurrency(reportData?.grossProfit || 0)}</span></h3>
+                            <p className="text-xs text-muted-foreground">(Total Sales - COGS)</p>
+                            <h3 className="font-bold text-lg mt-4">Net Profit: <span className="font-mono">{formatCurrency(reportData?.netProfit || 0)}</span></h3>
+                            <p className="text-xs text-muted-foreground">(Gross Profit - Total Expenses)</p>
+                        </>
+                    )}
                 </CardContent>
             </Card>
 
@@ -332,101 +411,102 @@ export default function ProfitLossReportPage() {
                         <TabsContent value="products" className="mt-4">
                            <ReportTable<ProductProfit> 
                                 title="Profit by Products"
-                                data={productProfitData}
+                                data={reportData?.productProfitData || []}
                                 columns={[{key: 'product', header: 'Product'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.product, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.product, formatCurrency(item.profit)])}
+                                isLoading={isLoading}
                            />
                         </TabsContent>
                         <TabsContent value="categories" className="mt-4">
                              <ReportTable<CategoryProfit> 
                                 title="Profit by Categories"
-                                data={categoryProfitData}
+                                data={[]}
                                 columns={[{key: 'category', header: 'Category'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.category, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.category, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
-                        <TabsContent value="brands" className="mt-4">
+                         <TabsContent value="brands" className="mt-4">
                              <ReportTable<BrandProfit> 
                                 title="Profit by Brands"
-                                data={brandProfitData}
+                                data={[]}
                                 columns={[{key: 'brand', header: 'Brand'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.brand, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.brand, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="locations" className="mt-4">
                              <ReportTable<LocationProfit> 
                                 title="Profit by Locations"
-                                data={locationProfitData}
+                                data={[]}
                                 columns={[{key: 'location', header: 'Location'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.location, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.location, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="invoice" className="mt-4">
                             <ReportTable<InvoiceProfit> 
                                 title="Profit by Invoice"
-                                data={invoiceProfitData}
+                                data={[]}
                                 columns={[
                                     {key: 'invoiceNo', header: 'Invoice No.'}, 
                                     {key: 'customer', header: 'Customer'}, 
                                     {key: 'profit', header: 'Gross Profit', isNumeric: true}
                                 ]}
-                                getPdfData={(d) => d.map(item => [item.invoiceNo, item.customer, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.invoiceNo, item.customer, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
-                        <TabsContent value="date" className="mt-4">
+                         <TabsContent value="date" className="mt-4">
                              <ReportTable<DateProfit> 
                                 title="Profit by Date"
-                                data={dateProfitData}
+                                data={[]}
                                 columns={[{key: 'date', header: 'Date'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.date, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.date, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="customer" className="mt-4">
                             <ReportTable<CustomerProfit> 
                                 title="Profit by Customer"
-                                data={customerProfitData}
+                                data={[]}
                                 columns={[{key: 'customer', header: 'Customer'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.customer, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.customer, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="day" className="mt-4">
                             <ReportTable<DayProfit> 
                                 title="Profit by Day"
-                                data={dayProfitData}
+                                data={[]}
                                 columns={[{key: 'day', header: 'Day of the week'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.day, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.day, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="service-staff" className="mt-4">
                             <ReportTable<ServiceStaffProfit> 
                                 title="Profit by Service Staff"
-                                data={serviceStaffProfitData}
+                                data={[]}
                                 columns={[{key: 'staffName', header: 'Service Staff'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.staffName, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.staffName, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="agent" className="mt-4">
                             <ReportTable<AgentProfit> 
                                 title="Profit by Agent"
-                                data={agentProfitData}
+                                data={[]}
                                 columns={[{key: 'agentName', header: 'Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.agentName, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.agentName, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="sub-agent" className="mt-4">
                              <ReportTable<SubAgentProfit> 
                                 title="Profit by Sub-Agent"
-                                data={subAgentProfitData}
+                                data={[]}
                                 columns={[{key: 'subAgentName', header: 'Sub-Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.subAgentName, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.subAgentName, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                         <TabsContent value="company" className="mt-4">
                              <ReportTable<CompanyProfit> 
                                 title="Profit by Company"
-                                data={companyProfitData}
+                                data={[]}
                                 columns={[{key: 'company', header: 'Company'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.company, `$${item.profit.toFixed(2)}`])}
+                                getPdfData={(d) => d.map(item => [item.company, formatCurrency(item.profit)])}
                            />
                         </TabsContent>
                     </Tabs>
