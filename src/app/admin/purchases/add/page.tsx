@@ -150,11 +150,21 @@ export default function AddPurchasePage() {
 
     async function onSubmit(values: PurchaseFormValues) {
         try {
+            const selectedSupplier = suppliers.find(s => s.id === values.supplier);
+            if (!selectedSupplier) {
+                toast({
+                    title: "Error",
+                    description: "A valid supplier must be selected.",
+                    variant: "destructive"
+                });
+                return;
+            }
+
             const newPurchase: Omit<Purchase, 'id'> = {
                 date: values.purchaseDate.toISOString(),
                 referenceNo: values.referenceNo || `PO-${Date.now()}`,
                 location: values.location,
-                supplier: values.supplier,
+                supplier: selectedSupplier.businessName, // Use the name for storage
                 purchaseStatus: values.purchaseStatus,
                 paymentStatus: 'Due', // Defaulting to Due on creation
                 grandTotal,
@@ -267,7 +277,7 @@ export default function AddPurchasePage() {
                                             <SelectTrigger id="supplier"><SelectValue placeholder="Select Supplier" /></SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {suppliers.map(s => (<SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>))}
+                                            {suppliers.map(s => (<SelectItem key={s.id} value={s.id}>{s.businessName}</SelectItem>))}
                                         </SelectContent>
                                     </Select>
                                     <Dialog open={isAddSupplierOpen} onOpenChange={setIsAddSupplierOpen}>
@@ -340,7 +350,7 @@ export default function AddPurchasePage() {
                         </TableBody>
                     </Table>
                 </div>
-                 <FormMessage className="mt-2">{form.formState.errors.purchaseItems?.message}</FormMessage>
+                 <FormMessage className="mt-2">{form.formState.errors.purchaseItems?.root?.message || form.formState.errors.purchaseItems?.message}</FormMessage>
 
                 <div className="flex justify-end mt-4">
                     <div className="w-full max-w-sm space-y-2 text-sm">
