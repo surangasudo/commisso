@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import { SettingsProvider } from '@/hooks/use-settings';
+import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
   title: 'Ultimate ERP - Advanced POS Solution',
@@ -29,7 +30,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SettingsProvider>
-            {children}
+            <AuthProvider>
+              {children}
+            </AuthProvider>
           </SettingsProvider>
           <Toaster />
         </ThemeProvider>

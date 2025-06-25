@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Bell,
   CircleUser,
@@ -52,12 +52,15 @@ import {
 import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useSettings } from '@/hooks/use-settings';
+import { useAuth } from '@/hooks/use-auth';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const sidebarNav = [
-    { href: "/admin/dashboard", icon: Home, label: "Home" },
+const allSidebarNav = [
+    { href: "/admin/dashboard", icon: Home, label: "Home", roles: ['Admin', 'Cashier'] },
     { 
         label: "User Management", 
         icon: Users,
+        roles: ['Admin'],
         children: [
             { href: "/admin/users", label: "Users" },
             { href: "/admin/roles", label: "Roles" },
@@ -67,34 +70,37 @@ const sidebarNav = [
     { 
         label: "Contacts", 
         icon: Contact,
+        roles: ['Admin', 'Cashier'],
         children: [
-            { href: "/admin/contacts/suppliers", label: "Suppliers" },
-            { href: "/admin/contacts/customers", label: "Customers" },
-            { href: "/admin/contacts/customer-groups", label: "Customer Groups" },
-            { href: "/admin/contacts/import", label: "Import Contacts" },
+            { href: "/admin/contacts/suppliers", label: "Suppliers", roles: ['Admin'] },
+            { href: "/admin/contacts/customers", label: "Customers", roles: ['Admin', 'Cashier'] },
+            { href: "/admin/contacts/customer-groups", label: "Customer Groups", roles: ['Admin'] },
+            { href: "/admin/contacts/import", label: "Import Contacts", roles: ['Admin'] },
         ]
     },
     { 
         label: "Products", 
         icon: Package,
+        roles: ['Admin', 'Cashier'],
         children: [
             { href: "/admin/products/list", label: "List Products" },
             { href: "/admin/products/add", label: "Add Product" },
-            { href: "/admin/products/update-price", label: "Update Price" },
-            { href: "/admin/products/print-labels", label: "Print Labels" },
-            { href: "/admin/products/variations", label: "Variations" },
-            { href: "/admin/products/import", label: "Import Products" },
-            { href: "/admin/products/import-opening-stock", label: "Import Opening Stock" },
-            { href: "/admin/products/selling-price-group", label: "Selling Price Group" },
-            { href: "/admin/products/units", label: "Units" },
-            { href: "/admin/products/categories", label: "Categories" },
-            { href: "/admin/products/brands", label: "Brands" },
-            { href: "/admin/products/warranties", label: "Warranties" },
+            { href: "/admin/products/update-price", label: "Update Price", roles: ['Admin'] },
+            { href: "/admin/products/print-labels", label: "Print Labels", roles: ['Admin'] },
+            { href: "/admin/products/variations", label: "Variations", roles: ['Admin'] },
+            { href: "/admin/products/import", label: "Import Products", roles: ['Admin'] },
+            { href: "/admin/products/import-opening-stock", label: "Import Opening Stock", roles: ['Admin'] },
+            { href: "/admin/products/selling-price-group", label: "Selling Price Group", roles: ['Admin'] },
+            { href: "/admin/products/units", label: "Units", roles: ['Admin'] },
+            { href: "/admin/products/categories", label: "Categories", roles: ['Admin'] },
+            { href: "/admin/products/brands", label: "Brands", roles: ['Admin'] },
+            { href: "/admin/products/warranties", label: "Warranties", roles: ['Admin'] },
         ]
     },
     { 
         label: "Purchases", 
         icon: Download,
+        roles: ['Admin'],
         children: [
             { href: "/admin/purchases/list", label: "List Purchases" },
             { href: "/admin/purchases/add", label: "Add Purchase" },
@@ -104,24 +110,26 @@ const sidebarNav = [
     { 
         label: "Sell", 
         icon: Upload,
+        roles: ['Admin', 'Cashier'],
         children: [
             { href: "/admin/sales/all", label: "All sales" },
             { href: "/admin/sales/add", label: "Add Sale" },
             { href: "/admin/sales/list-pos", label: "List POS" },
             { href: "/admin/pos", label: "POS" },
-            { href: "/admin/sales/draft/add", label: "Add Draft" },
-            { href: "/admin/sales/drafts", label: "List Drafts" },
-            { href: "/admin/sales/quotation/add", label: "Add Quotation" },
-            { href: "/admin/sales/quotations", label: "List quotations" },
+            { href: "/admin/sales/draft/add", label: "Add Draft", roles: ['Admin'] },
+            { href: "/admin/sales/drafts", label: "List Drafts", roles: ['Admin'] },
+            { href: "/admin/sales/quotation/add", label: "Add Quotation", roles: ['Admin'] },
+            { href: "/admin/sales/quotations", label: "List quotations", roles: ['Admin'] },
             { href: "/admin/sales/return/list", label: "List Sell Return" },
-            { href: "/admin/sales/shipments", label: "Shipments" },
-            { href: "/admin/sales/discounts", label: "Discounts" },
-            { href: "/admin/sales/import", label: "Import Sales" },
+            { href: "/admin/sales/shipments", label: "Shipments", roles: ['Admin'] },
+            { href: "/admin/sales/discounts", label: "Discounts", roles: ['Admin'] },
+            { href: "/admin/sales/import", label: "Import Sales", roles: ['Admin'] },
         ]
     },
     { 
         label: "Stock Transfers", 
         icon: ArrowRightLeft,
+        roles: ['Admin'],
         children: [
             { href: "/admin/stock-transfers/list", label: "List Stock Transfers" },
             { href: "/admin/stock-transfers/add", label: "Add Stock Transfer" },
@@ -130,6 +138,7 @@ const sidebarNav = [
     { 
         label: "Stock Adjustment", 
         icon: SlidersHorizontal, 
+        roles: ['Admin'],
         children: [
             { href: "/admin/stock-adjustment/list", label: "List Stock Adjustments" },
             { href: "/admin/stock-adjustment/add", label: "Add Stock Adjustment" },
@@ -138,16 +147,18 @@ const sidebarNav = [
     { 
         label: "Expenses", 
         icon: Wallet, 
+        roles: ['Admin', 'Cashier'],
         children: [
             { href: "/admin/expenses/list", label: "List Expenses" },
             { href: "/admin/expenses/add", label: "Add Expense" },
-            { href: "/admin/expenses/categories", label: "Expense Categories" },
+            { href: "/admin/expenses/categories", label: "Expense Categories", roles: ['Admin'] },
         ]
     },
-    { href: "#", icon: Landmark, label: "Payment Accounts" },
+    { href: "#", icon: Landmark, label: "Payment Accounts", roles: ['Admin'] },
     { 
         label: "Reports", 
         icon: FileText,
+        roles: ['Admin'],
         children: [
             { href: "/admin/reports/profit-loss", label: "Profit / Loss Report" },
             { href: "/admin/reports/purchase-sale", label: "Purchase & Sale" },
@@ -168,10 +179,11 @@ const sidebarNav = [
             { href: "/admin/reports/activity-log", label: "Activity Log" },
         ]
     },
-    { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates" },
+    { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates", roles: ['Admin'] },
     { 
         label: "Settings", 
         icon: Settings,
+        roles: ['Admin'],
         children: [
             { href: "/admin/settings/business", label: "Business Settings" },
             { href: "/admin/settings/locations", label: "Business Locations" },
@@ -185,14 +197,47 @@ const sidebarNav = [
     },
 ];
 
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const { appName, helpLink } = useSettings();
+  
+  const sidebarNav = React.useMemo(() => {
+    if (!user) return [];
+    
+    const filterNav = (items: any[]) => {
+      return items.reduce((acc: any[], item) => {
+        if (item.roles && !item.roles.includes(user.role)) {
+          return acc;
+        }
+        if (item.children) {
+          const filteredChildren = filterNav(item.children);
+          if (filteredChildren.length > 0) {
+            acc.push({ ...item, children: filteredChildren });
+          }
+        } else {
+          acc.push(item);
+        }
+        return acc;
+      }, []);
+    };
+
+    return filterNav(allSidebarNav);
+  }, [user]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+        router.push('/login');
+    }
+  }, [user, loading, router]);
+
 
   useEffect(() => {
     const activeParent = sidebarNav.find(item => 
@@ -201,11 +246,22 @@ export default function AdminLayout({
     if (activeParent) {
       setOpenMenu(activeParent.label);
     }
-  }, [pathname]);
+  }, [pathname, sidebarNav]);
 
   const toggleMenu = (label: string) => {
     setOpenMenu(openMenu === label ? null : label);
   };
+  
+  if (loading || !user) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Logo className="h-10 w-10 animate-spin" />
+                <p className="text-muted-foreground">Loading your experience...</p>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -304,12 +360,12 @@ export default function AdminLayout({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Admin</DropdownMenuLabel>
+                <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Settings</DropdownMenuItem>
                 <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -319,5 +375,3 @@ export default function AdminLayout({
     </SidebarProvider>
   );
 }
-
-    
