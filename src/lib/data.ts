@@ -1,4 +1,5 @@
 
+
 export type User = {
   id: string;
   username: string;
@@ -33,6 +34,7 @@ export type CommissionProfile = {
   name: string;
   entityType: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
   phone: string;
+  email?: string;
   bankDetails?: string;
   commission: {
     overall: number;
@@ -40,54 +42,7 @@ export type CommissionProfile = {
   };
 };
 
-export const commissionProfiles: CommissionProfile[] = [
-  {
-    id: 'agent-001',
-    name: 'John Doe',
-    entityType: 'Agent',
-    phone: '123-456-7890',
-    bankDetails: 'Bank of America - 1234567890',
-    commission: {
-      overall: 5,
-      categories: [
-        { category: 'Electronics', rate: 7 },
-        { category: 'Apparel', rate: 10 },
-      ],
-    },
-  },
-  {
-    id: 'agent-002',
-    name: 'Jane Smith',
-    entityType: 'Sub-Agent',
-    phone: '098-765-4321',
-    bankDetails: 'Chase Bank - 0987654321',
-    commission: {
-      overall: 6,
-    },
-  },
-  {
-    id: 'agent-003',
-    name: 'Global Corp',
-    entityType: 'Company',
-    phone: '555-111-2222',
-    commission: {
-      overall: 3,
-      categories: [
-        { category: 'Furniture', rate: 5 },
-      ],
-    },
-  },
-    {
-    id: 'agent-004',
-    name: 'Alex Ray',
-    entityType: 'Salesperson',
-    phone: '555-333-4444',
-    bankDetails: 'Wells Fargo - 5555555555',
-    commission: {
-      overall: 4,
-    },
-  },
-];
+export const commissionProfiles: CommissionProfile[] = [];
 
 export type Supplier = {
   id: string;

@@ -4,10 +4,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag } from "lucide-react";
-import { commissionProfiles, type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { getCommissionProfile } from '@/services/commissionService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -30,23 +32,56 @@ export default function ViewCommissionProfilePage() {
     const [profile, setProfile] = useState<CommissionProfile | null>(null);
 
     useEffect(() => {
-        if (id) {
-            const profileToView = commissionProfiles.find(p => p.id === id);
-            if (profileToView) {
-                setProfile(profileToView);
-            } else {
+        if (typeof id !== 'string') return;
+        const fetchProfile = async () => {
+            try {
+                const profileToView = await getCommissionProfile(id);
+                 if (profileToView) {
+                    setProfile(profileToView);
+                } else {
+                     toast({
+                        title: "Error",
+                        description: "Commission profile not found.",
+                        variant: "destructive"
+                    });
+                    router.push('/admin/sales-commission-agents');
+                }
+            } catch (error) {
+                console.error("Failed to fetch profile:", error);
                  toast({
                     title: "Error",
-                    description: "Commission profile not found.",
+                    description: "Failed to load profile data.",
                     variant: "destructive"
                 });
-                router.push('/admin/sales-commission-agents');
             }
-        }
+        };
+        fetchProfile();
     }, [id, router, toast]);
 
     if (!profile) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                    <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+                        <UserIcon className="w-8 h-8" />
+                        <Skeleton className="h-9 w-72" />
+                    </h1>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle><Skeleton className="h-7 w-48" /></CardTitle>
+                        <CardDescription><Skeleton className="h-6 w-20" /></CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                            <Skeleton className="h-16 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
     }
 
     return (

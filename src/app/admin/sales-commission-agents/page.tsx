@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { commissionProfiles as initialProfiles, type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import {
   AlertDialog,
@@ -41,12 +41,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { getCommissionProfiles, deleteCommissionProfile } from '@/services/commissionService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SalesCommissionAgentsPage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState<CommissionProfile[]>(initialProfiles);
+  const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CommissionProfile | null>(null);
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      try {
+        const data = await getCommissionProfiles();
+        setProfiles(data);
+      } catch (error) {
+        console.error("Failed to fetch commission profiles:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfiles();
+  }, []);
   
   const handleEdit = (profileId: string) => {
     router.push(`/admin/sales-commission-agents/edit/${profileId}`);
@@ -61,11 +78,17 @@ export default function SalesCommissionAgentsPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (profileToDelete) {
-      setProfiles(profiles.filter(p => p.id !== profileToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setProfileToDelete(null);
+      try {
+        await deleteCommissionProfile(profileToDelete.id);
+        setProfiles(profiles.filter(p => p.id !== profileToDelete.id));
+      } catch (error) {
+        console.error("Failed to delete profile:", error);
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setProfileToDelete(null);
+      }
     }
   };
 
@@ -116,7 +139,18 @@ export default function SalesCommissionAgentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {profiles.map((profile) => (
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-48" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : profiles.map((profile) => (
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">{profile.name}</TableCell>
                     <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>

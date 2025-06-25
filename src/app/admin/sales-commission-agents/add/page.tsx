@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, PlusCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { detailedProducts } from '@/lib/data';
+import { useToast } from "@/hooks/use-toast";
+import { detailedProducts, type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
+import { addCommissionProfile } from '@/services/commissionService';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
     const { toast } = useToast();
 
-    const [entityType, setEntityType] = useState('');
+    const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
     const [agentName, setAgentName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
@@ -41,7 +42,7 @@ export default function AddSalesCommissionAgentPage() {
         );
     };
 
-    const handleSaveProfile = () => {
+    const handleSaveProfile = async () => {
         if (!entityType || !agentName || !phoneNumber || !overallCommission) {
             toast({
                 title: "Error: Missing Fields",
@@ -51,7 +52,7 @@ export default function AddSalesCommissionAgentPage() {
             return;
         }
 
-        const newProfile = {
+        const newProfile: Omit<CommissionProfile, 'id'> = {
             name: agentName,
             entityType: entityType,
             phone: phoneNumber,
@@ -68,15 +69,21 @@ export default function AddSalesCommissionAgentPage() {
             }
         };
 
-        // In a real app, this would be sent to a server.
-        console.log("Saving new commission profile:", newProfile);
-
-        toast({
-            title: "Profile Saved!",
-            description: `The commission profile for ${agentName} has been created.`,
-        });
-
-        router.push('/admin/sales-commission-agents');
+        try {
+            await addCommissionProfile(newProfile);
+            toast({
+                title: "Profile Saved!",
+                description: `The commission profile for ${agentName} has been created.`,
+            });
+            router.push('/admin/sales-commission-agents');
+        } catch (error) {
+             console.error("Failed to add profile:", error);
+            toast({
+                title: "Error",
+                description: "Failed to save the profile. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
 
     return (
@@ -92,7 +99,7 @@ export default function AddSalesCommissionAgentPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="entity-type">Entity Type *</Label>
-                                    <Select value={entityType} onValueChange={setEntityType}>
+                                    <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
                                         <SelectTrigger id="entity-type">
                                             <SelectValue placeholder="Select an entity type" />
                                         </SelectTrigger>

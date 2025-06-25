@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { detailedProducts, commissionProfiles, type CommissionProfile } from '@/lib/data';
+import { detailedProducts, type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
+import { getCommissionProfile, updateCommissionProfile } from '@/services/commissionService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditSalesCommissionAgentPage() {
     const router = useRouter();
@@ -17,40 +19,56 @@ export default function EditSalesCommissionAgentPage() {
     const { toast } = useToast();
     const { id } = params;
     
-    const [entityType, setEntityType] = useState('');
+    const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
     const [agentName, setAgentName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
-        if (id) {
-            const profileToEdit = commissionProfiles.find(p => p.id === id);
-            if (profileToEdit) {
-                setEntityType(profileToEdit.entityType);
-                setAgentName(profileToEdit.name);
-                setPhoneNumber(profileToEdit.phone);
-                setEmail(profileToEdit.email || '');
-                setBankDetails(profileToEdit.bankDetails || '');
-                setOverallCommission(String(profileToEdit.commission.overall));
-                setCategoryCommissions(
-                    profileToEdit.commission.categories?.map((c, index) => ({
-                        id: Date.now() + index,
-                        category: c.category,
-                        rate: String(c.rate),
-                    })) || []
-                );
-            } else {
-                toast({
+        if (typeof id !== 'string') return;
+        
+        const fetchProfile = async () => {
+            try {
+                const profileToEdit = await getCommissionProfile(id);
+                if (profileToEdit) {
+                    setEntityType(profileToEdit.entityType);
+                    setAgentName(profileToEdit.name);
+                    setPhoneNumber(profileToEdit.phone);
+                    setEmail(profileToEdit.email || '');
+                    setBankDetails(profileToEdit.bankDetails || '');
+                    setOverallCommission(String(profileToEdit.commission.overall));
+                    setCategoryCommissions(
+                        profileToEdit.commission.categories?.map((c, index) => ({
+                            id: Date.now() + index,
+                            category: c.category,
+                            rate: String(c.rate),
+                        })) || []
+                    );
+                } else {
+                    toast({
+                        title: "Error",
+                        description: "Commission profile not found.",
+                        variant: "destructive"
+                    });
+                    router.push('/admin/sales-commission-agents');
+                }
+            } catch (error) {
+                 toast({
                     title: "Error",
-                    description: "Commission profile not found.",
+                    description: "Failed to load profile data.",
                     variant: "destructive"
                 });
-                router.push('/admin/sales-commission-agents');
+                console.error(error);
+            } finally {
+                setIsLoading(false);
             }
-        }
+        };
+
+        fetchProfile();
     }, [id, router, toast]);
 
     const productCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
@@ -71,7 +89,7 @@ export default function EditSalesCommissionAgentPage() {
         );
     };
 
-    const handleUpdateProfile = () => {
+    const handleUpdateProfile = async () => {
         if (!entityType || !agentName || !phoneNumber || !overallCommission) {
             toast({
                 title: "Error: Missing Fields",
@@ -81,10 +99,9 @@ export default function EditSalesCommissionAgentPage() {
             return;
         }
 
-        const updatedProfile = {
-            id: id,
+        const updatedProfileData = {
             name: agentName,
-            entityType: entityType,
+            entityType: entityType as any,
             phone: phoneNumber,
             email: email,
             bankDetails: bankDetails,
@@ -99,16 +116,39 @@ export default function EditSalesCommissionAgentPage() {
             }
         };
 
-        // In a real app, this would be sent to a server.
-        console.log("Updating commission profile:", updatedProfile);
-
-        toast({
-            title: "Profile Updated!",
-            description: `The commission profile for ${agentName} has been updated.`,
-        });
-
-        router.push('/admin/sales-commission-agents');
+        try {
+            await updateCommissionProfile(id as string, updatedProfileData);
+            toast({
+                title: "Profile Updated!",
+                description: `The commission profile for ${agentName} has been updated.`,
+            });
+            router.push('/admin/sales-commission-agents');
+        } catch (error) {
+             console.error("Failed to update profile:", error);
+            toast({
+                title: "Error",
+                description: "Failed to update the profile. Please try again.",
+                variant: "destructive",
+            });
+        }
     };
+
+    if (isLoading) {
+        return (
+             <div className="flex flex-col gap-6">
+                <h1 className="font-headline text-3xl font-bold"><Skeleton className="h-9 w-72" /></h1>
+                <Card>
+                    <CardHeader><CardTitle><Skeleton className="h-7 w-48" /></CardTitle></CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                            <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -123,7 +163,7 @@ export default function EditSalesCommissionAgentPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="entity-type">Entity Type *</Label>
-                                    <Select value={entityType} onValueChange={setEntityType}>
+                                    <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
                                         <SelectTrigger id="entity-type">
                                             <SelectValue placeholder="Select an entity type" />
                                         </SelectTrigger>
