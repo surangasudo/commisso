@@ -91,6 +91,7 @@ export type DetailedProduct = {
   brand: string;
   tax: string;
   sku: string;
+  unit: string;
   totalUnitSold?: number;
   totalUnitTransferred?: number;
   totalUnitAdjusted?: number;

@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { addProduct } from '@/services/productService';
+import { type DetailedProduct } from '@/lib/data';
 
-const initialProductState = {
-    id: '',
+const initialProductState: Partial<DetailedProduct> = {
     name: '',
     sku: '',
     productType: 'Single',
@@ -31,6 +32,7 @@ export default function AddProductPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [product, setProduct] = useState(initialProductState);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value, type } = e.target;
@@ -46,8 +48,8 @@ export default function AddProductPage() {
     // Placeholder for future implementation
   };
 
-  const handleSaveProduct = () => {
-    if (!product.name.trim() || !product.unit || !product.sellingPrice) {
+  const handleSaveProduct = async () => {
+    if (!product.name || !product.unit || !product.sellingPrice) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields: Product Name, Unit, and Selling Price.",
@@ -55,13 +57,42 @@ export default function AddProductPage() {
       });
       return;
     }
-    // In a real app, you would send this data to a server.
-    console.log("Saving new product:", product);
-    toast({
-      title: "Product Saved",
-      description: `"${product.name}" has been successfully added.`,
-    });
-    router.push('/admin/products/list');
+
+    setIsLoading(true);
+
+    try {
+      const productToSave: Omit<DetailedProduct, 'id'> = {
+        name: product.name,
+        sku: product.sku || `AS${Math.floor(Math.random() * 10000)}`, // Auto-generate if blank
+        productType: product.productType as 'Single' | 'Variable',
+        unit: product.unit,
+        brand: product.brand || '',
+        category: product.category || '',
+        businessLocation: product.businessLocation || 'Awesome Shop',
+        image: product.image || 'https://placehold.co/40x40.png',
+        unitPurchasePrice: Number(product.unitPurchasePrice) || 0,
+        sellingPrice: Number(product.sellingPrice) || 0,
+        currentStock: Number(product.currentStock) || 0,
+        tax: product.tax || '',
+      };
+      
+      await addProduct(productToSave);
+
+      toast({
+        title: "Product Saved",
+        description: `"${product.name}" has been successfully added.`,
+      });
+      router.push('/admin/products/list');
+    } catch (error) {
+      console.error("Failed to add product:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save the product. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -203,18 +234,24 @@ export default function AddProductPage() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="purchase-price">Default Purchase Price</Label>
-                            <Input id="purchase-price" name="unitPurchasePrice" type="number" value={product.unitPurchasePrice} onChange={handleInputChange}/>
+                            <Label htmlFor="unitPurchasePrice">Default Purchase Price</Label>
+                            <Input id="unitPurchasePrice" name="unitPurchasePrice" type="number" value={product.unitPurchasePrice} onChange={handleInputChange}/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="selling-price">Default Selling Price *</Label>
-                            <Input id="selling-price" name="sellingPrice" type="number" value={product.sellingPrice} onChange={handleInputChange}/>
+                            <Label htmlFor="sellingPrice">Default Selling Price *</Label>
+                            <Input id="sellingPrice" name="sellingPrice" type="number" value={product.sellingPrice} onChange={handleInputChange}/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="currentStock">Opening Stock</Label>
+                            <Input id="currentStock" name="currentStock" type="number" value={product.currentStock} onChange={handleInputChange}/>
                         </div>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button size="lg" onClick={handleSaveProduct}>Save Product</Button>
+                <Button size="lg" onClick={handleSaveProduct} disabled={isLoading}>
+                    {isLoading ? 'Saving...' : 'Save Product'}
+                </Button>
             </div>
         </div>
     </div>
