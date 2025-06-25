@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { expenseCategories as initialCategories, type ExpenseCategory } from '@/lib/data';
+import { AppFooter } from "@/components/app-footer";
 
 
 export default function ExpenseCategoriesPage() {
@@ -260,9 +261,7 @@ export default function ExpenseCategoriesPage() {
               </DialogFooter>
           </DialogContent>
         </Dialog>
-        <div className="text-center text-xs text-slate-400 p-1">
-          Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
       </div>
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Undo, Search, Plus, Trash2, Calendar, User } from "lucide-react";
 import { detailedProducts, type DetailedProduct } from '@/lib/data';
+import { AppFooter } from '@/components/app-footer';
 
 type ReturnItem = {
   product: DetailedProduct;
@@ -220,9 +221,7 @@ export default function AddPurchaseReturnPage() {
                 <Button size="lg">Submit</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

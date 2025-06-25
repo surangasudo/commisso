@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Info, Calendar, DollarSign, Wallet } from "lucide-react";
 import { expenseCategories, type ExpenseCategory, customers, suppliers } from '@/lib/data';
+import { AppFooter } from '@/components/app-footer';
 
 export default function AddExpensePage() {
     const [currentDate, setCurrentDate] = useState('');
@@ -230,9 +231,7 @@ export default function AddExpensePage() {
                     <Button size="lg">Save</Button>
                 </div>
             </div>
-             <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

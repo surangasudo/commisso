@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AppFooter } from '@/components/app-footer';
 
 const getShippingStatusBadge = (status: string | null) => {
     if (!status) return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -243,9 +244,7 @@ export default function ShipmentsPage() {
                 </Card>
             </CardContent>
         </Card>
-        <div className="text-center text-xs text-slate-400 p-1">
-            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
     </div>
     
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

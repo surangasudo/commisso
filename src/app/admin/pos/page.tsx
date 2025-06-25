@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
@@ -66,6 +65,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useCurrency } from '@/hooks/use-currency';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppFooter } from '@/components/app-footer';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -832,9 +832,7 @@ export default function PosPage() {
         value={shipping}
         setValue={setShipping}
       />
-      <div className="text-center text-xs text-muted-foreground p-1 bg-background">
-        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-      </div>
+      <AppFooter />
     </div>
     </TooltipProvider>
   );

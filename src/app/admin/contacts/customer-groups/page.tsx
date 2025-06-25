@@ -47,6 +47,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AppFooter } from '@/components/app-footer';
 
 const initialCustomerGroups = [
   { name: 'Wholesale', calculationPercentage: 0 },
@@ -206,9 +207,7 @@ export default function CustomerGroupsPage() {
               </div>
           </CardFooter>
         </Card>
-         <div className="text-center text-xs text-slate-400 p-1">
-          Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
       </div>
     </TooltipProvider>
   );

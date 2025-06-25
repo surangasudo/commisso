@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { AppFooter } from "@/components/app-footer";
 
 type DiscountType = 'Fixed' | 'Percentage';
 
@@ -382,9 +383,7 @@ export default function DiscountsPage() {
             </div>
         </CardFooter>
       </Card>
-      <div className="text-center text-xs text-slate-400 p-1">
-          Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-      </div>
+      <AppFooter />
     </div>
     </TooltipProvider>
   );

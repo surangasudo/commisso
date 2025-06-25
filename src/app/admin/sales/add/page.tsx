@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
+import { AppFooter } from '@/components/app-footer';
 
 type SaleItem = {
   product: DetailedProduct;
@@ -312,9 +313,7 @@ export default function AddSalePage() {
                 <Button size="lg" className="bg-green-600 hover:bg-green-700">Add to POS</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

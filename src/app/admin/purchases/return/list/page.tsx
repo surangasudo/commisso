@@ -62,6 +62,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AppFooter } from '@/components/app-footer';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -223,6 +224,7 @@ export default function ListPurchaseReturnPage() {
                 </Card>
             </CardContent>
         </Card>
+        <AppFooter />
     </div>
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
       <AlertDialogContent>

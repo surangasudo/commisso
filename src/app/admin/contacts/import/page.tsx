@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { AppFooter } from "@/components/app-footer";
 
 const instructionsData = [
   {
@@ -117,9 +118,7 @@ export default function ImportContactsPage() {
           </div>
         </CardContent>
       </Card>
-      <div className="text-center text-xs text-slate-400 p-1">
-        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-      </div>
+      <AppFooter />
     </div>
   );
 }

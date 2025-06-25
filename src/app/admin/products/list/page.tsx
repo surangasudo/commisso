@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -68,6 +67,7 @@ import {
 import { useCurrency } from '@/hooks/use-currency';
 import { getProducts, deleteProduct } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppFooter } from '@/components/app-footer';
 
 const productHints: { [key: string]: string } = {
     'prod-1': 'fashion sneaker',
@@ -296,9 +296,7 @@ export default function ListProductsPage() {
                 </Tabs>
               </CardContent>
           </Card>
-          <div className="text-center text-xs text-slate-400 p-1">
-              Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-          </div>
+          <AppFooter />
       </div>
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

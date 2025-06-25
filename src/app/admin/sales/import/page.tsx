@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Download, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { AppFooter } from "@/components/app-footer";
 
 const instructionsData = [
   { number: 1, name: 'Customer Name (Required)', instruction: 'Name of the customer.' },
@@ -104,9 +105,7 @@ export default function ImportSalesPage() {
           </div>
         </CardContent>
       </Card>
-      <div className="text-center text-xs text-slate-400 p-1">
-        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-      </div>
+      <AppFooter />
     </div>
   );
 }

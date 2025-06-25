@@ -19,6 +19,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { AppFooter } from '@/components/app-footer';
 
 type QuotationItem = {
   product: DetailedProduct;
@@ -423,9 +424,7 @@ export default function AddQuotationPage() {
                 <Button size="lg" variant="default" onClick={handleSaveQuotation}>Save as Quotation</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

@@ -59,6 +59,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AppFooter } from '@/components/app-footer';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -214,9 +215,7 @@ export default function ListExpensesPage() {
                   </Card>
               </CardContent>
           </Card>
-           <div className="text-center text-xs text-slate-400 p-1">
-              Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-          </div>
+          <AppFooter />
       </div>
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

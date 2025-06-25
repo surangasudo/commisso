@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { AppFooter } from '@/components/app-footer';
 
 type ReturnItem = {
   product: DetailedProduct;
@@ -268,9 +269,7 @@ export default function AddSellReturnPage() {
                 <Button size="lg">Save</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }
