@@ -1,14 +1,26 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, Timestamp } from 'firebase/firestore';
 import { type CommissionProfile } from '@/lib/data';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
+const sanitizeData = (docData: DocumentData) => {
+    const data = { ...docData };
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        if (data[key] instanceof Timestamp) {
+          data[key] = data[key].toDate().toISOString();
+        }
+      }
+    }
+    return data;
+}
+
 export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CommissionProfile));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...sanitizeData(doc.data()) } as CommissionProfile));
 }
 
 export async function getCommissionProfile(id: string): Promise<CommissionProfile | null> {
@@ -16,7 +28,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as CommissionProfile;
+        return { id: docSnap.id, ...sanitizeData(docSnap.data()) } as CommissionProfile;
     } else {
         return null;
     }

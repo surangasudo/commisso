@@ -6,19 +6,22 @@ import { type Expense } from '@/lib/data';
 
 const expensesCollection = collection(db, 'expenses');
 
-export async function getExpenses(): Promise<Expense[]> {
-  const snapshot = await getDocs(expensesCollection);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
+const sanitizeData = (docData: DocumentData) => {
+    const data = { ...docData };
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-          data[key] = value.toDate().toISOString();
+        if (data[key] instanceof Timestamp) {
+          data[key] = data[key].toDate().toISOString();
         }
       }
     }
-    return { id: doc.id, ...data } as Expense;
+    return data;
+}
+
+export async function getExpenses(): Promise<Expense[]> {
+  const snapshot = await getDocs(expensesCollection);
+  return snapshot.docs.map(doc => {
+    return { id: doc.id, ...sanitizeData(doc.data()) } as Expense;
   });
 }
 

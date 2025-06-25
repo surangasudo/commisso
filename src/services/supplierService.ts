@@ -5,10 +5,8 @@ import { type Supplier } from '@/lib/data';
 
 const suppliersCollection = collection(db, 'suppliers');
 
-export async function getSuppliers(): Promise<Supplier[]> {
-  const snapshot = await getDocs(suppliersCollection);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
+const sanitizeData = (docData: DocumentData) => {
+    const data = { ...docData };
     for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
             if (data[key] instanceof Timestamp) {
@@ -16,7 +14,13 @@ export async function getSuppliers(): Promise<Supplier[]> {
             }
         }
     }
-    return { id: doc.id, ...data } as Supplier;
+    return data;
+}
+
+export async function getSuppliers(): Promise<Supplier[]> {
+  const snapshot = await getDocs(suppliersCollection);
+  return snapshot.docs.map(doc => {
+    return { id: doc.id, ...sanitizeData(doc.data()) } as Supplier;
   });
 }
 

@@ -6,19 +6,22 @@ import { type Sale } from '@/lib/data';
 
 const salesCollection = collection(db, 'sales');
 
-export async function getSales(): Promise<Sale[]> {
-  const snapshot = await getDocs(salesCollection);
-  return snapshot.docs.map(doc => {
-    const data = doc.data();
+const sanitizeData = (docData: DocumentData) => {
+    const data = { ...docData };
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-          data[key] = value.toDate().toISOString();
+        if (data[key] instanceof Timestamp) {
+          data[key] = data[key].toDate().toISOString();
         }
       }
     }
-    return { id: doc.id, ...data } as Sale;
+    return data;
+}
+
+export async function getSales(): Promise<Sale[]> {
+  const snapshot = await getDocs(salesCollection);
+  return snapshot.docs.map(doc => {
+    return { id: doc.id, ...sanitizeData(doc.data()) } as Sale;
   });
 }
 
