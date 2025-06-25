@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,9 +12,14 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sales, detailedProducts, customers } from '@/lib/data';
+import { type Sale, type DetailedProduct, type Customer } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
+import { getSales } from '@/services/saleService';
+import { getProducts } from '@/services/productService';
+import { getCustomers } from '@/services/customerService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ReportItem = {
     id: string;
@@ -28,6 +33,12 @@ type ReportItem = {
 };
 
 export default function ItemsReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allSales, setAllSales] = useState<Sale[]>([]);
+    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
+    const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -49,6 +60,27 @@ export default function ItemsReportPage() {
     });
     const [searchTerm, setSearchTerm] = useState('');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [salesData, productsData, customersData] = await Promise.all([
+                    getSales(),
+                    getProducts(),
+                    getCustomers()
+                ]);
+                setAllSales(salesData);
+                setAllProducts(productsData);
+                setAllCustomers(customersData);
+            } catch (error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
@@ -56,33 +88,25 @@ export default function ItemsReportPage() {
     const reportData: ReportItem[] = useMemo(() => {
         const flattenedItems: ReportItem[] = [];
         
-        sales.forEach(sale => {
-            // Date filtering
+        allSales.forEach(sale => {
             const saleDate = new Date(sale.date);
             if (!(activeFilters.date?.from && activeFilters.date?.to && saleDate >= activeFilters.date.from && saleDate <= activeFilters.date.to)) {
                 return;
             }
-
-            // Location filtering
             if (activeFilters.location !== 'all' && sale.location !== activeFilters.location) {
                 return;
             }
-            
-            // Customer filtering
             if(activeFilters.customer !== 'all' && sale.customerName !== activeFilters.customer) {
                 return;
             }
 
             sale.items.forEach((item, index) => {
-                const productInfo = detailedProducts.find(p => p.id === item.productId);
+                const productInfo = allProducts.find(p => p.id === item.productId);
                 if (!productInfo) return;
                 
-                // Category filtering
                 if (activeFilters.category !== 'all' && productInfo.category !== activeFilters.category) {
                     return;
                 }
-
-                // Brand filtering
                 if (activeFilters.brand !== 'all' && productInfo.brand !== activeFilters.brand) {
                     return;
                 }
@@ -94,14 +118,14 @@ export default function ItemsReportPage() {
                     quantity: item.quantity,
                     totalAmount: item.quantity * item.unitPrice,
                     invoiceNo: sale.invoiceNo,
-                    date: sale.date,
+                    date: new Date(sale.date).toLocaleDateString(),
                     customerName: sale.customerName,
                 });
             });
         });
 
         return flattenedItems;
-    }, [activeFilters]);
+    }, [activeFilters, allSales, allProducts]);
 
     const filteredData = useMemo(() => {
         return reportData.filter(item => 
@@ -124,20 +148,20 @@ export default function ItemsReportPage() {
             "Invoice No.": item.invoiceNo,
             "Customer": item.customerName,
             "Quantity": item.quantity,
-            "Total Amount": item.totalAmount.toFixed(2),
+            "Total Amount": item.totalAmount,
         }));
         
         if (format === 'csv') exportToCsv(exportData, filename);
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => i === 6 ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
     
-    const uniqueCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
-    const uniqueBrands = [...new Set(detailedProducts.map(p => p.brand).filter(Boolean))];
+    const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+    const uniqueBrands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
 
     return (
         <div className="flex flex-col gap-6">
@@ -206,7 +230,7 @@ export default function ItemsReportPage() {
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Customers</SelectItem>
-                                {customers.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                                {allCustomers.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -280,7 +304,13 @@ export default function ItemsReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell className="font-medium">{item.product}</TableCell>
                                             <TableCell>{item.sku}</TableCell>
@@ -288,7 +318,7 @@ export default function ItemsReportPage() {
                                             <TableCell>{item.invoiceNo}</TableCell>
                                             <TableCell>{item.customerName}</TableCell>
                                             <TableCell className="text-right">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalAmount)}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
@@ -300,7 +330,7 @@ export default function ItemsReportPage() {
                                     <TableRow>
                                         <TableCell colSpan={5} className="font-bold text-right">Total:</TableCell>
                                         <TableCell className="font-bold text-right">{totalQuantity}</TableCell>
-                                        <TableCell className="font-bold text-right">${totalAmount.toFixed(2)}</TableCell>
+                                        <TableCell className="font-bold text-right">{formatCurrency(totalAmount)}</TableCell>
                                     </TableRow>
                                 </TableFooter>
                             </Table>

@@ -1,15 +1,18 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Printer, Download, Search, Filter, DollarSign } from 'lucide-react';
-import { detailedProducts, type DetailedProduct } from '@/lib/data';
+import { type DetailedProduct } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
+import { getProducts } from '@/services/productService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type StockReportRow = {
     sku: string;
@@ -26,6 +29,10 @@ type StockReportRow = {
 };
 
 export default function StockReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [pendingFilters, setPendingFilters] = useState({
         location: 'all',
         category: 'all',
@@ -38,12 +45,27 @@ export default function StockReportPage() {
     });
     const [searchTerm, setSearchTerm] = useState('');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const productsData = await getProducts();
+                setAllProducts(productsData);
+            } catch (error) {
+                console.error("Failed to fetch products:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
 
     const reportData: StockReportRow[] = useMemo(() => {
-        return detailedProducts.map(p => {
+        return allProducts.map(p => {
             const stockValueByPurchase = p.currentStock * p.unitPurchasePrice;
             const stockValueBySale = p.currentStock * p.sellingPrice;
             return {
@@ -60,7 +82,7 @@ export default function StockReportPage() {
                 totalUnitAdjusted: p.totalUnitAdjusted || 0,
             }
         });
-    }, []);
+    }, [allProducts]);
 
     const filteredData = useMemo(() => {
         return reportData.filter(item => {
@@ -70,14 +92,13 @@ export default function StockReportPage() {
             
             const locationMatch = activeFilters.location === 'all' || item.location === activeFilters.location;
             
-            // For category and brand, need to find original product
-            const originalProduct = detailedProducts.find(p => p.sku === item.sku);
+            const originalProduct = allProducts.find(p => p.sku === item.sku);
             const categoryMatch = activeFilters.category === 'all' || originalProduct?.category === activeFilters.category;
             const brandMatch = activeFilters.brand === 'all' || originalProduct?.brand === activeFilters.brand;
             
             return searchMatch && locationMatch && categoryMatch && brandMatch;
         });
-    }, [reportData, searchTerm, activeFilters]);
+    }, [reportData, searchTerm, activeFilters, allProducts]);
     
     const totals = useMemo(() => {
         return {
@@ -87,8 +108,8 @@ export default function StockReportPage() {
         };
     }, [filteredData]);
 
-    const uniqueCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
-    const uniqueBrands = [...new Set(detailedProducts.map(p => p.brand).filter(Boolean))];
+    const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+    const uniqueBrands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'stock-report';
@@ -96,11 +117,11 @@ export default function StockReportPage() {
             "SKU": item.sku,
             "Product": item.product,
             "Location": item.location,
-            "Unit Price": item.unitPrice.toFixed(2),
+            "Unit Price": item.unitPrice,
             "Current Stock": item.currentStock,
-            "Stock Value (Purchase)": item.stockValueByPurchase.toFixed(2),
-            "Stock Value (Sale)": item.stockValueBySale.toFixed(2),
-            "Potential Profit": item.potentialProfit.toFixed(2),
+            "Stock Value (Purchase)": item.stockValueByPurchase,
+            "Stock Value (Sale)": item.stockValueBySale,
+            "Potential Profit": item.potentialProfit,
             "Total Unit Sold": item.totalUnitSold,
             "Total Unit Transferred": item.totalUnitTransferred,
             "Total Unit Adjusted": item.totalUnitAdjusted,
@@ -110,7 +131,7 @@ export default function StockReportPage() {
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => [3,5,6,7].includes(i) ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
@@ -177,7 +198,7 @@ export default function StockReportPage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${totals.stockValueByPurchase.toFixed(2)}</div>
+                            {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{formatCurrency(totals.stockValueByPurchase)}</div>}
                         </CardContent>
                     </Card>
                     <Card>
@@ -186,7 +207,7 @@ export default function StockReportPage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${totals.stockValueBySale.toFixed(2)}</div>
+                            {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{formatCurrency(totals.stockValueBySale)}</div>}
                         </CardContent>
                     </Card>
                     <Card>
@@ -195,7 +216,7 @@ export default function StockReportPage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${totals.potentialProfit.toFixed(2)}</div>
+                            {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{formatCurrency(totals.potentialProfit)}</div>}
                         </CardContent>
                     </Card>
                 </div>
@@ -240,16 +261,22 @@ export default function StockReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item, index) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 11 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item, index) => (
                                         <TableRow key={`${item.sku}-${index}`}>
                                             <TableCell>{item.sku}</TableCell>
                                             <TableCell className="font-medium">{item.product}</TableCell>
                                             <TableCell>{item.location}</TableCell>
-                                            <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
                                             <TableCell className="text-right">{item.currentStock}</TableCell>
-                                            <TableCell className="text-right">${item.stockValueByPurchase.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.stockValueBySale.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.potentialProfit.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.stockValueByPurchase)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.stockValueBySale)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.potentialProfit)}</TableCell>
                                             <TableCell className="text-right">{item.totalUnitSold}</TableCell>
                                             <TableCell className="text-right">{item.totalUnitTransferred}</TableCell>
                                             <TableCell className="text-right">{item.totalUnitAdjusted}</TableCell>
@@ -263,9 +290,9 @@ export default function StockReportPage() {
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell colSpan={5} className="text-right font-bold">Total</TableCell>
-                                        <TableCell className="text-right font-bold">${totals.stockValueByPurchase.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-bold">${totals.stockValueBySale.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-bold">${totals.potentialProfit.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totals.stockValueByPurchase)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totals.stockValueBySale)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totals.potentialProfit)}</TableCell>
                                         <TableCell colSpan={3}></TableCell>
                                     </TableRow>
                                 </TableFooter>

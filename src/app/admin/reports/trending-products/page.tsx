@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,9 +12,13 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { detailedProducts, sales } from '@/lib/data';
+import { type DetailedProduct, type Sale } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
+import { getProducts } from '@/services/productService';
+import { getSales } from '@/services/saleService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type TrendingProduct = {
     sku: string;
@@ -25,6 +30,11 @@ type TrendingProduct = {
 };
 
 export default function TrendingProductsPage() {
+    const { formatCurrency } = useCurrency();
+    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
+    const [allSales, setAllSales] = useState<Sale[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
         from: startOfYear(new Date()),
         to: endOfYear(new Date()),
@@ -45,12 +55,31 @@ export default function TrendingProductsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [sort, setSort] = useState<{ key: keyof TrendingProduct; direction: 'asc' | 'desc' }>({ key: 'totalQuantity', direction: 'desc' });
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [productsData, salesData] = await Promise.all([
+                    getProducts(),
+                    getSales()
+                ]);
+                setAllProducts(productsData);
+                setAllSales(salesData);
+            } catch (error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
 
     const reportData: TrendingProduct[] = useMemo(() => {
-        const filteredSales = sales.filter(s => {
+        const filteredSales = allSales.filter(s => {
             const saleDate = new Date(s.date);
             const dateMatch = activeFilters.date?.from && activeFilters.date?.to ? (saleDate >= activeFilters.date.from && saleDate <= activeFilters.date.to) : true;
             const locationMatch = activeFilters.location === 'all' || s.location === activeFilters.location;
@@ -70,7 +99,7 @@ export default function TrendingProductsPage() {
         }
         
         let trendingProducts = Object.entries(productSales).map(([productId, data]) => {
-            const productInfo = detailedProducts.find(p => p.id === productId);
+            const productInfo = allProducts.find(p => p.id === productId);
             return {
                 sku: productInfo?.sku || 'N/A',
                 product: productInfo?.name || 'Unknown Product',
@@ -90,7 +119,7 @@ export default function TrendingProductsPage() {
         }
         
         return trendingProducts;
-    }, [activeFilters]);
+    }, [activeFilters, allSales, allProducts]);
 
     const sortedData = useMemo(() => {
         const data = [...reportData].filter(item => 
@@ -114,8 +143,8 @@ export default function TrendingProductsPage() {
         }
     }
 
-    const uniqueCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
-    const uniqueBrands = [...new Set(detailedProducts.map(p => p.brand).filter(Boolean))];
+    const uniqueCategories = [...new Set(allProducts.map(p => p.category).filter(Boolean))];
+    const uniqueBrands = [...new Set(allProducts.map(p => p.brand).filter(Boolean))];
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'trending-products-report';
@@ -125,14 +154,14 @@ export default function TrendingProductsPage() {
             "Category": item.category,
             "Brand": item.brand,
             "Total Quantity Sold": item.totalQuantity,
-            "Total Amount Sold": item.totalAmount.toFixed(2),
+            "Total Amount Sold": item.totalAmount,
         }));
         
         if (format === 'csv') exportToCsv(exportData, filename);
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = ["SKU", "Product", "Category", "Brand", "Total Quantity Sold", "Total Amount Sold"];
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => i === 5 ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
@@ -227,7 +256,7 @@ export default function TrendingProductsPage() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="printable-area">
                 <CardHeader>
                     <CardTitle>Report Details</CardTitle>
                     <CardDescription>Top-selling products based on quantity sold for the selected period.</CardDescription>
@@ -267,14 +296,20 @@ export default function TrendingProductsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {sortedData.length > 0 ? sortedData.map((item) => (
+                                {isLoading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            {Array.from({ length: 6 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                        </TableRow>
+                                    ))
+                                ) : sortedData.length > 0 ? sortedData.map((item) => (
                                     <TableRow key={item.sku}>
                                         <TableCell>{item.sku}</TableCell>
                                         <TableCell className="font-medium">{item.product}</TableCell>
                                         <TableCell>{item.category}</TableCell>
                                         <TableCell>{item.brand}</TableCell>
                                         <TableCell className="text-right">{item.totalQuantity}</TableCell>
-                                        <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.totalAmount)}</TableCell>
                                     </TableRow>
                                 )) : (
                                     <TableRow>

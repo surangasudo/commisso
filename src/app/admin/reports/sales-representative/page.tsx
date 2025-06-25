@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,10 +12,13 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter, Users as UsersIcon, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { commissionProfiles, type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCurrency } from '@/hooks/use-currency';
+import { getCommissionProfiles } from '@/services/commissionService';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ReportData = {
   id: string;
@@ -25,7 +28,7 @@ type ReportData = {
   totalCommission: number;
 };
 
-const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: string }) => {
+const ReportTable = ({ data, entityType, isLoading, formatCurrency }: { data: ReportData[], entityType: string, isLoading: boolean, formatCurrency: (value: number) => string }) => {
     const [searchTerm, setSearchTerm] = useState('');
     
     const filteredData = useMemo(() => {
@@ -39,15 +42,15 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
         const filename = `${entityType.toLowerCase().replace(' ', '-')}-report`;
         const exportData = filteredData.map(item => ({
             "Name": item.name,
-            "Total Sales (Gross)": item.totalSales.toFixed(2),
-            "Total Commission": item.totalCommission.toFixed(2),
+            "Total Sales (Gross)": item.totalSales,
+            "Total Commission": item.totalCommission,
         }));
 
         if (format === 'csv') exportToCsv(exportData, filename);
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = ["Name", "Total Sales (Gross)", "Total Commission"];
-            const data = filteredData.map(item => [item.name, `$${item.totalSales.toFixed(2)}`, `$${item.totalCommission.toFixed(2)}`]);
+            const data = filteredData.map(item => [item.name, formatCurrency(item.totalSales), formatCurrency(item.totalCommission)]);
             exportToPdf(headers, data, filename);
         }
     };
@@ -80,11 +83,19 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredData.length > 0 ? filteredData.map((item) => (
+                        {isLoading ? (
+                            Array.from({length: 3}).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-24 ml-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredData.length > 0 ? filteredData.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell className="font-medium">{item.name}</TableCell>
-                                <TableCell className="text-right">${item.totalSales.toFixed(2)}</TableCell>
-                                <TableCell className="text-right">${item.totalCommission.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.totalSales)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.totalCommission)}</TableCell>
                             </TableRow>
                         )) : (
                            <TableRow>
@@ -95,8 +106,8 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
                      <TableFooter>
                         <TableRow>
                             <TableCell className="font-bold">Total</TableCell>
-                            <TableCell className="text-right font-bold">${totalSales.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-bold">${totalCommission.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-bold">{formatCurrency(totalSales)}</TableCell>
+                            <TableCell className="text-right font-bold">{formatCurrency(totalCommission)}</TableCell>
                         </TableRow>
                     </TableFooter>
                 </Table>
@@ -107,6 +118,10 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
 
 
 export default function SalesRepresentativeReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allProfiles, setAllProfiles] = useState<CommissionProfile[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -118,10 +133,25 @@ export default function SalesRepresentativeReportPage() {
     const [selectedCompany, setSelectedCompany] = useState('all');
     const [selectedSalesperson, setSelectedSalesperson] = useState('all');
 
-    const reportData = useMemo(() => {
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const profilesData = await getCommissionProfiles();
+                setAllProfiles(profilesData);
+            } catch (error) {
+                console.error("Failed to fetch commission profiles:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
+    const reportData: ReportData[] = useMemo(() => {
         // This is mock data generation for demonstration purposes.
         // In a real application, this data would come from an API based on the dateFilter.
-        return commissionProfiles.map(p => {
+        return allProfiles.map(p => {
             const totalSales = Math.random() * 40000 + 5000;
             const specialCategory = p.commission.categories?.[0];
             let totalCommission = 0;
@@ -140,7 +170,7 @@ export default function SalesRepresentativeReportPage() {
                 totalCommission,
             };
         });
-    }, [dateFilter]); // The mock data will "re-fetch" when the date changes.
+    }, [allProfiles, dateFilter]); // The mock data will "re-fetch" when the date changes.
 
     const agentData = useMemo(() => {
         let data = reportData.filter(p => p.entityType === 'Agent');
@@ -177,10 +207,10 @@ export default function SalesRepresentativeReportPage() {
     const totalSales = reportData.reduce((acc, item) => acc + item.totalSales, 0);
     const totalCommission = reportData.reduce((acc, item) => acc + item.totalCommission, 0);
 
-    const agents = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Agent'), []);
-    const subAgents = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Sub-Agent'), []);
-    const companies = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Company'), []);
-    const salespersons = useMemo(() => commissionProfiles.filter(p => p.entityType === 'Salesperson'), []);
+    const agents = useMemo(() => allProfiles.filter(p => p.entityType === 'Agent'), [allProfiles]);
+    const subAgents = useMemo(() => allProfiles.filter(p => p.entityType === 'Sub-Agent'), [allProfiles]);
+    const companies = useMemo(() => allProfiles.filter(p => p.entityType === 'Company'), [allProfiles]);
+    const salespersons = useMemo(() => allProfiles.filter(p => p.entityType === 'Salesperson'), [allProfiles]);
 
     return (
         <div className="flex flex-col gap-6">
@@ -234,7 +264,7 @@ export default function SalesRepresentativeReportPage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+                            {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{formatCurrency(totalSales)}</div>}
                         </CardContent>
                     </Card>
                     <Card>
@@ -243,7 +273,7 @@ export default function SalesRepresentativeReportPage() {
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
+                            {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{formatCurrency(totalCommission)}</div>}
                         </CardContent>
                     </Card>
                 </div>
@@ -268,7 +298,7 @@ export default function SalesRepresentativeReportPage() {
                                         </SelectContent>
                                     </Select>
                             </div>
-                            <ReportTable data={agentData} entityType="Agent" />
+                            <ReportTable data={agentData} entityType="Agent" isLoading={isLoading} formatCurrency={formatCurrency} />
                             </TabsContent>
                             <TabsContent value="sub_agents" className="mt-4 space-y-4">
                             <div className="space-y-2 max-w-sm print:hidden">
@@ -281,7 +311,7 @@ export default function SalesRepresentativeReportPage() {
                                         </SelectContent>
                                     </Select>
                             </div>
-                            <ReportTable data={subAgentData} entityType="Sub-Agent" />
+                            <ReportTable data={subAgentData} entityType="Sub-Agent" isLoading={isLoading} formatCurrency={formatCurrency}/>
                             </TabsContent>
                             <TabsContent value="companies" className="mt-4 space-y-4">
                             <div className="space-y-2 max-w-sm print:hidden">
@@ -294,7 +324,7 @@ export default function SalesRepresentativeReportPage() {
                                         </SelectContent>
                                     </Select>
                             </div>
-                            <ReportTable data={companyData} entityType="Company" />
+                            <ReportTable data={companyData} entityType="Company" isLoading={isLoading} formatCurrency={formatCurrency}/>
                             </TabsContent>
                             <TabsContent value="salespersons" className="mt-4 space-y-4">
                             <div className="space-y-2 max-w-sm print:hidden">
@@ -307,7 +337,7 @@ export default function SalesRepresentativeReportPage() {
                                         </SelectContent>
                                     </Select>
                             </div>
-                            <ReportTable data={salespersonData} entityType="Salesperson" />
+                            <ReportTable data={salespersonData} entityType="Salesperson" isLoading={isLoading} formatCurrency={formatCurrency}/>
                             </TabsContent>
                         </Tabs>
                     </CardContent>

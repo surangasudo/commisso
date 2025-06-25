@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,10 +12,14 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { expenses, type Expense, expenseCategories } from '@/lib/data';
+import { type Expense, type ExpenseCategory } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { getExpenses } from '@/services/expenseService';
+import { getExpenseCategories } from '@/services/expenseCategoryService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -31,6 +35,11 @@ const getPaymentStatusBadge = (status: string) => {
 };
 
 export default function ExpenseReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [isLoading, setIsLoading] = useState(true);
+    const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+    const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -49,12 +58,31 @@ export default function ExpenseReportPage() {
     
     const [searchTerm, setSearchTerm] = useState('');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [expensesData, categoriesData] = await Promise.all([
+                    getExpenses(),
+                    getExpenseCategories()
+                ]);
+                setAllExpenses(expensesData);
+                setAllCategories(categoriesData);
+            } catch (error) {
+                console.error("Failed to fetch report data", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
 
     const filteredData = useMemo(() => {
-        return expenses.filter(item => {
+        return allExpenses.filter(item => {
             const searchMatch = searchTerm === '' ||
                 item.referenceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.expenseCategory.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,7 +98,7 @@ export default function ExpenseReportPage() {
 
             return searchMatch && dateMatch && locationMatch && categoryMatch;
         });
-    }, [searchTerm, activeFilters]);
+    }, [searchTerm, activeFilters, allExpenses]);
 
     const totalAmount = filteredData.reduce((acc, item) => acc + item.totalAmount, 0);
     const totalTax = filteredData.reduce((acc, item) => acc + (item.tax || 0), 0);
@@ -79,15 +107,15 @@ export default function ExpenseReportPage() {
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'expense-report';
         const exportData = filteredData.map(item => ({
-            "Date": item.date,
+            "Date": new Date(item.date).toLocaleDateString(),
             "Reference No": item.referenceNo,
             "Category": item.expenseCategory,
             "Sub Category": item.subCategory || 'N/A',
             "Location": item.location,
             "Payment Status": item.paymentStatus,
-            "Tax": (item.tax || 0).toFixed(2),
-            "Total Amount": item.totalAmount.toFixed(2),
-            "Payment Due": item.paymentDue.toFixed(2),
+            "Tax": item.tax || 0,
+            "Total Amount": item.totalAmount,
+            "Payment Due": item.paymentDue,
             "Added By": item.addedBy,
             "Note": item.expenseNote || '',
         }));
@@ -96,12 +124,15 @@ export default function ExpenseReportPage() {
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, index) => {
+                if ([6,7,8].includes(index)) return formatCurrency(val as number);
+                return val;
+            }));
             exportToPdf(headers, data, filename);
         }
     };
     
-    const mainCategories = useMemo(() => expenseCategories.filter(c => !c.parentId), []);
+    const mainCategories = useMemo(() => allCategories.filter(c => !c.parentId), [allCategories]);
 
     return (
         <div className="flex flex-col gap-6">
@@ -131,7 +162,7 @@ export default function ExpenseReportPage() {
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All locations</SelectItem>
-                                <SelectItem value="awesome-shop">Awesome Shop</SelectItem>
+                                <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -229,17 +260,23 @@ export default function ExpenseReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.id}>
-                                            <TableCell>{item.date}</TableCell>
+                                            <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                                             <TableCell>{item.referenceNo}</TableCell>
                                             <TableCell>{item.expenseCategory}</TableCell>
                                             <TableCell>{item.subCategory || 'N/A'}</TableCell>
                                             <TableCell>{item.location}</TableCell>
                                             <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(item.paymentStatus))}>{item.paymentStatus}</Badge></TableCell>
-                                            <TableCell className="text-right">${(item.tax || 0).toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.paymentDue.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.tax || 0)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalAmount)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.paymentDue)}</TableCell>
                                             <TableCell>{item.addedBy}</TableCell>
                                         </TableRow>
                                     )) : (
@@ -251,9 +288,9 @@ export default function ExpenseReportPage() {
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell colSpan={6} className="font-bold text-right">Total:</TableCell>
-                                        <TableCell className="text-right font-bold">${totalTax.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-bold">${totalAmount.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-bold">${totalPaymentDue.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalTax)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalPaymentDue)}</TableCell>
                                         <TableCell></TableCell>
                                     </TableRow>
                                 </TableFooter>
@@ -262,7 +299,7 @@ export default function ExpenseReportPage() {
                     </CardContent>
                     <CardFooter className="print:hidden">
                         <div className="text-xs text-muted-foreground">
-                            Showing <strong>{filteredData.length}</strong> of <strong>{expenses.length}</strong> entries
+                            Showing <strong>{filteredData.length}</strong> of <strong>{allExpenses.length}</strong> entries
                         </div>
                     </CardFooter>
                 </Card>

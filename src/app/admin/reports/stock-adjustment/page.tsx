@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,12 +12,19 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { stockAdjustments, type StockAdjustment } from '@/lib/data';
+import { type StockAdjustment } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { getStockAdjustments } from '@/services/stockAdjustmentService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function StockAdjustmentReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allAdjustments, setAllAdjustments] = useState<StockAdjustment[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -31,16 +38,31 @@ export default function StockAdjustmentReportPage() {
     
     const [searchTerm, setSearchTerm] = useState('');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const data = await getStockAdjustments();
+                setAllAdjustments(data);
+            } catch (error) {
+                console.error("Failed to fetch stock adjustments:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveDate(pendingDate);
         setActiveLocation(pendingLocation);
     };
 
     const filteredData = useMemo(() => {
-        return stockAdjustments.filter(item => {
+        return allAdjustments.filter(item => {
             const searchMatch = searchTerm === '' ||
                 item.referenceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.reason.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (item.reason && item.reason.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 item.addedBy.toLowerCase().includes(searchTerm.toLowerCase());
             
             const itemDate = new Date(item.date);
@@ -50,7 +72,7 @@ export default function StockAdjustmentReportPage() {
             
             return searchMatch && dateMatch && locationMatch;
         });
-    }, [searchTerm, activeDate, activeLocation]);
+    }, [searchTerm, activeDate, activeLocation, allAdjustments]);
 
     const totalAmount = filteredData.reduce((acc, item) => acc + item.totalAmount, 0);
     const totalAmountRecovered = filteredData.reduce((acc, item) => acc + item.totalAmountRecovered, 0);
@@ -58,12 +80,12 @@ export default function StockAdjustmentReportPage() {
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'stock-adjustment-report';
         const exportData = filteredData.map(item => ({
-            "Date": item.date,
+            "Date": new Date(item.date).toLocaleDateString(),
             "Reference No": item.referenceNo,
             "Location": item.location,
             "Adjustment Type": item.adjustmentType,
-            "Total Amount": item.totalAmount.toFixed(2),
-            "Total Amount Recovered": item.totalAmountRecovered.toFixed(2),
+            "Total Amount": item.totalAmount,
+            "Total Amount Recovered": item.totalAmountRecovered,
             "Reason": item.reason,
             "Added By": item.addedBy,
         }));
@@ -72,15 +94,15 @@ export default function StockAdjustmentReportPage() {
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = ["Date", "Reference No", "Location", "Adjustment Type", "Total Amount", "Total Amount Recovered", "Reason", "Added By"];
-            const data = filteredData.map(item => [
-                item.date,
-                item.referenceNo,
-                item.location,
-                item.adjustmentType,
-                `$${item.totalAmount.toFixed(2)}`,
-                `$${item.totalAmountRecovered.toFixed(2)}`,
-                item.reason,
-                item.addedBy
+            const data = exportData.map(item => [
+                item.Date,
+                item["Reference No"],
+                item.Location,
+                item["Adjustment Type"],
+                formatCurrency(item["Total Amount"]),
+                formatCurrency(item["Total Amount Recovered"]),
+                item.Reason,
+                item["Added By"]
             ]);
             exportToPdf(headers, data, filename);
         }
@@ -115,7 +137,7 @@ export default function StockAdjustmentReportPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All locations</SelectItem>
-                                <SelectItem value="awesome-shop">Awesome Shop</SelectItem>
+                                <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -199,24 +221,34 @@ export default function StockAdjustmentReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.map((item) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.id}>
-                                            <TableCell>{item.date}</TableCell>
+                                            <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
                                             <TableCell>{item.referenceNo}</TableCell>
                                             <TableCell>{item.location}</TableCell>
                                             <TableCell><Badge variant="outline" className="capitalize">{item.adjustmentType}</Badge></TableCell>
-                                            <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.totalAmountRecovered.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalAmount)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalAmountRecovered)}</TableCell>
                                             <TableCell>{item.reason}</TableCell>
                                             <TableCell>{item.addedBy}</TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="text-center h-24">No data available</TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell colSpan={4} className="font-bold text-right">Total:</TableCell>
-                                        <TableCell className="text-right font-bold">${totalAmount.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right font-bold">${totalAmountRecovered.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalAmountRecovered)}</TableCell>
                                         <TableCell colSpan={2}></TableCell>
                                     </TableRow>
                                 </TableFooter>
@@ -225,7 +257,7 @@ export default function StockAdjustmentReportPage() {
                     </CardContent>
                     <CardFooter className="print:hidden">
                         <div className="text-xs text-muted-foreground">
-                            Showing <strong>{filteredData.length}</strong> of <strong>{stockAdjustments.length}</strong> entries
+                            Showing <strong>{filteredData.length}</strong> of <strong>{allAdjustments.length}</strong> entries
                         </div>
                     </CardFooter>
                 </Card>

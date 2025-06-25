@@ -1,9 +1,9 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -13,11 +13,13 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { registerLogs, type RegisterLog, users } from '@/lib/data';
+import { type RegisterLog, users as allUsers, type User } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -31,6 +33,7 @@ const getStatusBadge = (status: string) => {
 };
 
 const RegisterReportDetails = ({ log }: { log: RegisterLog }) => {
+    const { formatCurrency } = useCurrency();
     const totalSales = log.totalCash + log.totalCardSlips + log.totalCheques;
     const expectedCash = log.openingCash + log.totalCash - log.totalRefunds - log.totalExpenses;
     const difference = log.closingCash - expectedCash;
@@ -49,25 +52,25 @@ const RegisterReportDetails = ({ log }: { log: RegisterLog }) => {
                 </div>
                  <div className="space-y-4">
                     <h4 className="font-semibold text-base">Payment Details</h4>
-                    <div className="flex justify-between"><span>Total Card Slips:</span><span>${log.totalCardSlips.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Total Cheques:</span><span>${log.totalCheques.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Total Cash:</span><span>${log.totalCash.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Total Card Slips:</span><span>{formatCurrency(log.totalCardSlips)}</span></div>
+                    <div className="flex justify-between"><span>Total Cheques:</span><span>{formatCurrency(log.totalCheques)}</span></div>
+                    <div className="flex justify-between"><span>Total Cash:</span><span>{formatCurrency(log.totalCash)}</span></div>
                 </div>
             </div>
             <Separator className="my-4"/>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-4">
                     <h4 className="font-semibold text-base">Details</h4>
-                    <div className="flex justify-between"><span>Total Sales:</span><span>${totalSales.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Total Refunds:</span><span>${log.totalRefunds.toFixed(2)}</span></div>
-                    <div className="flex justify-between"><span>Total Expenses:</span><span>${log.totalExpenses.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Total Sales:</span><span>{formatCurrency(totalSales)}</span></div>
+                    <div className="flex justify-between"><span>Total Refunds:</span><span>{formatCurrency(log.totalRefunds)}</span></div>
+                    <div className="flex justify-between"><span>Total Expenses:</span><span>{formatCurrency(log.totalExpenses)}</span></div>
                 </div>
                  <div className="space-y-4">
                     <h4 className="font-semibold text-base">Cash Calculation</h4>
-                    <div className="flex justify-between"><span>Opening Cash:</span><span>${log.openingCash.toFixed(2)}</span></div>
-                    <div className="flex justify-between text-green-600"><span>Expected in Cash:</span><span className="font-semibold">${expectedCash.toFixed(2)}</span></div>
-                    <div className="flex justify-between text-blue-600"><span>Closing Cash:</span><span className="font-semibold">${log.closingCash.toFixed(2)}</span></div>
-                    <div className="flex justify-between font-bold text-red-600"><span>Difference:</span><span>${difference.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Opening Cash:</span><span>{formatCurrency(log.openingCash)}</span></div>
+                    <div className="flex justify-between text-green-600"><span>Expected in Cash:</span><span className="font-semibold">{formatCurrency(expectedCash)}</span></div>
+                    <div className="flex justify-between text-blue-600"><span>Closing Cash:</span><span className="font-semibold">{formatCurrency(log.closingCash)}</span></div>
+                    <div className="flex justify-between font-bold text-red-600"><span>Difference:</span><span>{formatCurrency(difference)}</span></div>
                 </div>
             </div>
             {log.closingNote && (
@@ -84,6 +87,11 @@ const RegisterReportDetails = ({ log }: { log: RegisterLog }) => {
 }
 
 export default function RegisterReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allLogs, setAllLogs] = useState<RegisterLog[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -102,12 +110,22 @@ export default function RegisterReportPage() {
     
     const [searchTerm, setSearchTerm] = useState('');
     
+    useEffect(() => {
+        // In a real app, this would be a fetch call.
+        // For now, we simulate it with mock data.
+        setIsLoading(true);
+        // import { registerLogs as allRegisterLogs } from '@/lib/data';
+        // setAllLogs(allRegisterLogs);
+        setUsers(allUsers);
+        setIsLoading(false);
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
 
     const filteredData = useMemo(() => {
-        return registerLogs.filter(item => {
+        return allLogs.filter(item => {
             const searchMatch = searchTerm === '' ||
                 item.user.toLowerCase().includes(searchTerm.toLowerCase());
             
@@ -119,7 +137,7 @@ export default function RegisterReportPage() {
             
             return searchMatch && dateMatch && locationMatch && userMatch;
         });
-    }, [searchTerm, activeFilters]);
+    }, [searchTerm, activeFilters, allLogs]);
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'register-report';
@@ -128,13 +146,13 @@ export default function RegisterReportPage() {
              const difference = item.closingCash - expectedCash;
             return {
                 "Opened": item.openTime,
-                "Closed": item.closeTime,
+                "Closed": item.closeTime || 'N/A',
                 "Location": item.location,
                 "User": item.user,
-                "Total Card Slips": item.totalCardSlips.toFixed(2),
-                "Total Cheques": item.totalCheques.toFixed(2),
-                "Total Cash": item.totalCash.toFixed(2),
-                "Difference": difference.toFixed(2),
+                "Total Card Slips": item.totalCardSlips,
+                "Total Cheques": item.totalCheques,
+                "Total Cash": item.totalCash,
+                "Difference": difference,
                 "Status": item.status,
             }
         });
@@ -143,7 +161,7 @@ export default function RegisterReportPage() {
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => [4,5,6,7].includes(i) ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
@@ -259,7 +277,13 @@ export default function RegisterReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item) => {
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 10 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => {
                                         const expectedCash = item.openingCash + item.totalCash - item.totalRefunds - item.totalExpenses;
                                         const difference = item.status === 'Closed' ? item.closingCash - expectedCash : 0;
                                         return (
@@ -268,10 +292,10 @@ export default function RegisterReportPage() {
                                             <TableCell>{item.closeTime || 'N/A'}</TableCell>
                                             <TableCell>{item.location}</TableCell>
                                             <TableCell>{item.user}</TableCell>
-                                            <TableCell className="text-right">${item.totalCardSlips.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.totalCheques.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.totalCash.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right font-bold">${difference.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalCardSlips)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalCheques)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalCash)}</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(difference)}</TableCell>
                                             <TableCell><Badge variant="outline" className={cn(getStatusBadge(item.status))}>{item.status}</Badge></TableCell>
                                             <TableCell className="print:hidden">
                                                 <Dialog>
@@ -289,17 +313,12 @@ export default function RegisterReportPage() {
                                         </TableRow>
                                     )}
                                 </TableBody>
-                                <TableFooter>
-                                    <TableRow>
-                                        <TableCell colSpan={10}></TableCell>
-                                    </TableRow>
-                                </TableFooter>
                             </Table>
                         </div>
                     </CardContent>
                     <CardFooter className="print:hidden">
                         <div className="text-xs text-muted-foreground">
-                            Showing <strong>{filteredData.length}</strong> of <strong>{registerLogs.length}</strong> entries
+                            Showing <strong>{filteredData.length}</strong> of <strong>{allLogs.length}</strong> entries
                         </div>
                     </CardFooter>
                 </Card>

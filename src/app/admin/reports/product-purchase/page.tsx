@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,9 +12,14 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { purchases, detailedProducts, suppliers } from '@/lib/data';
+import { type Purchase, type DetailedProduct, type Supplier } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
+import { getPurchases } from '@/services/purchaseService';
+import { getProducts } from '@/services/productService';
+import { getSuppliers } from '@/services/supplierService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ReportItem = {
     id: string;
@@ -29,6 +34,12 @@ type ReportItem = {
 };
 
 export default function ProductPurchaseReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
+    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
+    const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -46,6 +57,27 @@ export default function ProductPurchaseReportPage() {
     });
     const [searchTerm, setSearchTerm] = useState('');
 
+     useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [purchasesData, productsData, suppliersData] = await Promise.all([
+                    getPurchases(),
+                    getProducts(),
+                    getSuppliers()
+                ]);
+                setAllPurchases(purchasesData);
+                setAllProducts(productsData);
+                setAllSuppliers(suppliersData);
+            } catch (error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
@@ -53,7 +85,7 @@ export default function ProductPurchaseReportPage() {
     const reportData: ReportItem[] = useMemo(() => {
         const flattenedItems: ReportItem[] = [];
         
-        purchases.forEach(purchase => {
+        allPurchases.forEach(purchase => {
             const purchaseDate = new Date(purchase.date);
             const dateMatch = activeFilters.date?.from && activeFilters.date?.to ? (purchaseDate >= activeFilters.date.from && purchaseDate <= activeFilters.date.to) : true;
             const locationMatch = activeFilters.location === 'all' || purchase.location === activeFilters.location;
@@ -61,7 +93,7 @@ export default function ProductPurchaseReportPage() {
 
             if (dateMatch && locationMatch && supplierMatch) {
                 (purchase.items || []).forEach((item, index) => {
-                    const productInfo = detailedProducts.find(p => p.id === item.productId);
+                    const productInfo = allProducts.find(p => p.id === item.productId);
                     if (!productInfo) return;
                     
                     flattenedItems.push({
@@ -72,7 +104,7 @@ export default function ProductPurchaseReportPage() {
                         unitPrice: item.unitPrice,
                         totalAmount: item.quantity * item.unitPrice,
                         referenceNo: purchase.referenceNo,
-                        date: purchase.date.split(' ')[0],
+                        date: new Date(purchase.date).toLocaleDateString(),
                         supplier: purchase.supplier,
                     });
                 });
@@ -80,7 +112,7 @@ export default function ProductPurchaseReportPage() {
         });
 
         return flattenedItems;
-    }, [activeFilters]);
+    }, [activeFilters, allPurchases, allProducts]);
 
     const filteredData = useMemo(() => {
         return reportData.filter(item => 
@@ -103,15 +135,15 @@ export default function ProductPurchaseReportPage() {
             "Reference No.": item.referenceNo,
             "Supplier": item.supplier,
             "Quantity": item.quantity,
-            "Unit Price": item.unitPrice.toFixed(2),
-            "Total Amount": item.totalAmount.toFixed(2),
+            "Unit Price": item.unitPrice,
+            "Total Amount": item.totalAmount,
         }));
         
         if (format === 'csv') exportToCsv(exportData, filename);
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => [6,7].includes(i) ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
@@ -183,7 +215,7 @@ export default function ProductPurchaseReportPage() {
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Suppliers</SelectItem>
-                                {suppliers.map(s => <SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>)}
+                                {allSuppliers.map(s => <SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -238,7 +270,13 @@ export default function ProductPurchaseReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item) => (
+                                    {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell className="font-medium">{item.product}</TableCell>
                                             <TableCell>{item.sku}</TableCell>
@@ -246,8 +284,8 @@ export default function ProductPurchaseReportPage() {
                                             <TableCell>{item.referenceNo}</TableCell>
                                             <TableCell>{item.supplier}</TableCell>
                                             <TableCell className="text-right">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.totalAmount)}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
@@ -260,7 +298,7 @@ export default function ProductPurchaseReportPage() {
                                         <TableCell colSpan={5} className="font-bold text-right">Total:</TableCell>
                                         <TableCell className="font-bold text-right">{totalQuantity}</TableCell>
                                         <TableCell></TableCell>
-                                        <TableCell className="font-bold text-right">${totalAmount.toFixed(2)}</TableCell>
+                                        <TableCell className="font-bold text-right">{formatCurrency(totalAmount)}</TableCell>
                                     </TableRow>
                                 </TableFooter>
                             </Table>

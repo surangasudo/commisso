@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -12,9 +12,13 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { purchases, suppliers } from '@/lib/data';
+import { type Purchase, type Supplier } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
+import { getPurchases } from '@/services/purchaseService';
+import { getSuppliers } from '@/services/supplierService';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type PaymentReportItem = {
     id: string;
@@ -26,6 +30,11 @@ type PaymentReportItem = {
 };
 
 export default function PurchasePaymentReportPage() {
+    const { formatCurrency } = useCurrency();
+    const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
+    const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const defaultDateRange = {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
@@ -43,33 +52,50 @@ export default function PurchasePaymentReportPage() {
     });
     const [searchTerm, setSearchTerm] = useState('');
 
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [purchasesData, suppliersData] = await Promise.all([
+                    getPurchases(),
+                    getSuppliers()
+                ]);
+                setAllPurchases(purchasesData);
+                setAllSuppliers(suppliersData);
+            } catch(error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     const handleApplyFilters = () => {
         setActiveFilters(pendingFilters);
     };
 
     const reportData: PaymentReportItem[] = useMemo(() => {
-        return purchases
+        return allPurchases
             .filter(purchase => {
                 const purchaseDate = new Date(purchase.date);
                 const dateMatch = activeFilters.date?.from && activeFilters.date?.to ? (purchaseDate >= activeFilters.date.from && purchaseDate <= activeFilters.date.to) : true;
                 const locationMatch = activeFilters.location === 'all' || purchase.location === activeFilters.location;
                 const supplierMatch = activeFilters.supplier === 'all' || purchase.supplier === activeFilters.supplier;
                 
-                // Only include purchases that have a payment
                 const paymentMade = purchase.paymentStatus === 'Paid' || purchase.paymentStatus === 'Partial';
                 
                 return dateMatch && locationMatch && supplierMatch && paymentMade;
             })
             .map(purchase => ({
                 id: purchase.id,
-                date: purchase.date.split(' ')[0],
+                date: new Date(purchase.date).toLocaleDateString(),
                 referenceNo: purchase.referenceNo,
                 supplier: purchase.supplier,
-                // Assuming 'Cash' for now, as payment method isn't in the data model for purchases
-                method: 'Cash', 
+                method: 'Cash', // Assuming 'Cash' for now
                 amount: purchase.grandTotal - purchase.paymentDue,
             }));
-    }, [activeFilters]);
+    }, [activeFilters, allPurchases]);
 
     const filteredData = useMemo(() => {
         return reportData.filter(item => 
@@ -87,14 +113,14 @@ export default function PurchasePaymentReportPage() {
             "Reference No.": item.referenceNo,
             "Supplier": item.supplier,
             "Payment Method": item.method,
-            "Amount": item.amount.toFixed(2),
+            "Amount": item.amount,
         }));
         
         if (format === 'csv') exportToCsv(exportData, filename);
         if (format === 'xlsx') exportToXlsx(exportData, filename);
         if (format === 'pdf') {
             const headers = Object.keys(exportData[0]);
-            const data = exportData.map(row => Object.values(row));
+            const data = exportData.map(row => Object.values(row).map((val, i) => i === 4 ? formatCurrency(val as number) : val));
             exportToPdf(headers, data, filename);
         }
     };
@@ -166,7 +192,7 @@ export default function PurchasePaymentReportPage() {
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Suppliers</SelectItem>
-                                {suppliers.map(s => <SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>)}
+                                {allSuppliers.map(s => <SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -218,13 +244,19 @@ export default function PurchasePaymentReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map((item) => (
+                                     {isLoading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}>
+                                                {Array.from({ length: 5 }).map((_, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell>{item.date}</TableCell>
                                             <TableCell>{item.referenceNo}</TableCell>
                                             <TableCell>{item.supplier}</TableCell>
                                             <TableCell>{item.method}</TableCell>
-                                            <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
@@ -235,7 +267,7 @@ export default function PurchasePaymentReportPage() {
                                 <TableFooter>
                                     <TableRow>
                                         <TableCell colSpan={4} className="font-bold text-right">Total:</TableCell>
-                                        <TableCell className="font-bold text-right">${totalAmount.toFixed(2)}</TableCell>
+                                        <TableCell className="font-bold text-right">{formatCurrency(totalAmount)}</TableCell>
                                     </TableRow>
                                 </TableFooter>
                             </Table>
