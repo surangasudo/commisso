@@ -313,17 +313,19 @@ export default function AdminLayout({
             ))}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="gap-2">
-            <Button style={{backgroundColor: 'hsl(258, 42%, 58%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(258,42%,50%)]">
-                <Briefcase className="mr-2 h-4 w-4" /> HRM
-            </Button>
-            <Button style={{backgroundColor: 'hsl(220, 77%, 45%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(220,77%,40%)]">
-                <CheckSquare className="mr-2 h-4 w-4" /> Essentials
-            </Button>
-             <Button style={{backgroundColor: 'hsl(308, 47%, 55%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(308,47%,50%)]">
-                <ShoppingCart className="mr-2 h-4 w-4" /> Woocommerce
-            </Button>
-        </SidebarFooter>
+        {user.role === 'Admin' && (
+            <SidebarFooter className="gap-2">
+                <Button style={{backgroundColor: 'hsl(258, 42%, 58%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(258,42%,50%)]">
+                    <Briefcase className="mr-2 h-4 w-4" /> HRM
+                </Button>
+                <Button style={{backgroundColor: 'hsl(220, 77%, 45%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(220,77%,40%)]">
+                    <CheckSquare className="mr-2 h-4 w-4" /> Essentials
+                </Button>
+                <Button style={{backgroundColor: 'hsl(308, 47%, 55%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(308,47%,50%)]">
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Woocommerce
+                </Button>
+            </SidebarFooter>
+        )}
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6">
