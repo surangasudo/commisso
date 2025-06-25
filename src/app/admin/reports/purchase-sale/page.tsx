@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,11 +15,12 @@ import {
 } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { purchaseReturns, sellReturns, type Purchase, type Sale } from '@/lib/data';
+import { type Purchase, type Sale } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Badge } from '@/components/ui/badge';
 import { getSales } from '@/services/saleService';
-import { getPurchases } from '@/services/purchaseService'; // Assuming this service exists
+import { getPurchases } from '@/services/purchaseService';
+import { useCurrency } from '@/hooks/use-currency';
 
 // Helper for status badges
 const getPaymentStatusBadge = (status: string) => {
@@ -84,31 +86,56 @@ const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport }: {
 }
 
 export default function PurchaseSaleReportPage() {
+    const { formatCurrency } = useCurrency();
     const [date, setDate] = useState<DateRange | undefined>({
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
     });
     
-    const [sales, setSales] = useState<Sale[]>([]);
-    const [purchases, setPurchases] = useState<Purchase[]>([]);
-
+    const [allSales, setAllSales] = useState<Sale[]>([]);
+    const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    
     useEffect(() => {
         const fetchData = async () => {
-            const salesData = await getSales();
-            // const purchasesData = await getPurchases(); // You need to create this service
-            setSales(salesData);
-            // setPurchases(purchasesData);
+            setIsLoading(true);
+            try {
+                const [salesData, purchasesData] = await Promise.all([
+                    getSales(),
+                    getPurchases(),
+                ]);
+                setAllSales(salesData);
+                setAllPurchases(purchasesData);
+            } catch (error) {
+                console.error("Failed to fetch report data:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchData();
     }, []);
+
+    const filteredSales = useMemo(() => {
+        return allSales.filter(s => {
+            const saleDate = new Date(s.date);
+            return date?.from && date?.to ? (saleDate >= date.from && saleDate <= date.to) : true;
+        });
+    }, [allSales, date]);
+
+    const filteredPurchases = useMemo(() => {
+        return allPurchases.filter(p => {
+            const purchaseDate = new Date(p.date);
+            return date?.from && date?.to ? (purchaseDate >= date.from && purchaseDate <= date.to) : true;
+        });
+    }, [allPurchases, date]);
     
     // Calculations
-    const totalPurchase = purchases.reduce((acc, p) => acc + p.grandTotal, 0);
-    const totalPurchaseReturn = purchaseReturns.reduce((acc, pr) => acc + pr.grandTotal, 0);
+    const totalPurchase = filteredPurchases.reduce((acc, p) => acc + p.grandTotal, 0);
+    const totalPurchaseReturn = 0; // Assuming no return data for now
     const netPurchase = totalPurchase - totalPurchaseReturn;
 
-    const totalSale = sales.reduce((acc, s) => acc + s.totalAmount, 0);
-    const totalSellReturn = sellReturns.reduce((acc, sr) => acc + sr.totalAmount, 0);
+    const totalSale = filteredSales.reduce((acc, s) => acc + s.totalAmount, 0);
+    const totalSellReturn = 0; // Assuming no return data for now
     const netSale = totalSale - totalSellReturn;
     
     const profit = netSale - netPurchase;
@@ -128,7 +155,7 @@ export default function PurchaseSaleReportPage() {
     ];
     
     const handlePurchaseExport = (format: 'csv' | 'xlsx' | 'pdf') => {
-        const dataToExport = purchases.map(p => ({
+        const dataToExport = filteredPurchases.map(p => ({
             "Reference No": p.referenceNo,
             "Supplier": p.supplier,
             "Payment Status": p.paymentStatus,
@@ -138,13 +165,13 @@ export default function PurchaseSaleReportPage() {
         if (format === 'xlsx') exportToXlsx(dataToExport, 'purchases-report');
         if (format === 'pdf') {
             const headers = ["Reference No", "Supplier", "Payment Status", "Total Amount"];
-            const data = purchases.map(p => [p.referenceNo, p.supplier, p.paymentStatus, `$${p.grandTotal.toFixed(2)}`]);
+            const data = filteredPurchases.map(p => [p.referenceNo, p.supplier, p.paymentStatus, formatCurrency(p.grandTotal)]);
             exportToPdf(headers, data, 'purchases-report');
         }
     };
     
     const handleSaleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
-        const dataToExport = sales.map(s => ({
+        const dataToExport = filteredSales.map(s => ({
             "Invoice No": s.invoiceNo,
             "Customer": s.customerName,
             "Payment Status": s.paymentStatus,
@@ -154,7 +181,7 @@ export default function PurchaseSaleReportPage() {
         if (format === 'xlsx') exportToXlsx(dataToExport, 'sales-report');
         if (format === 'pdf') {
             const headers = ["Invoice No", "Customer", "Payment Status", "Total Amount"];
-            const data = sales.map(s => [s.invoiceNo, s.customerName, s.paymentStatus, `$${s.totalAmount.toFixed(2)}`]);
+            const data = filteredSales.map(s => [s.invoiceNo, s.customerName, s.paymentStatus, formatCurrency(s.totalAmount)]);
             exportToPdf(headers, data, 'sales-report');
         }
     };
@@ -225,25 +252,25 @@ export default function PurchaseSaleReportPage() {
                 <Card className="p-4">
                     <h3 className="font-semibold text-lg mb-2">Purchases</h3>
                     <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Total Purchases:</span><span>${totalPurchase.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Purchase Returns:</span><span>${totalPurchaseReturn.toFixed(2)}</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Purchases:</span><span>${netPurchase.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Total Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchase)}</span></div>
+                        <div className="flex justify-between"><span>Purchase Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchaseReturn)}</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netPurchase)}</span></div>
                     </div>
                 </Card>
                  <Card className="p-4">
                     <h3 className="font-semibold text-lg mb-2">Sales</h3>
                     <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Total Sales:</span><span>${totalSale.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Sell Returns:</span><span>${totalSellReturn.toFixed(2)}</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Sales:</span><span>${netSale.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Total Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale)}</span></div>
+                        <div className="flex justify-between"><span>Sell Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSellReturn)}</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netSale)}</span></div>
                     </div>
                 </Card>
                  <Card className="p-4 bg-primary/10">
                     <h3 className="font-semibold text-lg mb-2">Overall (Sale - Purchase)</h3>
                     <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Sale - Purchase:</span><span>${(totalSale - totalPurchase).toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Due Amount:</span><span>$0.00</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1 text-lg"><span>Gross Profit:</span><span>${profit.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Sale - Purchase:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale - totalPurchase)}</span></div>
+                        <div className="flex justify-between"><span>Due Amount:</span><span>{isLoading ? 'Calculating...' : formatCurrency(0)}</span></div>
+                        <div className="flex justify-between font-bold border-t pt-1 mt-1 text-lg"><span>Gross Profit:</span><span>{isLoading ? 'Calculating...' : formatCurrency(profit)}</span></div>
                     </div>
                 </Card>
             </CardContent>
@@ -252,16 +279,16 @@ export default function PurchaseSaleReportPage() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <PurchaseSaleTable 
                 title="Purchases"
-                data={purchases}
+                data={filteredPurchases}
                 columns={purchaseColumns}
-                footerData={[{ label: 'Total Purchases', value: `$${totalPurchase.toFixed(2)}`}]}
+                footerData={[{ label: 'Total Purchases', value: formatCurrency(totalPurchase)}]}
                 handleExport={handlePurchaseExport}
             />
             <PurchaseSaleTable 
                 title="Sales"
-                data={sales}
+                data={filteredSales}
                 columns={saleColumns}
-                footerData={[{ label: 'Total Sales', value: `$${totalSale.toFixed(2)}`}]}
+                footerData={[{ label: 'Total Sales', value: formatCurrency(totalSale)}]}
                 handleExport={handleSaleExport}
             />
         </div>
@@ -269,3 +296,4 @@ export default function PurchaseSaleReportPage() {
     </div>
   );
 }
+
