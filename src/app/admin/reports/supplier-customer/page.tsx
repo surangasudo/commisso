@@ -1,18 +1,18 @@
 
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { DateRange } from 'react-day-picker';
-import { format, startOfYear, endOfYear } from 'date-fns';
-import { FileText, Printer, Calendar as CalendarIcon, Download, Search } from 'lucide-react';
+import { FileText, Printer, Download, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { suppliers, customers, type Supplier, type Customer } from '@/lib/data';
+import { getSuppliers } from '@/services/supplierService';
+import { getCustomers } from '@/services/customerService';
+import { type Supplier, type Customer } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Input } from '@/components/ui/input';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ContactReportTableProps<T> = {
     title: string;
@@ -20,9 +20,11 @@ type ContactReportTableProps<T> = {
     columns: { key: keyof T, header: string, isNumeric?: boolean }[];
     totalKeys: { key: keyof T, label: string }[];
     idKey: keyof T;
+    isLoading: boolean;
+    formatCurrency: (value: number) => string;
 };
 
-const ContactReportTable = <T extends Record<string, any>>({ title, data, columns, totalKeys, idKey }: ContactReportTableProps<T>) => {
+const ContactReportTable = <T extends Record<string, any>>({ title, data, columns, totalKeys, idKey, isLoading, formatCurrency }: ContactReportTableProps<T>) => {
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = `${title.toLowerCase().replace(/ /g, '-')}-report`;
@@ -40,7 +42,7 @@ const ContactReportTable = <T extends Record<string, any>>({ title, data, column
             const headers = columns.map(c => c.header);
             const pdfData = data.map(item => columns.map(col => {
                 const value = item[col.key];
-                return typeof value === 'number' ? `$${value.toFixed(2)}` : value;
+                return col.isNumeric ? formatCurrency(value) : value;
             }));
             exportToPdf(headers, pdfData, filename);
         }
@@ -64,22 +66,34 @@ const ContactReportTable = <T extends Record<string, any>>({ title, data, column
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {data.map(item => (
-                            <TableRow key={item[idKey]}>
-                                {columns.map(col => (
-                                     <TableCell key={String(col.key)} className={cn(col.isNumeric && 'text-right')}>
-                                        {typeof item[col.key] === 'number' ? `$${(item[col.key] as number).toFixed(2)}` : item[col.key]}
-                                     </TableCell>
-                                ))}
+                        {isLoading ? (
+                            Array.from({ length: 3 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    {columns.map((col, j) => <TableCell key={j}><Skeleton className="h-5" /></TableCell>)}
+                                </TableRow>
+                            ))
+                        ) : data.length > 0 ? (
+                             data.map(item => (
+                                <TableRow key={item[idKey]}>
+                                    {columns.map(col => (
+                                         <TableCell key={String(col.key)} className={cn(col.isNumeric && 'text-right')}>
+                                            {col.isNumeric ? formatCurrency(item[col.key] as number) : item[col.key]}
+                                         </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                             <TableRow>
+                                <TableCell colSpan={columns.length} className="text-center h-24">No data found</TableCell>
                             </TableRow>
-                        ))}
+                        )}
                     </TableBody>
                     <TableFooter>
                         <TableRow>
                             <TableCell colSpan={columns.length - totalKeys.length} className="text-right font-bold">Total</TableCell>
                             {totalKeys.map(({key}) => (
                                 <TableCell key={String(key)} className="text-right font-bold">
-                                    {`$${data.reduce((acc, item) => acc + (item[key] || 0), 0).toFixed(2)}`}
+                                    {formatCurrency(data.reduce((acc, item) => acc + (item[key] || 0), 0))}
                                 </TableCell>
                             ))}
                         </TableRow>
@@ -91,13 +105,32 @@ const ContactReportTable = <T extends Record<string, any>>({ title, data, column
 };
 
 export default function SupplierCustomerReportPage() {
-    const [date, setDate] = useState<DateRange | undefined>({
-      from: startOfYear(new Date()),
-      to: endOfYear(new Date()),
-    });
-    
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     const [supplierSearch, setSupplierSearch] = useState('');
     const [customerSearch, setCustomerSearch] = useState('');
+    const { formatCurrency } = useCurrency();
+    
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [suppliersData, customersData] = await Promise.all([
+                    getSuppliers(),
+                    getCustomers()
+                ]);
+                setSuppliers(suppliersData);
+                setCustomers(customersData);
+            } catch (e) {
+                console.error("Failed to fetch supplier/customer data", e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const filteredSuppliers = suppliers.filter(s => s.businessName.toLowerCase().includes(supplierSearch.toLowerCase()));
     const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes(customerSearch.toLowerCase()));
@@ -126,42 +159,6 @@ export default function SupplierCustomerReportPage() {
                 Supplier & Customer Report
             </h1>
              <div className="flex items-center gap-4">
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            id="date"
-                            variant={"outline"}
-                            className={cn(
-                                "w-[240px] justify-start text-left font-normal",
-                                !date && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date?.from ? (
-                            date.to ? (
-                                <>
-                                {format(date.from, "LLL dd, y")} -{" "}
-                                {format(date.to, "LLL dd, y")}
-                                </>
-                            ) : (
-                                format(date.from, "LLL dd, y")
-                            )
-                            ) : (
-                            <span>Pick a date</span>
-                            )}
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={date?.from}
-                            selected={date}
-                            onSelect={setDate}
-                            numberOfMonths={2}
-                        />
-                    </PopoverContent>
-                </Popover>
                  <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
             </div>
         </div>
@@ -184,6 +181,8 @@ export default function SupplierCustomerReportPage() {
                         columns={supplierColumns}
                         totalKeys={supplierTotalKeys}
                         idKey="id"
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
                     />
                 </CardContent>
             </Card>
@@ -205,6 +204,8 @@ export default function SupplierCustomerReportPage() {
                         columns={customerColumns}
                         totalKeys={customerTotalKeys}
                         idKey="id"
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
                     />
                 </CardContent>
             </Card>
