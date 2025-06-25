@@ -12,6 +12,7 @@ import { Info } from 'lucide-react';
 import { addCustomer } from '@/services/customerService';
 import { useToast } from '@/hooks/use-toast';
 import { type Customer } from '@/lib/data';
+import { FirebaseError } from 'firebase/app';
 
 export default function AddCustomerPage() {
     const router = useRouter();
@@ -65,11 +66,20 @@ export default function AddCustomerPage() {
             router.push('/admin/contacts/customers');
         } catch (error) {
             console.error("Failed to add customer:", error);
-            toast({
-                title: "Error",
-                description: "Failed to add customer. Please try again.",
-                variant: "destructive"
-            });
+            if (error instanceof FirebaseError && error.code === 'permission-denied') {
+                toast({
+                    title: "Permission Error",
+                    description: "You don't have permission to add customers. Please check your Firestore security rules.",
+                    variant: "destructive",
+                    duration: 9000,
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to add customer. Please try again.",
+                    variant: "destructive"
+                });
+            }
         }
     };
 

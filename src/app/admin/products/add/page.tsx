@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { addProduct } from '@/services/productService';
 import { type DetailedProduct } from '@/lib/data';
+import { FirebaseError } from 'firebase/app';
 
 const initialProductState: Partial<DetailedProduct> = {
     name: '',
@@ -84,12 +85,21 @@ export default function AddProductPage() {
       });
       router.push('/admin/products/list');
     } catch (error) {
-      console.error("Failed to add product:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save the product. Please try again.",
-        variant: "destructive",
-      });
+        console.error("Failed to add product:", error);
+        if (error instanceof FirebaseError && error.code === 'permission-denied') {
+            toast({
+                title: "Permission Error",
+                description: "You don't have permission to add products. Please check your Firestore security rules.",
+                variant: "destructive",
+                duration: 9000,
+            });
+        } else {
+            toast({
+                title: "Error",
+                description: "Failed to save the product. Please try again.",
+                variant: "destructive",
+            });
+        }
     } finally {
         setIsLoading(false);
     }

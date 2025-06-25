@@ -12,6 +12,7 @@ import { Info } from 'lucide-react';
 import { addSupplier } from '@/services/supplierService';
 import { useToast } from '@/hooks/use-toast';
 import { type Supplier } from '@/lib/data';
+import { FirebaseError } from 'firebase/app';
 
 export default function AddSupplierPage() {
     const router = useRouter();
@@ -65,11 +66,20 @@ export default function AddSupplierPage() {
             router.push('/admin/contacts/suppliers');
         } catch (error) {
             console.error("Failed to add supplier:", error);
-            toast({
-                title: "Error",
-                description: "Failed to add supplier. Please try again.",
-                variant: "destructive"
-            });
+            if (error instanceof FirebaseError && error.code === 'permission-denied') {
+                toast({
+                    title: "Permission Error",
+                    description: "You don't have permission to add suppliers. Please check your Firestore security rules.",
+                    variant: "destructive",
+                    duration: 9000,
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to add supplier. Please try again.",
+                    variant: "destructive"
+                });
+            }
         }
     };
 

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { detailedProducts, type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { addCommissionProfile } from '@/services/commissionService';
+import { FirebaseError } from 'firebase/app';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
@@ -78,11 +79,20 @@ export default function AddSalesCommissionAgentPage() {
             router.push('/admin/sales-commission-agents');
         } catch (error) {
              console.error("Failed to add profile:", error);
-            toast({
-                title: "Error",
-                description: "Failed to save the profile. Please try again.",
-                variant: "destructive",
-            });
+            if (error instanceof FirebaseError && error.code === 'permission-denied') {
+                toast({
+                    title: "Permission Error",
+                    description: "You don't have permission to add profiles. Please check your Firestore security rules.",
+                    variant: "destructive",
+                    duration: 9000,
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to save the profile. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
 
