@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Download, Search, Plus, Trash2, Info, Calendar as CalendarIcon } from "
 import { type DetailedProduct, type Supplier, type Purchase } from '@/lib/data';
 import { AppFooter } from '@/components/app-footer';
 import { useToast } from '@/hooks/use-toast';
-import { getSuppliers } from '@/services/supplierService';
+import { getSuppliers, addSupplier } from '@/services/supplierService';
 import { getProducts } from '@/services/productService';
 import { addPurchase } from '@/services/purchaseService';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -19,6 +20,16 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '@/hooks/use-currency';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from '@/components/ui/textarea';
 
 type PurchaseItem = {
   product: DetailedProduct;
@@ -45,21 +56,41 @@ export default function AddPurchasePage() {
     const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     
+    // State for Add Supplier Dialog
+    const [isAddSupplierOpen, setIsAddSupplierOpen] = useState(false);
+    const [newSupplier, setNewSupplier] = useState({
+        businessName: '',
+        name: '',
+        mobile: '',
+        email: ''
+    });
+
+    const fetchSuppliers = useCallback(async () => {
+        try {
+            const suppliersData = await getSuppliers();
+            setSuppliers(suppliersData);
+        } catch (error) {
+            console.error("Failed to fetch suppliers", error);
+            toast({ title: "Error", description: "Could not load suppliers.", variant: "destructive" });
+        }
+    }, [toast]);
+
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchInitialData = async () => {
+            setIsLoading(true);
             try {
-                const [suppliersData, productsData] = await Promise.all([getSuppliers(), getProducts()]);
-                setSuppliers(suppliersData);
+                await fetchSuppliers();
+                const productsData = await getProducts();
                 setProducts(productsData);
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
-                toast({ title: "Error", description: "Could not load suppliers and products.", variant: "destructive" });
+                toast({ title: "Error", description: "Could not load initial data.", variant: "destructive" });
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchData();
-    }, [toast]);
+        fetchInitialData();
+    }, [fetchSuppliers, toast]);
     
     const searchResults = searchTerm
     ? products.filter(p =>
@@ -143,6 +174,56 @@ export default function AddPurchasePage() {
             });
         }
     };
+    
+    const handleNewSupplierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setNewSupplier(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSaveSupplier = async () => {
+        if (!newSupplier.businessName || !newSupplier.name || !newSupplier.mobile) {
+            toast({
+                title: "Validation Error",
+                description: "Business Name, Contact Name, and Mobile are required.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            const supplierToAdd: Omit<Supplier, 'id'> = {
+                businessName: newSupplier.businessName,
+                name: newSupplier.name,
+                mobile: newSupplier.mobile,
+                email: newSupplier.email || null,
+                contactId: '',
+                taxNumber: '',
+                payTerm: 0,
+                openingBalance: 0,
+                advanceBalance: 0,
+                addedOn: new Date().toISOString(),
+                address: '',
+                totalPurchaseDue: 0,
+                totalPurchaseReturnDue: 0,
+            };
+
+            await addSupplier(supplierToAdd);
+            toast({
+                title: "Supplier Added",
+                description: `${newSupplier.businessName} has been successfully added.`
+            });
+            setIsAddSupplierOpen(false);
+            setNewSupplier({ businessName: '', name: '', mobile: '', email: '' });
+            await fetchSuppliers(); // Re-fetch suppliers to update the list
+        } catch (error) {
+            console.error("Failed to add supplier:", error);
+            toast({
+                title: "Error",
+                description: "Failed to add supplier. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
 
   return (
     <div className="flex flex-col gap-6">
@@ -169,7 +250,39 @@ export default function AddPurchasePage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Button size="icon" className="flex-shrink-0"><Plus className="w-4 h-4" /></Button>
+                        <Dialog open={isAddSupplierOpen} onOpenChange={setIsAddSupplierOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="icon" className="flex-shrink-0"><Plus className="w-4 h-4" /></Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Add New Supplier</DialogTitle>
+                                    <DialogDescription>Quickly add a new supplier to the system.</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="businessName">Business Name *</Label>
+                                        <Input id="businessName" value={newSupplier.businessName} onChange={handleNewSupplierChange} placeholder="Business Name" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Contact Name *</Label>
+                                        <Input id="name" value={newSupplier.name} onChange={handleNewSupplierChange} placeholder="Contact Person's Name" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mobile">Mobile Number *</Label>
+                                        <Input id="mobile" value={newSupplier.mobile} onChange={handleNewSupplierChange} placeholder="Mobile Number" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input id="email" type="email" value={newSupplier.email} onChange={handleNewSupplierChange} placeholder="Email Address" />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="secondary" onClick={() => setIsAddSupplierOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleSaveSupplier}>Save Supplier</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
                 <div className="space-y-2">
