@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,8 +10,10 @@ import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { purchases, sales, expenses } from '@/lib/data';
+import { expenses, type Purchase, type Sale } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
+import { getSales } from '@/services/saleService';
+import { getPurchases } from '@/services/purchaseService'; // Assuming this service exists
 
 // Reusable table component
 const TaxReportTable = ({ title, data, columns, footerData, handleExport }: { title: string, data: any[], columns: { key: string, header: string }[], footerData: { label: string, value: string }[], handleExport: (format: 'csv' | 'xlsx' | 'pdf') => void }) => {
@@ -64,6 +66,19 @@ export default function TaxReportPage() {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
     });
+    
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [purchases, setPurchases] = useState<Purchase[]>([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            const salesData = await getSales();
+            // const purchasesData = await getPurchases(); // You need to create this service
+            setSales(salesData);
+            // setPurchases(purchasesData);
+        };
+        fetchData();
+    }, []);
 
     // Calculations
     const totalInputTax = purchases.reduce((acc, p) => acc + (p.taxAmount || 0), 0);

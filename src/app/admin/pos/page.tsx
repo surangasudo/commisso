@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
@@ -38,7 +39,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { sales as recentSalesData, type DetailedProduct } from '@/lib/data';
+import { sales as recentSalesData, type DetailedProduct, type Sale } from '@/lib/data';
+import { addSale } from '@/services/saleService';
 import {
   Select,
   SelectContent,
@@ -425,116 +427,143 @@ export default function PosPage() {
 
   const clearCart = () => {
     setCart([]);
+    setDiscount(0);
+    setOrderTax(0);
+    setShipping(0);
     toast({
         title: 'Cart Cleared',
         description: 'The transaction has been cancelled.',
     });
   };
 
-  const handleCashPayment = () => {
-    if (cart.length === 0) {
-        toast({
-            title: 'Cart Empty',
-            description: 'Add items to the cart before finalizing.',
-            variant: 'destructive',
-        });
+  const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number): Omit<Sale, 'id'> => {
+      return {
+          date: new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          invoiceNo: `INV-${Date.now()}`,
+          customerName: 'Walk-In Customer', // Simplified
+          contactNumber: 'N/A', // Simplified
+          location: 'Awesome Shop',
+          paymentStatus: paymentStatus,
+          paymentMethod: paymentMethod,
+          totalAmount: totalPayable,
+          totalPaid: totalPaid,
+          sellDue: totalPayable - totalPaid,
+          sellReturnDue: 0,
+          shippingStatus: null,
+          totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
+          addedBy: 'Admin', // Mocked
+          sellNote: null,
+          staffNote: null,
+          shippingDetails: null,
+          items: cart.map(item => ({
+              productId: item.product.id,
+              quantity: item.quantity,
+              unitPrice: item.product.sellingPrice,
+              tax: 0, // Simplified
+          })),
+          taxAmount: orderTax,
+      };
+  };
+
+  const finalizeSale = async (sale: Omit<Sale, 'id'>) => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
-    }
-    toast({
-        title: 'Sale Finalized',
-        description: 'Payment successful. Cart has been cleared.',
-    });
-    setCart([]);
+      }
+      try {
+          await addSale(sale);
+          toast({
+              title: 'Sale Finalized',
+              description: `Payment of ${formatCurrency(sale.totalPaid)} received. Cart has been cleared.`,
+          });
+          setCart([]);
+          setDiscount(0);
+          setOrderTax(0);
+          setShipping(0);
+          setIsMultiPayOpen(false);
+          setIsCardPaymentOpen(false);
+      } catch (error) {
+          console.error("Failed to save sale:", error);
+          toast({
+              title: "Error",
+              description: "Could not save the sale. Please try again.",
+              variant: "destructive"
+          });
+      }
+  };
+
+  const handleCashPayment = () => {
+    const newSale = createSaleObject('Cash', 'Paid', totalPayable);
+    finalizeSale(newSale);
   };
 
   const handleFinalizeMultiPay = () => {
-        const cash = parseFloat(cashAmount) || 0;
-        const card = parseFloat(cardAmount) || 0;
-        const totalPaid = cash + card;
+      const cash = parseFloat(cashAmount) || 0;
+      const card = parseFloat(cardAmount) || 0;
+      const totalPaid = cash + card;
 
-        if (totalPaid < totalPayable) {
-            toast({
-                title: 'Insufficient Payment',
-                description: `Paid amount is less than the total payable of ${formatCurrency(totalPayable)}.`,
-                variant: 'destructive',
-            });
-            return;
-        }
+      if (totalPaid < totalPayable) {
+          toast({ title: 'Insufficient Payment', description: `Paid amount is less than the total payable of ${formatCurrency(totalPayable)}.`, variant: 'destructive'});
+          return;
+      }
 
-        toast({
-            title: 'Sale Finalized',
-            description: `Payment of ${formatCurrency(totalPaid)} received. Cart has been cleared.`,
-        });
-        setCart([]);
-        setIsMultiPayOpen(false);
-        setCashAmount('');
-        setCardAmount('');
+      const newSale = createSaleObject('Multiple', 'Paid', totalPaid);
+      finalizeSale(newSale);
+      setCashAmount('');
+      setCardAmount('');
+  };
+
+  const handleDraft = () => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Draft Saved', description: 'The current sale has been saved as a draft.' });
+      clearCart();
+    };
+  
+    const handleQuotation = () => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Quotation Saved', description: 'The current sale has been saved as a quotation.' });
+      clearCart();
+    };
+    
+    const handleSuspend = () => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
+      clearCart();
+    };
+    
+    const handleCreditSale = () => {
+      const newSale = createSaleObject('Credit', 'Due', 0);
+      finalizeSale(newSale);
+    };
+  
+    const handleCardPayment = () => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+      }
+      setIsCardPaymentOpen(true);
     };
 
-    const handleDraft = () => {
-        if (cart.length === 0) {
-          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+    const handleFinalizeCardPayment = () => {
+      if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
+          toast({ title: 'Missing Card Details', description: 'Please fill in all card details to proceed.', variant: 'destructive' });
           return;
-        }
-        toast({ title: 'Draft Saved', description: 'The current sale has been saved as a draft.' });
-        setCart([]);
-      };
-    
-      const handleQuotation = () => {
-        if (cart.length === 0) {
-          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-          return;
-        }
-        toast({ title: 'Quotation Saved', description: 'The current sale has been saved as a quotation.' });
-        setCart([]);
-      };
-      
-      const handleSuspend = () => {
-        if (cart.length === 0) {
-          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-          return;
-        }
-        toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
-        setCart([]);
-      };
-      
-      const handleCreditSale = () => {
-        if (cart.length === 0) {
-          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-          return;
-        }
-        toast({ title: 'Credit Sale Finalized', description: 'The sale has been finalized as a credit sale.' });
-        setCart([]);
-      };
-    
-      const handleCardPayment = () => {
-        if (cart.length === 0) {
-          toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-          return;
-        }
-        setIsCardPaymentOpen(true);
-      };
+      }
+      const newSale = createSaleObject('Card', 'Paid', totalPayable);
+      finalizeSale(newSale);
+      setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
+    };
 
-      const handleFinalizeCardPayment = () => {
-        if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
-            toast({
-                title: 'Missing Card Details',
-                description: 'Please fill in all card details to proceed.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        toast({
-            title: 'Card Payment Successful',
-            description: 'The sale has been finalized with card payment.',
-        });
-        setCart([]);
-        setIsCardPaymentOpen(false);
-        setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
-      };
-
-      const handleToggleFullscreen = () => {
+    const handleToggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => {
                 alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
@@ -552,7 +581,7 @@ export default function PosPage() {
   return (
     <TooltipProvider>
     <div className="flex flex-col h-[calc(100vh_-_60px)] bg-background text-foreground -m-6 font-sans">
-      <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10">
+      <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
         <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
             <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">

@@ -42,8 +42,6 @@ export type CommissionProfile = {
   };
 };
 
-export const commissionProfiles: CommissionProfile[] = [];
-
 export type Supplier = {
   id: string;
   contactId: string;
@@ -445,6 +443,7 @@ export const detailedProducts: DetailedProduct[] = [];
 export const products: Product[] = [];
 export const suppliers: Supplier[] = [];
 export const customers: Customer[] = [];
+export const commissionProfiles: CommissionProfile[] = [];
 export const purchases: Purchase[] = [];
 export const purchaseReturns: PurchaseReturn[] = [];
 export const sales: Sale[] = [];

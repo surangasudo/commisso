@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -48,8 +48,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { sales, type Sale } from '@/lib/data';
+import { type Sale } from '@/lib/data';
+import { getSales } from '@/services/saleService';
 import { AppFooter } from '@/components/app-footer';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -65,6 +67,23 @@ const getPaymentStatusBadge = (status: string) => {
 }
 
 export default function AllSalesPage() {
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchSales = async () => {
+            try {
+                const data = await getSales();
+                setSales(data);
+            } catch (error) {
+                console.error("Failed to fetch sales:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchSales();
+    }, []);
+
     const totalAmount = sales.reduce((acc, sale) => acc + sale.totalAmount, 0);
     const totalPaid = sales.reduce((acc, sale) => acc + sale.totalPaid, 0);
     const sellDue = sales.reduce((acc, sale) => acc + sale.sellDue, 0);
@@ -154,7 +173,30 @@ export default function AllSalesPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {sales.map((sale) => (
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : sales.map((sale) => (
                                 <TableRow key={sale.id}>
                                 <TableCell>
                                     <DropdownMenu>
@@ -180,7 +222,7 @@ export default function AllSalesPage() {
                                 <TableCell>${sale.sellDue.toFixed(2)}</TableCell>
                                 <TableCell>${sale.sellReturnDue.toFixed(2)}</TableCell>
                                 <TableCell>{sale.shippingStatus || ''}</TableCell>
-                                <TableCell>{sale.totalItems.toFixed(2)}</TableCell>
+                                <TableCell>{sale.totalItems}</TableCell>
                                 <TableCell>{sale.addedBy}</TableCell>
                                 <TableCell>{sale.sellNote || ''}</TableCell>
                                 <TableCell>{sale.staffNote || ''}</TableCell>
