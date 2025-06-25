@@ -1,29 +1,30 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, DocumentData, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
 
 function sanitizeData(data: any): any {
-  if (data === null || data === undefined) {
+  if (data === null || typeof data !== 'object') {
     return data;
   }
-  if (Array.isArray(data)) {
-    return data.map(item => sanitizeData(item));
-  }
-  if (data instanceof Timestamp) {
+
+  // Firestore Timestamps have a toDate method
+  if (typeof data.toDate === 'function') {
     return data.toDate().toISOString();
   }
-  if (typeof data === 'object' && data.constructor === Object) {
-    const sanitizedObject: { [key: string]: any } = {};
-    for (const key in data) {
-      if (Object.prototype.hasOwnProperty.call(data, key)) {
-        sanitizedObject[key] = sanitizeData(data[key]);
-      }
-    }
-    return sanitizedObject;
+
+  if (Array.isArray(data)) {
+    return data.map(sanitizeData);
   }
-  return data;
+
+  const sanitizedObject: { [key: string]: any } = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      sanitizedObject[key] = sanitizeData(data[key]);
+    }
+  }
+  return sanitizedObject;
 }
 
 const suppliersCollection = collection(db, 'suppliers');
