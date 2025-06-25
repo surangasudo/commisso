@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
@@ -528,26 +527,26 @@ export default function PosPage() {
 
   return (
     <TooltipProvider>
-    <div className="flex flex-col h-[calc(100vh_-_60px)] bg-slate-100 text-slate-900 -m-6 font-sans">
-      <header className="bg-white shadow-sm p-2 flex items-center justify-between z-10">
+    <div className="flex flex-col h-[calc(100vh_-_60px)] bg-background text-foreground -m-6 font-sans">
+      <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10">
         <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
-            <div className="bg-indigo-600 text-white px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
+            <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{time}</span>
             </div>
         </div>
         <div className="flex items-center gap-1">
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
              <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={clearCart}><X /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
-             <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
-             <Button variant="ghost" size="icon" className="text-slate-600" onClick={handleCustomerDisplay}><Monitor /></Button>
-             <ThemeToggle className="text-slate-600" />
-             <Button variant="ghost" size="icon" className="text-slate-600"><HelpCircle /></Button>
-             <Button className="bg-red-500 hover:bg-red-600 text-white h-9 px-3">
+             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleCustomerDisplay}><Monitor /></Button>
+             <ThemeToggle className="text-muted-foreground" />
+             <Button variant="ghost" size="icon" className="text-muted-foreground"><HelpCircle /></Button>
+             <Button variant="destructive" className="h-9 px-3">
                 <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
             </Button>
         </div>
@@ -558,10 +557,10 @@ export default function PosPage() {
         
         {/* Left Side: Cart */}
         <div className="lg:col-span-3 flex flex-col gap-2">
-            <Card className="p-3 bg-white">
+            <Card className="p-3 bg-card">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div className="flex items-center gap-2">
-                        <UserPlus className="text-slate-500 flex-shrink-0"/>
+                        <UserPlus className="text-muted-foreground flex-shrink-0"/>
                         <Select defaultValue="walk-in">
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select a customer" />
@@ -571,24 +570,24 @@ export default function PosPage() {
                             <SelectItem value="john-doe">John Doe</SelectItem>
                           </SelectContent>
                         </Select>
-                        <Button size="icon" className="bg-blue-500 hover:bg-blue-600 text-white flex-shrink-0"><Plus/></Button>
+                        <Button size="icon" className="flex-shrink-0"><Plus/></Button>
                     </div>
                     <div className="relative flex items-center">
-                        <Search className="absolute left-3 h-5 w-5 text-slate-400" />
+                        <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
                         <Input
                             placeholder="Product name/SKU"
                             className="pl-10 w-full"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                         <Button size="icon" className="bg-blue-500 hover:bg-blue-600 text-white ml-2 flex-shrink-0"><Plus/></Button>
+                         <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
                     </div>
                 </div>
             </Card>
 
-            <Card className="flex-1 flex flex-col bg-white">
+            <Card className="flex-1 flex flex-col bg-card">
                 <div className="p-4 flex-grow flex flex-col">
-                  <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-slate-600">
+                  <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-muted-foreground">
                     <div className="col-span-5 flex items-center">Product <Info className="w-3 h-3 ml-1"/></div>
                     <div className="col-span-2">Quantity</div>
                     <div className="col-span-2">Price</div>
@@ -612,36 +611,36 @@ export default function PosPage() {
                            </div>
                         ))
                     ) : (
-                        <div className="text-center py-20 text-slate-400">Cart is empty</div>
+                        <div className="text-center py-20 text-muted-foreground">Cart is empty</div>
                     )}
                     </div>
                    </ScrollArea>
                 </div>
-                <div className="border-t p-3 mt-auto text-sm space-y-2 bg-slate-50">
+                <div className="border-t p-3 mt-auto text-sm space-y-2 bg-muted">
                     <div className="flex justify-between">
                         <span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> 
                         <span>Total: <span className="font-semibold">{formatCurrency(subtotal)}</span></span>
                     </div>
-                     <div className="flex justify-between items-center text-slate-600">
+                     <div className="flex justify-between items-center text-muted-foreground">
                         <span className="flex items-center gap-1">Discount (-): 
                             <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>
-                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsDiscountModalOpen(true)}/>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>
                         </span> 
-                        <span>{formatCurrency(discount)}</span>
+                        <span className="text-foreground">{formatCurrency(discount)}</span>
                     </div>
-                     <div className="flex justify-between items-center text-slate-600">
+                     <div className="flex justify-between items-center text-muted-foreground">
                         <span className="flex items-center gap-1">Order Tax (+):
                              <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>
-                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsTaxModalOpen(true)}/>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>
                         </span> 
-                        <span>{formatCurrency(orderTax)}</span>
+                        <span className="text-foreground">{formatCurrency(orderTax)}</span>
                     </div>
-                     <div className="flex justify-between items-center text-slate-600">
+                     <div className="flex justify-between items-center text-muted-foreground">
                         <span className="flex items-center gap-1">Shipping (+):
                              <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>
-                            <Edit2 className="w-3 h-3 inline cursor-pointer" onClick={() => setIsShippingModalOpen(true)}/>
+                            <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>
                         </span>
-                        <span>{formatCurrency(shipping)}</span>
+                        <span className="text-foreground">{formatCurrency(shipping)}</span>
                     </div>
                 </div>
             </Card>
@@ -650,15 +649,15 @@ export default function PosPage() {
         {/* Right Side: Product Selection */}
         <div className="lg:col-span-5 flex flex-col gap-2">
            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={() => setActiveFilter('category')} className={cn("text-lg py-6", activeFilter === 'category' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><LayoutGrid className="mr-2"/> Category</Button>
-              <Button onClick={() => setActiveFilter('brands')} className={cn("text-lg py-6", activeFilter === 'brands' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-400 hover:bg-slate-500')}><Copyright className="mr-2"/> Brands</Button>
+              <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
+              <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Copyright className="mr-2"/> Brands</Button>
            </div>
-           <Card className="flex-1 bg-white p-2">
+           <Card className="flex-1 bg-card p-2">
             <ScrollArea className="h-full">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
                     {filteredProducts.map(product => (
-                        <Card key={product.id} className="cursor-pointer group overflow-hidden" onClick={() => addToCart(product)}>
-                            <div className="relative aspect-square bg-slate-50">
+                        <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
+                            <div className="relative aspect-square bg-muted">
                                 <Image
                                     src={product.imageUrl}
                                     alt={product.name}
@@ -667,10 +666,10 @@ export default function PosPage() {
                                     data-ai-hint={productHints[product.id] || 'product item'}
                                 />
                             </div>
-                            <div className="p-2 text-center bg-white">
+                            <div className="p-2 text-center">
                                 <p className="text-xs font-semibold truncate">{product.name}</p>
-                                <p className="text-xs text-slate-500">({product.sku})</p>
-                                <p className="text-sm font-bold text-indigo-600">{formatCurrency(product.price)}</p>
+                                <p className="text-xs text-muted-foreground">({product.sku})</p>
+                                <p className="text-sm font-bold text-primary">{formatCurrency(product.price)}</p>
                                 <p className="text-xs text-green-600">{product.stock} Pc(s) in stock</p>
                             </div>
                         </Card>
@@ -682,13 +681,13 @@ export default function PosPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
+      <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
           <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
-              <Button variant="outline" className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>
-              <Button variant="outline" className="text-slate-700 hover:bg-slate-100 h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
+              <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>
+              <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
+              <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>
+              <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>
+              <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
           </div>
           <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
             <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
@@ -758,11 +757,11 @@ export default function PosPage() {
                 </DialogContent>
             </Dialog>
 
-            <Button className="bg-green-500 hover:bg-green-600 text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
-            <Button className="bg-red-500 hover:bg-red-600 text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
+            <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
+            <Button variant="destructive" className="text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
           </div>
           <div className="text-center md:text-right w-full md:w-auto">
-              <span className="text-xs sm:text-sm text-slate-500">Total Payable:</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">Total Payable:</span>
               <h3 className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
           </div>
       </footer>
@@ -793,12 +792,10 @@ export default function PosPage() {
         value={shipping}
         setValue={setShipping}
       />
-      <div className="text-center text-xs text-slate-400 p-1 bg-slate-100">
+      <div className="text-center text-xs text-muted-foreground p-1 bg-background">
         Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
       </div>
     </div>
     </TooltipProvider>
   );
 }
-
-
