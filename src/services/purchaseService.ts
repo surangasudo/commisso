@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, addDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type Purchase } from '@/lib/data';
+import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const purchasesCollection = collection(db, 'purchases');
 
@@ -10,7 +11,7 @@ export async function getPurchases(): Promise<Purchase[]> {
   const snapshot = await getDocs(purchasesCollection);
   return snapshot.docs.map(doc => {
     const data = { id: doc.id, ...doc.data() };
-    return JSON.parse(JSON.stringify(data)) as Purchase;
+    return sanitizeForClient<Purchase>(data);
   });
 }
 
@@ -20,7 +21,7 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
 
     if (docSnap.exists()) {
         const data = { id: docSnap.id, ...docSnap.data() };
-        return JSON.parse(JSON.stringify(data)) as Purchase;
+        return sanitizeForClient<Purchase>(data);
     } else {
         return null;
     }

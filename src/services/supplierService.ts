@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
+import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const suppliersCollection = collection(db, 'suppliers');
 
@@ -10,7 +11,7 @@ export async function getSuppliers(): Promise<Supplier[]> {
   const snapshot = await getDocs(suppliersCollection);
   return snapshot.docs.map(doc => {
     const data = { id: doc.id, ...doc.data() };
-    return JSON.parse(JSON.stringify(data)) as Supplier;
+    return sanitizeForClient<Supplier>(data);
   });
 }
 

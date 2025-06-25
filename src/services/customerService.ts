@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
 import { type Customer } from '@/lib/data';
+import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const customersCollection = collection(db, 'customers');
 
@@ -10,7 +11,7 @@ export async function getCustomers(): Promise<Customer[]> {
   const snapshot = await getDocs(customersCollection);
   return snapshot.docs.map(doc => {
     const data = { id: doc.id, ...doc.data() };
-    return JSON.parse(JSON.stringify(data)) as Customer;
+    return sanitizeForClient<Customer>(data);
   });
 }
 

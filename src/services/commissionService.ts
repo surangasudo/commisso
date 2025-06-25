@@ -3,6 +3,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type CommissionProfile } from '@/lib/data';
+import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
@@ -10,7 +11,7 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
   return snapshot.docs.map(doc => {
     const data = { id: doc.id, ...doc.data() };
-    return JSON.parse(JSON.stringify(data)) as CommissionProfile;
+    return sanitizeForClient<CommissionProfile>(data);
   });
 }
 
@@ -20,7 +21,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
 
     if (docSnap.exists()) {
         const data = { id: docSnap.id, ...docSnap.data() };
-        return JSON.parse(JSON.stringify(data)) as CommissionProfile;
+        return sanitizeForClient<CommissionProfile>(data);
     } else {
         return null;
     }
