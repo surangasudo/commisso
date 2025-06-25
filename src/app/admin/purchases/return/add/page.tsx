@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Undo, Search, Plus, Trash2, Calendar, User } from "lucide-react";
 import { detailedProducts, type DetailedProduct } from '@/lib/data';
 import { AppFooter } from '@/components/app-footer';
+import { useCurrency } from '@/hooks/use-currency';
 
 type ReturnItem = {
   product: DetailedProduct;
@@ -21,6 +22,7 @@ export default function AddPurchaseReturnPage() {
     const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentDate, setCurrentDate] = useState('');
+    const { formatCurrency } = useCurrency();
 
     useEffect(() => {
         const date = new Date();
@@ -176,8 +178,8 @@ export default function AddPurchaseReturnPage() {
                                                 className="w-24 h-9"
                                             />
                                         </TableCell>
-                                        <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="font-semibold">${item.subtotal.toFixed(2)}</TableCell>
+                                        <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                                        <TableCell className="font-semibold">{formatCurrency(item.subtotal)}</TableCell>
                                         <TableCell className="text-center">
                                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(item.product.id)}>
                                                 <Trash2 className="w-4 h-4" />
@@ -210,7 +212,7 @@ export default function AddPurchaseReturnPage() {
                         <div className="flex justify-end items-end">
                              <div className="text-right">
                                 <span className="text-muted-foreground">Total Amount: </span>
-                                <span className="font-bold text-lg">${totalAmount.toFixed(2)}</span>
+                                <span className="font-bold text-lg">{formatCurrency(totalAmount)}</span>
                             </div>
                         </div>
                     </div>
