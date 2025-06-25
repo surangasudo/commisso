@@ -1,7 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Download,
   Printer,
@@ -21,7 +20,6 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-  CardDescription
 } from '@/components/ui/card';
 import {
   Table,
@@ -48,7 +46,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { expenses as initialExpenses, type Expense } from '@/lib/data';
+import { type Expense } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +58,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppFooter } from '@/components/app-footer';
+import { getExpenses, deleteExpense } from '@/services/expenseService';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -75,10 +76,25 @@ const getPaymentStatusBadge = (status: string) => {
 }
 
 export default function ListExpensesPage() {
-  const router = useRouter();
-  const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
+  const { toast } = useToast();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const data = await getExpenses();
+        setExpenses(data);
+      } catch (error) {
+        toast({ title: "Error", description: "Could not fetch expenses.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchExpenses();
+  }, [toast]);
 
   const totalAmount = expenses.reduce((acc, expense) => acc + expense.totalAmount, 0);
   const totalDue = expenses.reduce((acc, expense) => acc + expense.paymentDue, 0);
@@ -88,11 +104,18 @@ export default function ListExpensesPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (expenseToDelete) {
-      setExpenses(expenses.filter(e => e.id !== expenseToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setExpenseToDelete(null);
+      try {
+        await deleteExpense(expenseToDelete.id);
+        setExpenses(expenses.filter(e => e.id !== expenseToDelete.id));
+        toast({ title: "Success", description: "Expense deleted successfully." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete expense.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setExpenseToDelete(null);
+      }
     }
   };
   
@@ -171,7 +194,22 @@ export default function ListExpensesPage() {
                               </TableRow>
                               </TableHeader>
                               <TableBody>
-                              {expenses.map((expense) => (
+                              {isLoading ? (
+                                Array.from({length: 5}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    </TableRow>
+                                ))
+                              ) : expenses.map((expense) => (
                                   <TableRow key={expense.id}>
                                   <TableCell>
                                       <DropdownMenu>
@@ -184,7 +222,7 @@ export default function ListExpensesPage() {
                                           </DropdownMenuContent>
                                       </DropdownMenu>
                                   </TableCell>
-                                  <TableCell>{expense.date}</TableCell>
+                                  <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                                   <TableCell>{expense.referenceNo}</TableCell>
                                   <TableCell>{expense.expenseCategory}</TableCell>
                                   <TableCell>{expense.location}</TableCell>

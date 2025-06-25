@@ -7,23 +7,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Folder, Plus, Pencil, Trash2 } from "lucide-react";
-import React, { useState } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { expenseCategories as initialCategories, type ExpenseCategory } from '@/lib/data';
+import React, { useState, useEffect } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { type ExpenseCategory } from '@/lib/data';
 import { AppFooter } from "@/components/app-footer";
+import { getExpenseCategories, addExpenseCategory, updateExpenseCategory, deleteExpenseCategory } from '@/services/expenseCategoryService';
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function ExpenseCategoriesPage() {
-  const [categories, setCategories] = useState(initialCategories);
+  const { toast } = useToast();
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Add dialog state
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -43,19 +39,40 @@ export default function ExpenseCategoriesPage() {
   const [categoryToDelete, setCategoryToDelete] = useState<ExpenseCategory | null>(null);
 
 
-  const handleAddCategory = () => {
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getExpenseCategories();
+      setCategories(data);
+    } catch (error) {
+      toast({ title: "Error", description: "Could not fetch expense categories.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
-      const newCategory: ExpenseCategory = {
-        id: `cat-exp-${Date.now()}`,
+      const newCategoryData: Omit<ExpenseCategory, 'id'> = {
         name: newCategoryName,
         code: newCategoryCode,
         parentId: newParentCategoryId || null,
       };
-      setCategories([...categories, newCategory]);
-      setIsAddDialogOpen(false);
-      setNewCategoryName('');
-      setNewCategoryCode('');
-      setNewParentCategoryId(undefined);
+      try {
+        await addExpenseCategory(newCategoryData);
+        toast({ title: "Success", description: "Category added." });
+        setIsAddDialogOpen(false);
+        setNewCategoryName('');
+        setNewCategoryCode('');
+        setNewParentCategoryId(undefined);
+        fetchCategories(); // Re-fetch
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to add category.", variant: "destructive" });
+      }
     }
   };
   
@@ -67,16 +84,22 @@ export default function ExpenseCategoriesPage() {
     setIsEditDialogOpen(true);
   };
   
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => {
     if (editingCategory && editedCategoryName.trim()) {
-        const updatedCategories = categories.map(c => 
-            c.id === editingCategory.id 
-            ? { ...c, name: editedCategoryName, code: editedCategoryCode, parentId: editedParentCategoryId || null } 
-            : c
-        );
-        setCategories(updatedCategories);
-        setIsEditDialogOpen(false);
-        setEditingCategory(null);
+        const updatedData: Partial<Omit<ExpenseCategory, 'id'>> = {
+            name: editedCategoryName,
+            code: editedCategoryCode,
+            parentId: editedParentCategoryId || null
+        };
+        try {
+            await updateExpenseCategory(editingCategory.id, updatedData);
+            toast({ title: "Success", description: "Category updated." });
+            setIsEditDialogOpen(false);
+            setEditingCategory(null);
+            fetchCategories(); // Re-fetch
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update category.", variant: "destructive" });
+        }
     }
   };
 
@@ -85,11 +108,22 @@ export default function ExpenseCategoriesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (categoryToDelete) {
-      setCategories(categories.filter(c => c.id !== categoryToDelete.id && c.parentId !== categoryToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setCategoryToDelete(null);
+      try {
+        await deleteExpenseCategory(categoryToDelete.id);
+        // Also delete sub-categories client-side for immediate feedback, though backend logic should handle this ideally
+        const subCategoryIds = categories.filter(c => c.parentId === categoryToDelete.id).map(c => c.id);
+        for(const subId of subCategoryIds) {
+            await deleteExpenseCategory(subId);
+        }
+        toast({ title: "Success", description: `Category "${categoryToDelete.name}" deleted.` });
+        setIsDeleteDialogOpen(false);
+        setCategoryToDelete(null);
+        fetchCategories(); // Re-fetch
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete category.", variant: "destructive" });
+      }
     }
   };
 
@@ -181,7 +215,16 @@ export default function ExpenseCategoriesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories.map((category) => (
+                  {isLoading ? (
+                    Array.from({length: 3}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                            <TableCell><div className="flex gap-2"><Skeleton className="h-8 w-[76px]"/><Skeleton className="h-8 w-[86px]"/></div></TableCell>
+                        </TableRow>
+                    ))
+                  ) : categories.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell>{category.code}</TableCell>

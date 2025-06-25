@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,41 +9,110 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Info, Calendar, DollarSign, Wallet } from "lucide-react";
-import { expenseCategories, type ExpenseCategory, customers, suppliers } from '@/lib/data';
 import { AppFooter } from '@/components/app-footer';
+import { useToast } from '@/hooks/use-toast';
+import { addExpense } from '@/services/expenseService';
+import { getExpenseCategories } from '@/services/expenseCategoryService';
+import { getCustomers } from '@/services/customerService';
+import { getSuppliers } from '@/services/supplierService';
+import { type Expense, type ExpenseCategory, type Customer, type Supplier } from '@/lib/data';
+
+type Contact = { id: string; name: string };
 
 export default function AddExpensePage() {
-    const [currentDate, setCurrentDate] = useState('');
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const [expenseData, setExpenseData] = useState<Partial<Expense>>({
+        location: 'Awesome Shop',
+        paymentStatus: 'Paid',
+        tax: 0,
+        totalAmount: 0,
+        paymentDue: 0,
+        addedBy: 'Admin', // Assume logged in user
+    });
     const [isRecurring, setIsRecurring] = useState(false);
+    const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+    const [allContacts, setAllContacts] = useState<Contact[]>([]);
+    const [paidAmount, setPaidAmount] = useState<number>(0);
     
-    const [totalAmount, setTotalAmount] = useState<number | string>('');
-    const [paidAmount, setPaidAmount] = useState<number | string>('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('');
-    const [subCategories, setSubCategories] = useState<ExpenseCategory[]>([]);
-
     useEffect(() => {
-        const now = new Date();
-        const formatted = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        setCurrentDate(formatted);
-    }, []);
-
-    useEffect(() => {
-        if (selectedCategory && selectedCategory !== 'none') {
-            setSubCategories(expenseCategories.filter(c => c.parentId === selectedCategory));
-        } else {
-            setSubCategories([]);
-        }
-    }, [selectedCategory]);
-
-    const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setTotalAmount(value);
-        setPaidAmount(value);
+        const fetchData = async () => {
+            try {
+                const [cats, custs, supps] = await Promise.all([
+                    getExpenseCategories(),
+                    getCustomers(),
+                    getSuppliers()
+                ]);
+                setCategories(cats);
+                const combinedContacts = [
+                    ...custs.map(c => ({ id: c.id, name: `${c.name} (Customer)` })),
+                    ...supps.map(s => ({ id: s.id, name: `${s.businessName} (Supplier)` }))
+                ];
+                setAllContacts(combinedContacts);
+            } catch (error) {
+                console.error("Failed to fetch initial data", error);
+                toast({ title: "Error", description: "Could not load required data.", variant: "destructive" });
+            }
+        };
+        fetchData();
+    }, [toast]);
+    
+    const mainCategories = categories.filter(c => !c.parentId);
+    const subCategories = expenseData.expenseCategory ? categories.filter(c => c.parentId === expenseData.expenseCategory) : [];
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setExpenseData(prev => ({ ...prev, [id]: value }));
     };
 
-    const paymentDue = (Number(totalAmount) || 0) - (Number(paidAmount) || 0);
-    const allContacts = [...customers.map(c => ({id: `cus-${c.id}`, name: `${c.name} (Customer)`})), ...suppliers.map(s => ({id: `sup-${s.id}`, name: `${s.businessName} (Supplier)`}))];
-    const mainCategories = expenseCategories.filter(c => !c.parentId);
+    const handleSelectChange = (field: keyof Expense, value: string) => {
+        setExpenseData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value) || 0;
+        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: value - paidAmount }));
+        setPaidAmount(value);
+    };
+    
+    const handlePaidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value) || 0;
+        setPaidAmount(value);
+        setExpenseData(prev => ({...prev, paymentDue: (prev.totalAmount || 0) - value}));
+    };
+    
+    const handleSave = async () => {
+        if (!expenseData.location || !expenseData.totalAmount) {
+            toast({ title: "Validation Error", description: "Location and Total Amount are required.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            const finalExpenseData: Omit<Expense, 'id'> = {
+                date: new Date().toLocaleString('en-CA'),
+                referenceNo: expenseData.referenceNo || `EXP-${Date.now()}`,
+                location: expenseData.location || 'Awesome Shop',
+                expenseCategory: expenseData.expenseCategory || '',
+                subCategory: expenseData.subCategory || null,
+                paymentStatus: expenseData.paymentDue === 0 ? 'Paid' : (expenseData.paymentDue === expenseData.totalAmount ? 'Due' : 'Partial'),
+                tax: expenseData.tax || 0,
+                totalAmount: expenseData.totalAmount,
+                paymentDue: expenseData.paymentDue || 0,
+                expenseFor: expenseData.expenseFor || null,
+                contact: expenseData.contact || null,
+                addedBy: 'Admin', // Hardcoded for now
+                expenseNote: expenseData.expenseNote || null
+            };
+
+            await addExpense(finalExpenseData);
+            toast({ title: "Success", description: "Expense added successfully." });
+            router.push('/admin/expenses/list');
+        } catch (error) {
+            console.error("Failed to add expense:", error);
+            toast({ title: "Error", description: "Failed to add expense. Please try again.", variant: "destructive" });
+        }
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -57,15 +127,15 @@ export default function AddExpensePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="location">Business Location:*</Label>
-                                <Select defaultValue="awesome-shop">
+                                <Select value={expenseData.location} onValueChange={(value) => handleSelectChange('location', value)}>
                                     <SelectTrigger id="location"><SelectValue /></SelectTrigger>
                                     <SelectContent><SelectItem value="awesome-shop">Awesome Shop</SelectItem></SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="expense-category">Expense Category:</Label>
-                                <Select onValueChange={setSelectedCategory}>
-                                    <SelectTrigger id="expense-category"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                <Label htmlFor="expenseCategory">Expense Category:</Label>
+                                <Select value={expenseData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}>
+                                    <SelectTrigger id="expenseCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">None</SelectItem>
                                         {mainCategories.map(cat => (
@@ -75,9 +145,9 @@ export default function AddExpensePage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="sub-category">Sub category:</Label>
-                                <Select disabled={subCategories.length === 0}>
-                                    <SelectTrigger id="sub-category"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                <Label htmlFor="subCategory">Sub category:</Label>
+                                <Select value={expenseData.subCategory || ''} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}>
+                                    <SelectTrigger id="subCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                      <SelectContent>
                                         {subCategories.map(cat => (
                                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
@@ -86,24 +156,24 @@ export default function AddExpensePage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="reference-no">Reference No:</Label>
-                                <Input id="reference-no" placeholder="Leave empty to autogenerate" />
+                                <Label htmlFor="referenceNo">Reference No:</Label>
+                                <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={expenseData.referenceNo || ''} onChange={handleInputChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="date">Date:*</Label>
                                 <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100 cursor-not-allowed">
                                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                                    <span>{currentDate}</span>
+                                    <span>{new Date().toLocaleString()}</span>
                                 </div>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="expense-for">Expense for:</Label>
-                                <Select><SelectTrigger id="expense-for"><SelectValue placeholder="None" /></SelectTrigger></Select>
+                                <Label htmlFor="expenseFor">Expense for:</Label>
+                                <Select><SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger></Select>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="expense-for-contact">Expense for contact:</Label>
-                                <Select>
-                                    <SelectTrigger id="expense-for-contact"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                <Label htmlFor="contact">Expense for contact:</Label>
+                                <Select value={expenseData.contact || ''} onValueChange={(value) => handleSelectChange('contact', value)}>
+                                    <SelectTrigger id="contact"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                      <SelectContent>
                                         {allContacts.map(contact => (
                                             <SelectItem key={contact.id} value={contact.id}>{contact.name}</SelectItem>
@@ -117,29 +187,22 @@ export default function AddExpensePage() {
                                 <p className="text-xs text-muted-foreground">Max File size: 5MB. Allowed File: .pdf, .csv, .zip, .doc, .docx, .jpeg, .jpg, .png</p>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="applicable-tax" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
-                                <Select>
-                                    <SelectTrigger id="applicable-tax"><SelectValue placeholder="None" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">None</SelectItem>
-                                        <SelectItem value="vat@10%">VAT@10%</SelectItem>
-                                        <SelectItem value="gst@5%">GST@5%</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="tax" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
+                                <Select><SelectTrigger id="tax"><SelectValue placeholder="None" /></SelectTrigger></Select>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="total-amount">Total amount:*</Label>
+                                <Label htmlFor="totalAmount">Total amount:*</Label>
                                 <Input 
-                                    id="total-amount" 
+                                    id="totalAmount" 
                                     type="number" 
                                     placeholder="Total amount"
-                                    value={totalAmount}
+                                    value={expenseData.totalAmount || ''}
                                     onChange={handleTotalAmountChange}
                                 />
                             </div>
                             <div className="space-y-2 md:col-span-full">
-                                <Label htmlFor="expense-note">Expense note:</Label>
-                                <Textarea id="expense-note" />
+                                <Label htmlFor="expenseNote">Expense note:</Label>
+                                <Textarea id="expenseNote" value={expenseData.expenseNote || ''} onChange={handleInputChange} />
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox id="is-refund" />
@@ -193,7 +256,7 @@ export default function AddExpensePage() {
                                         placeholder="0.00" 
                                         className="pl-8" 
                                         value={paidAmount}
-                                        onChange={(e) => setPaidAmount(e.target.value)}
+                                        onChange={handlePaidAmountChange}
                                     />
                                 </div>
                             </div>
@@ -201,7 +264,7 @@ export default function AddExpensePage() {
                                 <Label htmlFor="paid-on">Paid on:*</Label>
                                  <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100 cursor-not-allowed">
                                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                                    <span>{currentDate}</span>
+                                    <span>{new Date().toLocaleString()}</span>
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -224,11 +287,11 @@ export default function AddExpensePage() {
                                 <Textarea id="payment-note" />
                             </div>
                         </div>
-                        <div className="text-right font-semibold mt-4">Payment due: ${paymentDue.toFixed(2)}</div>
+                        <div className="text-right font-semibold mt-4">Payment due: ${(expenseData.paymentDue || 0).toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-end">
-                    <Button size="lg">Save</Button>
+                    <Button size="lg" onClick={handleSave}>Save</Button>
                 </div>
             </div>
             <AppFooter />

@@ -257,16 +257,6 @@ export type ExpenseCategory = {
   parentId?: string | null;
 };
 
-export const expenseCategories: ExpenseCategory[] = [
-  { id: 'cat-exp-1', name: 'Office Supplies', code: 'OS', parentId: null },
-  { id: 'cat-exp-2', name: 'Utilities', code: 'UTIL', parentId: null },
-  { id: 'cat-exp-6', name: 'Electricity Bill', code: 'ELEC', parentId: 'cat-exp-2' },
-  { id: 'cat-exp-7', name: 'Water Bill', code: 'WATR', parentId: 'cat-exp-2' },
-  { id: 'cat-exp-3', name: 'Marketing', code: 'MKTG', parentId: null },
-  { id: 'cat-exp-4', name: 'Repairs & Maintenance', code: 'R&M', parentId: null },
-  { id: 'cat-exp-5', name: 'Salaries & Wages', code: 'PAY', parentId: null },
-];
-
 export type ProfitData = {
     openingStockPurchase: number;
     openingStockSale: number;
@@ -453,6 +443,7 @@ export const discounts: Discount[] = [];
 export const stockTransfers: StockTransfer[] = [];
 export const stockAdjustments: StockAdjustment[] = [];
 export const expenses: Expense[] = [];
+export const expenseCategories: ExpenseCategory[] = [];
 export const profitData: ProfitData = {
   openingStockPurchase: 0.00,
   openingStockSale: 0.00,
