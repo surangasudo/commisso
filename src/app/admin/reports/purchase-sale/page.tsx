@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -42,7 +41,7 @@ const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport, for
         <Card>
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 print:hidden">
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
@@ -188,7 +187,7 @@ export default function PurchaseSaleReportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between print:hidden">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                 <FileText className="w-8 h-8" />
                 Purchase & Sale Report
@@ -241,7 +240,7 @@ export default function PurchaseSaleReportPage() {
             </div>
         </div>
       
-        <Card>
+        <Card className="print:hidden">
             <CardHeader>
                 <CardTitle>Summary</CardTitle>
                 <CardDescription>

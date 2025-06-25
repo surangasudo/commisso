@@ -53,7 +53,7 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
     
     return (
         <div>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
                 <div className="relative flex-1 sm:max-w-xs">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
@@ -189,7 +189,7 @@ export default function SalesRepresentativeReportPage() {
                 Sales Representative Report
             </h1>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
@@ -222,7 +222,7 @@ export default function SalesRepresentativeReportPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Sales (Gross)</CardTitle>
@@ -246,14 +246,14 @@ export default function SalesRepresentativeReportPage() {
             <Card>
                 <CardContent className="pt-6">
                     <Tabs defaultValue="agents">
-                        <TabsList>
+                        <TabsList className="print:hidden">
                             <TabsTrigger value="agents">Agents</TabsTrigger>
                             <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
                             <TabsTrigger value="companies">Companies</TabsTrigger>
                             <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
                         </TabsList>
                         <TabsContent value="agents" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm">
+                           <div className="space-y-2 max-w-sm print:hidden">
                                 <Label>Filter by Agent</Label>
                                 <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                                     <SelectTrigger><SelectValue/></SelectTrigger>
@@ -266,7 +266,7 @@ export default function SalesRepresentativeReportPage() {
                            <ReportTable data={agentData} entityType="Agent" />
                         </TabsContent>
                         <TabsContent value="sub_agents" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm">
+                           <div className="space-y-2 max-w-sm print:hidden">
                                 <Label>Filter by Sub-Agent</Label>
                                 <Select value={selectedSubAgent} onValueChange={setSelectedSubAgent}>
                                     <SelectTrigger><SelectValue/></SelectTrigger>
@@ -279,7 +279,7 @@ export default function SalesRepresentativeReportPage() {
                            <ReportTable data={subAgentData} entityType="Sub-Agent" />
                         </TabsContent>
                          <TabsContent value="companies" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm">
+                           <div className="space-y-2 max-w-sm print:hidden">
                                 <Label>Filter by Company</Label>
                                 <Select value={selectedCompany} onValueChange={setSelectedCompany}>
                                     <SelectTrigger><SelectValue/></SelectTrigger>
@@ -292,7 +292,7 @@ export default function SalesRepresentativeReportPage() {
                            <ReportTable data={companyData} entityType="Company" />
                         </TabsContent>
                          <TabsContent value="salespersons" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm">
+                           <div className="space-y-2 max-w-sm print:hidden">
                                 <Label>Filter by Salesperson</Label>
                                 <Select value={selectedSalesperson} onValueChange={setSelectedSalesperson}>
                                     <SelectTrigger><SelectValue/></SelectTrigger>

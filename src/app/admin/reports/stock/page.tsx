@@ -121,7 +121,7 @@ export default function StockReportPage() {
                 Stock Report
             </h1>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Filters</CardTitle>
@@ -165,7 +165,7 @@ export default function StockReportPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Closing stock (By purchase price)</CardTitle>
@@ -201,7 +201,7 @@ export default function StockReportPage() {
                     <CardDescription>Detailed stock information for all products.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
                         <div className="relative flex-1 sm:max-w-xs">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input 
@@ -268,7 +268,7 @@ export default function StockReportPage() {
                         </Table>
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="print:hidden">
                     <div className="text-xs text-muted-foreground">
                         Showing <strong>{filteredData.length}</strong> of <strong>{reportData.length}</strong> entries
                     </div>

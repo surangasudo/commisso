@@ -81,7 +81,7 @@ export default function ActivityLogPage() {
                 Activity Log
             </h1>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle>Filters</CardTitle>
@@ -152,7 +152,7 @@ export default function ActivityLogPage() {
                     <CardDescription>A record of all user activities for the selected period.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
                         <div className="relative flex-1 sm:max-w-xs">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input 
@@ -202,7 +202,7 @@ export default function ActivityLogPage() {
                         </Table>
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="print:hidden">
                     <div className="text-xs text-muted-foreground">
                         Showing <strong>{filteredData.length}</strong> of <strong>{activityLogs.length}</strong> entries
                     </div>
