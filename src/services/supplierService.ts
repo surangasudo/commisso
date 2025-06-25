@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
 import { sanitizeForClient } from '@/lib/firestore-utils';
 
@@ -15,4 +15,9 @@ export async function getSuppliers(): Promise<Supplier[]> {
 
 export async function addSupplier(supplier: Omit<Supplier, 'id'>): Promise<DocumentData> {
     return await addDoc(suppliersCollection, supplier);
+}
+
+export async function deleteSupplier(id: string): Promise<void> {
+    const docRef = doc(db, 'suppliers', id);
+    await deleteDoc(docRef);
 }

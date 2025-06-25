@@ -53,17 +53,31 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { type Customer } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { useCurrency } from '@/hooks/use-currency';
-import { getCustomers } from '@/services/customerService';
+import { getCustomers, deleteCustomer } from '@/services/customerService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function CustomersContactPage() {
+  const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -128,12 +142,33 @@ export default function CustomersContactPage() {
     ]);
     exportToPdf(headers, data, 'customers');
   };
+  
+  const handleDelete = (customer: Customer) => {
+    setCustomerToDelete(customer);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (customerToDelete) {
+      try {
+        await deleteCustomer(customerToDelete.id);
+        setCustomers(customers.filter(c => c.id !== customerToDelete.id));
+        toast({ title: "Success", description: "Customer deleted successfully." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete customer.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setCustomerToDelete(null);
+      }
+    }
+  };
 
   const colSpan1 = (visibleColumns.action ? 1 : 0) + (visibleColumns.contactId ? 1 : 0) + (visibleColumns.customerGroup ? 1 : 0) + (visibleColumns.name ? 1 : 0) + (visibleColumns.email ? 1 : 0) + (visibleColumns.mobile ? 1 : 0) + (visibleColumns.address ? 1 : 0);
   const colSpan2 = (visibleColumns.addedOn ? 1 : 0) + (visibleColumns.customField1 ? 1 : 0);
 
 
   return (
+    <>
     <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold">Customers</h1>
@@ -245,7 +280,7 @@ export default function CustomersContactPage() {
                                             <DropdownMenuItem><WalletCards className="mr-2 h-4 w-4" /> Pay</DropdownMenuItem>
                                             <DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
                                             <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                            <DropdownMenuItem><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDelete(customer); }} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem><BookOpen className="mr-2 h-4 w-4" /> Ledger</DropdownMenuItem>
                                             <DropdownMenuItem><History className="mr-2 h-4 w-4" /> Sales</DropdownMenuItem>
@@ -292,5 +327,23 @@ export default function CustomersContactPage() {
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the customer
+            "{customerToDelete?.name}".
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setCustomerToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

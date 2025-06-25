@@ -53,16 +53,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { type Supplier } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { useCurrency } from '@/hooks/use-currency';
-import { getSuppliers } from '@/services/supplierService';
+import { getSuppliers, deleteSupplier } from '@/services/supplierService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SuppliersPage() {
+  const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
 
   useEffect(() => {
     const fetchSuppliers = async () => {
@@ -110,7 +124,28 @@ export default function SuppliersPage() {
     exportToPdf(headers, data, 'suppliers');
   };
 
+  const handleDelete = (supplier: Supplier) => {
+    setSupplierToDelete(supplier);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (supplierToDelete) {
+      try {
+        await deleteSupplier(supplierToDelete.id);
+        setSuppliers(suppliers.filter(s => s.id !== supplierToDelete.id));
+        toast({ title: "Success", description: "Supplier deleted successfully." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete supplier.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setSupplierToDelete(null);
+      }
+    }
+  };
+
   return (
+    <>
     <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold">Suppliers</h1>
@@ -208,7 +243,7 @@ export default function SuppliersPage() {
                                             <DropdownMenuItem><WalletCards className="mr-2 h-4 w-4" /> Pay</DropdownMenuItem>
                                             <DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
                                             <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                            <DropdownMenuItem><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleDelete(supplier); }} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                             <DropdownMenuItem><Power className="mr-2 h-4 w-4" /> Deactivate</DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem><BookOpen className="mr-2 h-4 w-4" /> Ledger</DropdownMenuItem>
@@ -258,5 +293,23 @@ export default function SuppliersPage() {
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This action cannot be undone. This will permanently delete the supplier
+            "{supplierToDelete?.businessName}".
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setSupplierToDelete(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
