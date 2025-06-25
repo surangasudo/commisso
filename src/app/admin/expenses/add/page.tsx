@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Calendar, DollarSign, Wallet } from "lucide-react";
+import { Info, Calendar as CalendarIcon, DollarSign, Wallet } from "lucide-react";
 import { AppFooter } from '@/components/app-footer';
 import { useToast } from '@/hooks/use-toast';
 import { addExpense } from '@/services/expenseService';
@@ -16,12 +16,18 @@ import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { getCustomers } from '@/services/customerService';
 import { getSuppliers } from '@/services/supplierService';
 import { type Expense, type ExpenseCategory, type Customer, type Supplier } from '@/lib/data';
+import { useCurrency } from '@/hooks/use-currency';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 type Contact = { id: string; name: string };
 
 export default function AddExpensePage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
 
     const [expenseData, setExpenseData] = useState<Partial<Expense>>({
         location: 'Awesome Shop',
@@ -35,6 +41,7 @@ export default function AddExpensePage() {
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [allContacts, setAllContacts] = useState<Contact[]>([]);
     const [paidAmount, setPaidAmount] = useState<number>(0);
+    const [paidOnDate, setPaidOnDate] = useState(new Date());
     
     useEffect(() => {
         const fetchData = async () => {
@@ -90,7 +97,7 @@ export default function AddExpensePage() {
 
         try {
             const finalExpenseData: Omit<Expense, 'id'> = {
-                date: new Date().toLocaleString('en-CA'),
+                date: paidOnDate.toLocaleString('en-CA'),
                 referenceNo: expenseData.referenceNo || `EXP-${Date.now()}`,
                 location: expenseData.location || 'Awesome Shop',
                 expenseCategory: expenseData.expenseCategory || '',
@@ -162,7 +169,7 @@ export default function AddExpensePage() {
                             <div className="space-y-2">
                                 <Label htmlFor="date">Date:*</Label>
                                 <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100 cursor-not-allowed">
-                                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                                    <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                                     <span>{new Date().toLocaleString()}</span>
                                 </div>
                             </div>
@@ -262,10 +269,28 @@ export default function AddExpensePage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="paid-on">Paid on:*</Label>
-                                 <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100 cursor-not-allowed">
-                                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                                    <span>{new Date().toLocaleString()}</span>
-                                </div>
+                                 <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full justify-start text-left font-normal",
+                                                !paidOnDate && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {paidOnDate ? format(paidOnDate, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                            mode="single"
+                                            selected={paidOnDate}
+                                            onSelect={(date) => date && setPaidOnDate(date)}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="payment-method">Payment Method:*</Label>
@@ -275,6 +300,7 @@ export default function AddExpensePage() {
                                         <SelectItem value="cash">Cash</SelectItem>
                                         <SelectItem value="card">Card</SelectItem>
                                         <SelectItem value="cheque">Cheque</SelectItem>
+                                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -287,7 +313,7 @@ export default function AddExpensePage() {
                                 <Textarea id="payment-note" />
                             </div>
                         </div>
-                        <div className="text-right font-semibold mt-4">Payment due: ${(expenseData.paymentDue || 0).toFixed(2)}</div>
+                        <div className="text-right font-semibold mt-4">Payment due: {formatCurrency(expenseData.paymentDue || 0)}</div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-end">
