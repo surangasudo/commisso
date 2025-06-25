@@ -1,26 +1,15 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, DocumentData, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
 
 const suppliersCollection = collection(db, 'suppliers');
 
-const sanitizeData = (docData: DocumentData) => {
-    const data = { ...docData };
-    for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-            if (data[key] instanceof Timestamp) {
-                data[key] = data[key].toDate().toISOString();
-            }
-        }
-    }
-    return data;
-}
-
 export async function getSuppliers(): Promise<Supplier[]> {
   const snapshot = await getDocs(suppliersCollection);
   return snapshot.docs.map(doc => {
-    return { id: doc.id, ...sanitizeData(doc.data()) } as Supplier;
+    const data = JSON.parse(JSON.stringify(doc.data()));
+    return { id: doc.id, ...data } as Supplier;
   });
 }
 
