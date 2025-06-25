@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Calendar as CalendarIcon, DollarSign, Wallet } from "lucide-react";
+import { Info, Calendar as CalendarIcon, Wallet } from "lucide-react";
 import { AppFooter } from '@/components/app-footer';
 import { useToast } from '@/hooks/use-toast';
 import { addExpense } from '@/services/expenseService';
@@ -40,7 +41,7 @@ export default function AddExpensePage() {
     const [isRecurring, setIsRecurring] = useState(false);
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [allContacts, setAllContacts] = useState<Contact[]>([]);
-    const [paidAmount, setPaidAmount] = useState<number>(0);
+    const [paidAmount, setPaidAmount] = useState<number | ''>('');
     const [paidOnDate, setPaidOnDate] = useState(new Date());
     
     useEffect(() => {
@@ -79,14 +80,22 @@ export default function AddExpensePage() {
 
     const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value) || 0;
-        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: value - paidAmount }));
+        setExpenseData(prev => ({...prev, totalAmount: value, paymentDue: value - (Number(paidAmount) || 0) }));
         setPaidAmount(value);
     };
     
     const handlePaidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = parseFloat(e.target.value) || 0;
-        setPaidAmount(value);
-        setExpenseData(prev => ({...prev, paymentDue: (prev.totalAmount || 0) - value}));
+        const value = e.target.value;
+        if(value === '') {
+            setPaidAmount('');
+            setExpenseData(prev => ({...prev, paymentDue: prev.totalAmount || 0}));
+        } else {
+            const numericValue = parseFloat(value);
+            if (!isNaN(numericValue)) {
+                setPaidAmount(numericValue);
+                setExpenseData(prev => ({...prev, paymentDue: (prev.totalAmount || 0) - numericValue}));
+            }
+        }
     };
     
     const handleSave = async () => {
@@ -255,17 +264,13 @@ export default function AddExpensePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="amount">Amount:*</Label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="amount" 
-                                        type="number" 
-                                        placeholder="0.00" 
-                                        className="pl-8" 
-                                        value={paidAmount}
-                                        onChange={handlePaidAmountChange}
-                                    />
-                                </div>
+                                <Input 
+                                    id="amount" 
+                                    type="number" 
+                                    placeholder="0.00"
+                                    value={paidAmount}
+                                    onChange={handlePaidAmountChange}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="paid-on">Paid on:*</Label>
