@@ -25,8 +25,8 @@ export async function getSale(id: string): Promise<Sale | null> {
     }
 }
 
-export async function addSale(sale: Omit<Sale, 'id'>): Promise<DocumentData> {
-    return await addDoc(salesCollection, sale);
+export async function addSale(sale: Omit<Sale, 'id'>): Promise<void> {
+    await addDoc(salesCollection, sale);
 }
 
 export async function deleteSale(id: string): Promise<void> {
