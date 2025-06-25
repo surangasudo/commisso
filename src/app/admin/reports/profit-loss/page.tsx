@@ -70,7 +70,7 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading
 
     return (
         <>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 print:hidden">
                 <div className="flex items-center gap-2">
                     <Label>Show</Label>
                     <Select defaultValue="25">
@@ -88,7 +88,6 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />Export CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Export Excel</Button>
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm"><Columns3 className="mr-2 h-4 w-4" />Column visibility</Button>
@@ -135,7 +134,7 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading
                     )}
                 </TableBody>
             </Table>
-            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground">
+            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground print:hidden">
                 <span>Showing 1 to {data.length} of {data.length} entries</span>
                 <div className="flex items-center gap-1">
                     <Button variant="outline" size="sm">Previous</Button>
@@ -292,7 +291,7 @@ export default function ProfitLossReportPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between print:hidden">
                  <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                     <FileText className="w-8 h-8" />
                     Profit / Loss Report
@@ -310,7 +309,7 @@ export default function ProfitLossReportPage() {
                         <DropdownMenuTrigger asChild>
                            <Button
                                 id="date"
-                                variant={"default"}
+                                variant={"outline"}
                                 className={cn("w-[260px] justify-start text-left font-normal")}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
@@ -343,10 +342,11 @@ export default function ProfitLossReportPage() {
                             </Popover>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
                 <Card className="p-4">
                     <ReportItem isLoading={isLoading} label="Total Sales:" value={formatCurrency(reportData?.totalSales || 0)} note="(Exc. tax, Discount)" />
                     <ReportItem isLoading={isLoading} label="Total purchase:" value={formatCurrency(reportData?.totalPurchases || 0)} note="(Exc. tax, Discount)" />
@@ -361,157 +361,154 @@ export default function ProfitLossReportPage() {
                     <ReportItem isLoading={isLoading} label="Total Stock Recovered:" value={formatCurrency(0)} />
                  </Card>
             </div>
+            
+            <div className="printable-area space-y-6">
+                <Card>
+                    <CardContent className="p-6">
+                        {isLoading ? (
+                            <>
+                                <h3 className="font-bold text-lg flex items-center gap-2">COGS: <Skeleton className="h-6 w-32" /></h3>
+                                <Skeleton className="h-4 w-full mt-1 max-w-lg"/>
+                                <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Gross Profit: <Skeleton className="h-6 w-32" /></h3>
+                                <Skeleton className="h-4 w-full mt-1 max-w-md"/>
+                                <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Net Profit: <Skeleton className="h-6 w-32" /></h3>
+                                <Skeleton className="h-4 w-full mt-1 max-w-xl"/>
+                            </>
+                        ) : (
+                            <>
+                                <h3 className="font-bold text-lg">COGS: <span className="font-mono">{formatCurrency(reportData?.totalPurchases || 0)}</span></h3>
+                                <p className="text-xs text-muted-foreground">Cost of Goods Sold (simplified as Total Purchases)</p>
+                                <h3 className="font-bold text-lg mt-4">Gross Profit: <span className="font-mono">{formatCurrency(reportData?.grossProfit || 0)}</span></h3>
+                                <p className="text-xs text-muted-foreground">(Total Sales - COGS)</p>
+                                <h3 className="font-bold text-lg mt-4">Net Profit: <span className="font-mono">{formatCurrency(reportData?.netProfit || 0)}</span></h3>
+                                <p className="text-xs text-muted-foreground">(Gross Profit - Total Expenses)</p>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardContent className="p-6">
-                    {isLoading ? (
-                        <>
-                            <h3 className="font-bold text-lg flex items-center gap-2">COGS: <Skeleton className="h-6 w-32" /></h3>
-                            <Skeleton className="h-4 w-full mt-1 max-w-lg"/>
-                             <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Gross Profit: <Skeleton className="h-6 w-32" /></h3>
-                             <Skeleton className="h-4 w-full mt-1 max-w-md"/>
-                             <h3 className="font-bold text-lg mt-4 flex items-center gap-2">Net Profit: <Skeleton className="h-6 w-32" /></h3>
-                             <Skeleton className="h-4 w-full mt-1 max-w-xl"/>
-                        </>
-                    ) : (
-                         <>
-                            <h3 className="font-bold text-lg">COGS: <span className="font-mono">{formatCurrency(reportData?.totalPurchases || 0)}</span></h3>
-                            <p className="text-xs text-muted-foreground">Cost of Goods Sold (simplified as Total Purchases)</p>
-                            <h3 className="font-bold text-lg mt-4">Gross Profit: <span className="font-mono">{formatCurrency(reportData?.grossProfit || 0)}</span></h3>
-                            <p className="text-xs text-muted-foreground">(Total Sales - COGS)</p>
-                            <h3 className="font-bold text-lg mt-4">Net Profit: <span className="font-mono">{formatCurrency(reportData?.netProfit || 0)}</span></h3>
-                            <p className="text-xs text-muted-foreground">(Gross Profit - Total Expenses)</p>
-                        </>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-end">
-                        <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Tabs defaultValue="products">
-                        <TabsList className="flex-wrap h-auto">
-                            <TabsTrigger value="products">Profit by products</TabsTrigger>
-                            <TabsTrigger value="categories">Profit by categories</TabsTrigger>
-                            <TabsTrigger value="brands">Profit by brands</TabsTrigger>
-                            <TabsTrigger value="locations">Profit by locations</TabsTrigger>
-                            <TabsTrigger value="invoice">Profit by invoice</TabsTrigger>
-                            <TabsTrigger value="date">Profit by date</TabsTrigger>
-                            <TabsTrigger value="customer">Profit by customer</TabsTrigger>
-                            <TabsTrigger value="day">Profit by day</TabsTrigger>
-                            <TabsTrigger value="service-staff">Profit by service staff</TabsTrigger>
-                            <TabsTrigger value="agent">Profit by Agent</TabsTrigger>
-                            <TabsTrigger value="sub-agent">Profit by Sub-Agent</TabsTrigger>
-                            <TabsTrigger value="company">Profit by Company</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="products" className="mt-4">
-                           <ReportTable<ProductProfit> 
-                                title="Profit by Products"
-                                data={reportData?.productProfitData || []}
-                                columns={[{key: 'product', header: 'Product'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.product, formatCurrency(item.profit)])}
-                                isLoading={isLoading}
-                           />
-                        </TabsContent>
-                        <TabsContent value="categories" className="mt-4">
-                             <ReportTable<CategoryProfit> 
-                                title="Profit by Categories"
-                                data={[]}
-                                columns={[{key: 'category', header: 'Category'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.category, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                         <TabsContent value="brands" className="mt-4">
-                             <ReportTable<BrandProfit> 
-                                title="Profit by Brands"
-                                data={[]}
-                                columns={[{key: 'brand', header: 'Brand'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.brand, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="locations" className="mt-4">
-                             <ReportTable<LocationProfit> 
-                                title="Profit by Locations"
-                                data={[]}
-                                columns={[{key: 'location', header: 'Location'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.location, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="invoice" className="mt-4">
-                            <ReportTable<InvoiceProfit> 
-                                title="Profit by Invoice"
-                                data={[]}
-                                columns={[
-                                    {key: 'invoiceNo', header: 'Invoice No.'}, 
-                                    {key: 'customer', header: 'Customer'}, 
-                                    {key: 'profit', header: 'Gross Profit', isNumeric: true}
-                                ]}
-                                getPdfData={(d) => d.map(item => [item.invoiceNo, item.customer, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                         <TabsContent value="date" className="mt-4">
-                             <ReportTable<DateProfit> 
-                                title="Profit by Date"
-                                data={[]}
-                                columns={[{key: 'date', header: 'Date'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.date, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="customer" className="mt-4">
-                            <ReportTable<CustomerProfit> 
-                                title="Profit by Customer"
-                                data={[]}
-                                columns={[{key: 'customer', header: 'Customer'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.customer, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="day" className="mt-4">
-                            <ReportTable<DayProfit> 
-                                title="Profit by Day"
-                                data={[]}
-                                columns={[{key: 'day', header: 'Day of the week'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.day, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="service-staff" className="mt-4">
-                            <ReportTable<ServiceStaffProfit> 
-                                title="Profit by Service Staff"
-                                data={[]}
-                                columns={[{key: 'staffName', header: 'Service Staff'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.staffName, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="agent" className="mt-4">
-                            <ReportTable<AgentProfit> 
-                                title="Profit by Agent"
-                                data={[]}
-                                columns={[{key: 'agentName', header: 'Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.agentName, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="sub-agent" className="mt-4">
-                             <ReportTable<SubAgentProfit> 
-                                title="Profit by Sub-Agent"
-                                data={[]}
-                                columns={[{key: 'subAgentName', header: 'Sub-Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.subAgentName, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                        <TabsContent value="company" className="mt-4">
-                             <ReportTable<CompanyProfit> 
-                                title="Profit by Company"
-                                data={[]}
-                                columns={[{key: 'company', header: 'Company'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
-                                getPdfData={(d) => d.map(item => [item.company, formatCurrency(item.profit)])}
-                           />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <Tabs defaultValue="products">
+                            <TabsList className="flex-wrap h-auto print:hidden">
+                                <TabsTrigger value="products">Profit by products</TabsTrigger>
+                                <TabsTrigger value="categories">Profit by categories</TabsTrigger>
+                                <TabsTrigger value="brands">Profit by brands</TabsTrigger>
+                                <TabsTrigger value="locations">Profit by locations</TabsTrigger>
+                                <TabsTrigger value="invoice">Profit by invoice</TabsTrigger>
+                                <TabsTrigger value="date">Profit by date</TabsTrigger>
+                                <TabsTrigger value="customer">Profit by customer</TabsTrigger>
+                                <TabsTrigger value="day">Profit by day</TabsTrigger>
+                                <TabsTrigger value="service-staff">Profit by service staff</TabsTrigger>
+                                <TabsTrigger value="agent">Profit by Agent</TabsTrigger>
+                                <TabsTrigger value="sub-agent">Profit by Sub-Agent</TabsTrigger>
+                                <TabsTrigger value="company">Profit by Company</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="products" className="mt-4">
+                            <ReportTable<ProductProfit> 
+                                    title="Profit by Products"
+                                    data={reportData?.productProfitData || []}
+                                    columns={[{key: 'product', header: 'Product'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.product, formatCurrency(item.profit)])}
+                                    isLoading={isLoading}
+                            />
+                            </TabsContent>
+                            <TabsContent value="categories" className="mt-4">
+                                <ReportTable<CategoryProfit> 
+                                    title="Profit by Categories"
+                                    data={[]}
+                                    columns={[{key: 'category', header: 'Category'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.category, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="brands" className="mt-4">
+                                <ReportTable<BrandProfit> 
+                                    title="Profit by Brands"
+                                    data={[]}
+                                    columns={[{key: 'brand', header: 'Brand'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.brand, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="locations" className="mt-4">
+                                <ReportTable<LocationProfit> 
+                                    title="Profit by Locations"
+                                    data={[]}
+                                    columns={[{key: 'location', header: 'Location'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.location, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="invoice" className="mt-4">
+                                <ReportTable<InvoiceProfit> 
+                                    title="Profit by Invoice"
+                                    data={[]}
+                                    columns={[
+                                        {key: 'invoiceNo', header: 'Invoice No.'}, 
+                                        {key: 'customer', header: 'Customer'}, 
+                                        {key: 'profit', header: 'Gross Profit', isNumeric: true}
+                                    ]}
+                                    getPdfData={(d) => d.map(item => [item.invoiceNo, item.customer, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="date" className="mt-4">
+                                <ReportTable<DateProfit> 
+                                    title="Profit by Date"
+                                    data={[]}
+                                    columns={[{key: 'date', header: 'Date'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.date, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="customer" className="mt-4">
+                                <ReportTable<CustomerProfit> 
+                                    title="Profit by Customer"
+                                    data={[]}
+                                    columns={[{key: 'customer', header: 'Customer'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.customer, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="day" className="mt-4">
+                                <ReportTable<DayProfit> 
+                                    title="Profit by Day"
+                                    data={[]}
+                                    columns={[{key: 'day', header: 'Day of the week'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.day, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="service-staff" className="mt-4">
+                                <ReportTable<ServiceStaffProfit> 
+                                    title="Profit by Service Staff"
+                                    data={[]}
+                                    columns={[{key: 'staffName', header: 'Service Staff'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.staffName, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="agent" className="mt-4">
+                                <ReportTable<AgentProfit> 
+                                    title="Profit by Agent"
+                                    data={[]}
+                                    columns={[{key: 'agentName', header: 'Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.agentName, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="sub-agent" className="mt-4">
+                                <ReportTable<SubAgentProfit> 
+                                    title="Profit by Sub-Agent"
+                                    data={[]}
+                                    columns={[{key: 'subAgentName', header: 'Sub-Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.subAgentName, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                            <TabsContent value="company" className="mt-4">
+                                <ReportTable<CompanyProfit> 
+                                    title="Profit by Company"
+                                    data={[]}
+                                    columns={[{key: 'company', header: 'Company'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
+                                    getPdfData={(d) => d.map(item => [item.company, formatCurrency(item.profit)])}
+                            />
+                            </TabsContent>
+                        </Tabs>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export default function ViewSalePage() {
   if (!sale) return null;
 
   return (
-    <div className="flex flex-col gap-6" id="sale-details-page">
+    <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4 print:hidden">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                 <Eye className="w-8 h-8" />
@@ -137,126 +138,128 @@ export default function ViewSalePage() {
                 <Button onClick={() => router.push(`/admin/sales/edit/${sale.id}`)}><Pencil className="mr-2 h-4 w-4" /> Edit</Button>
             </div>
         </div>
+        
+        <div className="printable-area space-y-6">
+            <Card className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><ShoppingCart className="w-5 h-5 text-muted-foreground" /> Invoice No.</h3>
+                        <p className="text-muted-foreground">{sale.invoiceNo}</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Calendar className="w-5 h-5 text-muted-foreground" /> Date</h3>
+                        <p className="text-muted-foreground">{new Date(sale.date).toLocaleString()}</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><User className="w-5 h-5 text-muted-foreground" /> Customer</h3>
+                        <p className="text-muted-foreground">{sale.customerName}</p>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><MapPin className="w-5 h-5 text-muted-foreground" /> Location</h3>
+                        <p className="text-muted-foreground">{sale.location}</p>
+                    </div>
+                </div>
+                <Separator className="my-6" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 className="font-semibold mb-2">Billing Address:</h4>
+                        <p className="text-sm text-muted-foreground">
+                            {sale.customerName}, <br/>
+                            {sale.contactNumber} <br/>
+                            Address not available.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold mb-2">Shipping Address:</h4>
+                        <p className="text-sm text-muted-foreground">
+                            {sale.shippingDetails || "No shipping details available."}
+                        </p>
+                    </div>
+                </div>
+            </Card>
 
-        <Card className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><ShoppingCart className="w-5 h-5 text-muted-foreground" /> Invoice No.</h3>
-                    <p className="text-muted-foreground">{sale.invoiceNo}</p>
-                </div>
-                <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Calendar className="w-5 h-5 text-muted-foreground" /> Date</h3>
-                    <p className="text-muted-foreground">{new Date(sale.date).toLocaleString()}</p>
-                </div>
-                <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><User className="w-5 h-5 text-muted-foreground" /> Customer</h3>
-                    <p className="text-muted-foreground">{sale.customerName}</p>
-                </div>
-                <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><MapPin className="w-5 h-5 text-muted-foreground" /> Location</h3>
-                    <p className="text-muted-foreground">{sale.location}</p>
-                </div>
-            </div>
-            <Separator className="my-6" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                    <h4 className="font-semibold mb-2">Billing Address:</h4>
-                    <p className="text-sm text-muted-foreground">
-                        {sale.customerName}, <br/>
-                        {sale.contactNumber} <br/>
-                        Address not available.
-                    </p>
-                </div>
-                 <div>
-                    <h4 className="font-semibold mb-2">Shipping Address:</h4>
-                    <p className="text-sm text-muted-foreground">
-                        {sale.shippingDetails || "No shipping details available."}
-                    </p>
-                </div>
-            </div>
-        </Card>
-
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Package className="w-6 h-6" /> Products Sold</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="border rounded-md">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>#</TableHead>
-                                <TableHead>Product</TableHead>
-                                <TableHead className="text-right">Quantity</TableHead>
-                                <TableHead className="text-right">Unit Price</TableHead>
-                                <TableHead className="text-right">Subtotal</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {saleItems.map((item, index) => (
-                                <TableRow key={item.productId}>
-                                    <TableCell>{index + 1}</TableCell>
-                                    <TableCell className="font-medium">{item.productName}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
-                                    <TableCell className="text-right font-semibold">{formatCurrency(item.subtotal)}</TableCell>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Package className="w-6 h-6" /> Products Sold</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>#</TableHead>
+                                    <TableHead>Product</TableHead>
+                                    <TableHead className="text-right">Quantity</TableHead>
+                                    <TableHead className="text-right">Unit Price</TableHead>
+                                    <TableHead className="text-right">Subtotal</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                 <div className="flex justify-end mt-6">
-                    <div className="w-full max-w-sm space-y-2 text-muted-foreground">
-                        <div className="flex justify-between"><span>Subtotal:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
-                        <div className="flex justify-between"><span>Shipping:</span><span>{formatCurrency(0)}</span></div>
-                        <div className="flex justify-between"><span>Tax:</span><span>{formatCurrency(sale.taxAmount || 0)}</span></div>
-                        <Separator className="my-2" />
-                        <div className="flex justify-between font-bold text-foreground text-lg"><span>Total:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
-                         <div className="flex justify-between"><span>Total Paid:</span><span>{formatCurrency(sale.totalPaid)}</span></div>
-                         <div className="flex justify-between font-bold text-red-600"><span>Total Due:</span><span>{formatCurrency(sale.sellDue)}</span></div>
+                            </TableHeader>
+                            <TableBody>
+                                {saleItems.map((item, index) => (
+                                    <TableRow key={item.productId}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell className="font-medium">{item.productName}</TableCell>
+                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{formatCurrency(item.subtotal)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                    <div className="flex justify-end mt-6">
+                        <div className="w-full max-w-sm space-y-2 text-muted-foreground">
+                            <div className="flex justify-between"><span>Subtotal:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
+                            <div className="flex justify-between"><span>Shipping:</span><span>{formatCurrency(0)}</span></div>
+                            <div className="flex justify-between"><span>Tax:</span><span>{formatCurrency(sale.taxAmount || 0)}</span></div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between font-bold text-foreground text-lg"><span>Total:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
+                            <div className="flex justify-between"><span>Total Paid:</span><span>{formatCurrency(sale.totalPaid)}</span></div>
+                            <div className="flex justify-between font-bold text-red-600"><span>Total Due:</span><span>{formatCurrency(sale.sellDue)}</span></div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CreditCard className="w-6 h-6" /> Payment Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <h4 className="font-semibold mb-1">Payment Status</h4>
-                        <Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(sale.paymentStatus))}>{sale.paymentStatus}</Badge>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><CreditCard className="w-6 h-6" /> Payment Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <h4 className="font-semibold mb-1">Payment Status</h4>
+                            <Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(sale.paymentStatus))}>{sale.paymentStatus}</Badge>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Payment Method</h4>
+                            <p className="text-muted-foreground">{sale.paymentMethod}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Shipping Status</h4>
+                            <Badge variant="outline" className={cn("capitalize", getShippingStatusBadge(sale.shippingStatus))}>{sale.shippingStatus || 'Not Applicable'}</Badge>
+                        </div>
                     </div>
-                     <div>
-                        <h4 className="font-semibold mb-1">Payment Method</h4>
-                        <p className="text-muted-foreground">{sale.paymentMethod}</p>
+                    <Separator className="my-4" />
+                    <h4 className="font-semibold mb-2">Notes</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <h5 className="text-muted-foreground">Sell Note:</h5>
+                            <p>{sale.sellNote || 'No sell note provided.'}</p>
+                        </div>
+                        <div>
+                            <h5 className="text-muted-foreground">Staff Note:</h5>
+                            <p>{sale.staffNote || 'No staff note provided.'}</p>
+                        </div>
                     </div>
-                     <div>
-                        <h4 className="font-semibold mb-1">Shipping Status</h4>
-                         <Badge variant="outline" className={cn("capitalize", getShippingStatusBadge(sale.shippingStatus))}>{sale.shippingStatus || 'Not Applicable'}</Badge>
-                    </div>
-                </div>
-                 <Separator className="my-4" />
-                <h4 className="font-semibold mb-2">Notes</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <h5 className="text-muted-foreground">Sell Note:</h5>
-                        <p>{sale.sellNote || 'No sell note provided.'}</p>
-                    </div>
-                     <div>
-                        <h5 className="text-muted-foreground">Staff Note:</h5>
-                        <p>{sale.staffNote || 'No staff note provided.'}</p>
-                    </div>
-                </div>
-            </CardContent>
-             <CardFooter className="flex justify-end print:hidden">
-                <p className="text-sm text-muted-foreground">Added by: {sale.addedBy}</p>
-            </CardFooter>
-        </Card>
+                </CardContent>
+                <CardFooter>
+                    <p className="text-sm text-muted-foreground">Added by: {sale.addedBy}</p>
+                </CardFooter>
+            </Card>
+        </div>
 
-         <div className="text-center text-xs text-slate-400 p-1 print:hidden">
+        <div className="text-center text-xs text-slate-400 p-1 print:hidden">
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>

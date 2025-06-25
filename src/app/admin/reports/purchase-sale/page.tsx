@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -39,13 +40,12 @@ const getPaymentStatusBadge = (status: string) => {
 const PurchaseSaleTable = ({ title, data, columns, footerData, handleExport, formatCurrency }: { title: string, data: any[], columns: { key: string, header: string }[], footerData: { label: string, value: string }[], handleExport: (format: 'csv' | 'xlsx' | 'pdf') => void, formatCurrency: (value: number) => string }) => {
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
                 <CardTitle>{title}</CardTitle>
                 <div className="flex justify-end gap-2 print:hidden">
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -237,63 +237,65 @@ export default function PurchaseSaleReportPage() {
                         />
                     </PopoverContent>
                 </Popover>
+                 <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
             </div>
         </div>
       
-        <Card className="print:hidden">
-            <CardHeader>
-                <CardTitle>Summary</CardTitle>
-                <CardDescription>
-                    A summary of your purchases and sales for the selected period.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">Purchases</h3>
-                    <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Total Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchase)}</span></div>
-                        <div className="flex justify-between"><span>Purchase Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchaseReturn)}</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netPurchase)}</span></div>
-                    </div>
-                </Card>
-                 <Card className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">Sales</h3>
-                    <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Total Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale)}</span></div>
-                        <div className="flex justify-between"><span>Sell Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSellReturn)}</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netSale)}</span></div>
-                    </div>
-                </Card>
-                 <Card className="p-4 bg-primary/10">
-                    <h3 className="font-semibold text-lg mb-2">Overall (Sale - Purchase)</h3>
-                    <div className="space-y-1 text-sm">
-                        <div className="flex justify-between"><span>Sale - Purchase:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale - totalPurchase)}</span></div>
-                        <div className="flex justify-between"><span>Due Amount:</span><span>{isLoading ? 'Calculating...' : formatCurrency(0)}</span></div>
-                        <div className="flex justify-between font-bold border-t pt-1 mt-1 text-lg"><span>Gross Profit:</span><span>{isLoading ? 'Calculating...' : formatCurrency(profit)}</span></div>
-                    </div>
-                </Card>
-            </CardContent>
-        </Card>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <PurchaseSaleTable 
-                title="Purchases"
-                data={filteredPurchases}
-                columns={purchaseColumns}
-                footerData={[{ label: 'Total Purchases', value: formatCurrency(totalPurchase)}]}
-                handleExport={handlePurchaseExport}
-                formatCurrency={formatCurrency}
-            />
-            <PurchaseSaleTable 
-                title="Sales"
-                data={filteredSales}
-                columns={saleColumns}
-                footerData={[{ label: 'Total Sales', value: formatCurrency(totalSale)}]}
-                handleExport={handleSaleExport}
-                formatCurrency={formatCurrency}
-            />
+        <div className="printable-area space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Summary</CardTitle>
+                    <CardDescription>
+                        A summary of your purchases and sales for the selected period.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card className="p-4">
+                        <h3 className="font-semibold text-lg mb-2">Purchases</h3>
+                        <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Total Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchase)}</span></div>
+                            <div className="flex justify-between"><span>Purchase Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalPurchaseReturn)}</span></div>
+                            <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Purchases:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netPurchase)}</span></div>
+                        </div>
+                    </Card>
+                    <Card className="p-4">
+                        <h3 className="font-semibold text-lg mb-2">Sales</h3>
+                        <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Total Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale)}</span></div>
+                            <div className="flex justify-between"><span>Sell Returns:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSellReturn)}</span></div>
+                            <div className="flex justify-between font-bold border-t pt-1 mt-1"><span>Net Sales:</span><span>{isLoading ? 'Calculating...' : formatCurrency(netSale)}</span></div>
+                        </div>
+                    </Card>
+                    <Card className="p-4 bg-primary/10">
+                        <h3 className="font-semibold text-lg mb-2">Overall (Sale - Purchase)</h3>
+                        <div className="space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Sale - Purchase:</span><span>{isLoading ? 'Calculating...' : formatCurrency(totalSale - totalPurchase)}</span></div>
+                            <div className="flex justify-between"><span>Due Amount:</span><span>{isLoading ? 'Calculating...' : formatCurrency(0)}</span></div>
+                            <div className="flex justify-between font-bold border-t pt-1 mt-1 text-lg"><span>Gross Profit:</span><span>{isLoading ? 'Calculating...' : formatCurrency(profit)}</span></div>
+                        </div>
+                    </Card>
+                </CardContent>
+            </Card>
+            
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <PurchaseSaleTable 
+                    title="Purchases"
+                    data={filteredPurchases}
+                    columns={purchaseColumns}
+                    footerData={[{ label: 'Total Purchases', value: formatCurrency(totalPurchase)}]}
+                    handleExport={handlePurchaseExport}
+                    formatCurrency={formatCurrency}
+                />
+                <PurchaseSaleTable 
+                    title="Sales"
+                    data={filteredSales}
+                    columns={saleColumns}
+                    footerData={[{ label: 'Total Sales', value: formatCurrency(totalSale)}]}
+                    handleExport={handleSaleExport}
+                    formatCurrency={formatCurrency}
+                />
+            </div>
         </div>
-
     </div>
   );
 }

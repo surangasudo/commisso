@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,6 @@ const ContactReportTable = <T extends Record<string, any>>({ title, data, column
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -162,10 +162,11 @@ export default function SupplierCustomerReportPage() {
                         />
                     </PopoverContent>
                 </Popover>
+                 <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 gap-6 printable-area">
             <Card>
                 <CardHeader className="print:hidden">
                     <div className="flex justify-between items-center">

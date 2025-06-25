@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -19,13 +20,12 @@ import { getPurchases } from '@/services/purchaseService'; // Assuming this serv
 const TaxReportTable = ({ title, data, columns, footerData, handleExport }: { title: string, data: any[], columns: { key: string, header: string }[], footerData: { label: string, value: string }[], handleExport: (format: 'csv' | 'xlsx' | 'pdf') => void }) => {
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between">
                 <CardTitle>{title}</CardTitle>
                 <div className="flex justify-end gap-2 print:hidden">
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
                 </div>
             </CardHeader>
             <CardContent>
@@ -204,58 +204,60 @@ export default function TaxReportPage() {
                         />
                     </PopoverContent>
                 </Popover>
+                <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
             </div>
         </div>
       
-        <Card className="print:hidden">
-            <CardHeader>
-                <CardTitle>Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card className="p-4 bg-blue-50">
-                    <h3 className="font-semibold text-lg mb-2 text-blue-800">Input Tax</h3>
-                    <p className="text-2xl font-bold text-blue-900">${totalInputTax.toFixed(2)}</p>
-                </Card>
-                <Card className="p-4 bg-green-50">
-                    <h3 className="font-semibold text-lg mb-2 text-green-800">Output Tax</h3>
-                    <p className="text-2xl font-bold text-green-900">${totalOutputTax.toFixed(2)}</p>
-                </Card>
-                 <Card className="p-4 bg-yellow-50">
-                    <h3 className="font-semibold text-lg mb-2 text-yellow-800">Expense Tax</h3>
-                    <p className="text-2xl font-bold text-yellow-900">${totalExpenseTax.toFixed(2)}</p>
-                </Card>
-                 <Card className="p-4 bg-red-50">
-                    <h3 className="font-semibold text-lg mb-2 text-red-800">Tax Due</h3>
-                    <p className="text-2xl font-bold text-red-900">${netTax.toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">(Output - Input - Expense)</p>
-                </Card>
-            </CardContent>
-        </Card>
-        
-        <div className="grid grid-cols-1 gap-6">
-            <TaxReportTable 
-                title="Input Tax"
-                data={inputTaxData}
-                columns={taxColumns}
-                footerData={[{ label: 'Total Input Tax', value: `$${totalInputTax.toFixed(2)}`}]}
-                handleExport={(format) => handleExport('input', format)}
-            />
-            <TaxReportTable 
-                title="Output Tax"
-                data={outputTaxData}
-                columns={taxColumns}
-                footerData={[{ label: 'Total Output Tax', value: `$${totalOutputTax.toFixed(2)}`}]}
-                handleExport={(format) => handleExport('output', format)}
-            />
-             <TaxReportTable 
-                title="Expense Tax"
-                data={expenseTaxData}
-                columns={taxColumns}
-                footerData={[{ label: 'Total Expense Tax', value: `$${totalExpenseTax.toFixed(2)}`}]}
-                handleExport={(format) => handleExport('expense', format)}
-            />
+        <div className="printable-area space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="p-4 bg-blue-50">
+                        <h3 className="font-semibold text-lg mb-2 text-blue-800">Input Tax</h3>
+                        <p className="text-2xl font-bold text-blue-900">${totalInputTax.toFixed(2)}</p>
+                    </Card>
+                    <Card className="p-4 bg-green-50">
+                        <h3 className="font-semibold text-lg mb-2 text-green-800">Output Tax</h3>
+                        <p className="text-2xl font-bold text-green-900">${totalOutputTax.toFixed(2)}</p>
+                    </Card>
+                    <Card className="p-4 bg-yellow-50">
+                        <h3 className="font-semibold text-lg mb-2 text-yellow-800">Expense Tax</h3>
+                        <p className="text-2xl font-bold text-yellow-900">${totalExpenseTax.toFixed(2)}</p>
+                    </Card>
+                    <Card className="p-4 bg-red-50">
+                        <h3 className="font-semibold text-lg mb-2 text-red-800">Tax Due</h3>
+                        <p className="text-2xl font-bold text-red-900">${netTax.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">(Output - Input - Expense)</p>
+                    </Card>
+                </CardContent>
+            </Card>
+            
+            <div className="grid grid-cols-1 gap-6">
+                <TaxReportTable 
+                    title="Input Tax"
+                    data={inputTaxData}
+                    columns={taxColumns}
+                    footerData={[{ label: 'Total Input Tax', value: `$${totalInputTax.toFixed(2)}`}]}
+                    handleExport={(format) => handleExport('input', format)}
+                />
+                <TaxReportTable 
+                    title="Output Tax"
+                    data={outputTaxData}
+                    columns={taxColumns}
+                    footerData={[{ label: 'Total Output Tax', value: `$${totalOutputTax.toFixed(2)}`}]}
+                    handleExport={(format) => handleExport('output', format)}
+                />
+                <TaxReportTable 
+                    title="Expense Tax"
+                    data={expenseTaxData}
+                    columns={taxColumns}
+                    footerData={[{ label: 'Total Expense Tax', value: `$${totalExpenseTax.toFixed(2)}`}]}
+                    handleExport={(format) => handleExport('expense', format)}
+                />
+            </div>
         </div>
-
     </div>
   );
 }

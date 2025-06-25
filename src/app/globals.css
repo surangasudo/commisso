@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -90,27 +91,42 @@ body {
     }
 }
 
+/* More robust print styles */
 @media print {
   body {
-    background: white;
-  }
-  /* Hide sidebar and header */
-  [data-sidebar="sidebar"],
-  header,
-  .print\:hidden {
-    display: none;
+    background: white !important;
+    color: black !important;
   }
 
-  /* Make main content take full width */
-  main {
-    padding: 0 !important;
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the printable area and its children */
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+
+  /* Position the printable area at the top of the page */
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
   
-  #sale-details-page {
-    margin: 0;
-    padding: 0;
+  /* Ensure cards and tables look good on paper */
+  .printable-area .card {
+    border: none !important;
+    box-shadow: none !important;
   }
 
+  .printable-area .table {
+    width: 100%;
+  }
+
+  /* Page setup */
   @page {
     size: auto;
     margin: 0.5in;

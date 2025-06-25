@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -97,10 +98,13 @@ export default function CustomerGroupsReportPage() {
     
     return (
         <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-                <FileText className="w-8 h-8" />
-                Customer Groups Report
-            </h1>
+             <div className="flex items-center justify-between print:hidden">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+                    <FileText className="w-8 h-8" />
+                    Customer Groups Report
+                </h1>
+                <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+            </div>
 
             <Card className="print:hidden">
                 <CardHeader>
@@ -167,63 +171,64 @@ export default function CustomerGroupsReportPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Report Details</CardTitle>
-                    <CardDescription>Sales information grouped by customer group.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
-                        <div className="relative flex-1 sm:max-w-xs">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Search groups..." 
-                                className="pl-8"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)} 
-                            />
+            <div className="printable-area">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Report Details</CardTitle>
+                        <CardDescription>Sales information grouped by customer group.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
+                            <div className="relative flex-1 sm:max-w-xs">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search groups..." 
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)} 
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
-                            <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
-                            <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                            <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
-                        </div>
-                    </div>
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer Group</TableHead>
-                                    <TableHead className="text-right">Total Sale</TableHead>
-                                    <TableHead className="text-right">Total Sale Due</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredData.map((item) => (
-                                    <TableRow key={item.groupName}>
-                                        <TableCell className="font-medium">{item.groupName}</TableCell>
-                                        <TableCell className="text-right">${item.totalSale.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">${item.totalSaleDue.toFixed(2)}</TableCell>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Customer Group</TableHead>
+                                        <TableHead className="text-right">Total Sale</TableHead>
+                                        <TableHead className="text-right">Total Sale Due</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell className="font-bold">Total</TableCell>
-                                    <TableCell className="text-right font-bold">${totalSale.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right font-bold">${totalSaleDue.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </div>
-                </CardContent>
-                <CardFooter className="print:hidden">
-                    <div className="text-xs text-muted-foreground">
-                        Showing <strong>{filteredData.length}</strong> of <strong>{reportData.length}</strong> entries
-                    </div>
-                </CardFooter>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredData.map((item) => (
+                                        <TableRow key={item.groupName}>
+                                            <TableCell className="font-medium">{item.groupName}</TableCell>
+                                            <TableCell className="text-right">${item.totalSale.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">${item.totalSaleDue.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow>
+                                        <TableCell className="font-bold">Total</TableCell>
+                                        <TableCell className="text-right font-bold">${totalSale.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-bold">${totalSaleDue.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="print:hidden">
+                        <div className="text-xs text-muted-foreground">
+                            Showing <strong>{filteredData.length}</strong> of <strong>{reportData.length}</strong> entries
+                        </div>
+                    </CardFooter>
+                </Card>
+            </div>
         </div>
     );
 }

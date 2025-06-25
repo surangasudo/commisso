@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -117,10 +118,14 @@ export default function ProductPurchaseReportPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-                <FileText className="w-8 h-8" />
-                Product Purchase Report
-            </h1>
+            <div className="flex items-center justify-between print:hidden">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+                    <FileText className="w-8 h-8" />
+                    Product Purchase Report
+                </h1>
+                <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+            </div>
+
 
             <Card className="print:hidden">
                 <CardHeader>
@@ -195,78 +200,79 @@ export default function ProductPurchaseReportPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Report Details</CardTitle>
-                    <CardDescription>Product-wise purchase report for the selected period.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
-                        <div className="relative flex-1 sm:max-w-xs">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Search..." 
-                                className="pl-8"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)} 
-                            />
+            <div className="printable-area">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Report Details</CardTitle>
+                        <CardDescription>Product-wise purchase report for the selected period.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 print:hidden">
+                            <div className="relative flex-1 sm:max-w-xs">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search..." 
+                                    className="pl-8"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)} 
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
-                            <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
-                            <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                            <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
-                        </div>
-                    </div>
-                    <div className="border rounded-md">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Product</TableHead>
-                                    <TableHead>SKU</TableHead>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Reference No.</TableHead>
-                                    <TableHead>Supplier</TableHead>
-                                    <TableHead className="text-right">Quantity</TableHead>
-                                    <TableHead className="text-right">Unit Price</TableHead>
-                                    <TableHead className="text-right">Total Amount</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredData.length > 0 ? filteredData.map((item) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="font-medium">{item.product}</TableCell>
-                                        <TableCell>{item.sku}</TableCell>
-                                        <TableCell>{item.date}</TableCell>
-                                        <TableCell>{item.referenceNo}</TableCell>
-                                        <TableCell>{item.supplier}</TableCell>
-                                        <TableCell className="text-right">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                )) : (
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={8} className="text-center h-24">No data available for the selected filters.</TableCell>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>SKU</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Reference No.</TableHead>
+                                        <TableHead>Supplier</TableHead>
+                                        <TableHead className="text-right">Quantity</TableHead>
+                                        <TableHead className="text-right">Unit Price</TableHead>
+                                        <TableHead className="text-right">Total Amount</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell colSpan={5} className="font-bold text-right">Total:</TableCell>
-                                    <TableCell className="font-bold text-right">{totalQuantity}</TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell className="font-bold text-right">${totalAmount.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </div>
-                </CardContent>
-                <CardFooter className="print:hidden">
-                    <div className="text-xs text-muted-foreground">
-                        Showing <strong>{filteredData.length}</strong> of <strong>{reportData.length}</strong> entries
-                    </div>
-                </CardFooter>
-            </Card>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredData.length > 0 ? filteredData.map((item) => (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="font-medium">{item.product}</TableCell>
+                                            <TableCell>{item.sku}</TableCell>
+                                            <TableCell>{item.date}</TableCell>
+                                            <TableCell>{item.referenceNo}</TableCell>
+                                            <TableCell>{item.supplier}</TableCell>
+                                            <TableCell className="text-right">{item.quantity}</TableCell>
+                                            <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">${item.totalAmount.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="text-center h-24">No data available for the selected filters.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="font-bold text-right">Total:</TableCell>
+                                        <TableCell className="font-bold text-right">{totalQuantity}</TableCell>
+                                        <TableCell></TableCell>
+                                        <TableCell className="font-bold text-right">${totalAmount.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="print:hidden">
+                        <div className="text-xs text-muted-foreground">
+                            Showing <strong>{filteredData.length}</strong> of <strong>{reportData.length}</strong> entries
+                        </div>
+                    </CardFooter>
+                </Card>
+            </div>
         </div>
     );
 }

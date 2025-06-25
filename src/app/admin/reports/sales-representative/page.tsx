@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,6 @@ const ReportTable = ({ data, entityType }: { data: ReportData[], entityType: str
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}><Download className="mr-2 h-4 w-4" />Excel</Button>
                     <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}><FileText className="mr-2 h-4 w-4" />PDF</Button>
-                    <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" />Print</Button>
                 </div>
             </div>
             <div className="border rounded-md">
@@ -184,10 +184,14 @@ export default function SalesRepresentativeReportPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-                <UsersIcon className="w-8 h-8" />
-                Sales Representative Report
-            </h1>
+            <div className="flex items-center justify-between print:hidden">
+                <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+                    <UsersIcon className="w-8 h-8" />
+                    Sales Representative Report
+                </h1>
+                <Button variant="default" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+            </div>
+
 
             <Card className="print:hidden">
                 <CardHeader>
@@ -222,91 +226,93 @@ export default function SalesRepresentativeReportPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:hidden">
+            <div className="printable-area space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Sales (Gross)</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Sales Commission</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
+                        </CardContent>
+                    </Card>
+                </div>
+
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Sales (Gross)</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">${totalSales.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Sales Commission</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">${totalCommission.toFixed(2)}</div>
+                    <CardContent className="pt-6">
+                        <Tabs defaultValue="agents">
+                            <TabsList className="print:hidden">
+                                <TabsTrigger value="agents">Agents</TabsTrigger>
+                                <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
+                                <TabsTrigger value="companies">Companies</TabsTrigger>
+                                <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="agents" className="mt-4 space-y-4">
+                            <div className="space-y-2 max-w-sm print:hidden">
+                                    <Label>Filter by Agent</Label>
+                                    <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Agents</SelectItem>
+                                            {agents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                            </div>
+                            <ReportTable data={agentData} entityType="Agent" />
+                            </TabsContent>
+                            <TabsContent value="sub_agents" className="mt-4 space-y-4">
+                            <div className="space-y-2 max-w-sm print:hidden">
+                                    <Label>Filter by Sub-Agent</Label>
+                                    <Select value={selectedSubAgent} onValueChange={setSelectedSubAgent}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Sub-Agents</SelectItem>
+                                            {subAgents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                            </div>
+                            <ReportTable data={subAgentData} entityType="Sub-Agent" />
+                            </TabsContent>
+                            <TabsContent value="companies" className="mt-4 space-y-4">
+                            <div className="space-y-2 max-w-sm print:hidden">
+                                    <Label>Filter by Company</Label>
+                                    <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Companies</SelectItem>
+                                            {companies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                            </div>
+                            <ReportTable data={companyData} entityType="Company" />
+                            </TabsContent>
+                            <TabsContent value="salespersons" className="mt-4 space-y-4">
+                            <div className="space-y-2 max-w-sm print:hidden">
+                                    <Label>Filter by Salesperson</Label>
+                                    <Select value={selectedSalesperson} onValueChange={setSelectedSalesperson}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Salespersons</SelectItem>
+                                            {salespersons.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                            </div>
+                            <ReportTable data={salespersonData} entityType="Salesperson" />
+                            </TabsContent>
+                        </Tabs>
                     </CardContent>
                 </Card>
             </div>
-
-            <Card>
-                <CardContent className="pt-6">
-                    <Tabs defaultValue="agents">
-                        <TabsList className="print:hidden">
-                            <TabsTrigger value="agents">Agents</TabsTrigger>
-                            <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
-                            <TabsTrigger value="companies">Companies</TabsTrigger>
-                            <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="agents" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm print:hidden">
-                                <Label>Filter by Agent</Label>
-                                <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Agents</SelectItem>
-                                        {agents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                           </div>
-                           <ReportTable data={agentData} entityType="Agent" />
-                        </TabsContent>
-                        <TabsContent value="sub_agents" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm print:hidden">
-                                <Label>Filter by Sub-Agent</Label>
-                                <Select value={selectedSubAgent} onValueChange={setSelectedSubAgent}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Sub-Agents</SelectItem>
-                                        {subAgents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                           </div>
-                           <ReportTable data={subAgentData} entityType="Sub-Agent" />
-                        </TabsContent>
-                         <TabsContent value="companies" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm print:hidden">
-                                <Label>Filter by Company</Label>
-                                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Companies</SelectItem>
-                                        {companies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                           </div>
-                           <ReportTable data={companyData} entityType="Company" />
-                        </TabsContent>
-                         <TabsContent value="salespersons" className="mt-4 space-y-4">
-                           <div className="space-y-2 max-w-sm print:hidden">
-                                <Label>Filter by Salesperson</Label>
-                                <Select value={selectedSalesperson} onValueChange={setSelectedSalesperson}>
-                                    <SelectTrigger><SelectValue/></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Salespersons</SelectItem>
-                                        {salespersons.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                    </SelectContent>
-                                </Select>
-                           </div>
-                           <ReportTable data={salespersonData} entityType="Salesperson" />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
         </div>
     );
 }
