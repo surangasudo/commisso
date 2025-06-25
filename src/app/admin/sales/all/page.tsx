@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Download,
   Printer,
@@ -49,9 +50,20 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { type Sale } from '@/lib/data';
-import { getSales } from '@/services/saleService';
+import { getSales, deleteSale } from '@/services/saleService';
 import { AppFooter } from '@/components/app-footer';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -69,6 +81,11 @@ const getPaymentStatusBadge = (status: string) => {
 export default function AllSalesPage() {
     const [sales, setSales] = useState<Sale[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
+    const { toast } = useToast();
+    
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
 
     useEffect(() => {
         const fetchSales = async () => {
@@ -92,7 +109,37 @@ export default function AllSalesPage() {
     const paidCount = sales.filter(s => s.paymentStatus === 'Paid').length;
     const cashCount = sales.filter(s => s.paymentMethod === 'Cash').length;
 
+    const handleView = (saleId: string) => {
+        router.push(`/admin/sales/view/${saleId}`);
+    };
+
+    const handleEdit = (saleId: string) => {
+        router.push(`/admin/sales/edit/${saleId}`);
+    };
+
+    const handleDelete = (sale: Sale) => {
+        setSaleToDelete(sale);
+        setIsDeleteDialogOpen(true);
+    };
+    
+    const confirmDelete = async () => {
+        if (saleToDelete) {
+            try {
+                await deleteSale(saleToDelete.id);
+                setSales(sales.filter(s => s.id !== saleToDelete.id));
+                toast({ title: "Success", description: "Sale deleted successfully." });
+            } catch (error) {
+                toast({ title: "Error", description: "Failed to delete sale.", variant: "destructive" });
+            } finally {
+                setIsDeleteDialogOpen(false);
+                setSaleToDelete(null);
+            }
+        }
+    };
+
+
   return (
+    <>
     <div className="flex flex-col gap-4">
         <div className="flex items-baseline gap-2">
             <h1 className="font-headline text-3xl font-bold">Sales</h1>
@@ -204,9 +251,9 @@ export default function AllSalesPage() {
                                             <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
-                                            <DropdownMenuItem><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                            <DropdownMenuItem><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleView(sale.id)}><Eye className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleEdit(sale.id)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                            <DropdownMenuItem onSelect={() => handleDelete(sale)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
@@ -262,5 +309,23 @@ export default function AllSalesPage() {
         </Card>
         <AppFooter />
     </div>
+     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the sale
+              with invoice "{saleToDelete?.invoiceNo}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSaleToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

@@ -7,7 +7,9 @@ import { Separator } from "@/components/ui/separator";
 import { Eye, Printer, Pencil, Package, ShoppingCart, User, Calendar, MapPin, CreditCard } from "lucide-react";
 import { useParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { sales, type Sale, detailedProducts, type DetailedProduct } from '@/lib/data';
+import { type Sale, type DetailedProduct } from '@/lib/data';
+import { getSale } from '@/services/saleService';
+import { getProducts } from '@/services/productService';
 import { cn } from "@/lib/utils";
 
 const getPaymentStatusBadge = (status: string) => {
@@ -41,49 +43,14 @@ const getShippingStatusBadge = (status: string | null) => {
     }
 }
 
-type SaleItem = {
-  product: DetailedProduct;
+type SaleItemWithDetails = {
+  productId: string;
   quantity: number;
   unitPrice: number;
+  tax: number;
+  productName: string;
   subtotal: number;
 };
-
-// Mock function to get items for a sale
-const getSaleItems = (saleId: string): SaleItem[] => {
-  // This is mock data. In a real application, you'd fetch this from your database.
-  if (saleId === 'sale-1') {
-    const product = detailedProducts.find(p => p.sku === 'AS0021'); // Pair Of Dumbbells
-    if (!product) return [];
-    const quantity = 1;
-    const unitPrice = 750.00;
-    return [{ product, quantity, unitPrice, subtotal: quantity * unitPrice }];
-  }
-  if (saleId === 'sale-2') {
-    const product = detailedProducts.find(p => p.sku === 'AS0061'); // Red Wine
-    if (!product) return [];
-    const quantity = 1;
-    const unitPrice = 412.50;
-    return [{ product, quantity, unitPrice, subtotal: quantity * unitPrice }];
-  }
-  if (saleId === 'sale-3') {
-     const product = detailedProducts.find(p => p.sku === 'AS0008'); // Nike Fashion Sneaker
-     if (!product) return [];
-     const quantity = 1;
-     const unitPrice = 825.00;
-     return [{ product, quantity, unitPrice, subtotal: quantity * unitPrice }];
-  }
-   if (saleId === 'sale-4') {
-     const product1 = detailedProducts.find(p => p.sku === 'AS0010');
-     const product2 = detailedProducts.find(p => p.sku === 'AS0009');
-     if (!product1 || !product2) return [];
-     const unitPrice = 3850;
-     return [
-         { product: product1, quantity: 1, unitPrice: unitPrice, subtotal: unitPrice },
-         { product: product2, quantity: 1, unitPrice: unitPrice, subtotal: unitPrice },
-     ];
-   }
-  return [];
-}
 
 
 export default function ViewSalePage() {
@@ -91,25 +58,49 @@ export default function ViewSalePage() {
   const { id } = React.use(useParams());
 
   const [sale, setSale] = useState<Sale | null>(null);
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [saleItems, setSaleItems] = useState<SaleItemWithDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const saleData = sales.find(s => s.id === id);
-      if (saleData) {
-        setSale(saleData);
-        setSaleItems(getSaleItems(id as string));
-      } else {
-        router.push('/admin/sales/all');
-      }
-    }
+    if (typeof id !== 'string') return;
+
+    const fetchSaleDetails = async () => {
+        try {
+            const [saleData, productsData] = await Promise.all([
+                getSale(id),
+                getProducts()
+            ]);
+
+            if (saleData) {
+                setSale(saleData);
+                const itemsWithDetails = saleData.items.map(item => {
+                    const product = productsData.find(p => p.id === item.productId);
+                    return {
+                        ...item,
+                        productName: product?.name || 'Unknown Product',
+                        subtotal: item.quantity * item.unitPrice,
+                    };
+                });
+                setSaleItems(itemsWithDetails);
+            } else {
+                router.push('/admin/sales/all');
+            }
+        } catch(error) {
+            console.error("Failed to fetch sale details:", error);
+            router.push('/admin/sales/all');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchSaleDetails();
   }, [id, router]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (!sale || !saleItems) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
         <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
@@ -129,6 +120,8 @@ export default function ViewSalePage() {
       </div>
     );
   }
+  
+  if (!sale) return null;
 
   return (
     <div className="flex flex-col gap-6" id="sale-details-page">
@@ -151,7 +144,7 @@ export default function ViewSalePage() {
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><Calendar className="w-5 h-5 text-muted-foreground" /> Date</h3>
-                    <p className="text-muted-foreground">{sale.date}</p>
+                    <p className="text-muted-foreground">{new Date(sale.date).toLocaleString()}</p>
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg flex items-center gap-2 mb-2"><User className="w-5 h-5 text-muted-foreground" /> Customer</h3>
@@ -199,9 +192,9 @@ export default function ViewSalePage() {
                         </TableHeader>
                         <TableBody>
                             {saleItems.map((item, index) => (
-                                <TableRow key={item.product.id}>
+                                <TableRow key={item.productId}>
                                     <TableCell>{index + 1}</TableCell>
-                                    <TableCell className="font-medium">{item.product.name}</TableCell>
+                                    <TableCell className="font-medium">{item.productName}</TableCell>
                                     <TableCell className="text-right">{item.quantity}</TableCell>
                                     <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-semibold">${item.subtotal.toFixed(2)}</TableCell>
@@ -214,7 +207,7 @@ export default function ViewSalePage() {
                     <div className="w-full max-w-sm space-y-2 text-muted-foreground">
                         <div className="flex justify-between"><span>Subtotal:</span><span>${sale.totalAmount.toFixed(2)}</span></div>
                         <div className="flex justify-between"><span>Shipping:</span><span>$0.00</span></div>
-                        <div className="flex justify-between"><span>Tax:</span><span>$0.00</span></div>
+                        <div className="flex justify-between"><span>Tax:</span><span>${(sale.taxAmount || 0).toFixed(2)}</span></div>
                         <Separator className="my-2" />
                         <div className="flex justify-between font-bold text-foreground text-lg"><span>Total:</span><span>${sale.totalAmount.toFixed(2)}</span></div>
                          <div className="flex justify-between"><span>Total Paid:</span><span>${sale.totalPaid.toFixed(2)}</span></div>

@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type Sale } from '@/lib/data';
 
 function sanitizeData(data: any): any {
@@ -37,7 +37,24 @@ export async function getSales(): Promise<Sale[]> {
   });
 }
 
+export async function getSale(id: string): Promise<Sale | null> {
+    const docRef = doc(db, 'sales', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const data = sanitizeData(docSnap.data());
+        return { id: docSnap.id, ...data } as Sale;
+    } else {
+        return null;
+    }
+}
+
 export async function addSale(sale: Omit<Sale, 'id'>): Promise<DocumentData> {
     const saleData = JSON.parse(JSON.stringify(sale));
     return await addDoc(salesCollection, saleData);
+}
+
+export async function deleteSale(id: string): Promise<void> {
+    const docRef = doc(db, 'sales', id);
+    await deleteDoc(docRef);
 }
