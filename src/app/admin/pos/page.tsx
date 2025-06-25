@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import Image from 'next/image';
@@ -37,7 +38,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { products, type Product, sales as recentSalesData } from '@/lib/data';
+import { getProducts } from '@/services/productService';
+import { sales as recentSalesData, type DetailedProduct } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -63,7 +65,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrency } from '@/hooks/use-currency';
 import { ThemeToggle } from '@/components/theme-toggle';
-
+import { Skeleton } from '@/components/ui/skeleton';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -81,7 +83,7 @@ const productHints: { [key: string]: string } = {
 };
 
 type CartItem = {
-  product: Product;
+  product: DetailedProduct;
   quantity: number;
 };
 
@@ -284,6 +286,9 @@ export default function PosPage() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
 
+  const [products, setProducts] = useState<DetailedProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
   const [cardAmount, setCardAmount] = useState('');
@@ -312,6 +317,25 @@ export default function PosPage() {
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
 
   useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const productsData = await getProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        toast({
+          title: "Error",
+          description: "Could not fetch products from the database.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [toast]);
+
+  useEffect(() => {
     const updateCurrentTime = () => {
       setTime(new Date().toLocaleString('en-US', {
         month: '2-digit',
@@ -336,7 +360,7 @@ export default function PosPage() {
   }, []);
 
   const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    return cart.reduce((acc, item) => acc + item.product.sellingPrice * item.quantity, 0);
   }, [cart]);
 
   const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
@@ -361,9 +385,9 @@ export default function PosPage() {
     return products.filter((p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, products]);
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: DetailedProduct) => {
     setCart((currentCart) => {
       const existingItem = currentCart.find(
         (item) => item.product.id === product.id
@@ -603,8 +627,8 @@ export default function PosPage() {
                                 <div className="col-span-2">
                                     <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
                                 </div>
-                                <div className="col-span-2">{formatCurrency(item.product.price)}</div>
-                                <div className="col-span-2 font-semibold">{formatCurrency(item.product.price * item.quantity)}</div>
+                                <div className="col-span-2">{formatCurrency(item.product.sellingPrice)}</div>
+                                <div className="col-span-2 font-semibold">{formatCurrency(item.product.sellingPrice * item.quantity)}</div>
                                 <div className="col-span-1 text-center">
                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.product.id)}><X className="w-4 h-4"/></Button>
                                 </div>
@@ -655,25 +679,41 @@ export default function PosPage() {
            <Card className="flex-1 bg-card p-2">
             <ScrollArea className="h-full">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-                    {filteredProducts.map(product => (
-                        <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
-                            <div className="relative aspect-square bg-muted">
-                                <Image
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    fill
-                                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                                    data-ai-hint={productHints[product.id] || 'product item'}
-                                />
-                            </div>
-                            <div className="p-2 text-center">
-                                <p className="text-xs font-semibold truncate">{product.name}</p>
-                                <p className="text-xs text-muted-foreground">({product.sku})</p>
-                                <p className="text-sm font-bold text-primary">{formatCurrency(product.price)}</p>
-                                <p className="text-xs text-green-600">{product.stock} Pc(s) in stock</p>
-                            </div>
-                        </Card>
-                    ))}
+                    {isLoading ? (
+                        Array.from({ length: 10 }).map((_, i) => (
+                            <Card key={i}>
+                                <div className="relative aspect-square bg-muted">
+                                    <Skeleton className="h-full w-full" />
+                                </div>
+                                <div className="p-2 text-center">
+                                    <Skeleton className="h-4 w-3/4 mx-auto mb-1" />
+                                    <Skeleton className="h-3 w-1/2 mx-auto mb-1" />
+                                    <Skeleton className="h-4 w-1/4 mx-auto mb-1" />
+                                    <Skeleton className="h-3 w-1/3 mx-auto" />
+                                </div>
+                            </Card>
+                        ))
+                    ) : (
+                      filteredProducts.map(product => (
+                          <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
+                              <div className="relative aspect-square bg-muted">
+                                  <Image
+                                      src={product.image}
+                                      alt={product.name}
+                                      fill
+                                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                                      data-ai-hint={productHints[product.id] || 'product item'}
+                                  />
+                              </div>
+                              <div className="p-2 text-center">
+                                  <p className="text-xs font-semibold truncate">{product.name}</p>
+                                  <p className="text-xs text-muted-foreground">({product.sku})</p>
+                                  <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
+                                  <p className="text-xs text-green-600">{product.currentStock} {product.unit}(s) in stock</p>
+                              </div>
+                          </Card>
+                      ))
+                    )}
                 </div>
             </ScrollArea>
            </Card>
