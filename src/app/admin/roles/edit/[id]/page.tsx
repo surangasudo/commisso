@@ -52,8 +52,7 @@ type PermissionsState = Record<string, Record<string, boolean | string>>;
 export default function EditRolePage() {
     const { toast } = useToast();
     const router = useRouter();
-    const params = useParams();
-    const { id } = params;
+    const { id } = React.use(useParams());
 
     const [roleName, setRoleName] = useState('');
     const [permissions, setPermissions] = useState<PermissionsState>({});

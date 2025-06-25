@@ -13,9 +13,8 @@ import { users as allUsers, type User } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
 export default function EditUserPage() {
-    const params = useParams();
     const router = useRouter();
-    const { id } = params;
+    const { id } = React.use(useParams());
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
 

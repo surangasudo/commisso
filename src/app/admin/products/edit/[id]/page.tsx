@@ -13,8 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 
 export default function EditProductPage() {
-  const params = useParams();
-  const { id } = params;
+  const { id } = React.use(useParams());
   const [product, setProduct] = useState<DetailedProduct | null>(null);
 
   useEffect(() => {

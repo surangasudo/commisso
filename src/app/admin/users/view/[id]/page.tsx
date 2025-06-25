@@ -22,9 +22,8 @@ const DetailItem = ({ icon, label, value }: { icon: React.ElementType, label: st
 
 
 export default function ViewUserPage() {
-    const params = useParams();
     const router = useRouter();
-    const { id } = params;
+    const { id } = React.use(useParams());
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
 

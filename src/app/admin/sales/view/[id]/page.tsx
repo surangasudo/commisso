@@ -87,9 +87,8 @@ const getSaleItems = (saleId: string): SaleItem[] => {
 
 
 export default function ViewSalePage() {
-  const params = useParams();
   const router = useRouter();
-  const { id } = params;
+  const { id } = React.use(useParams());
 
   const [sale, setSale] = useState<Sale | null>(null);
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
