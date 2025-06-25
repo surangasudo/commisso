@@ -1,44 +1,16 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Calendar, ShoppingCart, Landmark, FileText, RefreshCw, Truck, AlertTriangle, Undo, Wallet, BarChart2 } from "lucide-react";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { useCurrency } from '@/hooks/use-currency';
-
-const salesData = [
-  { date: '24 May', sales: 1500 },
-  { date: '25 May', sales: 1800 },
-  { date: '26 May', sales: 1600 },
-  { date: '27 May', sales: 2200 },
-  { date: '28 May', sales: 2100 },
-  { date: '29 May', sales: 2500 },
-  { date: '30 May', sales: 2300 },
-  { date: '31 May', sales: 2800 },
-  { date: '1 Jun', sales: 3000 },
-  { date: '2 Jun', sales: 3200 },
-  { date: '3 Jun', sales: 3500 },
-  { date: '4 Jun', sales: 3400 },
-  { date: '5 Jun', sales: 3700 },
-  { date: '6 Jun', sales: 4000 },
-  { date: '7 Jun', sales: 4100 },
-  { date: '8 Jun', sales: 4300 },
-  { date: '9 Jun', sales: 4500 },
-  { date: '10 Jun', sales: 4400 },
-  { date: '11 Jun', sales: 4800 },
-  { date: '12 Jun', sales: 5000 },
-  { date: '13 Jun', sales: 5200 },
-  { date: '14 Jun', sales: 5100 },
-  { date: '15 Jun', sales: 5500 },
-  { date: '16 Jun', sales: 5800 },
-  { date: '17 Jun', sales: 5600 },
-  { date: '18 Jun', sales: 6000 },
-  { date: '19 Jun', sales: 6200 },
-  { date: '20 Jun', sales: 8800 },
-  { date: '21 Jun', sales: 2500 },
-  { date: '22 Jun', sales: 3200 },
-];
+import { getSales } from '@/services/saleService';
+import { getPurchases } from '@/services/purchaseService';
+import { getExpenses } from '@/services/expenseService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format, subDays } from 'date-fns';
 
 const chartConfig = {
   sales: {
@@ -47,19 +19,87 @@ const chartConfig = {
   },
 };
 
-const stats = [
-    { title: 'Total Sales', value: 1162.50, icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
-    { title: 'Net', value: 1162.50, icon: Landmark, color: 'bg-green-100 text-green-600' },
-    { title: 'Invoice due', value: 0.00, icon: FileText, color: 'bg-orange-100 text-orange-600' },
-    { title: 'Total Sell Return', value: 0.00, icon: RefreshCw, color: 'bg-blue-100 text-blue-600' },
-    { title: 'Total purchase', value: 235656.00, icon: Truck, color: 'bg-sky-100 text-sky-600' },
-    { title: 'Purchase due', value: 235656.00, icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-600' },
-    { title: 'Total Purchase Return', value: 0.00, icon: Undo, color: 'bg-red-100 text-red-600' },
-    { title: 'Expense', value: 0.00, icon: Wallet, color: 'bg-red-100 text-red-600' },
-]
-
 export default function DashboardPage() {
   const { formatCurrency } = useCurrency();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState([
+    { title: 'Total Sales', value: 0, icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
+    { title: 'Net', value: 0, icon: Landmark, color: 'bg-green-100 text-green-600' },
+    { title: 'Invoice due', value: 0, icon: FileText, color: 'bg-orange-100 text-orange-600' },
+    { title: 'Total Sell Return', value: 0, icon: RefreshCw, color: 'bg-blue-100 text-blue-600' },
+    { title: 'Total purchase', value: 0, icon: Truck, color: 'bg-sky-100 text-sky-600' },
+    { title: 'Purchase due', value: 0, icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-600' },
+    { title: 'Total Purchase Return', value: 0, icon: Undo, color: 'bg-red-100 text-red-600' },
+    { title: 'Expense', value: 0, icon: Wallet, color: 'bg-red-100 text-red-600' },
+  ]);
+  const [salesChartData, setSalesChartData] = useState<{ date: string; sales: number }[]>([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [salesData, purchasesData, expensesData] = await Promise.all([
+          getSales(),
+          getPurchases(),
+          getExpenses(),
+        ]);
+
+        // Calculate stats
+        const totalSales = salesData.reduce((sum, sale) => sum + sale.totalAmount, 0);
+        const totalInvoiceDue = salesData.reduce((sum, sale) => sum + sale.sellDue, 0);
+        const totalPurchases = purchasesData.reduce((sum, p) => sum + p.grandTotal, 0);
+        const totalPurchaseDue = purchasesData.reduce((sum, p) => sum + p.paymentDue, 0);
+        const totalExpenses = expensesData.reduce((sum, e) => sum + e.totalAmount, 0);
+        
+        // Assuming Net = Total Sales - Total Purchases - Total Expenses (simplified)
+        const net = totalSales - totalPurchases - totalExpenses;
+
+        setStats([
+            { title: 'Total Sales', value: totalSales, icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
+            { title: 'Net', value: net, icon: Landmark, color: 'bg-green-100 text-green-600' },
+            { title: 'Invoice due', value: totalInvoiceDue, icon: FileText, color: 'bg-orange-100 text-orange-600' },
+            { title: 'Total Sell Return', value: 0, icon: RefreshCw, color: 'bg-blue-100 text-blue-600' }, // Mock
+            { title: 'Total purchase', value: totalPurchases, icon: Truck, color: 'bg-sky-100 text-sky-600' },
+            { title: 'Purchase due', value: totalPurchaseDue, icon: AlertTriangle, color: 'bg-yellow-100 text-yellow-600' },
+            { title: 'Total Purchase Return', value: 0, icon: Undo, color: 'bg-red-100 text-red-600' }, // Mock
+            { title: 'Expense', value: totalExpenses, icon: Wallet, color: 'bg-red-100 text-red-600' },
+        ]);
+
+        // Calculate chart data for last 30 days
+        const today = new Date();
+        const salesByDay: { [key: string]: number } = {};
+        for (let i = 29; i >= 0; i--) {
+            const date = subDays(today, i);
+            const formattedDate = format(date, 'd MMM');
+            salesByDay[formattedDate] = 0;
+        }
+
+        salesData.forEach(sale => {
+            const saleDate = new Date(sale.date);
+            const thirtyDaysAgo = subDays(today, 30);
+            if (saleDate >= thirtyDaysAgo) {
+                const formattedDate = format(saleDate, 'd MMM');
+                if (salesByDay[formattedDate] !== undefined) {
+                    salesByDay[formattedDate] += sale.totalAmount;
+                }
+            }
+        });
+
+        const chartData = Object.entries(salesByDay).map(([date, sales]) => ({
+            date,
+            sales,
+        }));
+        setSalesChartData(chartData);
+
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,19 +112,33 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-            <Card key={index}>
-                <CardContent className="flex items-center justify-start gap-4 p-4">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-full ${stat.color}`}>
-                        <stat.icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">{stat.title}</p>
-                        <p className="text-xl font-bold">{formatCurrency(stat.value)}</p>
-                    </div>
-                </CardContent>
-            </Card>
-        ))}
+        {isLoading ? (
+            Array.from({ length: 8 }).map((_, index) => (
+                 <Card key={index}>
+                    <CardContent className="flex items-center justify-start gap-4 p-4">
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="space-y-2">
+                           <Skeleton className="h-4 w-24" />
+                           <Skeleton className="h-6 w-32" />
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+        ) : (
+            stats.map((stat, index) => (
+                <Card key={index}>
+                    <CardContent className="flex items-center justify-start gap-4 p-4">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-full ${stat.color}`}>
+                            <stat.icon className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-muted-foreground">{stat.title}</p>
+                            <p className="text-xl font-bold">{formatCurrency(stat.value)}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            ))
+        )}
       </div>
       
       <Card>
@@ -95,7 +149,7 @@ export default function DashboardPage() {
           </div>
           <ChartContainer config={chartConfig} className="h-[350px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={salesData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <LineChart data={salesChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis 
                     dataKey="date" 
@@ -113,11 +167,11 @@ export default function DashboardPage() {
                     tickLine={false} 
                     axisLine={false} 
                     tickMargin={10} 
-                    tickFormatter={(value) => `${value/1000}K`}
+                    tickFormatter={(value) => value >= 1000 ? `${value/1000}K` : value}
                 />
                 <Tooltip
                   cursor={{ strokeDasharray: '3 3' }}
-                  content={<ChartTooltipContent indicator="dot" />}
+                  content={<ChartTooltipContent indicator="dot" formatter={(value) => formatCurrency(value as number)} />}
                 />
                 <Legend />
                 <Line 
