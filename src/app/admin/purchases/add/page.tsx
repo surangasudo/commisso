@@ -1,14 +1,24 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, Search, Plus, Trash2, Info } from "lucide-react";
-import { detailedProducts, type DetailedProduct } from '@/lib/data';
+import { Download, Search, Plus, Trash2, Info, Calendar as CalendarIcon } from "lucide-react";
+import { type DetailedProduct, type Supplier, type Purchase } from '@/lib/data';
 import { AppFooter } from '@/components/app-footer';
+import { useToast } from '@/hooks/use-toast';
+import { getSuppliers } from '@/services/supplierService';
+import { getProducts } from '@/services/productService';
+import { addPurchase } from '@/services/purchaseService';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useCurrency } from '@/hooks/use-currency';
 
 type PurchaseItem = {
   product: DetailedProduct;
@@ -17,14 +27,45 @@ type PurchaseItem = {
 };
 
 export default function AddPurchasePage() {
+    const router = useRouter();
+    const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
+    
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [purchaseData, setPurchaseData] = useState<Partial<Omit<Purchase, 'id' | 'items'>>>({
+        location: 'Awesome Shop',
+        purchaseStatus: 'Received',
+        paymentStatus: 'Due', // Default to due
+        paymentDue: 0,
+    });
+    const [purchaseDate, setPurchaseDate] = useState<Date | undefined>(new Date());
     const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [suppliersData, productsData] = await Promise.all([getSuppliers(), getProducts()]);
+                setSuppliers(suppliersData);
+                setProducts(productsData);
+            } catch (error) {
+                console.error("Failed to fetch initial data", error);
+                toast({ title: "Error", description: "Could not load suppliers and products.", variant: "destructive" });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [toast]);
+    
     const searchResults = searchTerm
-    ? detailedProducts.filter(p =>
+    ? products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 5) // Limit results
+      ).slice(0, 5)
     : [];
 
     const handleAddProduct = (product: DetailedProduct) => {
@@ -54,10 +95,54 @@ export default function AddPurchasePage() {
         ));
     };
 
-    const subtotal = purchaseItems.reduce((acc, item) => acc + (item.purchasePrice * item.quantity), 0);
-    const discount = 0; // Placeholder
-    const purchaseTax = 0; // Placeholder
-    const grandTotal = subtotal - discount + purchaseTax;
+    const grandTotal = useMemo(() => {
+        return purchaseItems.reduce((acc, item) => acc + (item.purchasePrice * item.quantity), 0);
+    }, [purchaseItems]);
+
+    const handleSave = async () => {
+        if (!purchaseData.supplier || purchaseItems.length === 0) {
+            toast({
+                title: "Validation Error",
+                description: "Supplier and at least one product are required.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            const newPurchase: Omit<Purchase, 'id'> = {
+                date: purchaseDate?.toISOString() || new Date().toISOString(),
+                referenceNo: purchaseData.referenceNo || `PO-${Date.now()}`,
+                location: purchaseData.location || 'Awesome Shop',
+                supplier: purchaseData.supplier,
+                purchaseStatus: purchaseData.purchaseStatus || 'Received',
+                paymentStatus: 'Due', // Defaulting to Due on creation
+                grandTotal: grandTotal,
+                paymentDue: grandTotal, // Initially, full amount is due
+                addedBy: 'Admin', // Hardcoded
+                items: purchaseItems.map(item => ({
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    unitPrice: item.purchasePrice,
+                    tax: 0, // Simplified for now
+                })),
+            };
+
+            await addPurchase(newPurchase);
+            toast({
+                title: "Success",
+                description: "Purchase has been added successfully."
+            });
+            router.push('/admin/purchases/list');
+        } catch (error) {
+            console.error("Failed to add purchase:", error);
+            toast({
+                title: "Error",
+                description: "Failed to add purchase. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
 
   return (
     <div className="flex flex-col gap-6">
@@ -72,14 +157,16 @@ export default function AddPurchasePage() {
                 <div className="space-y-2">
                     <Label htmlFor="supplier">Supplier *</Label>
                     <div className="flex gap-2">
-                        <Select>
+                        <Select
+                            onValueChange={(value) => setPurchaseData(p => ({...p, supplier: value }))}
+                        >
                             <SelectTrigger id="supplier">
                                 <SelectValue placeholder="Select Supplier" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="univer-suppliers">Univer Suppliers, Jackson Hill</SelectItem>
-                                <SelectItem value="alpha-clothings">Alpha Clothings, Michael</SelectItem>
-                                <SelectItem value="manhattan-clothing">Manhattan Clothing Ltd., Philip</SelectItem>
+                                {suppliers.map(s => (
+                                    <SelectItem key={s.id} value={s.businessName}>{s.businessName}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <Button size="icon" className="flex-shrink-0"><Plus className="w-4 h-4" /></Button>
@@ -87,16 +174,37 @@ export default function AddPurchasePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="reference-no">Reference No:</Label>
-                    <Input id="reference-no" placeholder="e.g. PO2025/0001" />
+                    <Input id="reference-no" placeholder="e.g. PO2025/0001" onChange={(e) => setPurchaseData(p => ({...p, referenceNo: e.target.value }))} />
                     <p className="text-xs text-muted-foreground">Leave blank to auto generate.</p>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="purchase-date">Purchase Date *</Label>
-                    <Input id="purchase-date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} />
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !purchaseDate && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {purchaseDate ? format(purchaseDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={purchaseDate}
+                                onSelect={setPurchaseDate}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="purchase-status">Purchase Status *</Label>
-                    <Select defaultValue="Received">
+                    <Select defaultValue="Received" onValueChange={(value: 'Received' | 'Pending' | 'Ordered' | 'Partial') => setPurchaseData(p => ({...p, purchaseStatus: value }))}>
                         <SelectTrigger id="purchase-status">
                             <SelectValue />
                         </SelectTrigger>
@@ -109,7 +217,7 @@ export default function AddPurchasePage() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="location">Business Location *</Label>
-                    <Select defaultValue="Awesome Shop">
+                    <Select defaultValue="Awesome Shop" onValueChange={(value) => setPurchaseData(p => ({...p, location: value }))}>
                         <SelectTrigger id="location">
                             <SelectValue />
                         </SelectTrigger>
@@ -188,7 +296,7 @@ export default function AddPurchasePage() {
                                         className="w-32 h-9"
                                     />
                                 </TableCell>
-                                <TableCell className="font-semibold">${(item.quantity * item.purchasePrice).toFixed(2)}</TableCell>
+                                <TableCell className="font-semibold">{formatCurrency(item.quantity * item.purchasePrice)}</TableCell>
                                 <TableCell className="text-center">
                                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(item.product.id)}>
                                         <Trash2 className="w-4 h-4" />
@@ -208,7 +316,7 @@ export default function AddPurchasePage() {
                 <div className="w-full max-w-sm space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal:</span>
-                        <span className="font-medium">${subtotal.toFixed(2)}</span>
+                        <span className="font-medium">{formatCurrency(grandTotal)}</span>
                     </div>
                      <div className="flex justify-between items-center">
                         <Label htmlFor="discount-type" className="flex items-center gap-1 text-muted-foreground">Discount: <Info className="w-3 h-3"/></Label>
@@ -246,61 +354,19 @@ export default function AddPurchasePage() {
                             <Input id="shipping-details" placeholder="Shipping charges" className="h-9" />
                         </div>
                     </div>
+                    <div className="flex justify-between items-center pt-2 mt-2 border-t font-bold">
+                        <span>Grand Total:</span>
+                        <span>{formatCurrency(grandTotal)}</span>
+                    </div>
                 </div>
-            </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-            <CardTitle>Add Payment</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="space-y-2">
-                    <Label htmlFor="amount">Amount *:</Label>
-                    <Input id="amount" type="number" placeholder="0.00" />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="payment-date">Paid on *:</Label>
-                    <Input id="payment-date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="payment-method">Payment method *:</Label>
-                    <Select>
-                        <SelectTrigger id="payment-method">
-                            <SelectValue placeholder="Select Method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="cash">Cash</SelectItem>
-                            <SelectItem value="card">Card</SelectItem>
-                            <SelectItem value="cheque">Cheque</SelectItem>
-                            <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="payment-account">Payment account:</Label>
-                     <Select>
-                        <SelectTrigger id="payment-account">
-                            <SelectValue placeholder="Select Account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="test-account">Test Account (Cash)</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-            </div>
-            <div className="font-bold text-xl text-right mt-6">
-                Purchase due: <span className="text-red-600">${grandTotal.toFixed(2)}</span>
             </div>
         </CardContent>
       </Card>
       
       <div className="flex justify-end">
-        <Button size="lg">Save</Button>
+        <Button size="lg" onClick={handleSave} disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+        </Button>
       </div>
 
       <AppFooter />

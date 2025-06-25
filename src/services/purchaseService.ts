@@ -26,6 +26,8 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
 }
 
 export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<DocumentData> {
+    // Firestore SDK handles plain JS objects and Date objects correctly.
+    // No need to sanitize before writing.
     return await addDoc(purchasesCollection, purchase);
 }
 

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -53,7 +53,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { purchases as initialPurchases, type Purchase } from '@/lib/data';
+import { type Purchase } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +65,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppFooter } from '@/components/app-footer';
+import { getPurchases, deletePurchase } from '@/services/purchaseService';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getPurchaseStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -90,9 +93,26 @@ const getPaymentStatusBadge = (status: string) => {
 
 export default function ListPurchasesPage() {
   const router = useRouter();
-  const [purchases, setPurchases] = useState<Purchase[]>(initialPurchases);
+  const { toast } = useToast();
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
+  
+  useEffect(() => {
+    const fetchPurchases = async () => {
+        try {
+            const data = await getPurchases();
+            setPurchases(data);
+        } catch (error) {
+            console.error("Failed to fetch purchases", error);
+            toast({ title: "Error", description: "Could not load purchases.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchPurchases();
+  }, [toast]);
 
   const totalGrandTotal = purchases.reduce((acc, purchase) => acc + purchase.grandTotal, 0);
   const totalPurchaseDue = purchases.reduce((acc, purchase) => acc + purchase.paymentDue, 0);
@@ -114,11 +134,18 @@ export default function ListPurchasesPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (purchaseToDelete) {
-      setPurchases(purchases.filter(p => p.id !== purchaseToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setPurchaseToDelete(null);
+      try {
+        await deletePurchase(purchaseToDelete.id);
+        setPurchases(purchases.filter(p => p.id !== purchaseToDelete.id));
+        toast({ title: "Success", description: "Purchase deleted successfully." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete purchase.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setPurchaseToDelete(null);
+      }
     }
   };
   
@@ -201,7 +228,22 @@ export default function ListPurchasesPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {purchases.map((purchase) => (
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-8 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : purchases.map((purchase) => (
                                 <TableRow key={purchase.id}>
                                 <TableCell>
                                     <DropdownMenu>
@@ -222,7 +264,7 @@ export default function ListPurchasesPage() {
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
-                                <TableCell>{purchase.date}</TableCell>
+                                <TableCell>{new Date(purchase.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{purchase.referenceNo}</TableCell>
                                 <TableCell>{purchase.location}</TableCell>
                                 <TableCell>{purchase.supplier}</TableCell>
