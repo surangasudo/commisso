@@ -11,6 +11,7 @@ import { type Sale, type DetailedProduct } from '@/lib/data';
 import { getSale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/hooks/use-currency";
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -56,6 +57,7 @@ type SaleItemWithDetails = {
 export default function ViewSalePage() {
   const router = useRouter();
   const { id } = useParams();
+  const { formatCurrency } = useCurrency();
 
   const [sale, setSale] = useState<Sale | null>(null);
   const [saleItems, setSaleItems] = useState<SaleItemWithDetails[]>([]);
@@ -196,8 +198,8 @@ export default function ViewSalePage() {
                                     <TableCell>{index + 1}</TableCell>
                                     <TableCell className="font-medium">{item.productName}</TableCell>
                                     <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right font-semibold">${item.subtotal.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(item.unitPrice)}</TableCell>
+                                    <TableCell className="text-right font-semibold">{formatCurrency(item.subtotal)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -205,13 +207,13 @@ export default function ViewSalePage() {
                 </div>
                  <div className="flex justify-end mt-6">
                     <div className="w-full max-w-sm space-y-2 text-muted-foreground">
-                        <div className="flex justify-between"><span>Subtotal:</span><span>${sale.totalAmount.toFixed(2)}</span></div>
-                        <div className="flex justify-between"><span>Shipping:</span><span>$0.00</span></div>
-                        <div className="flex justify-between"><span>Tax:</span><span>${(sale.taxAmount || 0).toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>Subtotal:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
+                        <div className="flex justify-between"><span>Shipping:</span><span>{formatCurrency(0)}</span></div>
+                        <div className="flex justify-between"><span>Tax:</span><span>{formatCurrency(sale.taxAmount || 0)}</span></div>
                         <Separator className="my-2" />
-                        <div className="flex justify-between font-bold text-foreground text-lg"><span>Total:</span><span>${sale.totalAmount.toFixed(2)}</span></div>
-                         <div className="flex justify-between"><span>Total Paid:</span><span>${sale.totalPaid.toFixed(2)}</span></div>
-                         <div className="flex justify-between font-bold text-red-600"><span>Total Due:</span><span>${sale.sellDue.toFixed(2)}</span></div>
+                        <div className="flex justify-between font-bold text-foreground text-lg"><span>Total:</span><span>{formatCurrency(sale.totalAmount)}</span></div>
+                         <div className="flex justify-between"><span>Total Paid:</span><span>{formatCurrency(sale.totalPaid)}</span></div>
+                         <div className="flex justify-between font-bold text-red-600"><span>Total Due:</span><span>{formatCurrency(sale.sellDue)}</span></div>
                     </div>
                 </div>
             </CardContent>

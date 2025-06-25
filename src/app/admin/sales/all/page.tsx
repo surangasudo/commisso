@@ -64,6 +64,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/hooks/use-currency';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -83,6 +84,7 @@ export default function AllSalesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
     
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
@@ -264,10 +266,10 @@ export default function AllSalesPage() {
                                 <TableCell>{sale.location}</TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(sale.paymentStatus))}>{sale.paymentStatus}</Badge></TableCell>
                                 <TableCell>{sale.paymentMethod}</TableCell>
-                                <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
-                                <TableCell>${sale.totalPaid.toFixed(2)}</TableCell>
-                                <TableCell>${sale.sellDue.toFixed(2)}</TableCell>
-                                <TableCell>${sale.sellReturnDue.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
+                                <TableCell>{formatCurrency(sale.totalPaid)}</TableCell>
+                                <TableCell>{formatCurrency(sale.sellDue)}</TableCell>
+                                <TableCell>{formatCurrency(sale.sellReturnDue)}</TableCell>
                                 <TableCell>{sale.shippingStatus || ''}</TableCell>
                                 <TableCell>{sale.totalItems}</TableCell>
                                 <TableCell>{sale.addedBy}</TableCell>
@@ -284,10 +286,10 @@ export default function AllSalesPage() {
                                         <div className="font-bold">Paid - {paidCount}</div>
                                         <div className="font-bold">Cash - {cashCount}</div>
                                     </TableCell>
-                                    <TableCell className="font-bold">${totalAmount.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${totalPaid.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${sellDue.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${sellReturnDue.toFixed(2)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalPaid)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(sellDue)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(sellReturnDue)}</TableCell>
                                     <TableCell colSpan={6}></TableCell>
                                 </TableRow>
                             </TableFooter>

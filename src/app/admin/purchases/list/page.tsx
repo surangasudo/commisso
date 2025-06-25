@@ -68,6 +68,7 @@ import { AppFooter } from '@/components/app-footer';
 import { getPurchases, deletePurchase } from '@/services/purchaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/hooks/use-currency';
 
 const getPurchaseStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -94,6 +95,7 @@ const getPaymentStatusBadge = (status: string) => {
 export default function ListPurchasesPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -270,8 +272,8 @@ export default function ListPurchasesPage() {
                                 <TableCell>{purchase.supplier}</TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getPurchaseStatusBadge(purchase.purchaseStatus))}>{purchase.purchaseStatus}</Badge></TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(purchase.paymentStatus))}>{purchase.paymentStatus}</Badge></TableCell>
-                                <TableCell>${purchase.grandTotal.toFixed(2)}</TableCell>
-                                <TableCell>Purchase: ${purchase.paymentDue.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(purchase.grandTotal)}</TableCell>
+                                <TableCell>Purchase: {formatCurrency(purchase.paymentDue)}</TableCell>
                                 <TableCell>{purchase.addedBy}</TableCell>
                                 </TableRow>
                             ))}
@@ -279,10 +281,10 @@ export default function ListPurchasesPage() {
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalGrandTotal.toFixed(2)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalGrandTotal)}</TableCell>
                                     <TableCell colSpan={2}>
-                                        <div className="font-bold">Purchase Due - ${totalPurchaseDue.toFixed(2)}</div>
-                                        <div className="font-bold">Purchase Return - $0.00</div>
+                                        <div className="font-bold">Purchase Due - {formatCurrency(totalPurchaseDue)}</div>
+                                        <div className="font-bold">Purchase Return - {formatCurrency(0)}</div>
                                     </TableCell>
                                 </TableRow>
                             </TableFooter>

@@ -63,6 +63,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppFooter } from '@/components/app-footer';
+import { useCurrency } from '@/hooks/use-currency';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -79,6 +80,7 @@ const getPaymentStatusBadge = (status: string) => {
 
 export default function ListPurchaseReturnPage() {
   const router = useRouter();
+  const { formatCurrency } = useCurrency();
   const [returns, setReturns] = useState<PurchaseReturn[]>(purchaseReturns);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [returnToDelete, setReturnToDelete] = useState<PurchaseReturn | null>(null);
@@ -201,16 +203,16 @@ export default function ListPurchaseReturnPage() {
                                 <TableCell>{item.location}</TableCell>
                                 <TableCell>{item.supplier}</TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(item.paymentStatus))}>{item.paymentStatus}</Badge></TableCell>
-                                <TableCell>${item.totalAmount.toFixed(2)}</TableCell>
-                                <TableCell>${item.paymentDue.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(item.grandTotal)}</TableCell>
+                                <TableCell>{formatCurrency(item.paymentDue)}</TableCell>
                                 </TableRow>
                             ))}
                             </TableBody>
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalGrandTotal.toFixed(2)}</TableCell>
-                                    <TableCell className="font-bold">${totalReturnDue.toFixed(2)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalGrandTotal)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalReturnDue)}</TableCell>
                                 </TableRow>
                             </TableFooter>
                         </Table>

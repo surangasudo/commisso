@@ -61,6 +61,7 @@ import { AppFooter } from '@/components/app-footer';
 import { getExpenses, deleteExpense } from '@/services/expenseService';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/hooks/use-currency';
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -77,6 +78,7 @@ const getPaymentStatusBadge = (status: string) => {
 
 export default function ListExpensesPage() {
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -227,8 +229,8 @@ export default function ListExpensesPage() {
                                   <TableCell>{expense.expenseCategory}</TableCell>
                                   <TableCell>{expense.location}</TableCell>
                                   <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(expense.paymentStatus))}>{expense.paymentStatus}</Badge></TableCell>
-                                  <TableCell>${expense.totalAmount.toFixed(2)}</TableCell>
-                                  <TableCell>${expense.paymentDue.toFixed(2)}</TableCell>
+                                  <TableCell>{formatCurrency(expense.totalAmount)}</TableCell>
+                                  <TableCell>{formatCurrency(expense.paymentDue)}</TableCell>
                                   <TableCell>{expense.expenseNote || 'N/A'}</TableCell>
                                   <TableCell>{expense.addedBy}</TableCell>
                                   </TableRow>
@@ -237,8 +239,8 @@ export default function ListExpensesPage() {
                               <TableFooter>
                                   <TableRow>
                                       <TableCell colSpan={6} className="text-right font-bold">Total:</TableCell>
-                                      <TableCell className="font-bold">${totalAmount.toFixed(2)}</TableCell>
-                                      <TableCell className="font-bold">${totalDue.toFixed(2)}</TableCell>
+                                      <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                      <TableCell className="font-bold">{formatCurrency(totalDue)}</TableCell>
                                       <TableCell colSpan={2}></TableCell>
                                   </TableRow>
                               </TableFooter>
