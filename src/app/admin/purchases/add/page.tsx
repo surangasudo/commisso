@@ -64,6 +64,11 @@ export default function AddPurchasePage() {
         mobile: '',
         email: ''
     });
+    
+    const [discountType, setDiscountType] = useState<'Fixed' | 'Percentage'>('Fixed');
+    const [discountAmount, setDiscountAmount] = useState<number>(0);
+    const [taxRate, setTaxRate] = useState<number>(0);
+    const [shippingCharges, setShippingCharges] = useState<number>(0);
 
     const fetchSuppliers = useCallback(async () => {
         try {
@@ -126,9 +131,34 @@ export default function AddPurchasePage() {
         ));
     };
 
-    const grandTotal = useMemo(() => {
+    const subtotal = useMemo(() => {
         return purchaseItems.reduce((acc, item) => acc + (item.purchasePrice * item.quantity), 0);
     }, [purchaseItems]);
+
+    const calculatedDiscount = useMemo(() => {
+        if (discountType === 'Fixed') {
+            return discountAmount;
+        }
+        return (subtotal * discountAmount) / 100;
+    }, [subtotal, discountType, discountAmount]);
+
+    const calculatedTax = useMemo(() => {
+        const taxableAmount = subtotal - calculatedDiscount;
+        return (taxableAmount * taxRate) / 100;
+    }, [subtotal, calculatedDiscount, taxRate]);
+
+    const grandTotal = useMemo(() => {
+        return subtotal - calculatedDiscount + calculatedTax + shippingCharges;
+    }, [subtotal, calculatedDiscount, calculatedTax, shippingCharges]);
+
+    const handleTaxChange = (value: string) => {
+        if (value === 'none') {
+            setTaxRate(0);
+            return;
+        }
+        const rateString = value.split('@')[1]?.replace('%', '');
+        setTaxRate(parseFloat(rateString) || 0);
+    };
 
     const handleSave = async () => {
         if (!purchaseData.supplier || purchaseItems.length === 0) {
@@ -157,6 +187,7 @@ export default function AddPurchasePage() {
                     unitPrice: item.purchasePrice,
                     tax: 0, // Simplified for now
                 })),
+                taxAmount: calculatedTax,
             };
 
             await addPurchase(newPurchase);
@@ -429,12 +460,12 @@ export default function AddPurchasePage() {
                 <div className="w-full max-w-sm space-y-2 text-sm">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal:</span>
-                        <span className="font-medium">{formatCurrency(grandTotal)}</span>
+                        <span className="font-medium">{formatCurrency(subtotal)}</span>
                     </div>
                      <div className="flex justify-between items-center">
                         <Label htmlFor="discount-type" className="flex items-center gap-1 text-muted-foreground">Discount: <Info className="w-3 h-3"/></Label>
                         <div className="flex gap-2 w-2/3">
-                            <Select defaultValue="Fixed">
+                            <Select value={discountType} onValueChange={(value: 'Fixed' | 'Percentage') => setDiscountType(value)}>
                                 <SelectTrigger id="discount-type" className="h-9">
                                     <SelectValue/>
                                 </SelectTrigger>
@@ -443,28 +474,34 @@ export default function AddPurchasePage() {
                                     <SelectItem value="Percentage">Percentage</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Input type="number" placeholder="0.00" className="h-9" />
+                            <Input type="number" placeholder="0.00" className="h-9" value={discountAmount || ''} onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}/>
                         </div>
+                    </div>
+                    <div className="flex justify-end">
+                        <span className="text-muted-foreground text-xs">Discount Amount (-): {formatCurrency(calculatedDiscount)}</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <Label htmlFor="purchase-tax" className="flex items-center gap-1 text-muted-foreground">Purchase Tax: <Info className="w-3 h-3"/></Label>
                         <div className="w-2/3">
-                            <Select>
+                            <Select onValueChange={handleTaxChange}>
                                 <SelectTrigger id="purchase-tax" className="h-9">
                                     <SelectValue placeholder="Select Tax"/>
                                 </SelectTrigger>
                                 <SelectContent>
                                      <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="vat-10">VAT @10%</SelectItem>
-                                    <SelectItem value="gst-5">GST @5%</SelectItem>
+                                    <SelectItem value="VAT@10%">VAT@10%</SelectItem>
+                                    <SelectItem value="GST@5%">GST @5%</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
+                     <div className="flex justify-end">
+                        <span className="text-muted-foreground text-xs">Tax Amount (+): {formatCurrency(calculatedTax)}</span>
+                    </div>
                      <div className="flex justify-between items-center">
-                        <Label htmlFor="shipping-details" className="flex items-center gap-1 text-muted-foreground">Shipping: <Info className="w-3 h-3"/></Label>
+                        <Label htmlFor="shipping-charges" className="flex items-center gap-1 text-muted-foreground">Shipping: <Info className="w-3 h-3"/></Label>
                         <div className="w-2/3">
-                            <Input id="shipping-details" placeholder="Shipping charges" className="h-9" />
+                            <Input id="shipping-charges" placeholder="Shipping charges" className="h-9" type="number" value={shippingCharges || ''} onChange={(e) => setShippingCharges(parseFloat(e.target.value) || 0)}/>
                         </div>
                     </div>
                     <div className="flex justify-between items-center pt-2 mt-2 border-t font-bold">
@@ -486,3 +523,4 @@ export default function AddPurchasePage() {
     </div>
   );
 }
+
