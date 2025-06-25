@@ -13,15 +13,15 @@ import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronDown } from "lucide-react";
 
 const permissionGroups = [
-    { key: 'user', title: 'User', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all users", view_own: "View own user", add: 'Add User', edit: 'Edit User', delete: 'Delete User' } },
+    { key: 'user', title: 'User', permissions: ['view', 'add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all users", view_own: "View own user", add: 'Add User', edit: 'Edit User', delete: 'Delete User' } },
     { key: 'role', title: 'Role', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'supplier', title: 'Supplier', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all suppliers", view_own: "View own suppliers", add: 'Add Supplier', edit: 'Edit Supplier', delete: 'Delete Supplier' } },
-    { key: 'customer', title: 'Customer', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all customers", view_own: "View own customers", add: 'Add Customer', edit: 'Edit Customer', delete: 'Delete Customer' } },
+    { key: 'supplier', title: 'Supplier', permissions: ['view', 'add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all suppliers", view_own: "View own suppliers", add: 'Add Supplier', edit: 'Edit Supplier', delete: 'Delete Supplier' } },
+    { key: 'customer', title: 'Customer', permissions: ['view', 'add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: "View all customers", view_own: "View own customers", add: 'Add Customer', edit: 'Edit Customer', delete: 'Delete Customer' } },
     { key: 'product', title: 'Product', permissions: ['view', 'add', 'edit', 'delete', 'opening_stock', 'import'], labels: { opening_stock: 'Add Opening Stock', import: 'Import Products' } },
-    { key: 'purchase', title: 'Purchase & Stock Transfer', permissions: ['add', 'edit', 'delete', 'payments', 'update_status'], hasViewRadio: true, labels: { view_all: "View all purchases & stock transfers", view_own: "View own purchases & stock transfers", payments: 'Add/Edit/Delete Payments', update_status: 'Update Status' } },
-    { key: 'sell', title: 'Sell', permissions: ['add', 'edit', 'delete', 'payments', 'access_pos', 'access_all_sales'], hasViewRadio: true, labels: { view_all: 'View all sales', view_own: 'View own sales', payments: 'Add/Edit/Delete Payments', access_pos: 'Access POS', access_all_sales: 'Access all sales' } },
-    { key: 'draft', title: 'Draft', permissions: ['edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all drafts', view_own: 'View own drafts' } },
-    { key: 'quotation', title: 'Quotation', permissions: ['edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all quotations', view_own: 'View own quotations' } },
+    { key: 'purchase', title: 'Purchase & Stock Transfer', permissions: ['view', 'add', 'edit', 'delete', 'payments', 'update_status'], hasViewRadio: true, labels: { view_all: "View all purchases & stock transfers", view_own: "View own purchases & stock transfers", payments: 'Add/Edit/Delete Payments', update_status: 'Update Status' } },
+    { key: 'sell', title: 'Sell', permissions: ['view', 'add', 'edit', 'delete', 'payments', 'access_pos', 'access_all_sales'], hasViewRadio: true, labels: { view_all: 'View all sales', view_own: 'View own sales', payments: 'Add/Edit/Delete Payments', access_pos: 'Access POS', access_all_sales: 'Access all sales' } },
+    { key: 'draft', title: 'Draft', permissions: ['view', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all drafts', view_own: 'View own drafts' } },
+    { key: 'quotation', title: 'Quotation', permissions: ['view', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all quotations', view_own: 'View own quotations' } },
     { key: 'brand', title: 'Brand', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'tax_rate', title: 'Tax rate', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'unit', title: 'Unit', permissions: ['view', 'add', 'edit', 'delete'] },
@@ -30,11 +30,11 @@ const permissionGroups = [
     { key: 'business_settings', title: 'Business Settings', permissions: ['access'] },
     { key: 'barcode', title: 'Barcode Settings', permissions: ['access'], labels: { access: 'Create/Edit Barcodes setting' } },
     { key: 'invoice', title: 'Invoice Settings', permissions: ['access'], labels: { access: 'Create/Edit Invoice setting' } },
-    { key: 'expense', title: 'Expense', permissions: ['add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all expenses', view_own: 'View own expenses' } },
+    { key: 'expense', title: 'Expense', permissions: ['view', 'add', 'edit', 'delete'], hasViewRadio: true, labels: { view_all: 'View all expenses', view_own: 'View own expenses' } },
     { key: 'stock_transfer', title: 'Stock Transfer', permissions: ['view', 'add', 'edit', 'delete'] },
     { key: 'stock_adjustment', title: 'Stock Adjustment', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'purchase_requisition', title: 'Purchase Requisition', permissions: ['add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all purchase requisitions', view_own: 'View own purchase requisitions' } },
-    { key: 'sales_order', title: 'Sales Order', permissions: ['add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all sales orders', view_own: 'View own sales orders' } },
+    { key: 'purchase_requisition', title: 'Purchase Requisition', permissions: ['view', 'add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all purchase requisitions', view_own: 'View own purchase requisitions' } },
+    { key: 'sales_order', title: 'Sales Order', permissions: ['view', 'add', 'edit', 'delete', 'approve'], hasViewRadio: true, labels: { view_all: 'View all sales orders', view_own: 'View own sales orders' } },
     { key: 'account', title: 'Account', permissions: ['access'] },
     { key: 'hms', title: 'HMS', permissions: ['access'] },
     { key: 'manufacturing', title: 'Manufacturing', permissions: ['access'] },
@@ -93,11 +93,23 @@ export default function AddRolePage() {
         const groupState = permissions[groupKey];
         if (!groupState) return false;
 
-        const checkboxPermissions = permissionsList.every(p => groupState[p]);
-        if (hasViewRadio) {
-            return checkboxPermissions && groupState.view === 'all';
+        // Check every permission in the list.
+        for (const perm of permissionsList) {
+            // For radio-controlled 'view', it must be 'all' to be considered fully checked.
+            if (hasViewRadio && perm === 'view') {
+                if (groupState[perm] !== 'all') {
+                    return false;
+                }
+            } else {
+                // For regular checkboxes, it must be truthy.
+                if (!groupState[perm]) {
+                    return false;
+                }
+            }
         }
-        return checkboxPermissions;
+        
+        // If we get here, all conditions passed.
+        return true;
     };
 
     const handleSaveRole = () => {
@@ -177,7 +189,7 @@ export default function AddRolePage() {
                                               </RadioGroup>
                                           </div>
                                         )}
-                                        {group.permissions.map(perm => (
+                                        {group.permissions.filter(p => !(group.hasViewRadio && p === 'view')).map(perm => (
                                             <div key={perm} className="flex items-center space-x-2">
                                                 <Checkbox 
                                                     id={`${group.key}-${perm}`} 
