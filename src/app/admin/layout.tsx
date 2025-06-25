@@ -49,6 +49,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Logo } from '@/components/icons';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const sidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home" },
@@ -284,6 +285,7 @@ export default function AdminLayout({
                 </Button>
             </Link>
             <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><CalendarDays className="h-5 w-5" /></Button>
+            <ThemeToggle className="text-primary-foreground" />
             <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="h-5 w-5" />
               <span className="sr-only">Toggle notifications</span>

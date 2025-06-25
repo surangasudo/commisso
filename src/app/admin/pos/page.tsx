@@ -63,6 +63,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrency } from '@/hooks/use-currency';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 
 const productHints: { [key: string]: string } = {
@@ -544,6 +545,7 @@ export default function PosPage() {
              <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
              <Button variant="ghost" size="icon" className="text-slate-600 hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
              <Button variant="ghost" size="icon" className="text-slate-600" onClick={handleCustomerDisplay}><Monitor /></Button>
+             <ThemeToggle className="text-slate-600" />
              <Button variant="ghost" size="icon" className="text-slate-600"><HelpCircle /></Button>
              <Button className="bg-red-500 hover:bg-red-600 text-white h-9 px-3">
                 <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
@@ -798,4 +800,5 @@ export default function PosPage() {
     </TooltipProvider>
   );
 }
+
 
