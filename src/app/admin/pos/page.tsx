@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   Search,
@@ -280,6 +280,81 @@ const EditValueDialog = ({
     );
 };
 
+const CashPaymentDialog = ({
+    open,
+    onOpenChange,
+    totalPayable,
+    onFinalize
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    totalPayable: number;
+    onFinalize: (totalPaid: number) => void;
+}) => {
+    const { formatCurrency } = useCurrency();
+    const [amountTendered, setAmountTendered] = useState('');
+    const [change, setChange] = useState(0);
+
+    useEffect(() => {
+        if (open) {
+            // Reset on open
+            setAmountTendered('');
+            setChange(0);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        const tendered = parseFloat(amountTendered) || 0;
+        if (tendered >= totalPayable) {
+            setChange(tendered - totalPayable);
+        } else {
+            setChange(0);
+        }
+    }, [amountTendered, totalPayable]);
+    
+    const handleFinalize = () => {
+        onFinalize(parseFloat(amountTendered) || 0);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Cash Payment</DialogTitle>
+                    <DialogDescription>
+                        Enter the amount received from the customer.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Total Payable</p>
+                        <p className="text-4xl font-bold">{formatCurrency(totalPayable)}</p>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="amount-tendered">Amount Tendered</Label>
+                        <Input
+                            id="amount-tendered"
+                            type="number"
+                            placeholder="0.00"
+                            value={amountTendered}
+                            onChange={(e) => setAmountTendered(e.target.value)}
+                            className="text-center text-2xl h-14"
+                        />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Change Due</p>
+                        <p className="text-3xl font-bold text-green-600">{formatCurrency(change)}</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleFinalize}>Finalize Payment</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function PosPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -318,10 +393,11 @@ export default function PosPage() {
   const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
+  const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchAndCalculateStock = async () => {
+  const fetchAndCalculateStock = useCallback(async () => {
       try {
+        setIsLoading(true);
         const [productsData, salesData, purchasesData] = await Promise.all([
           getProducts(),
           getSales(),
@@ -357,10 +433,11 @@ export default function PosPage() {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [toast]);
 
+  useEffect(() => {
     fetchAndCalculateStock();
-  }, [toast]);
+  }, [fetchAndCalculateStock]);
 
   useEffect(() => {
     const updateCurrentTime = () => {
@@ -472,7 +549,7 @@ export default function PosPage() {
           paymentMethod: paymentMethod,
           totalAmount: totalPayable,
           totalPaid: totalPaid,
-          sellDue: totalPayable - totalPaid,
+          sellDue: Math.max(0, totalPayable - totalPaid),
           sellReturnDue: 0,
           shippingStatus: null,
           totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
@@ -507,6 +584,7 @@ export default function PosPage() {
           setShipping(0);
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
+          await fetchAndCalculateStock();
       } catch (error) {
           console.error("Failed to save sale:", error);
           toast({
@@ -518,8 +596,18 @@ export default function PosPage() {
   };
 
   const handleCashPayment = () => {
-    const newSale = createSaleObject('Cash', 'Paid', totalPayable);
+    if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+    }
+    setIsCashPaymentOpen(true);
+  };
+  
+  const handleFinalizeCashPayment = (totalPaid: number) => {
+    const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
+    const newSale = createSaleObject('Cash', paymentStatus, totalPaid);
     finalizeSale(newSale);
+    setIsCashPaymentOpen(false);
   };
 
   const handleFinalizeMultiPay = () => {
@@ -886,9 +974,14 @@ export default function PosPage() {
         value={shipping}
         setValue={setShipping}
       />
+      <CashPaymentDialog
+        open={isCashPaymentOpen}
+        onOpenChange={setIsCashPaymentOpen}
+        totalPayable={totalPayable}
+        onFinalize={handleFinalizeCashPayment}
+      />
       <AppFooter />
     </div>
     </TooltipProvider>
   );
 }
-
