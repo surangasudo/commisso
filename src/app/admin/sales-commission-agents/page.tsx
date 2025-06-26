@@ -236,7 +236,8 @@ export default function SalesCommissionAgentsPage() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const agentsAndSubAgents = useMemo(() => profiles.filter(p => p.entityType === 'Agent' || p.entityType === 'Sub-Agent'), [profiles]);
   const companies = useMemo(() => profiles.filter(p => p.entityType === 'Company'), [profiles]);
