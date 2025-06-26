@@ -105,10 +105,34 @@ export default function EditSalesCommissionAgentPage() {
     };
 
     const handleUpdateProfile = async () => {
-        if (!entityType || !agentName || !phoneNumber || !overallCommission) {
+        if (!entityType) {
             toast({
-                title: "Error: Missing Fields",
-                description: "Please fill in all required fields (*).",
+                title: "Error: Missing Field",
+                description: "Please select an Entity Type.",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!agentName.trim()) {
+            toast({
+                title: "Error: Missing Field",
+                description: "Please enter a Name for the profile.",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!phoneNumber.trim()) {
+            toast({
+                title: "Error: Missing Field",
+                description: "Please enter a Phone Number.",
+                variant: "destructive",
+            });
+            return;
+        }
+        if (!overallCommission.trim()) {
+            toast({
+                title: "Error: Missing Field",
+                description: "Please enter an Overall Commission Rate.",
                 variant: "destructive",
             });
             return;
