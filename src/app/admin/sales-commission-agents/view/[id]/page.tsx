@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, ShoppingCart } from "lucide-react";
+import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, ShoppingCart, CheckCircle, Clock } from "lucide-react";
 import { type CommissionProfile, type Sale, type DetailedProduct } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,7 @@ import { getCommissionProfile } from '@/services/commissionService';
 import { getSales } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -38,6 +39,7 @@ type CommissionableSale = {
     customerName: string;
     totalAmount: number;
     commissionEarned: number;
+    paymentStatus: 'Paid' | 'Pending';
 };
 
 
@@ -99,23 +101,20 @@ export default function ViewCommissionProfilePage() {
         const productMap = new Map(products.map(p => [p.id, p]));
         const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
 
-        let totalCommission = 0;
-        const commissionableSalesResult: CommissionableSale[] = [];
+        // Sort oldest to newest to apply payments correctly
+        const sortedSales = [...relevantSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-        for (const sale of relevantSales) {
+        let totalCommission = 0;
+        const commissionableSalesResult: Omit<CommissionableSale, 'paymentStatus'>[] = [];
+
+        for (const sale of sortedSales) {
             let commissionForThisSale = 0;
             for (const item of sale.items) {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
-
                 const saleValue = item.unitPrice * item.quantity;
-                
-                const category = product.category;
-                const categoryRateData = profile.commission.categories?.find(c => c.category === category);
-                const rate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
-
-                const commissionAmount = saleValue * (rate / 100);
-                commissionForThisSale += commissionAmount;
+                const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
+                commissionForThisSale += saleValue * (rate / 100);
             }
             totalCommission += commissionForThisSale;
 
@@ -131,8 +130,22 @@ export default function ViewCommissionProfilePage() {
             }
         }
 
+        // Now determine payment status using FIFO
+        let paidAmountRemaining = profile.totalCommissionPaid || 0;
+        const salesWithStatus: CommissionableSale[] = commissionableSalesResult.map(sale => {
+            let paymentStatus: 'Paid' | 'Pending' = 'Pending';
+            if (paidAmountRemaining >= sale.commissionEarned) {
+                paymentStatus = 'Paid';
+                paidAmountRemaining -= sale.commissionEarned;
+            } else {
+                paidAmountRemaining = 0;
+            }
+            return { ...sale, paymentStatus };
+        });
+
+        // Finally, reverse the array to show newest sales first in the UI
         return { 
-            commissionableSales: commissionableSalesResult.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            commissionableSales: salesWithStatus.reverse(),
             totalCommissionEarned: totalCommission
         };
     }, [profile, sales, products]);
@@ -238,12 +251,13 @@ export default function ViewCommissionProfilePage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-5 gap-4 w-full text-sm font-semibold px-4 pb-2 border-b">
+                        <div className="grid grid-cols-6 gap-4 w-full text-sm font-semibold px-4 pb-2 border-b">
                             <span className="col-span-1">Date</span>
                             <span className="col-span-1">Invoice No.</span>
                             <span className="col-span-1">Customer</span>
                             <span className="text-right">Sale Amount</span>
                             <span className="text-right">Commission Earned</span>
+                            <span className="text-right">Status</span>
                         </div>
                         <Accordion type="single" collapsible className="w-full" defaultValue={commissionableSales[0]?.id}>
                             {commissionableSales.length > 0 ? (
@@ -254,12 +268,25 @@ export default function ViewCommissionProfilePage() {
                                     return (
                                         <AccordionItem value={sale.id} key={sale.id} className="border-b">
                                             <AccordionTrigger className="hover:bg-accent/50 px-4 py-2 rounded-md [&[data-state=open]]:bg-accent/50">
-                                                <div className="grid grid-cols-5 gap-4 w-full text-sm text-left">
+                                                <div className="grid grid-cols-6 gap-4 w-full text-sm text-left items-center">
                                                     <span className="truncate col-span-1">{sale.date}</span>
                                                     <span className="font-mono col-span-1">{sale.invoiceNo}</span>
                                                     <span className="truncate col-span-1">{sale.customerName}</span>
                                                     <span className="text-right">{formatCurrency(sale.totalAmount)}</span>
                                                     <span className="text-right font-semibold">{formatCurrency(sale.commissionEarned)}</span>
+                                                    <span className="text-right">
+                                                        <Badge variant="outline" className={cn("capitalize",
+                                                            sale.paymentStatus === 'Paid' 
+                                                                ? 'bg-green-100 text-green-800' 
+                                                                : 'bg-yellow-100 text-yellow-800'
+                                                        )}>
+                                                            {sale.paymentStatus === 'Paid' 
+                                                                ? <CheckCircle className="mr-1 h-3 w-3"/> 
+                                                                : <Clock className="mr-1 h-3 w-3"/>
+                                                            }
+                                                            {sale.paymentStatus}
+                                                        </Badge>
+                                                    </span>
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent>
