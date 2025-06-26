@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -307,12 +307,14 @@ const CashPaymentDialog = ({
     const { formatCurrency } = useCurrency();
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (open) {
             // Reset on open
             setAmountTendered('');
             setChange(0);
+            setTimeout(() => inputRef.current?.focus(), 100); // Autofocus on open
         }
     }, [open]);
 
@@ -328,6 +330,13 @@ const CashPaymentDialog = ({
     const handleFinalize = () => {
         onFinalize(parseFloat(amountTendered) || 0);
     }
+    
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleFinalize();
+        }
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -346,11 +355,13 @@ const CashPaymentDialog = ({
                     <div className="space-y-2">
                         <Label htmlFor="amount-tendered">Amount Tendered</Label>
                         <Input
+                            ref={inputRef}
                             id="amount-tendered"
                             type="number"
                             placeholder="0.00"
                             value={amountTendered}
                             onChange={(e) => setAmountTendered(e.target.value)}
+                            onKeyDown={handleKeyDown}
                             className="text-center text-2xl h-14"
                         />
                     </div>
