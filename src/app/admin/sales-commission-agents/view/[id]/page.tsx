@@ -40,6 +40,15 @@ type CustomerContribution = {
     totalSpent: number;
 };
 
+type CommissionableSale = {
+    id: string;
+    date: string;
+    invoiceNo: string;
+    customerName: string;
+    totalAmount: number;
+    commissionEarned: number;
+};
+
 export default function ViewCommissionProfilePage() {
     const params = useParams();
     const router = useRouter();
@@ -81,9 +90,9 @@ export default function ViewCommissionProfilePage() {
         fetchData();
     }, [id, router, toast]);
     
-    const { commissionBreakdown, customerContributions, totalCommissionableSales } = useMemo(() => {
+    const { commissionBreakdown, customerContributions, commissionableSales } = useMemo(() => {
         if (!profile || !sales.length || !products.length) {
-            return { commissionBreakdown: [], customerContributions: [], totalCommissionableSales: 0 };
+            return { commissionBreakdown: [], customerContributions: [], commissionableSales: [] };
         }
 
         const productMap = new Map(products.map(p => [p.id, p]));
@@ -91,21 +100,20 @@ export default function ViewCommissionProfilePage() {
 
         const categoryData: { [key: string]: { totalSales: number; commissionEarned: number } } = {};
         const customerData: { [key: string]: { totalSpent: number } } = {};
-
-        let totalSalesValue = 0;
+        const commissionableSalesResult: CommissionableSale[] = [];
 
         for (const sale of relevantSales) {
             if (!customerData[sale.customerName]) {
                 customerData[sale.customerName] = { totalSpent: 0 };
             }
+            customerData[sale.customerName].totalSpent += sale.totalAmount;
 
+            let commissionForThisSale = 0;
             for (const item of sale.items) {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
 
                 const itemValue = item.quantity * item.unitPrice;
-                totalSalesValue += itemValue;
-                customerData[sale.customerName].totalSpent += itemValue;
                 
                 const category = product.category || 'Uncategorized';
                 if (!categoryData[category]) {
@@ -118,6 +126,18 @@ export default function ViewCommissionProfilePage() {
 
                 categoryData[category].totalSales += itemValue;
                 categoryData[category].commissionEarned += commissionAmount;
+                commissionForThisSale += commissionAmount;
+            }
+
+            if(sale.items.length > 0 && sale.totalAmount > 0){
+                 commissionableSalesResult.push({
+                    id: sale.id,
+                    date: new Date(sale.date).toLocaleString(),
+                    invoiceNo: sale.invoiceNo,
+                    customerName: sale.customerName,
+                    totalAmount: sale.totalAmount,
+                    commissionEarned: commissionForThisSale,
+                });
             }
         }
         
@@ -130,7 +150,7 @@ export default function ViewCommissionProfilePage() {
             .sort((a,b) => b.totalSpent - a.totalSpent);
 
 
-        return { commissionBreakdown: commissionBreakdownResult, customerContributions: customerContributionsResult, totalCommissionableSales: totalSalesValue };
+        return { commissionBreakdown: commissionBreakdownResult, customerContributions: customerContributionsResult, commissionableSales: commissionableSalesResult.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
     }, [profile, sales, products]);
     
     if (isLoading || !profile) {
@@ -227,7 +247,7 @@ export default function ViewCommissionProfilePage() {
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Top Customers</CardTitle>
+                        <CardTitle className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Top Customers</CardTitle>
                     </CardHeader>
                     <CardContent>
                          <Table>
@@ -244,6 +264,39 @@ export default function ViewCommissionProfilePage() {
                     </CardContent>
                 </Card>
             </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
+                    <CardDescription>
+                        Individual sales that have generated commission for this profile.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Invoice No.</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead className="text-right">Sale Amount</TableHead>
+                                <TableHead className="text-right">Commission Earned</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {commissionableSales.length > 0 ? commissionableSales.map(sale => (
+                                <TableRow key={sale.id}>
+                                    <TableCell>{sale.date}</TableCell>
+                                    <TableCell>{sale.invoiceNo}</TableCell>
+                                    <TableCell>{sale.customerName}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
+                                    <TableCell className="text-right font-semibold">{formatCurrency(sale.commissionEarned)}</TableCell>
+                                </TableRow>
+                            )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No sales data available for this profile.</TableCell></TableRow>}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     );
 }
+
