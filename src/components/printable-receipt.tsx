@@ -28,7 +28,7 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
     const changeDue = sale.paymentStatus === 'Paid' ? sale.totalPaid - sale.totalAmount : 0;
 
     return (
-        <div className="printable-area hidden print:block font-mono text-xs w-[300px] mx-auto">
+        <div className="printable-area hidden print:block print:w-auto print:p-0 font-mono text-xs w-[300px] mx-auto">
             <div className="text-center p-4">
                 <Logo className="mx-auto h-12 w-12 mb-2" />
                 <h1 className="text-lg font-bold">{appName}</h1>
