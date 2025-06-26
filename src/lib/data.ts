@@ -169,6 +169,7 @@ export type Sale = {
     shippingDetails: string | null;
     taxAmount?: number;
     items: SaleItem[];
+    commissionAgentId?: string | null;
 };
 
 export type Draft = {
@@ -483,3 +484,4 @@ export const subAgentProfitData: SubAgentProfit[] = [];
 export const companyProfitData: CompanyProfit[] = [];
 export const registerLogs: RegisterLog[] = [];
 export const activityLogs: ActivityLog[] = [];
+

@@ -39,9 +39,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase } from '@/lib/data';
+import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase, type CommissionProfile } from '@/lib/data';
 import { addSale, getSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
+import { getCommissionProfiles } from '@/services/commissionService';
 import {
   Select,
   SelectContent,
@@ -395,13 +396,20 @@ export default function PosPage() {
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
 
+  // States for agent selection
+  const [agentSearchTerm, setAgentSearchTerm] = useState('');
+  const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
+  const [filteredAgents, setFilteredAgents] = useState<CommissionProfile[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
+
   const fetchAndCalculateStock = useCallback(async () => {
       try {
         setIsLoading(true);
-        const [productsData, salesData, purchasesData] = await Promise.all([
+        const [productsData, salesData, purchasesData, profilesData] = await Promise.all([
           getProducts(),
           getSales(),
           getPurchases(),
+          getCommissionProfiles(),
         ]);
 
         const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
@@ -423,6 +431,7 @@ export default function PosPage() {
         });
 
         setProducts(productsWithCalculatedStock);
+        setCommissionProfiles(profilesData);
       } catch (error) {
         console.error("Failed to fetch data and calculate stock:", error);
         toast({
@@ -462,6 +471,20 @@ export default function PosPage() {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    if (agentSearchTerm) {
+        setFilteredAgents(
+            commissionProfiles.filter(profile =>
+                profile.phone.includes(agentSearchTerm) ||
+                profile.name.toLowerCase().includes(agentSearchTerm.toLowerCase())
+            )
+        );
+    } else {
+        setFilteredAgents([]);
+    }
+  }, [agentSearchTerm, commissionProfiles]);
+
 
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + item.product.sellingPrice * item.quantity, 0);
@@ -532,6 +555,7 @@ export default function PosPage() {
     setDiscount(0);
     setOrderTax(0);
     setShipping(0);
+    setSelectedAgent(null);
     toast({
         title: 'Cart Cleared',
         description: 'The transaction has been cancelled.',
@@ -564,6 +588,7 @@ export default function PosPage() {
               tax: 0, // Simplified
           })),
           taxAmount: orderTax,
+          commissionAgentId: selectedAgent ? selectedAgent.id : null,
       };
   };
 
@@ -582,6 +607,7 @@ export default function PosPage() {
           setDiscount(0);
           setOrderTax(0);
           setShipping(0);
+          setSelectedAgent(null);
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
@@ -724,7 +750,7 @@ export default function PosPage() {
         {/* Left Side: Cart */}
         <div className="lg:col-span-3 flex flex-col gap-2">
             <Card className="p-3 bg-card">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="flex items-center gap-2">
                         <UserPlus className="text-muted-foreground flex-shrink-0"/>
                         <Select defaultValue="walk-in">
@@ -738,6 +764,47 @@ export default function PosPage() {
                         </Select>
                         <Button size="icon" className="flex-shrink-0"><Plus/></Button>
                     </div>
+
+                    <div className="relative">
+                        {selectedAgent ? (
+                            <div className="flex items-center justify-between rounded-md border h-10 px-3">
+                                <div className="flex items-center gap-2">
+                                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                                    <span className="text-sm font-medium">{selectedAgent.name}</span>
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedAgent(null)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="relative h-full">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                                <Input
+                                    placeholder="Agent name/phone"
+                                    className="pl-10 w-full"
+                                    value={agentSearchTerm}
+                                    onChange={(e) => setAgentSearchTerm(e.target.value)}
+                                />
+                                {filteredAgents.length > 0 && (
+                                    <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
+                                        {filteredAgents.map(profile => (
+                                            <div
+                                                key={profile.id}
+                                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
+                                                onClick={() => {
+                                                    setSelectedAgent(profile);
+                                                    setAgentSearchTerm('');
+                                                }}
+                                            >
+                                                <span>{profile.name} ({profile.phone})</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="relative flex items-center">
                         <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
                         <Input
@@ -985,3 +1052,4 @@ export default function PosPage() {
     </TooltipProvider>
   );
 }
+

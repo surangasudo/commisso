@@ -32,6 +32,7 @@ export async function getSales(): Promise<Sale[]> {
           shippingDetails: docData.shippingDetails,
           taxAmount: docData.taxAmount,
           items: docData.items,
+          commissionAgentId: docData.commissionAgentId || null,
       } as Sale;
   });
   return data;
@@ -64,6 +65,7 @@ export async function getSale(id: string): Promise<Sale | null> {
             shippingDetails: docData.shippingDetails,
             taxAmount: docData.taxAmount,
             items: docData.items,
+            commissionAgentId: docData.commissionAgentId || null,
         } as Sale;
     } else {
         return null;
