@@ -401,7 +401,7 @@ export default function PosPage() {
   const [agentSearchTerm, setAgentSearchTerm] = useState('');
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
   const [filteredAgents, setFilteredAgents] = useState<CommissionProfile[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
+  const [selectedAgents, setSelectedAgents] = useState<CommissionProfile[]>([]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       try {
@@ -550,13 +550,25 @@ export default function PosPage() {
       currentCart.filter((item) => item.product.id !== productId)
     );
   };
+  
+  const handleAddAgent = (profile: CommissionProfile) => {
+      if (!selectedAgents.some(a => a.id === profile.id)) {
+          setSelectedAgents(prev => [...prev, profile]);
+      }
+      setAgentSearchTerm('');
+  };
+
+  const handleRemoveAgent = (profileId: string) => {
+      setSelectedAgents(prev => prev.filter(a => a.id !== profileId));
+  };
+
 
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
     setOrderTax(0);
     setShipping(0);
-    setSelectedAgent(null);
+    setSelectedAgents([]);
     toast({
         title: 'Cart Cleared',
         description: 'The transaction has been cancelled.',
@@ -589,7 +601,7 @@ export default function PosPage() {
               tax: 0, // Simplified
           })),
           taxAmount: orderTax,
-          commissionAgentId: selectedAgent ? selectedAgent.id : null,
+          commissionAgentIds: selectedAgents.length > 0 ? selectedAgents.map(a => a.id) : null,
       };
   };
 
@@ -608,7 +620,7 @@ export default function PosPage() {
           setDiscount(0);
           setOrderTax(0);
           setShipping(0);
-          setSelectedAgent(null);
+          setSelectedAgents([]);
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
@@ -765,64 +777,61 @@ export default function PosPage() {
                         </Select>
                         <Button size="icon" className="flex-shrink-0"><Plus/></Button>
                     </div>
-
-                    <div className="relative">
-                        {selectedAgent ? (
-                            <div className="flex items-center justify-between rounded-md border h-10 px-3">
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                    <div className="flex-1 truncate">
-                                        <div className="text-sm font-medium truncate">{selectedAgent.name}</div>
-                                        <div className="text-xs text-muted-foreground">{selectedAgent.entityType}</div>
+                     <div className="relative md:col-span-2">
+                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                        <Input
+                            placeholder="Add Commission Profiles..."
+                            className="pl-10 w-full"
+                            value={agentSearchTerm}
+                            onChange={(e) => setAgentSearchTerm(e.target.value)}
+                        />
+                        {filteredAgents.length > 0 && (
+                            <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
+                                {filteredAgents.map(profile => (
+                                    <div
+                                        key={profile.id}
+                                        className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
+                                        onClick={() => handleAddAgent(profile)}
+                                    >
+                                        <div>
+                                            <div className="font-medium">{profile.name}</div>
+                                            <div className="text-xs text-muted-foreground">{profile.phone}</div>
+                                        </div>
+                                        <Badge variant="outline">{profile.entityType}</Badge>
                                     </div>
-                                </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => setSelectedAgent(null)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="relative h-full">
-                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-                                <Input
-                                    placeholder="Search Commission Profiles..."
-                                    className="pl-10 w-full"
-                                    value={agentSearchTerm}
-                                    onChange={(e) => setAgentSearchTerm(e.target.value)}
-                                />
-                                {filteredAgents.length > 0 && (
-                                    <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
-                                        {filteredAgents.map(profile => (
-                                            <div
-                                                key={profile.id}
-                                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
-                                                onClick={() => {
-                                                    setSelectedAgent(profile);
-                                                    setAgentSearchTerm('');
-                                                }}
-                                            >
-                                                <div>
-                                                    <div className="font-medium">{profile.name}</div>
-                                                    <div className="text-xs text-muted-foreground">{profile.phone}</div>
-                                                </div>
-                                                <Badge variant="outline">{profile.entityType}</Badge>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         )}
                     </div>
-
-                    <div className="relative flex items-center">
-                        <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            placeholder="Product name/SKU"
-                            className="pl-10 w-full"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                         <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
+                </div>
+                {selectedAgents.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                        <h4 className="text-sm font-medium mb-2 text-muted-foreground">Assigned for Commission:</h4>
+                        <div className="flex flex-wrap gap-2">
+                            {selectedAgents.map(agent => (
+                                <Badge key={agent.id} variant="secondary" className="pl-2 pr-1 py-1 text-sm">
+                                    {agent.name} <span className="text-muted-foreground/80 ml-1">({agent.entityType})</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveAgent(agent.id)}
+                                        className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </Badge>
+                            ))}
+                        </div>
                     </div>
+                )}
+                 <div className="mt-3 relative flex items-center">
+                    <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
+                    <Input
+                        placeholder="Product name/SKU"
+                        className="pl-10 w-full"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                     <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
                 </div>
             </Card>
 
@@ -1060,4 +1069,3 @@ export default function PosPage() {
     </TooltipProvider>
   );
 }
-
