@@ -13,7 +13,7 @@ export async function getExpenses(): Promise<Expense[]> {
       const docData = doc.data();
       return {
         id: doc.id,
-        date: docData.date || new Date().toISOString(),
+        date: docData.date?.toDate ? docData.date.toDate().toISOString() : (docData.date || new Date().toISOString()),
         referenceNo: docData.referenceNo || '',
         location: docData.location || '',
         expenseCategory: docData.expenseCategory || '',
