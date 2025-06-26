@@ -520,7 +520,7 @@ export default function PosPage() {
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
-  const { sale: saleSettings } = useBusinessSettings();
+  const { sale: saleSettings, pos: posSettings } = useBusinessSettings();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -741,7 +741,7 @@ export default function PosPage() {
     }
   };
 
-  const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number): Omit<Sale, 'id'> => {
+  const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
       const commissionAgentIds = [
           selectedAgent?.id,
           selectedSubAgent?.id,
@@ -791,6 +791,15 @@ export default function PosPage() {
           toast({
               title: "Agent Required",
               description: "A commission agent must be selected for this sale as per business settings.",
+              variant: "destructive",
+          });
+          return;
+      }
+      
+      if (posSettings.isServiceStaffRequired && !selectedSalesperson) {
+          toast({
+              title: "Service Staff Required",
+              description: "Please select a service staff member (Salesperson) for this sale.",
               variant: "destructive",
           });
           return;
@@ -883,7 +892,12 @@ export default function PosPage() {
         return;
       }
       toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
-      clearCart();
+      
+      if (posSettings.printInvoiceOnSuspend) {
+        const tempSaleForPrint = createSaleObject('Suspended', 'Due', 0);
+        setSaleToPrint(tempSaleForPrint);
+      }
+      clearCart(false);
     };
     
     const handleCreditSale = () => {
@@ -982,13 +996,17 @@ export default function PosPage() {
                 <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
                     <div className="flex items-center gap-2">
                         <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
-                        <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
-                            <Calendar className="w-4 h-4" />
-                            <span>{time}</span>
-                        </div>
+                        {posSettings.enableTransactionDate && (
+                            <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
+                                <Calendar className="w-4 h-4" />
+                                <span>{time}</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
+                        {!posSettings.dontShowRecentTransactions && (
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
+                        )}
                         <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={() => clearCart()}><X /></Button>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
@@ -1011,48 +1029,62 @@ export default function PosPage() {
                     {/* Left Side: Cart */}
                     <div className="lg:col-span-3 flex flex-col gap-2">
                         <Card className="p-3 bg-card">
-                             <div className="flex items-center gap-2">
-                                <UserPlus className="text-muted-foreground flex-shrink-0"/>
-                                <Select defaultValue="walk-in">
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select a customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="walk-in">Walk-In Customer</SelectItem>
-                                    {customers.map(customer => (
-                                        <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button size="icon" className="flex-shrink-0"><Plus/></Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Add New Customer</DialogTitle>
-                                            <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
-                                        </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="name">Name *</Label>
-                                                <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <UserPlus className="text-muted-foreground flex-shrink-0"/>
+                                    <Select defaultValue="walk-in">
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a customer" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="walk-in">Walk-In Customer</SelectItem>
+                                        {customers.map(customer => (
+                                            <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button size="icon" className="flex-shrink-0"><Plus/></Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Add New Customer</DialogTitle>
+                                                <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="name">Name *</Label>
+                                                    <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="mobile">Mobile *</Label>
+                                                    <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="email">Email</Label>
+                                                    <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="mobile">Mobile *</Label>
-                                                <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="email">Email</Label>
-                                                <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
-                                            </div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-                                            <Button onClick={handleSaveCustomer}>Save Customer</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
+                                            <DialogFooter>
+                                                <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                                                <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                {posSettings.showInvoiceScheme && (
+                                    <div className="space-y-2">
+                                    <Label>Invoice Scheme</Label>
+                                    <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
+                                    </div>
+                                )}
+                                {posSettings.showInvoiceLayoutDropdown && (
+                                    <div className="space-y-2">
+                                    <Label>Invoice Layout</Label>
+                                    <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
+                                    </div>
+                                )}
                             </div>
 
                             {saleSettings.enableCommissionAgent && (
@@ -1130,13 +1162,29 @@ export default function PosPage() {
                                 />
                                 <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
                             </div>
+                             {!posSettings.dontShowProductSuggestion && searchResults.length > 0 && (
+                                <div className="relative">
+                                <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg -mt-1 top-full">
+                                    {searchResults.map((product) => (
+                                    <div
+                                        key={product.id}
+                                        className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                        onClick={() => addToCart(product)}
+                                    >
+                                        {product.name} ({product.sku})
+                                    </div>
+                                    ))}
+                                </div>
+                                </div>
+                            )}
                         </Card>
 
                         <Card className="flex-1 flex flex-col bg-card">
                             <div className="p-4 flex-grow flex flex-col">
                             <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-muted-foreground">
-                                <div className="col-span-5 flex items-center">Product <Info className="w-3 h-3 ml-1"/></div>
-                                <div className="col-span-2">Quantity</div>
+                                <div className={cn("col-span-4 flex items-center", posSettings.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
+                                {posSettings.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
+                                <div className={cn("col-span-2", posSettings.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
                                 <div className="col-span-2">Price</div>
                                 <div className="col-span-2">Subtotal</div>
                                 <div className="col-span-1 text-center"><X className="w-4 h-4 mx-auto"/></div>
@@ -1146,8 +1194,21 @@ export default function PosPage() {
                                 {cart.length > 0 ? (
                                     cart.map((item) => (
                                     <div key={item.product.id} className="grid grid-cols-12 gap-2 items-center text-sm mb-2">
-                                            <div className="col-span-5 font-medium truncate">{item.product.name}</div>
-                                            <div className="col-span-2">
+                                            <div className={cn("col-span-4 font-medium truncate", posSettings.enableServiceStaffInProductLine && "col-span-3")}>{item.product.name}</div>
+                                            {posSettings.enableServiceStaffInProductLine && (
+                                                <div className="col-span-2">
+                                                    <Select>
+                                                        <SelectTrigger className="h-8 text-xs">
+                                                        <SelectValue placeholder="Select Staff" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                        <SelectItem value="admin">Mr Admin</SelectItem>
+                                                        <SelectItem value="cashier">Mr Cashier</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            )}
+                                            <div className={cn("col-span-2", posSettings.enableServiceStaffInProductLine && "col-span-1")}>
                                                 <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
                                             </div>
                                             <div className="col-span-2">{formatCurrency(item.product.sellingPrice)}</div>
@@ -1170,22 +1231,22 @@ export default function PosPage() {
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Discount (-): 
-                                        <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>
-                                        <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>
+                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>}
+                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>}
                                     </span> 
                                     <span className="text-foreground">{formatCurrency(discount)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Order Tax (+):
-                                        <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>
-                                        <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>
+                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>}
+                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>}
                                     </span> 
                                     <span className="text-foreground">{formatCurrency(orderTax)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Shipping (+):
-                                        <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>
-                                        <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>
+                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>}
+                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>}
                                     </span>
                                     <span className="text-foreground">{formatCurrency(shipping)}</span>
                                 </div>
@@ -1246,42 +1307,43 @@ export default function PosPage() {
                 {/* Footer */}
                 <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
-                        <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>
+                        {!posSettings.disableDraft && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>}
                         <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
-                        <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>
-                        <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>
+                        {!posSettings.disableSuspendSale && <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>}
+                        {!posSettings.disableCreditSaleButton && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>}
                         <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
-                        <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
-                            <DialogTrigger asChild>
-                                <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-2 sm:px-4"><WalletCards className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Multiple Pay</span></Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Finalize Payment</DialogTitle>
-                                    <DialogDescription>
-                                        Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="cash-amount" className="text-right">Cash</Label>
-                                        <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                        {!posSettings.disableMultiplePay && (
+                            <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-2 sm:px-4"><WalletCards className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Multiple Pay</span></Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Finalize Payment</DialogTitle>
+                                        <DialogDescription>
+                                            Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label htmlFor="cash-amount" className="text-right">Cash</Label>
+                                            <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                                        </div>
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label htmlFor="card-amount" className="text-right">Card</Label>
+                                            <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
+                                        </div>
+                                        <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
+                                        <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
                                     </div>
-                                    <div className="grid grid-cols-4 items-center gap-4">
-                                        <Label htmlFor="card-amount" className="text-right">Card</Label>
-                                        <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
-                                    </div>
-                                    <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
-                                    <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
-                                </div>
-                                <DialogFooter>
-                                    <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
+                                    <DialogFooter>
+                                        <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                         <Dialog open={isCardPaymentOpen} onOpenChange={setIsCardPaymentOpen}>
                             <DialogContent>
                                 <DialogHeader>
@@ -1319,8 +1381,8 @@ export default function PosPage() {
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
-
-                        <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
+                        
+                        {!posSettings.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>}
                         <Button variant="destructive" className="text-xs sm:text-sm" onClick={() => clearCart()}>Cancel</Button>
                     </div>
                     <div className="text-center md:text-right w-full md:w-auto">
