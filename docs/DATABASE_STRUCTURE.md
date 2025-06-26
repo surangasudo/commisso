@@ -1,144 +1,153 @@
 # Application Database Structure (Firestore)
 
-This document outlines the main data collections used in the application, which is built on Google Firestore. Each section describes a collection and the fields you can expect to find in a typical document within that collection.
+This document outlines the proposed database structure for the Ultimate POS & ERP system, built on Google Firestore. Each section describes a collection and its intended purpose.
 
-## `brands`
-
-Stores product brands.
-
--   **id**: (string) The auto-generated document ID.
--   **name**: (string) The name of the brand (e.g., "Nike", "Apple").
+*Note: For efficiency, line items (like `purchase_lines` or `sale_lines`) are often stored as an array of objects within the parent document (`purchases` or `sales`) rather than as separate collections. This is a common NoSQL pattern to reduce read operations.*
 
 ---
 
-## `productCategories`
+## `businesses`
 
-Stores product categories, which can be nested.
+Stores information about each business/shop, supporting multi-business setups.
 
--   **id**: (string) The auto-generated document ID.
--   **name**: (string) The name of the category (e.g., "Electronics", "Clothing").
--   **code**: (string) A short code for the category (e.g., "ELEC").
--   **parentId**: (string | null) The ID of the parent category, or `null` if it's a top-level category.
+-   **name**: (string) The legal name of the business.
+-   **ownerId**: (string) The user ID of the business owner.
+-   ... and other top-level business details.
+
+---
+
+## `business_locations`
+
+Manages multiple store locations or warehouses for each business.
+
+-   **businessId**: (string) The ID of the parent `businesses` document.
+-   **name**: (string) The name of the location (e.g., "Downtown Store", "Main Warehouse").
+-   **address**: (object) The physical address of the location.
+-   ... and other location-specific settings.
+
+---
+
+## `users`
+
+User accounts, roles, permissions, and assigned locations.
+
+-   **name**: (string) The user's full name.
+-   **email**: (string) The user's login email.
+-   **roleId**: (string) The ID of the `roles` document assigned to the user.
+-   **assignedLocations**: (array) An array of `business_locations` IDs the user can access.
+-   **commissionPercentage**: (number | null) The user's sales commission rate, if applicable.
+-   ... and other user profile information.
+
+---
+
+## `roles`
+
+Defines user roles and their specific permissions.
+
+-   **name**: (string) The name of the role (e.g., "Admin", "Cashier", "Manager").
+-   **permissions**: (object) A map of permissions, e.g., `{ products: { create: true, read: true } }`.
+
+---
+
+## `contacts`
+
+Stores customer and supplier details, including ledgers and payment terms.
+
+-   **type**: (string) "Customer", "Supplier", or "Both".
+-   **name**: (string) The contact's name or business name.
+-   **mobile**: (string) The contact's mobile number.
+-   **email**: (string) The contact's email address.
+-   **totalPurchaseDue**: (number) The outstanding balance for purchases (for suppliers).
+-   **totalSaleDue**: (number) The outstanding balance for sales (for customers).
+-   ... and other contact details like address, tax number, etc.
 
 ---
 
 ## `products`
 
-Stores detailed information about each product available for sale.
+The main product catalog.
 
--   **id**: (string) The auto-generated document ID.
 -   **name**: (string) The product name.
 -   **sku**: (string) Stock Keeping Unit.
--   **image**: (string) URL to the product image.
--   **businessLocation**: (string) The location where the product is available.
--   **unitPurchasePrice**: (number) The cost to acquire one unit of the product.
--   **sellingPrice**: (number) The price at which one unit is sold.
--   **currentStock**: (number) The current quantity available in inventory.
 -   **productType**: (string) "Single" or "Variable".
--   **category**: (string) The name of the product's category.
--   **brand**: (string) The name of the product's brand.
--   **tax**: (string) The applicable tax rate name.
--   **unit**: (string) The unit of measurement (e.g., "Pieces", "Kg").
+-   **categoryId**: (string) The ID of the `product_categories` document.
+-   **brandId**: (string) The ID of the `product_brands` document.
+-   **unitId**: (string) The ID of the `product_units` document.
+-   **purchasePrice**: (number) The cost price of the product.
+-   **sellingPrice**: (number) The default selling price.
+-   ... and other product details like image URL, stock levels per location, etc.
 
 ---
 
-## `customers`
+## `product_variations`
 
-Stores information about individual customers.
+Stores variants of products (e.g., size, color).
 
--   **id**: (string) The auto-generated document ID.
--   **name**: (string) The customer's full name.
--   **mobile**: (string) The customer's mobile number.
--   **email**: (string | null) The customer's email address.
--   **customerGroup**: (string) The group the customer belongs to (e.g., "Retail", "Wholesale").
--   **address**: (string) The customer's physical address.
--   **contactId**: (string) An optional custom contact ID.
--   ... and other financial fields like `openingBalance`, `totalSaleDue`.
+-   **productId**: (string) The ID of the parent `products` document.
+-   **name**: (string) The name of the variation (e.g., "Red, Medium").
+-   **sku**: (string) A unique SKU for this specific variant.
+-   **price**: (number) The price for this specific variant.
 
 ---
 
-## `suppliers`
+## `product_categories`, `product_brands`, `product_units`
 
-Stores information about product suppliers.
+These collections store classification data for products.
 
--   **id**: (string) The auto-generated document ID.
--   **businessName**: (string) The supplier's business name.
--   **name**: (string) The name of the contact person at the supplier.
--   **mobile**: (string) The supplier's mobile number.
--   **email**: (string | null) The supplier's email address.
--   ... and other financial fields like `payTerm`, `totalPurchaseDue`.
+-   **name**: (string) The name of the category, brand, or unit.
+-   **code**: (string, optional) A short code.
+-   **parentId**: (string, optional) For creating nested categories/units.
 
 ---
 
-## `sales`
+## `sales` and `purchases`
 
-Stores a record of each sale transaction.
+Records of all sale and purchase transactions.
 
--   **id**: (string) The auto-generated document ID.
--   **invoiceNo**: (string) The unique invoice number for the sale.
--   **date**: (string) The ISO 8601 timestamp of when the sale occurred.
--   **customerName**: (string) The name of the customer who made the purchase.
--   **totalAmount**: (number) The final total amount of the sale.
--   **totalPaid**: (number) The amount paid by the customer.
--   **sellDue**: (number) The remaining balance due.
--   **paymentStatus**: (string) "Paid", "Due", or "Partial".
--   **items**: (array) An array of objects, where each object contains:
-    -   **productId**: (string) The ID of the product sold.
-    -   **quantity**: (number) The quantity of the product sold.
-    -   **unitPrice**: (number) The price per unit at the time of sale.
--   **commissionAgentIds**: (array | null) An array of strings, where each string is the ID of a `commissionProfiles` document.
-
----
-
-## `purchases`
-
-Stores a record of each purchase transaction from a supplier.
-
--   **id**: (string) The auto-generated document ID.
--   **referenceNo**: (string) The reference number for the purchase.
--   **date**: (string) The ISO 8601 timestamp of the purchase.
--   **supplier**: (string) The name of the supplier.
--   **grandTotal**: (number) The total amount of the purchase.
--   **paymentDue**: (number) The amount due to be paid.
--   **paymentStatus**: (string) "Paid", "Due", or "Partial".
--   **items**: (array) An array of objects detailing the products purchased.
-
----
-
-## `expenses`
-
-Stores a record of each business expense.
-
--   **id**: (string) The auto-generated document ID.
--   **date**: (string) The ISO 8601 timestamp of the expense.
--   **referenceNo**: (string) The reference number for the expense.
--   **expenseCategory**: (string) The name of the expense category.
--   **totalAmount**: (number) The total amount of the expense.
--   **paymentStatus**: (string) "Paid", "Due", or "Partial".
-
----
-
-## `expenseCategories`
-
-Stores categories for expenses.
-
--   **id**: (string) The auto-generated document ID.
--   **name**: (string) The name of the category (e.g., "Rent", "Utilities").
--   **code**: (string) A short code for the category.
--   **parentId**: (string | null) The ID of a parent category for nesting.
+-   **invoiceNo` or `referenceNo`**: (string) The unique identifier for the transaction.
+-   **date**: (timestamp) The date and time of the transaction.
+-   **contactId**: (string) The ID of the customer or supplier from the `contacts` collection.
+-   **locationId**: (string) The ID of the `business_locations` document where the transaction occurred.
+-   **status**: (string) e.g., "Final", "Draft", "Quotation" for sales; "Received", "Pending" for purchases.
+-   **paymentStatus**: (string) "Paid", "Due", "Partial".
+-   **totalAmount**: (number) The final total amount of the transaction.
+-   **items**: (array) An array of objects detailing the products, quantities, and prices for the transaction.
+-   **commissionAgentId**: (string, optional) The ID of the agent (`commissionProfiles` or `users`) for the sale.
+-   ... and other transaction details like tax, discount, shipping, etc.
 
 ---
 
 ## `commissionProfiles`
 
-Stores profiles for entities that can earn sales commission.
+Stores details of commission agents (users or designated agents eligible for sales commissions).
 
--   **id**: (string) The auto-generated document ID.
 -   **name**: (string) The name of the agent, company, etc.
 -   **entityType**: (string) "Agent", "Sub-Agent", "Company", or "Salesperson".
 -   **phone**: (string) The contact phone number.
--   **commission**: (object) An object containing the commission structure:
-    -   **overall**: (number) The default commission percentage.
-    -   **categories**: (array) An array for category-specific rates, e.g., `[{ category: "Electronics", rate: 15 }]`.
--   **totalCommissionPending**: (number) The total outstanding commission to be paid.
--   **totalCommissionPaid**: (number) The total commission that has already been paid out.
+-   **commission**: (object) The commission structure (overall rate and category-specific rates).
+-   **totalCommissionPending**: (number) Outstanding commission to be paid.
+-   **totalCommissionPaid**: (number) Total commission already paid.
+
+---
+
+## `expenses` and `expense_categories`
+
+Stores records of business expenses and their categories.
+
+-   **date**: (timestamp) The date of the expense.
+-   **categoryId**: (string) The ID of the `expense_categories` document.
+-   **locationId**: (string) The ID of the business location.
+-   **totalAmount**: (number) The total amount of the expense.
+-   **reason**: (string) A note explaining the expense.
+
+---
+
+## Other Collections
+
+-   **`stock_adjustments`**: Records manual stock corrections.
+-   **`stock_transfers`**: Tracks the movement of stock between locations.
+-   **`tax_rates`**: Definitions for different taxes (e.g., GST, VAT).
+-   **`price_groups`**: For different pricing tiers (e.g., retail, wholesale).
+-   **`cash_registers`**: Manages cash register sessions, including opening/closing balances and reconciliation.
+-   **`hrm_payrolls`**: (If HRM module enabled) Stores payroll records, potentially including commission as a component.
+-   **`settings`**: A collection (often with a single document) for storing system-wide configuration.
