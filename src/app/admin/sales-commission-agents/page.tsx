@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile, type DetailedProduct } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { deleteCommissionProfile, payCommission } from '@/services/commissionService';
@@ -24,8 +24,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { getSales, type Sale } from '@/services/saleService';
+import { getProducts } from '@/services/productService';
 
-const PayCommissionDialog = ({ 
+type PendingSale = {
+    id: string;
+    date: string;
+    invoiceNo: string;
+    totalAmount: number;
+    commissionEarned: number;
+};
+
+const CommissionPayoutDialog = ({ 
     profile, 
     open, 
     onOpenChange, 
@@ -38,52 +51,105 @@ const PayCommissionDialog = ({
 }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
-    const [amount, setAmount] = useState('');
+    
+    const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
+    const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
+    const [isLoading, setIsLoading] = useState(true);
+    
     const [method, setMethod] = useState('');
     const [note, setNote] = useState('');
     const [isPaying, setIsPaying] = useState(false);
 
-    const pendingAmount = useMemo(() => {
-        if (!profile) return 0;
-        return (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
-    }, [profile]);
-
     useEffect(() => {
-        if (profile) {
-            setAmount(String(pendingAmount > 0 ? pendingAmount.toFixed(2) : '0'));
-            // Set default payment method based on entity type
-            if (profile.entityType === 'Company') {
-                setMethod('cheque');
-            } else {
-                setMethod('cash');
+        const calculatePendingCommissions = async () => {
+            if (!profile) return;
+            setIsLoading(true);
+
+            try {
+                const [allSales, allProducts] = await Promise.all([getSales(), getProducts()]);
+                const productMap = new Map(allProducts.map(p => [p.id, p]));
+
+                const agentSales = allSales.filter(s => s.commissionAgentIds?.includes(profile.id));
+                const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                let paidAmountRemaining = profile.totalCommissionPaid || 0;
+                const pending: PendingSale[] = [];
+
+                for (const sale of sortedSales) {
+                    let commissionForThisSale = 0;
+                    for (const item of sale.items) {
+                        const product = productMap.get(item.productId);
+                        if (!product) continue;
+                        
+                        const saleValue = item.unitPrice * item.quantity;
+                        const categoryRateData = profile.commission.categories?.find(c => c.category === product.category);
+                        const rate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
+                        
+                        commissionForThisSale += saleValue * (rate / 100);
+                    }
+
+                    if (paidAmountRemaining >= commissionForThisSale) {
+                        paidAmountRemaining -= commissionForThisSale;
+                    } else {
+                        pending.push({
+                            id: sale.id,
+                            date: new Date(sale.date).toLocaleDateString(),
+                            invoiceNo: sale.invoiceNo,
+                            totalAmount: sale.totalAmount,
+                            commissionEarned: commissionForThisSale
+                        });
+                    }
+                }
+                setPendingSales(pending);
+            } catch (e) {
+                console.error("Failed to calculate pending commissions", e);
+                toast({ title: 'Error', description: 'Could not load pending commissions.', variant: 'destructive'});
+            } finally {
+                setIsLoading(false);
             }
+        };
+
+        if (open && profile) {
+            calculatePendingCommissions();
+            setSelectedSaleIds(new Set());
+            setMethod(profile.entityType === 'Company' ? 'cheque' : 'cash');
             setNote('');
         }
-    }, [profile, pendingAmount]);
-    
-    const paymentMethods = profile?.entityType === 'Company' 
-        ? [{ value: 'cheque', label: 'Cheque' }]
-        : [
-            { value: 'cash', label: 'Cash' },
-            { value: 'bank_transfer', label: 'Bank Transfer' },
-          ];
+    }, [open, profile, toast]);
+
+    const totalToPay = useMemo(() => {
+        return pendingSales
+            .filter(sale => selectedSaleIds.has(sale.id))
+            .reduce((sum, sale) => sum + sale.commissionEarned, 0);
+    }, [selectedSaleIds, pendingSales]);
+
+    const handleSelectAll = (checked: boolean | 'indeterminate') => {
+        if (checked === true) {
+            setSelectedSaleIds(new Set(pendingSales.map(s => s.id)));
+        } else {
+            setSelectedSaleIds(new Set());
+        }
+    }
+
+    const handleSelectOne = (saleId: string, checked: boolean) => {
+        const newSet = new Set(selectedSaleIds);
+        if (checked) {
+            newSet.add(saleId);
+        } else {
+            newSet.delete(saleId);
+        }
+        setSelectedSaleIds(newSet);
+    }
 
     const handleConfirmPayment = async () => {
-        if (!profile || !amount || !method) {
-            toast({ title: 'Error', description: 'Amount and payment method are required.', variant: 'destructive' });
-            return;
+        if (!profile || totalToPay <= 0) {
+             toast({ title: 'Error', description: 'No commissions selected for payment.', variant: 'destructive' });
+             return;
         }
-        
-        const payAmount = parseFloat(amount);
-        if (payAmount <= 0 || payAmount > pendingAmount) {
-            toast({ title: 'Error', description: 'Invalid payment amount.', variant: 'destructive' });
-            return;
-        }
-        
         setIsPaying(true);
         try {
-            await payCommission(profile.id, payAmount);
-            toast({ title: 'Success', description: `Payment of ${formatCurrency(payAmount)} for ${profile.name} has been recorded.` });
+            await payCommission(profile.id, totalToPay);
+            toast({ title: 'Success', description: `Payment of ${formatCurrency(totalToPay)} for ${profile.name} has been recorded.` });
             onPaymentSuccess();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' });
@@ -94,42 +160,86 @@ const PayCommissionDialog = ({
     
     if (!profile) return null;
 
+    const pendingAmount = (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Pay Commission to {profile.name}</DialogTitle>
                     <DialogDescription>
-                        Pending amount: <span className="font-bold">{formatCurrency(pendingAmount)}</span>
+                        Select invoices to pay. Total pending: <span className="font-bold">{formatCurrency(pendingAmount)}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="pay-amount">Amount to Pay *</Label>
-                        <Input id="pay-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-64"><p>Loading pending commissions...</p></div>
+                ) : pendingSales.length > 0 ? (
+                    <div className="space-y-4 py-4">
+                        <ScrollArea className="h-64 border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-12">
+                                            <Checkbox
+                                                checked={selectedSaleIds.size > 0 && selectedSaleIds.size === pendingSales.length}
+                                                onCheckedChange={handleSelectAll}
+                                                aria-label="Select all"
+                                            />
+                                        </TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Invoice No.</TableHead>
+                                        <TableHead className="text-right">Commission Earned</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {pendingSales.map(sale => (
+                                        <TableRow key={sale.id}>
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedSaleIds.has(sale.id)}
+                                                    onCheckedChange={(checked) => handleSelectOne(sale.id, !!checked)}
+                                                    aria-label={`Select invoice ${sale.invoiceNo}`}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{sale.date}</TableCell>
+                                            <TableCell>{sale.invoiceNo}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(sale.commissionEarned)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+
+                        <Separator />
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                            <div className="space-y-2">
+                                <Label htmlFor="pay-method">Payment Method *</Label>
+                                <Select value={method} onValueChange={setMethod}>
+                                    <SelectTrigger id="pay-method"><SelectValue placeholder="Select a method" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cash">Cash</SelectItem>
+                                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                                        <SelectItem value="cheque">Cheque</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Label htmlFor="pay-note" className="mt-4 block">Payment Note</Label>
+                                <Textarea id="pay-note" value={note} onChange={(e) => setNote(e.target.value)} />
+                            </div>
+                            <div className="text-right space-y-2">
+                                 <p className="text-sm text-muted-foreground">Total Selected for Payment</p>
+                                 <p className="text-3xl font-bold">{formatCurrency(totalToPay)}</p>
+                            </div>
+                        </div>
+
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="pay-method">Payment Method *</Label>
-                        <Select value={method} onValueChange={setMethod}>
-                            <SelectTrigger id="pay-method">
-                                <SelectValue placeholder="Select a method" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {paymentMethods.map(m => (
-                                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="pay-note">Payment Note</Label>
-                        <Textarea id="pay-note" value={note} onChange={(e) => setNote(e.target.value)} />
-                    </div>
-                </div>
+                ) : (
+                    <div className="flex items-center justify-center h-32"><p>No pending commissions to pay.</p></div>
+                )}
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleConfirmPayment} disabled={isPaying}>
-                        {isPaying ? 'Processing...' : 'Confirm & Pay'}
+                    <Button onClick={handleConfirmPayment} disabled={isPaying || totalToPay <= 0}>
+                        {isPaying ? 'Processing...' : `Pay Selected (${selectedSaleIds.size})`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -522,7 +632,7 @@ export default function SalesCommissionAgentsPage() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <PayCommissionDialog 
+      <CommissionPayoutDialog 
         profile={profileToPay}
         open={isPayDialogOpen}
         onOpenChange={setIsPayDialogOpen}
