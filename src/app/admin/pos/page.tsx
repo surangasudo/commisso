@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
@@ -793,7 +792,7 @@ export default function PosPage() {
 
   return (
     <TooltipProvider>
-    <div className="flex flex-col h-[calc(100vh_-_60px)] bg-background text-foreground -m-6 font-sans">
+    <div className="flex flex-col h-screen bg-background text-foreground font-sans">
       <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
         <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>

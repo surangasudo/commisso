@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -55,6 +54,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useSettings } from '@/hooks/use-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const allSidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home", roles: ['Admin', 'Cashier'] },
@@ -209,6 +209,7 @@ export default function AdminLayout({
   const { user, loading, logout } = useAuth();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const { appName, helpLink } = useSettings();
+  const isPosPage = pathname === '/admin/pos';
   
   const sidebarNav = React.useMemo(() => {
     if (!user) return [];
@@ -266,114 +267,120 @@ export default function AdminLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar>
-        <SidebarContent>
-          <SidebarMenu>
-            {sidebarNav.map((item) => (
-                 <SidebarMenuItem key={item.label}>
-                    {item.children ? (
-                        <>
-                        <SidebarMenuButton
-                            variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
-                            className="w-full justify-between"
-                            onClick={() => toggleMenu(item.label)}
-                        >
-                            <div className="flex items-center gap-2">
-                            <item.icon />
-                            <span>{item.label}</span>
-                            </div>
-                            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${openMenu === item.label ? 'rotate-180' : ''}`} />
-                        </SidebarMenuButton>
-                        {openMenu === item.label && (
-                            <ul className="pl-7 pt-2 flex flex-col gap-1">
-                            {item.children.map((child) => (
-                                <li key={child.label}>
-                                <Link href={child.href} className="w-full">
-                                    <SidebarMenuButton 
-                                    tooltip={child.label} 
-                                    variant={pathname === child.href ? 'secondary' : 'ghost'} 
-                                    className="w-full justify-start h-8 text-sm"
-                                    >
-                                    <span>{child.label}</span>
+        {!isPosPage && (
+            <Sidebar>
+                <SidebarContent>
+                <SidebarMenu>
+                    {sidebarNav.map((item) => (
+                        <SidebarMenuItem key={item.label}>
+                            {item.children ? (
+                                <>
+                                <SidebarMenuButton
+                                    variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
+                                    className="w-full justify-between"
+                                    onClick={() => toggleMenu(item.label)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                    <item.icon />
+                                    <span>{item.label}</span>
+                                    </div>
+                                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${openMenu === item.label ? 'rotate-180' : ''}`} />
+                                </SidebarMenuButton>
+                                {openMenu === item.label && (
+                                    <ul className="pl-7 pt-2 flex flex-col gap-1">
+                                    {item.children.map((child) => (
+                                        <li key={child.label}>
+                                        <Link href={child.href} className="w-full">
+                                            <SidebarMenuButton 
+                                            tooltip={child.label} 
+                                            variant={pathname === child.href ? 'secondary' : 'ghost'} 
+                                            className="w-full justify-start h-8 text-sm"
+                                            >
+                                            <span>{child.label}</span>
+                                            </SidebarMenuButton>
+                                        </Link>
+                                        </li>
+                                    ))}
+                                    </ul>
+                                )}
+                                </>
+                            ) : (
+                                <Link href={item.href!} className="w-full">
+                                    <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
+                                    <item.icon />
+                                    <span>{item.label}</span>
                                     </SidebarMenuButton>
                                 </Link>
-                                </li>
-                            ))}
-                            </ul>
-                        )}
-                        </>
-                    ) : (
-                        <Link href={item.href!} className="w-full">
-                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
-                            <item.icon />
-                            <span>{item.label}</span>
-                            </SidebarMenuButton>
-                        </Link>
-                    )}
-                </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        {user.role === 'Admin' && (
-            <SidebarFooter className="gap-2">
-                <Button style={{backgroundColor: 'hsl(258, 42%, 58%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(258,42%,50%)]">
-                    <Briefcase className="mr-2 h-4 w-4" /> HRM
-                </Button>
-                <Button style={{backgroundColor: 'hsl(220, 77%, 45%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(220,77%,40%)]">
-                    <CheckSquare className="mr-2 h-4 w-4" /> Essentials
-                </Button>
-                <Button style={{backgroundColor: 'hsl(308, 47%, 55%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(308,47%,50%)]">
-                    <ShoppingCart className="mr-2 h-4 w-4" /> Woocommerce
-                </Button>
-            </SidebarFooter>
+                            )}
+                        </SidebarMenuItem>
+                    ))}
+                </SidebarMenu>
+                </SidebarContent>
+                {user.role === 'Admin' && (
+                    <SidebarFooter className="gap-2">
+                        <Button style={{backgroundColor: 'hsl(258, 42%, 58%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(258,42%,50%)]">
+                            <Briefcase className="mr-2 h-4 w-4" /> HRM
+                        </Button>
+                        <Button style={{backgroundColor: 'hsl(220, 77%, 45%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(220,77%,40%)]">
+                            <CheckSquare className="mr-2 h-4 w-4" /> Essentials
+                        </Button>
+                        <Button style={{backgroundColor: 'hsl(308, 47%, 55%)', color: 'white'}} className="justify-start w-full hover:bg-[hsl(308,47%,50%)]">
+                            <ShoppingCart className="mr-2 h-4 w-4" /> Woocommerce
+                        </Button>
+                    </SidebarFooter>
+                )}
+            </Sidebar>
         )}
-      </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6">
-          <div className="flex items-center gap-4">
-             <SidebarTrigger className="lg:hidden text-primary-foreground" />
-             <div className="hidden items-center gap-2 lg:flex">
-                <Logo className="size-7" />
-                <span className="font-headline text-lg">{appName}</span>
+        {!isPosPage && (
+            <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6">
+            <div className="flex items-center gap-4">
+                <SidebarTrigger className="lg:hidden text-primary-foreground" />
+                <div className="hidden items-center gap-2 lg:flex">
+                    <Logo className="size-7" />
+                    <span className="font-headline text-lg">{appName}</span>
+                </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Download className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><PlusCircle className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="rounded-full"><Grid3x3 className="h-5 w-5" /></Button>
-            <Link href="/admin/pos">
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Download className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><PlusCircle className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" className="rounded-full"><Grid3x3 className="h-5 w-5" /></Button>
+                <Link href="/admin/pos">
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                        <ShoppingCart className="h-5 w-5" />
+                    </Button>
+                </Link>
+                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><CalendarDays className="h-5 w-5" /></Button>
+                <ThemeToggle className="text-primary-foreground" />
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <ShoppingCart className="h-5 w-5" />
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Toggle notifications</span>
                 </Button>
-            </Link>
-            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><CalendarDays className="h-5 w-5" /></Button>
-            <ThemeToggle className="text-primary-foreground" />
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Bell className="h-5 w-5" />
-              <span className="sr-only">Toggle notifications</span>
-            </Button>
-            <Button asChild variant="ghost" size="icon" className="rounded-full">
-              <a href={helpLink} target="_blank" rel="noopener noreferrer"><HelpCircle className="h-5 w-5" /></a>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <CircleUser className="h-6 w-6" />
-                  <span className="sr-only">Toggle user menu</span>
+                <Button asChild variant="ghost" size="icon" className="rounded-full">
+                <a href={helpLink} target="_blank" rel="noopener noreferrer"><HelpCircle className="h-5 w-5" /></a>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-        <main className="flex-1 p-4 sm:p-6 bg-background">{children}</main>
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                    <CircleUser className="h-6 w-6" />
+                    <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                    <DropdownMenuItem>Support</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            </header>
+        )}
+        <main className={cn(isPosPage ? '' : "flex-1 p-4 sm:p-6 bg-background")}>
+            {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );
