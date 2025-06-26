@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 const purchaseItemSchema = z.object({
     productId: z.string(),
@@ -54,6 +55,7 @@ export default function AddPurchasePage() {
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const settings = useBusinessSettings();
     
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [products, setProducts] = useState<DetailedProduct[]>([]);
@@ -315,7 +317,9 @@ export default function AddPurchasePage() {
                         <FormMessage /></FormItem>
                     )}/>
                     
-                    <FormField control={form.control} name="purchaseStatus" render={({ field }) => (<FormItem><FormLabel>Purchase Status *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Received">Received</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Ordered">Ordered</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                    {settings.purchase.enablePurchaseStatus && (
+                        <FormField control={form.control} name="purchaseStatus" render={({ field }) => (<FormItem><FormLabel>Purchase Status *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Received">Received</SelectItem><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Ordered">Ordered</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
+                    )}
                     <FormField control={form.control} name="location" render={({ field }) => (<FormItem><FormLabel>Business Location *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                      
                      <div className="space-y-2"><Label htmlFor="attach-document">Attach Document</Label><Input id="attach-document" type="file" /><p className="text-xs text-muted-foreground">Max 2MB</p></div>
@@ -342,7 +346,13 @@ export default function AddPurchasePage() {
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.productName}</TableCell>
                                     <TableCell><FormField control={form.control} name={`purchaseItems.${index}.quantity`} render={({ field }) => (<Input type="number" className="w-24 h-9" {...field} />)}/></TableCell>
-                                    <TableCell><FormField control={form.control} name={`purchaseItems.${index}.purchasePrice`} render={({ field }) => (<Input type="number" className="w-32 h-9" {...field} />)}/></TableCell>
+                                    <TableCell>
+                                        {settings.purchase.enableEditingProductPrice ? (
+                                            <FormField control={form.control} name={`purchaseItems.${index}.purchasePrice`} render={({ field }) => (<Input type="number" className="w-32 h-9" {...field} />)}/>
+                                        ) : (
+                                            <span>{formatCurrency(item.purchasePrice)}</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="font-semibold">{formatCurrency((formValues.purchaseItems[index]?.quantity || 0) * (formValues.purchaseItems[index]?.purchasePrice || 0))}</TableCell>
                                     <TableCell className="text-center"><Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => remove(index)}><Trash2 className="w-4 h-4" /></Button></TableCell>
                                 </TableRow>

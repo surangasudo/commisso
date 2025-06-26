@@ -446,6 +446,62 @@ const TaxSettingsForm = ({ settings: initialTaxSettings, updateSettings }: { set
     );
 };
 
+const PurchaseSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['purchase'], updateSettings: (newValues: Partial<AllSettings['purchase']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleCheckboxChange = (id: keyof AllSettings['purchase'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Purchase Settings Updated',
+            description: 'Your purchase settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Purchase Settings</CardTitle>
+                <CardDescription>Configure your purchasing workflow and options.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', checked)} />
+                    <Label htmlFor="enableEditingProductPrice" className="font-normal">Enable editing product price from purchase screen</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', checked)} />
+                    <Label htmlFor="enablePurchaseStatus" className="font-normal">Enable Purchase Status</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', checked)} />
+                    <Label htmlFor="enableLotNumber" className="font-normal">Enable Lot Number</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', checked)} />
+                    <Label htmlFor="enablePurchaseOrder" className="font-normal">Enable Purchase Order</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enablePurchaseRequisition" checked={settings.enablePurchaseRequisition} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseRequisition', checked)} />
+                    <Label htmlFor="enablePurchaseRequisition" className="font-normal">Enable Purchase Requisition</Label>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 const ProductSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['product'], updateSettings: (newValues: Partial<AllSettings['product']>) => void }) => {
     const { toast } = useToast();
     const [settings, setSettings] = useState(initialSettingsData);
@@ -895,7 +951,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="pos">
                             <PosSettingsForm settings={settings.pos} updateSettings={(newValues) => updateSection('pos', newValues)} />
                         </TabsContent>
-                        <TabsContent value="purchases"><UnimplementedForm title="Purchase Settings" /></TabsContent>
+                        <TabsContent value="purchases">
+                             <PurchaseSettingsForm settings={settings.purchase} updateSettings={(newValues) => updateSection('purchase', newValues)} />
+                        </TabsContent>
                         <TabsContent value="payment"><UnimplementedForm title="Payment Settings" /></TabsContent>
                         <TabsContent value="dashboard"><UnimplementedForm title="Dashboard Settings" /></TabsContent>
                         <TabsContent value="system"><UnimplementedForm title="System Settings" /></TabsContent>
