@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
 import { type CommissionProfile } from '@/lib/data';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
@@ -13,6 +13,9 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
       const docData = doc.data();
       const commissionData = docData.commission || {};
       const categoriesData = commissionData.categories || [];
+
+      // Add mock pending commission for demonstration
+      const mockPending = (docData.name?.length || 5) * 123.45;
 
       return {
             id: doc.id,
@@ -28,6 +31,8 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
                     rate: c.rate || 0,
                 })) : [],
             },
+            totalCommissionPending: docData.totalCommissionPending ?? mockPending,
+            totalCommissionPaid: docData.totalCommissionPaid || 0,
       } as CommissionProfile;
   });
   return data;
@@ -41,6 +46,8 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         const docData = docSnap.data();
         const commissionData = docData.commission || {};
         const categoriesData = commissionData.categories || [];
+        
+        const mockPending = (docData.name?.length || 5) * 123.45;
 
         const data = {
             id: docSnap.id,
@@ -56,6 +63,8 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
                     rate: c.rate || 0,
                 })) : [],
             },
+            totalCommissionPending: docData.totalCommissionPending ?? mockPending,
+            totalCommissionPaid: docData.totalCommissionPaid || 0,
         } as CommissionProfile;
         return data;
     } else {
@@ -63,8 +72,13 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     }
 }
 
-export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<void> {
-    await addDoc(commissionProfilesCollection, profile);
+export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
+    const profileWithDefaults = {
+      ...profile,
+      totalCommissionPending: 0,
+      totalCommissionPaid: 0,
+    };
+    return await addDoc(commissionProfilesCollection, profileWithDefaults);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
@@ -75,4 +89,32 @@ export async function updateCommissionProfile(id: string, profile: Partial<Omit<
 export async function deleteCommissionProfile(id: string): Promise<void> {
     const docRef = doc(db, 'commissionProfiles', id);
     await deleteDoc(docRef);
+}
+
+export async function payCommission(profileId: string, amountToPay: number): Promise<void> {
+    const docRef = doc(db, 'commissionProfiles', profileId);
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const profileDoc = await transaction.get(docRef);
+            if (!profileDoc.exists()) {
+                throw "Document does not exist!";
+            }
+            
+            const currentData = profileDoc.data();
+            const currentPending = currentData.totalCommissionPending || 0;
+            const currentPaid = currentData.totalCommissionPaid || 0;
+
+            const newPending = currentPending - amountToPay;
+            const newPaid = currentPaid + amountToPay;
+
+            transaction.update(docRef, { 
+                totalCommissionPending: newPending,
+                totalCommissionPaid: newPaid
+            });
+        });
+    } catch (e) {
+        console.error("Transaction failed: ", e);
+        throw e;
+    }
 }

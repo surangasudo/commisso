@@ -1,70 +1,165 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  Download,
-  Printer,
-  Search,
-  Pencil,
-  Trash2,
-  Eye,
-} from 'lucide-react';
+import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { getCommissionProfiles, deleteCommissionProfile } from '@/services/commissionService';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { getCommissionProfiles, deleteCommissionProfile, payCommission } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/hooks/use-currency';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+
+const PayCommissionDialog = ({ 
+    profile, 
+    open, 
+    onOpenChange, 
+    onPaymentSuccess 
+}: { 
+    profile: CommissionProfile | null, 
+    open: boolean, 
+    onOpenChange: (open: boolean) => void,
+    onPaymentSuccess: () => void,
+}) => {
+    const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
+    const [amount, setAmount] = useState('');
+    const [method, setMethod] = useState('');
+    const [note, setNote] = useState('');
+    const [isPaying, setIsPaying] = useState(false);
+
+    useEffect(() => {
+        if (profile) {
+            setAmount(String(profile.totalCommissionPending || 0));
+            // Set default payment method based on entity type
+            if (profile.entityType === 'Company') {
+                setMethod('cheque');
+            } else {
+                setMethod('cash');
+            }
+        }
+    }, [profile]);
+    
+    const paymentMethods = profile?.entityType === 'Company' 
+        ? [{ value: 'cheque', label: 'Cheque' }]
+        : [
+            { value: 'cash', label: 'Cash' },
+            { value: 'bank_transfer', label: 'Bank Transfer' },
+          ];
+
+    const handleConfirmPayment = async () => {
+        if (!profile || !amount || !method) {
+            toast({ title: 'Error', description: 'Amount and payment method are required.', variant: 'destructive' });
+            return;
+        }
+        
+        const payAmount = parseFloat(amount);
+        if (payAmount <= 0 || payAmount > (profile.totalCommissionPending || 0)) {
+            toast({ title: 'Error', description: 'Invalid payment amount.', variant: 'destructive' });
+            return;
+        }
+        
+        setIsPaying(true);
+        try {
+            await payCommission(profile.id, payAmount);
+            toast({ title: 'Success', description: `Payment of ${formatCurrency(payAmount)} for ${profile.name} has been recorded.` });
+            onPaymentSuccess();
+        } catch (error) {
+            toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' });
+        } finally {
+            setIsPaying(false);
+        }
+    };
+    
+    if (!profile) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Pay Commission to {profile.name}</DialogTitle>
+                    <DialogDescription>
+                        Pending amount: <span className="font-bold">{formatCurrency(profile.totalCommissionPending || 0)}</span>
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="pay-amount">Amount to Pay *</Label>
+                        <Input id="pay-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="pay-method">Payment Method *</Label>
+                        <Select value={method} onValueChange={setMethod}>
+                            <SelectTrigger id="pay-method">
+                                <SelectValue placeholder="Select a method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {paymentMethods.map(m => (
+                                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="pay-note">Payment Note</Label>
+                        <Textarea id="pay-note" value={note} onChange={(e) => setNote(e.target.value)} />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleConfirmPayment} disabled={isPaying}>
+                        {isPaying ? 'Processing...' : 'Confirm & Pay'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function SalesCommissionAgentsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
   const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CommissionProfile | null>(null);
 
+  const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
+  const [profileToPay, setProfileToPay] = useState<CommissionProfile | null>(null);
+
+
+  const fetchProfiles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getCommissionProfiles();
+      setProfiles(data);
+    } catch (error) {
+      console.error("Failed to fetch commission profiles:", error);
+      toast({ title: 'Error', description: 'Could not load commission profiles.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
-    const fetchProfiles = async () => {
-      try {
-        const data = await getCommissionProfiles();
-        setProfiles(data);
-      } catch (error) {
-        console.error("Failed to fetch commission profiles:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchProfiles();
-  }, []);
+  }, [fetchProfiles]);
   
   const handleEdit = (profileId: string) => {
     router.push(`/admin/sales-commission-agents/edit/${profileId}`);
@@ -84,7 +179,9 @@ export default function SalesCommissionAgentsPage() {
       try {
         await deleteCommissionProfile(profileToDelete.id);
         setProfiles(profiles.filter(p => p.id !== profileToDelete.id));
+        toast({ title: 'Success', description: `Profile for ${profileToDelete.name} deleted.` });
       } catch (error) {
+        toast({ title: 'Error', description: 'Failed to delete profile.', variant: 'destructive' });
         console.error("Failed to delete profile:", error);
       } finally {
         setIsDeleteDialogOpen(false);
@@ -92,6 +189,17 @@ export default function SalesCommissionAgentsPage() {
       }
     }
   };
+
+  const handlePayClick = (profile: CommissionProfile) => {
+    setProfileToPay(profile);
+    setIsPayDialogOpen(true);
+  };
+  
+  const handlePaymentSuccess = () => {
+      setIsPayDialogOpen(false);
+      setProfileToPay(null);
+      fetchProfiles();
+  }
 
   const getExportData = () => profiles.map(p => ({
     name: p.name,
@@ -107,89 +215,151 @@ export default function SalesCommissionAgentsPage() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex-row items-start justify-between">
-          <CardTitle>Commission Profiles</CardTitle>
-          <div className="flex flex-col items-end gap-2">
-            <Link href="/admin/sales-commission-agents/add">
-              <Button>Add Profile</Button>
-            </Link>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export</Button>
-              <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4">
-            <div className="relative sm:max-w-xs">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search profiles..." className="pl-8 w-full h-9" />
-            </div>
-          </div>
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Entity Type</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Bank Details</TableHead>
-                  <TableHead>Commission Rate</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                      <TableCell><Skeleton className="h-8 w-48" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : profiles.map((profile) => (
-                  <TableRow key={profile.id}>
-                    <TableCell className="font-medium">{profile.name}</TableCell>
-                    <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
-                    <TableCell>{profile.phone}</TableCell>
-                    <TableCell>{profile.bankDetails || 'N/A'}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1 items-center">
-                          <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>
-                          {profile.commission.categories?.map(c => (
-                              <Badge key={c.category} variant="outline">{c.category}: {c.rate}%</Badge>
-                          ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex gap-1">
-                            <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEdit(profile.id)}>
-                                <Pencil className="mr-1 h-3 w-3" /> Edit
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700" onClick={() => handleView(profile.id)}>
-                                <Eye className="mr-1 h-3 w-3" /> View
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(profile)}>
-                                <Trash2 className="mr-1 h-3 w-3" /> Delete
-                            </Button>
-                        </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="py-4">
-          <div className="text-xs text-muted-foreground">
-            Showing <strong>1 to {profiles.length}</strong> of <strong>{profiles.length}</strong> entries
-          </div>
-        </CardFooter>
-      </Card>
+      <Tabs defaultValue="profiles" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
+          <TabsTrigger value="payouts">Commission Payouts</TabsTrigger>
+        </TabsList>
+        <TabsContent value="profiles">
+           <Card>
+              <CardHeader className="flex-row items-start justify-between">
+                <CardTitle>Commission Profiles</CardTitle>
+                <div className="flex flex-col items-end gap-2">
+                  <Link href="/admin/sales-commission-agents/add">
+                    <Button>Add Profile</Button>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export</Button>
+                    <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <div className="relative sm:max-w-xs">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="Search profiles..." className="pl-8 w-full h-9" />
+                  </div>
+                </div>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Entity Type</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Bank Details</TableHead>
+                        <TableHead>Commission Rate</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-48" /></TableCell>
+                          </TableRow>
+                        ))
+                      ) : profiles.map((profile) => (
+                        <TableRow key={profile.id}>
+                          <TableCell className="font-medium">{profile.name}</TableCell>
+                          <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                          <TableCell>{profile.phone}</TableCell>
+                          <TableCell>{profile.bankDetails || 'N/A'}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1 items-center">
+                                <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>
+                                {profile.commission.categories?.map(c => (
+                                    <Badge key={c.category} variant="outline">{c.category}: {c.rate}%</Badge>
+                                ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                              <div className="flex gap-1">
+                                  <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEdit(profile.id)}>
+                                      <Pencil className="mr-1 h-3 w-3" /> Edit
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700" onClick={() => handleView(profile.id)}>
+                                      <Eye className="mr-1 h-3 w-3" /> View
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(profile)}>
+                                      <Trash2 className="mr-1 h-3 w-3" /> Delete
+                                  </Button>
+                              </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+              <CardFooter className="py-4">
+                <div className="text-xs text-muted-foreground">
+                  Showing <strong>1 to {profiles.length}</strong> of <strong>{profiles.length}</strong> entries
+                </div>
+              </CardFooter>
+            </Card>
+        </TabsContent>
+        <TabsContent value="payouts">
+             <Card>
+              <CardHeader>
+                <CardTitle>Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions and release payments.</p>
+              </CardHeader>
+              <CardContent>
+                  <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Entity Type</TableHead>
+                                <TableHead className="text-right">Total Commission (Pending)</TableHead>
+                                <TableHead className="text-right">Total Commission (Paid)</TableHead>
+                                <TableHead className="text-center">Action</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                Array.from({length: 3}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
+                                        <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto"/></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : profiles.map(profile => (
+                                <TableRow key={profile.id}>
+                                    <TableCell className="font-medium">{profile.name}</TableCell>
+                                    <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                                    <TableCell className="text-right font-semibold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</TableCell>
+                                    <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Button 
+                                          size="sm" 
+                                          className="h-8 gap-1.5"
+                                          disabled={(profile.totalCommissionPending || 0) <= 0}
+                                          onClick={() => handlePayClick(profile)}
+                                        >
+                                            <Wallet className="w-4 h-4"/> Pay
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                  </div>
+              </CardContent>
+             </Card>
+        </TabsContent>
+      </Tabs>
+      
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -206,6 +376,13 @@ export default function SalesCommissionAgentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <PayCommissionDialog 
+        profile={profileToPay}
+        open={isPayDialogOpen}
+        onOpenChange={setIsPayDialogOpen}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </>
   );
 }

@@ -40,6 +40,8 @@ export type CommissionProfile = {
     overall: number;
     categories?: { category: string; rate: number }[];
   };
+  totalCommissionPending?: number;
+  totalCommissionPaid?: number;
 };
 
 export type Supplier = {
