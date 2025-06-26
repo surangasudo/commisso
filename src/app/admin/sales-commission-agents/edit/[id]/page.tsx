@@ -41,7 +41,12 @@ export default function EditSalesCommissionAgentPage() {
                     getProducts()
                 ]);
 
-                const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                let categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                
+                if (categories.length === 0) {
+                    // Fallback if no categories exist in products yet
+                    categories = ["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"];
+                }
                 setProductCategories(categories);
 
                 if (profileToEdit) {
@@ -69,9 +74,11 @@ export default function EditSalesCommissionAgentPage() {
             } catch (error) {
                  toast({
                     title: "Error",
-                    description: "Failed to load profile data.",
+                    description: "Failed to load profile data. Using a fallback category list.",
                     variant: "destructive"
                 });
+                // Fallback on error
+                setProductCategories(["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"]);
                 console.error(error);
             } finally {
                 setIsLoading(false);

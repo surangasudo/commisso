@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -31,15 +32,23 @@ export default function AddSalesCommissionAgentPage() {
         const fetchCategories = async () => {
             try {
                 const products = await getProducts();
-                const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                let categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+
+                if (categories.length === 0) {
+                    // Fallback if no categories exist in products yet
+                    categories = ["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"];
+                }
+
                 setProductCategories(categories);
             } catch (error) {
                 console.error("Failed to fetch product categories", error);
                 toast({
-                    title: "Error",
-                    description: "Could not load product categories.",
+                    title: "Error loading categories",
+                    description: "Could not load product categories. Using a fallback list.",
                     variant: "destructive"
                 });
+                // Also provide fallback on error
+                setProductCategories(["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"]);
             }
         };
         fetchCategories();
