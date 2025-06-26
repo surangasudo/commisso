@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getCommissionProfile, updateCommissionProfile } from '@/services/commissionService';
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FirebaseError } from 'firebase/app';
 
 export default function EditSalesCommissionAgentPage() {
     const router = useRouter();
@@ -154,12 +155,21 @@ export default function EditSalesCommissionAgentPage() {
             });
             router.push('/admin/sales-commission-agents');
         } catch (error) {
-             console.error("Failed to update profile:", error);
-            toast({
-                title: "Error",
-                description: "Failed to update the profile. Please try again.",
-                variant: "destructive",
-            });
+            console.error("Failed to update profile:", error);
+            if (error instanceof FirebaseError && error.code === 'permission-denied') {
+                toast({
+                    title: "Permission Error",
+                    description: "You don't have permission to update this profile. Please check your Firestore security rules.",
+                    variant: "destructive",
+                    duration: 9000,
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Failed to update the profile. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
 
