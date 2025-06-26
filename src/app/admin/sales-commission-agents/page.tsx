@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet } from 'lucide-react';
@@ -129,6 +129,58 @@ const PayCommissionDialog = ({
     );
 };
 
+const PayoutsTable = ({ profiles, handlePayClick, isLoading, formatCurrency }: { profiles: CommissionProfile[], handlePayClick: (profile: CommissionProfile) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
+    return (
+        <div className="border rounded-md">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Entity Type</TableHead>
+                        <TableHead className="text-right">Total Commission (Pending)</TableHead>
+                        <TableHead className="text-right">Total Commission (Paid)</TableHead>
+                        <TableHead className="text-center">Action</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {isLoading ? (
+                        Array.from({length: 3}).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                                <TableCell><Skeleton className="h-6 w-24"/></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto"/></TableCell>
+                            </TableRow>
+                        ))
+                    ) : profiles.length > 0 ? profiles.map(profile => (
+                        <TableRow key={profile.id}>
+                            <TableCell className="font-medium">{profile.name}</TableCell>
+                            <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                            <TableCell className="text-right font-semibold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</TableCell>
+                            <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
+                            <TableCell className="text-center">
+                                <Button 
+                                  size="sm" 
+                                  className="h-8 gap-1.5"
+                                  disabled={(profile.totalCommissionPending || 0) <= 0}
+                                  onClick={() => handlePayClick(profile)}
+                                >
+                                    <Wallet className="w-4 h-4"/> Pay
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    )) : (
+                        <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">No commission profiles found.</TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </div>
+    );
+};
+
 
 export default function SalesCommissionAgentsPage() {
   const router = useRouter();
@@ -161,6 +213,9 @@ export default function SalesCommissionAgentsPage() {
     fetchProfiles();
   }, [fetchProfiles]);
   
+  const agentsAndSubAgents = useMemo(() => profiles.filter(p => p.entityType === 'Agent' || p.entityType === 'Sub-Agent'), [profiles]);
+  const companies = useMemo(() => profiles.filter(p => p.entityType === 'Company'), [profiles]);
+
   const handleEdit = (profileId: string) => {
     router.push(`/admin/sales-commission-agents/edit/${profileId}`);
   };
@@ -218,7 +273,8 @@ export default function SalesCommissionAgentsPage() {
       <Tabs defaultValue="profiles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
-          <TabsTrigger value="payouts">Commission Payouts</TabsTrigger>
+          <TabsTrigger value="salesCommission">Sales Commission</TabsTrigger>
+          <TabsTrigger value="companyCommission">Company Commission</TabsTrigger>
         </TabsList>
         <TabsContent value="profiles">
            <Card>
@@ -305,56 +361,35 @@ export default function SalesCommissionAgentsPage() {
               </CardFooter>
             </Card>
         </TabsContent>
-        <TabsContent value="payouts">
+        <TabsContent value="salesCommission">
              <Card>
               <CardHeader>
-                <CardTitle>Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions and release payments.</p>
+                <CardTitle>Sales Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions for Agents and Sub-Agents.</p>
               </CardHeader>
               <CardContent>
-                  <div className="border rounded-md">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Entity Type</TableHead>
-                                <TableHead className="text-right">Total Commission (Pending)</TableHead>
-                                <TableHead className="text-right">Total Commission (Paid)</TableHead>
-                                <TableHead className="text-center">Action</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                Array.from({length: 3}).map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-32"/></TableCell>
-                                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-28 ml-auto"/></TableCell>
-                                        <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto"/></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : profiles.map(profile => (
-                                <TableRow key={profile.id}>
-                                    <TableCell className="font-medium">{profile.name}</TableCell>
-                                    <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
-                                    <TableCell className="text-right font-semibold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</TableCell>
-                                    <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
-                                    <TableCell className="text-center">
-                                        <Button 
-                                          size="sm" 
-                                          className="h-8 gap-1.5"
-                                          disabled={(profile.totalCommissionPending || 0) <= 0}
-                                          onClick={() => handlePayClick(profile)}
-                                        >
-                                            <Wallet className="w-4 h-4"/> Pay
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                  </div>
+                  <PayoutsTable 
+                    profiles={agentsAndSubAgents} 
+                    handlePayClick={handlePayClick} 
+                    isLoading={isLoading}
+                    formatCurrency={formatCurrency}
+                  />
+              </CardContent>
+             </Card>
+        </TabsContent>
+         <TabsContent value="companyCommission">
+             <Card>
+              <CardHeader>
+                <CardTitle>Company Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions for Companies.</p>
+              </CardHeader>
+              <CardContent>
+                  <PayoutsTable 
+                    profiles={companies}
+                    handlePayClick={handlePayClick} 
+                    isLoading={isLoading}
+                    formatCurrency={formatCurrency}
+                  />
               </CardContent>
              </Card>
         </TabsContent>
