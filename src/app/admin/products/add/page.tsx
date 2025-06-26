@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Info } from "lucide-react";
@@ -50,6 +51,7 @@ export default function AddProductPage() {
         setCategories(catData);
         setBrands(brandData);
       } catch (error) {
+        console.error("Failed to fetch categories or brands:", error)
         toast({ title: "Error", description: "Could not load categories or brands.", variant: "destructive" });
       }
     }

@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Info } from "lucide-react";
@@ -28,7 +29,7 @@ export default function EditProductPage() {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
-  const fetchProduct = useCallback(async (productId: string) => {
+  const fetchProductData = useCallback(async (productId: string) => {
     setIsLoading(true);
     try {
       const [productToEdit, catData, brandData] = await Promise.all([
@@ -64,9 +65,9 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (typeof id === 'string') {
-      fetchProduct(id);
+      fetchProductData(id);
     }
-  }, [id, fetchProduct]);
+  }, [id, fetchProductData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (product) {
