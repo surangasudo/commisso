@@ -9,7 +9,18 @@ const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
 export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CommissionProfile[];
+  const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+            id: doc.id,
+            name: docData.name,
+            entityType: docData.entityType,
+            phone: docData.phone,
+            email: docData.email,
+            bankDetails: docData.bankDetails,
+            commission: docData.commission,
+      } as CommissionProfile;
+  });
   return data;
 }
 
@@ -18,7 +29,16 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() } as CommissionProfile;
+        const docData = docSnap.data();
+        const data = {
+            id: docSnap.id,
+            name: docData.name,
+            entityType: docData.entityType,
+            phone: docData.phone,
+            email: docData.email,
+            bankDetails: docData.bankDetails,
+            commission: docData.commission,
+        } as CommissionProfile;
         return data;
     } else {
         return null;

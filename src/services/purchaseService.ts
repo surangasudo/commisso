@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -12,8 +13,17 @@ export async function getPurchases(): Promise<Purchase[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          ...docData,
           date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+          referenceNo: docData.referenceNo,
+          location: docData.location,
+          supplier: docData.supplier,
+          purchaseStatus: docData.purchaseStatus,
+          paymentStatus: docData.paymentStatus,
+          grandTotal: docData.grandTotal,
+          paymentDue: docData.paymentDue,
+          addedBy: docData.addedBy,
+          items: docData.items,
+          taxAmount: docData.taxAmount,
       } as Purchase;
   });
   return data;
@@ -24,11 +34,20 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = docSnap.data();
+        const docData = docSnap.data();
         return {
             id: docSnap.id,
-            ...data,
-            date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+            date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+            referenceNo: docData.referenceNo,
+            location: docData.location,
+            supplier: docData.supplier,
+            purchaseStatus: docData.purchaseStatus,
+            paymentStatus: docData.paymentStatus,
+            grandTotal: docData.grandTotal,
+            paymentDue: docData.paymentDue,
+            addedBy: docData.addedBy,
+            items: docData.items,
+            taxAmount: docData.taxAmount,
         } as Purchase;
     } else {
         return null;

@@ -13,8 +13,19 @@ export async function getExpenses(): Promise<Expense[]> {
       const docData = doc.data();
       return {
         id: doc.id,
-        ...docData,
         date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+        referenceNo: docData.referenceNo,
+        location: docData.location,
+        expenseCategory: docData.expenseCategory,
+        subCategory: docData.subCategory,
+        paymentStatus: docData.paymentStatus,
+        tax: docData.tax,
+        totalAmount: docData.totalAmount,
+        paymentDue: docData.paymentDue,
+        expenseFor: docData.expenseFor,
+        contact: docData.contact,
+        addedBy: docData.addedBy,
+        expenseNote: docData.expenseNote,
       } as Expense;
   });
   return data;

@@ -13,8 +13,14 @@ export async function getStockAdjustments(): Promise<StockAdjustment[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          ...docData,
           date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+          referenceNo: docData.referenceNo,
+          location: docData.location,
+          adjustmentType: docData.adjustmentType,
+          totalAmount: docData.totalAmount,
+          totalAmountRecovered: docData.totalAmountRecovered,
+          reason: docData.reason,
+          addedBy: docData.addedBy,
       } as StockAdjustment;
   });
   return data;

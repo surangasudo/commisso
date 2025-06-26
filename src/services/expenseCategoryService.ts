@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -8,7 +9,15 @@ const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   const snapshot = await getDocs(expenseCategoriesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpenseCategory[];
+  const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+          id: doc.id,
+          name: docData.name,
+          code: docData.code,
+          parentId: docData.parentId
+      } as ExpenseCategory;
+  });
   return data;
 }
 
