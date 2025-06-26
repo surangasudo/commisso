@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -96,18 +97,14 @@ export default function ViewCommissionProfilePage() {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
 
-                const itemValue = item.quantity * item.unitPrice;
+                const profit = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
                 
                 const category = product.category;
                 const categoryRateData = profile.commission.categories?.find(c => c.category === category);
+                const rate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
 
-                if (categoryRateData) {
-                    const commissionAmount = itemValue * (categoryRateData.rate / 100);
-                    commissionForThisSale += commissionAmount;
-                } else {
-                    const commissionAmount = itemValue * (profile.commission.overall / 100);
-                    commissionForThisSale += commissionAmount;
-                }
+                const commissionAmount = profit * (rate / 100);
+                commissionForThisSale += commissionAmount;
             }
 
             if (sale.items.length > 0 && sale.totalAmount > 0) {
@@ -232,7 +229,7 @@ export default function ViewCommissionProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
                     <CardDescription>
-                        Click on a sale to see the items and commission breakdown for that invoice.
+                        Click on a sale to see the items and commission breakdown for that invoice. Commission is calculated on profit.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -267,7 +264,7 @@ export default function ViewCommissionProfilePage() {
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead>Product</TableHead>
-                                                            <TableHead className="text-right">Subtotal</TableHead>
+                                                            <TableHead className="text-right">Profit on Item</TableHead>
                                                             <TableHead className="text-right">Commission Rate</TableHead>
                                                             <TableHead className="text-right">Commission Earned</TableHead>
                                                         </TableRow>
@@ -277,16 +274,16 @@ export default function ViewCommissionProfilePage() {
                                                             const product = products.find(p => p.id === item.productId);
                                                             if (!product) return null;
 
-                                                            const itemValue = item.quantity * item.unitPrice;
+                                                            const profitOnItem = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
                                                             const category = product.category;
                                                             const categoryRateData = profile.commission.categories?.find(c => c.category === category);
                                                             const commissionRate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
-                                                            const commissionEarnedForItem = itemValue * (commissionRate / 100);
+                                                            const commissionEarnedForItem = profitOnItem * (commissionRate / 100);
                                                             
                                                             return (
                                                                 <TableRow key={index} className="text-xs">
                                                                     <TableCell>{item.quantity} x {product.name}</TableCell>
-                                                                    <TableCell className="text-right">{formatCurrency(itemValue)}</TableCell>
+                                                                    <TableCell className="text-right">{formatCurrency(profitOnItem)}</TableCell>
                                                                     <TableCell className="text-right">{commissionRate}%</TableCell>
                                                                     <TableCell className="text-right font-medium">{formatCurrency(commissionEarnedForItem)}</TableCell>
                                                                 </TableRow>
