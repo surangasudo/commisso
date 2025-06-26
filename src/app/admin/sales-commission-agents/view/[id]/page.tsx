@@ -17,7 +17,7 @@ import { getCommissionProfile } from '@/services/commissionService';
 import { getSales } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -101,25 +101,27 @@ export default function ViewCommissionProfilePage() {
         const productMap = new Map(products.map(p => [p.id, p]));
         const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
 
-        // Sort oldest to newest to apply payments correctly
+        // Sort sales from oldest to newest to apply payments correctly
         const sortedSales = [...relevantSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-        let totalCommission = 0;
-        const commissionableSalesResult: Omit<CommissionableSale, 'paymentStatus'>[] = [];
-
+        let calculatedTotalCommission = 0;
+        const salesWithCommission: Omit<CommissionableSale, 'paymentStatus'>[] = [];
+        
+        // First, calculate commission for each sale
         for (const sale of sortedSales) {
             let commissionForThisSale = 0;
             for (const item of sale.items) {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
+                
                 const saleValue = item.unitPrice * item.quantity;
                 const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
                 commissionForThisSale += saleValue * (rate / 100);
             }
-            totalCommission += commissionForThisSale;
+            calculatedTotalCommission += commissionForThisSale;
 
             if (sale.items.length > 0 && sale.totalAmount > 0) {
-                commissionableSalesResult.push({
+                 salesWithCommission.push({
                     id: sale.id,
                     date: new Date(sale.date).toLocaleString(),
                     invoiceNo: sale.invoiceNo,
@@ -129,26 +131,38 @@ export default function ViewCommissionProfilePage() {
                 });
             }
         }
-
-        // Now determine payment status using FIFO
+        
+        // Second, determine payment status using FIFO logic
         let paidAmountRemaining = profile.totalCommissionPaid || 0;
-        const salesWithStatus: CommissionableSale[] = commissionableSalesResult.map(sale => {
-            let paymentStatus: 'Paid' | 'Pending' = 'Pending';
-            if (paidAmountRemaining >= sale.commissionEarned) {
-                paymentStatus = 'Paid';
-                paidAmountRemaining -= sale.commissionEarned;
-            } else {
-                paidAmountRemaining = 0;
-            }
-            return { ...sale, paymentStatus };
-        });
+        const salesWithStatus: CommissionableSale[] = [];
 
-        // Finally, reverse the array to show newest sales first in the UI
+        for (const sale of salesWithCommission) {
+            let paymentStatus: 'Paid' | 'Pending' = 'Pending';
+            // Check if there's any paid amount left to apply
+            if (paidAmountRemaining > 0) {
+                // If the remaining paid amount covers this sale's commission fully
+                if (paidAmountRemaining >= sale.commissionEarned) {
+                    paymentStatus = 'Paid';
+                    // Reduce the paid amount by what was just "used"
+                    paidAmountRemaining -= sale.commissionEarned;
+                } else {
+                    // If it doesn't cover it fully, this one is pending, and all subsequent ones will be too.
+                    // Set remaining to 0 to ensure all future sales are marked pending.
+                    paidAmountRemaining = 0;
+                }
+            }
+            salesWithStatus.push({ ...sale, paymentStatus });
+        }
+        
+        // Reverse the array to show newest sales first in the UI
         return { 
             commissionableSales: salesWithStatus.reverse(),
-            totalCommissionEarned: totalCommission
+            totalCommissionEarned: calculatedTotalCommission
         };
     }, [profile, sales, products]);
+    
+    // Use the live total from the profile for the summary card, ensuring consistency.
+    const pendingAmount = (profile?.totalCommissionEarned || 0) - (profile?.totalCommissionPaid || 0);
     
     if (isLoading || !profile) {
         return (
@@ -232,7 +246,7 @@ export default function ViewCommissionProfilePage() {
                             <Separator />
                             <div className="flex justify-between items-center text-xl font-bold">
                                 <span>Pending Commission</span>
-                                <span className="text-red-600">{formatCurrency((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0))}</span>
+                                <span className="text-red-600">{formatCurrency(pendingAmount)}</span>
                             </div>
                         </CardContent>
                         <CardFooter>
@@ -247,7 +261,7 @@ export default function ViewCommissionProfilePage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
                         <CardDescription>
-                            Click on a sale to see the items and commission breakdown for that invoice. Commission is calculated on the total value of each item.
+                            Click on a sale to see the items and commission breakdown for that invoice. Commission is calculated on the invoice value of each item.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
