@@ -74,35 +74,45 @@ export async function getSale(id: string): Promise<Sale | null> {
 
 export async function addSale(sale: Omit<Sale, 'id'>) {
     await runTransaction(db, async (transaction) => {
-        // 1. Fetch all agent profiles for this sale first
+        // --- READ PHASE ---
+        
+        // 1. Fetch all agent profiles for this sale
         const agentProfiles = new Map<string, DocumentData>();
-        if (sale.commissionAgentIds) {
-            for (const agentId of sale.commissionAgentIds) {
-                const agentRef = doc(db, 'commissionProfiles', agentId);
-                const agentDoc = await transaction.get(agentRef);
+        if (sale.commissionAgentIds && sale.commissionAgentIds.length > 0) {
+            const agentRefs = sale.commissionAgentIds.map(id => doc(db, 'commissionProfiles', id));
+            const agentDocs = await Promise.all(agentRefs.map(ref => transaction.get(ref)));
+            agentDocs.forEach(agentDoc => {
                 if (agentDoc.exists()) {
-                    agentProfiles.set(agentId, agentDoc.data());
+                    agentProfiles.set(agentDoc.id, agentDoc.data());
                 }
-            }
+            });
         }
         
+        // 2. Fetch all product documents for this sale
+        const productDataMap = new Map<string, DocumentData>();
+        if (sale.items && sale.items.length > 0) {
+            const productRefs = sale.items.map(item => doc(db, 'products', item.productId));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+            productDocs.forEach(productDoc => {
+                if (productDoc.exists()) {
+                    productDataMap.set(productDoc.id, productDoc.data());
+                } else {
+                    // If any product doesn't exist, fail the transaction.
+                    throw new Error(`Product with ID ${productDoc.id} not found.`);
+                }
+            });
+        }
+
+        // --- CALCULATION PHASE ---
+
         const agentCommissionTotals: Record<string, number> = {};
 
-        // 2. Process all sale items
+        // Process all sale items and calculate commissions
         for (const item of sale.items) {
-            const productRef = doc(db, 'products', item.productId);
-            const productDoc = await transaction.get(productRef);
-            if (!productDoc.exists()) {
-                throw `Product with ID ${item.productId} not found.`;
-            }
-            
-            const productData = productDoc.data();
+            const productData = productDataMap.get(item.productId);
+            if (!productData) continue; 
 
-            // 2a. Update stock level
-            const currentStock = productData.currentStock || 0;
-            transaction.update(productRef, { currentStock: currentStock - item.quantity });
-
-            // 2b. Calculate commission for this item
+            // Calculate commission for this item
             const salePrice = item.unitPrice * item.quantity;
             if (sale.commissionAgentIds) {
                 for (const agentId of sale.commissionAgentIds) {
@@ -123,8 +133,20 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
                 }
             }
         }
+        
+        // --- WRITE PHASE ---
 
-        // 3. Update agent profiles with total commission from this sale
+        // 1. Update product stock levels
+        for (const item of sale.items) {
+            const productRef = doc(db, 'products', item.productId);
+            const productData = productDataMap.get(item.productId);
+            if (productData) {
+                 const currentStock = productData.currentStock || 0;
+                 transaction.update(productRef, { currentStock: currentStock - item.quantity });
+            }
+        }
+        
+        // 2. Update agent profiles with total commission from this sale
         for (const agentId in agentCommissionTotals) {
             const agentRef = doc(db, 'commissionProfiles', agentId);
             const agentProfile = agentProfiles.get(agentId);
@@ -134,7 +156,7 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
             transaction.update(agentRef, { totalCommissionPending: currentPending + agentCommissionTotals[agentId] });
         }
 
-        // 4. Create the new sale document
+        // 3. Create the new sale document
         const newSaleRef = doc(collection(db, 'sales'));
         transaction.set(newSaleRef, sale);
     });
