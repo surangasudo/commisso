@@ -11,14 +11,23 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
   const data = snapshot.docs.map(doc => {
       const docData = doc.data();
+      const commissionData = docData.commission || {};
+      const categoriesData = commissionData.categories || [];
+
       return {
             id: doc.id,
-            name: docData.name,
-            entityType: docData.entityType,
-            phone: docData.phone,
-            email: docData.email,
-            bankDetails: docData.bankDetails,
-            commission: docData.commission,
+            name: docData.name || '',
+            entityType: docData.entityType || '',
+            phone: docData.phone || '',
+            email: docData.email || '',
+            bankDetails: docData.bankDetails || '',
+            commission: {
+                overall: commissionData.overall || 0,
+                categories: Array.isArray(categoriesData) ? categoriesData.map(c => ({
+                    category: c.category || '',
+                    rate: c.rate || 0,
+                })) : [],
+            },
       } as CommissionProfile;
   });
   return data;
@@ -30,14 +39,23 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
 
     if (docSnap.exists()) {
         const docData = docSnap.data();
+        const commissionData = docData.commission || {};
+        const categoriesData = commissionData.categories || [];
+
         const data = {
             id: docSnap.id,
-            name: docData.name,
-            entityType: docData.entityType,
-            phone: docData.phone,
-            email: docData.email,
-            bankDetails: docData.bankDetails,
-            commission: docData.commission,
+            name: docData.name || '',
+            entityType: docData.entityType || '',
+            phone: docData.phone || '',
+            email: docData.email || '',
+            bankDetails: docData.bankDetails || '',
+            commission: {
+                overall: commissionData.overall || 0,
+                categories: Array.isArray(categoriesData) ? categoriesData.map(c => ({
+                    category: c.category || '',
+                    rate: c.rate || 0,
+                })) : [],
+            },
         } as CommissionProfile;
         return data;
     } else {
