@@ -783,6 +783,19 @@ export default function PosPage() {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
       }
+      
+      if (
+        saleSettings.isCommissionAgentPhoneCompulsory &&
+        !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson
+      ) {
+          toast({
+              title: "Agent Required",
+              description: "A commission agent must be selected for this sale as per business settings.",
+              variant: "destructive",
+          });
+          return;
+      }
+
       try {
           await addSale(sale);
           toast({
