@@ -239,7 +239,9 @@ export default function SalesCommissionAgentsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
-  const agentsAndSubAgents = useMemo(() => profiles.filter(p => p.entityType === 'Agent' || p.entityType === 'Sub-Agent'), [profiles]);
+  const salespersons = useMemo(() => profiles.filter(p => p.entityType === 'Salesperson'), [profiles]);
+  const agents = useMemo(() => profiles.filter(p => p.entityType === 'Agent'), [profiles]);
+  const subAgents = useMemo(() => profiles.filter(p => p.entityType === 'Sub-Agent'), [profiles]);
   const companies = useMemo(() => profiles.filter(p => p.entityType === 'Company'), [profiles]);
 
   const handleEdit = (profileId: string) => {
@@ -299,8 +301,10 @@ export default function SalesCommissionAgentsPage() {
       <Tabs defaultValue="profiles" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
-          <TabsTrigger value="salesCommission">Sales Commission</TabsTrigger>
-          <TabsTrigger value="companyCommission">Company Commission</TabsTrigger>
+          <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
+          <TabsTrigger value="companies">Companies</TabsTrigger>
         </TabsList>
         <TabsContent value="profiles">
            <Card>
@@ -387,15 +391,15 @@ export default function SalesCommissionAgentsPage() {
               </CardFooter>
             </Card>
         </TabsContent>
-        <TabsContent value="salesCommission">
+        <TabsContent value="salespersons">
              <Card>
               <CardHeader>
-                <CardTitle>Sales Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions for Agents and Sub-Agents.</p>
+                <CardTitle>Salesperson Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions for Salespersons.</p>
               </CardHeader>
               <CardContent>
                   <PayoutsTable 
-                    profiles={agentsAndSubAgents} 
+                    profiles={salespersons} 
                     handlePayClick={handlePayClick} 
                     isLoading={isLoading}
                     formatCurrency={formatCurrency}
@@ -403,7 +407,39 @@ export default function SalesCommissionAgentsPage() {
               </CardContent>
              </Card>
         </TabsContent>
-         <TabsContent value="companyCommission">
+         <TabsContent value="agents">
+             <Card>
+              <CardHeader>
+                <CardTitle>Agent Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions for Agents.</p>
+              </CardHeader>
+              <CardContent>
+                  <PayoutsTable 
+                    profiles={agents} 
+                    handlePayClick={handlePayClick} 
+                    isLoading={isLoading}
+                    formatCurrency={formatCurrency}
+                  />
+              </CardContent>
+             </Card>
+        </TabsContent>
+        <TabsContent value="sub_agents">
+             <Card>
+              <CardHeader>
+                <CardTitle>Sub-Agent Commission Payouts</CardTitle>
+                <p className="text-sm text-muted-foreground">View pending commissions for Sub-Agents.</p>
+              </CardHeader>
+              <CardContent>
+                  <PayoutsTable 
+                    profiles={subAgents} 
+                    handlePayClick={handlePayClick} 
+                    isLoading={isLoading}
+                    formatCurrency={formatCurrency}
+                  />
+              </CardContent>
+             </Card>
+        </TabsContent>
+         <TabsContent value="companies">
              <Card>
               <CardHeader>
                 <CardTitle>Company Commission Payouts</CardTitle>

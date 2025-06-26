@@ -1,16 +1,20 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag } from "lucide-react";
-import { type CommissionProfile } from '@/lib/data';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, DollarSign, ShoppingCart } from "lucide-react";
+import { type CommissionProfile, type Sale, type DetailedProduct } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { getCommissionProfile } from '@/services/commissionService';
+import { getSales } from '@/services/saleService';
+import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/hooks/use-currency';
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -25,41 +29,111 @@ const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType,
     </div>
 );
 
+type CommissionBreakdown = {
+    category: string;
+    totalSales: number;
+    commissionEarned: number;
+};
+
+type CustomerContribution = {
+    name: string;
+    totalSpent: number;
+};
+
 export default function ViewCommissionProfilePage() {
     const params = useParams();
     const router = useRouter();
     const { id } = params;
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
+
     const [profile, setProfile] = useState<CommissionProfile | null>(null);
+    const [sales, setSales] = useState<Sale[]>([]);
+    const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (typeof id !== 'string') return;
-        const fetchProfile = async () => {
+        const fetchData = async () => {
+            setIsLoading(true);
             try {
-                const profileToView = await getCommissionProfile(id);
-                 if (profileToView) {
-                    setProfile(profileToView);
+                const [profileData, salesData, productsData] = await Promise.all([
+                    getCommissionProfile(id),
+                    getSales(),
+                    getProducts()
+                ]);
+
+                if (profileData) {
+                    setProfile(profileData);
+                    setSales(salesData);
+                    setProducts(productsData);
                 } else {
-                     toast({
-                        title: "Error",
-                        description: "Commission profile not found.",
-                        variant: "destructive"
-                    });
+                    toast({ title: "Error", description: "Commission profile not found.", variant: "destructive" });
                     router.push('/admin/sales-commission-agents');
                 }
             } catch (error) {
-                console.error("Failed to fetch profile:", error);
-                 toast({
-                    title: "Error",
-                    description: "Failed to load profile data.",
-                    variant: "destructive"
-                });
+                console.error("Failed to fetch profile details:", error);
+                toast({ title: "Error", description: "Failed to load profile data.", variant: "destructive" });
+            } finally {
+                setIsLoading(false);
             }
         };
-        fetchProfile();
+        fetchData();
     }, [id, router, toast]);
+    
+    const { commissionBreakdown, customerContributions, totalCommissionableSales } = useMemo(() => {
+        if (!profile || !sales.length || !products.length) {
+            return { commissionBreakdown: [], customerContributions: [], totalCommissionableSales: 0 };
+        }
 
-    if (!profile) {
+        const productMap = new Map(products.map(p => [p.id, p]));
+        const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
+
+        const categoryData: { [key: string]: { totalSales: number; commissionEarned: number } } = {};
+        const customerData: { [key: string]: { totalSpent: number } } = {};
+
+        let totalSalesValue = 0;
+
+        for (const sale of relevantSales) {
+            if (!customerData[sale.customerName]) {
+                customerData[sale.customerName] = { totalSpent: 0 };
+            }
+
+            for (const item of sale.items) {
+                const product = productMap.get(item.productId);
+                if (!product) continue;
+
+                const itemValue = item.quantity * item.unitPrice;
+                totalSalesValue += itemValue;
+                customerData[sale.customerName].totalSpent += itemValue;
+                
+                const category = product.category || 'Uncategorized';
+                if (!categoryData[category]) {
+                    categoryData[category] = { totalSales: 0, commissionEarned: 0 };
+                }
+
+                const categoryRate = profile.commission.categories?.find(c => c.category === category)?.rate;
+                const commissionRate = categoryRate !== undefined ? categoryRate : profile.commission.overall;
+                const commissionAmount = itemValue * (commissionRate / 100);
+
+                categoryData[category].totalSales += itemValue;
+                categoryData[category].commissionEarned += commissionAmount;
+            }
+        }
+        
+        const commissionBreakdownResult: CommissionBreakdown[] = Object.entries(categoryData)
+            .map(([category, data]) => ({ category, ...data }))
+            .sort((a,b) => b.commissionEarned - a.commissionEarned);
+
+        const customerContributionsResult: CustomerContribution[] = Object.entries(customerData)
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a,b) => b.totalSpent - a.totalSpent);
+
+
+        return { commissionBreakdown: commissionBreakdownResult, customerContributions: customerContributionsResult, totalCommissionableSales: totalSalesValue };
+    }, [profile, sales, products]);
+    
+    if (isLoading || !profile) {
         return (
             <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-between">
@@ -128,10 +202,48 @@ export default function ViewCommissionProfilePage() {
                         )}
                     </div>
                 </CardContent>
-                 <CardFooter>
-                    <p className="text-xs text-muted-foreground">This is a summary of the commission profile.</p>
-                </CardFooter>
             </Card>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><DollarSign className="w-5 h-5"/> Commission by Category</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Total Sales</TableHead><TableHead className="text-right">Commission Earned</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {commissionBreakdown.length > 0 ? commissionBreakdown.map(item => (
+                                    <TableRow key={item.category}>
+                                        <TableCell>{item.category}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.totalSales)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{formatCurrency(item.commissionEarned)}</TableCell>
+                                    </TableRow>
+                                )) : <TableRow><TableCell colSpan={3} className="text-center h-24">No commission data available.</TableCell></TableRow>}
+                            </TableBody>
+                            <TableFooter><TableRow><TableCell colSpan={2} className="text-right font-bold">Total</TableCell><TableCell className="text-right font-bold">{formatCurrency(commissionBreakdown.reduce((acc, item) => acc + item.commissionEarned, 0))}</TableCell></TableRow></TableFooter>
+                        </Table>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Top Customers</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader><TableRow><TableHead>Customer Name</TableHead><TableHead className="text-right">Total Spent</TableHead></TableRow></TableHeader>
+                            <TableBody>
+                                {customerContributions.length > 0 ? customerContributions.map(item => (
+                                    <TableRow key={item.name}>
+                                        <TableCell>{item.name}</TableCell>
+                                        <TableCell className="text-right font-semibold">{formatCurrency(item.totalSpent)}</TableCell>
+                                    </TableRow>
+                                )) : <TableRow><TableCell colSpan={2} className="text-center h-24">No customer data available.</TableCell></TableRow>}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
