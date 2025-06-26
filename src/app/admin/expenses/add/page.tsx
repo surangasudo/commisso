@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,40 +16,61 @@ import { addExpense } from '@/services/expenseService';
 import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { getCustomers } from '@/services/customerService';
 import { getSuppliers } from '@/services/supplierService';
-import { type Expense, type ExpenseCategory, type Customer, type Supplier } from '@/lib/data';
+import { getUsers } from '@/services/userService';
+import { type Expense, type ExpenseCategory, type Customer, type Supplier, type User, initialTaxRates } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { FirebaseError } from 'firebase/app';
 
 type Contact = { id: string; name: string };
+type TaxRate = { id: string; name: string; rate: number };
 
 export default function AddExpensePage() {
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
 
-    const [expenseData, setExpenseData] = useState<Partial<Expense>>({
+    const [formData, setFormData] = useState({
         location: 'Awesome Shop',
-        paymentStatus: 'Paid',
-        tax: 0,
-        paymentDue: 0,
-        addedBy: 'Admin', // Assume logged in user
+        expenseCategory: '',
+        subCategory: '',
+        referenceNo: '',
+        expenseFor: '',
+        contact: '',
+        attachDocument: null as File | null,
+        taxId: 'none',
+        totalAmount: '' as number | '',
+        expenseNote: '',
+        isRefund: false,
+        isRecurring: false,
+        recurringInterval: '1',
+        recurringUnit: 'days',
+        repetitions: '',
+        paidAmount: '' as number | '',
+        paidOn: new Date(),
+        paymentMethod: 'cash',
+        paymentAccount: 'none',
+        paymentNote: '',
     });
-    const [isRecurring, setIsRecurring] = useState(false);
+
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [allContacts, setAllContacts] = useState<Contact[]>([]);
-    const [paidAmount, setPaidAmount] = useState<number | ''>('');
-    const [paidOnDate, setPaidOnDate] = useState(new Date());
-    
+    const [users, setUsers] = useState<User[]>([]);
+    const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true);
             try {
-                const [cats, custs, supps] = await Promise.all([
+                const [cats, custs, supps, fetchedUsers] = await Promise.all([
                     getExpenseCategories(),
                     getCustomers(),
-                    getSuppliers()
+                    getSuppliers(),
+                    getUsers()
                 ]);
                 setCategories(cats);
                 const combinedContacts = [
@@ -56,71 +78,76 @@ export default function AddExpensePage() {
                     ...supps.map(s => ({ id: s.id, name: `${s.businessName} (Supplier)` }))
                 ];
                 setAllContacts(combinedContacts);
+                setUsers(fetchedUsers);
+                setTaxRates(initialTaxRates);
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
                 toast({ title: "Error", description: "Could not load required data.", variant: "destructive" });
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchData();
     }, [toast]);
     
     const mainCategories = categories.filter(c => !c.parentId);
-    const subCategories = expenseData.expenseCategory ? categories.filter(c => c.parentId === expenseData.expenseCategory) : [];
-    
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { id, value } = e.target;
-        setExpenseData(prev => ({ ...prev, [id]: value }));
+    const subCategories = formData.expenseCategory ? categories.filter(c => c.parentId === formData.expenseCategory) : [];
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value, type } = e.target;
+        setFormData(prev => ({ ...prev, [id]: type === 'number' ? parseFloat(value) || '' : value }));
     };
 
-    const handleSelectChange = (field: keyof Expense, value: string) => {
-        setExpenseData(prev => ({ ...prev, [field]: value }));
+    const handleSelectChange = (field: keyof typeof formData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleTotalAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newTotalAmount = parseFloat(e.target.value) || 0;
-        
-        // This is a common UX for quick entry. User enters total, we assume it's paid in full.
-        setPaidAmount(newTotalAmount || ''); // Update paid amount state. Use '' if 0 to clear input.
-        setExpenseData(prev => ({
-            ...prev,
-            totalAmount: newTotalAmount,
-            paymentDue: 0 // Since paid amount now matches total amount
-        }));
+    const handleCheckboxChange = (field: keyof typeof formData, checked: boolean) => {
+        setFormData(prev => ({ ...prev, [field]: checked }));
+    };
+
+    const handleDateChange = (date: Date | undefined) => {
+        if (date) {
+            setFormData(prev => ({ ...prev, paidOn: date }));
+        }
     };
     
-    const handlePaidAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newPaidAmountStr = e.target.value;
-        const newPaidAmount = parseFloat(newPaidAmountStr) || 0;
-        const currentTotalAmount = expenseData.totalAmount || 0;
-        
-        setPaidAmount(newPaidAmountStr === '' ? '' : newPaidAmount);
-        setExpenseData(prev => ({
-            ...prev, 
-            paymentDue: Math.max(0, currentTotalAmount - newPaidAmount)
-        }));
-    };
-    
+    const { totalAmount, taxAmount, paymentDue } = useMemo(() => {
+        const currentTotal = Number(formData.totalAmount) || 0;
+        const selectedTaxRate = taxRates.find(t => t.id === formData.taxId)?.rate || 0;
+        const currentTaxAmount = (currentTotal * selectedTaxRate) / 100;
+        const totalWithTax = currentTotal + currentTaxAmount; // Assuming tax is added on top
+        const currentPaidAmount = Number(formData.paidAmount) || 0;
+        const currentPaymentDue = Math.max(0, totalWithTax - currentPaidAmount);
+
+        return {
+            totalAmount: totalWithTax,
+            taxAmount: currentTaxAmount,
+            paymentDue: currentPaymentDue,
+        };
+    }, [formData.totalAmount, formData.taxId, formData.paidAmount, taxRates]);
+
     const handleSave = async () => {
-        if (!expenseData.location || !expenseData.totalAmount) {
+        if (!formData.location || !formData.totalAmount) {
             toast({ title: "Validation Error", description: "Location and Total Amount are required.", variant: "destructive" });
             return;
         }
 
         try {
             const finalExpenseData: Omit<Expense, 'id'> = {
-                date: paidOnDate.toLocaleString('en-CA'),
-                referenceNo: expenseData.referenceNo || `EXP-${Date.now()}`,
-                location: expenseData.location || 'Awesome Shop',
-                expenseCategory: expenseData.expenseCategory || '',
-                subCategory: expenseData.subCategory || null,
-                paymentStatus: expenseData.paymentDue === 0 ? 'Paid' : (expenseData.paymentDue === expenseData.totalAmount ? 'Due' : 'Partial'),
-                tax: expenseData.tax || 0,
-                totalAmount: expenseData.totalAmount,
-                paymentDue: expenseData.paymentDue || 0,
-                expenseFor: expenseData.expenseFor || null,
-                contact: expenseData.contact || null,
+                date: formData.paidOn.toISOString(),
+                referenceNo: formData.referenceNo || `EXP-${Date.now()}`,
+                location: formData.location,
+                expenseCategory: formData.expenseCategory || '',
+                subCategory: formData.subCategory || null,
+                paymentStatus: paymentDue === 0 ? 'Paid' : (paymentDue >= totalAmount ? 'Due' : 'Partial'),
+                tax: taxAmount,
+                totalAmount: totalAmount,
+                paymentDue: paymentDue,
+                expenseFor: formData.expenseFor || null,
+                contact: formData.contact || null,
                 addedBy: 'Admin', // Hardcoded for now
-                expenseNote: expenseData.expenseNote || null
+                expenseNote: formData.expenseNote || null,
             };
 
             await addExpense(finalExpenseData);
@@ -128,7 +155,16 @@ export default function AddExpensePage() {
             router.push('/admin/expenses/list');
         } catch (error) {
             console.error("Failed to add expense:", error);
-            toast({ title: "Error", description: "Failed to add expense. Please try again.", variant: "destructive" });
+             if (error instanceof FirebaseError && error.code === 'permission-denied') {
+                toast({
+                    title: "Permission Error",
+                    description: "You don't have permission to add expenses. Please check your Firestore security rules.",
+                    variant: "destructive",
+                    duration: 9000,
+                });
+            } else {
+                toast({ title: "Error", description: "Failed to add expense. Please try again.", variant: "destructive" });
+            }
         }
     };
 
@@ -145,17 +181,17 @@ export default function AddExpensePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="location">Business Location:*</Label>
-                                <Select value={expenseData.location} onValueChange={(value) => handleSelectChange('location', value)}>
+                                <Select value={formData.location} onValueChange={(value) => handleSelectChange('location', value)}>
                                     <SelectTrigger id="location"><SelectValue /></SelectTrigger>
-                                    <SelectContent><SelectItem value="awesome-shop">Awesome Shop</SelectItem></SelectContent>
+                                    <SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem></SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="expenseCategory">Expense Category:</Label>
-                                <Select value={expenseData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}>
+                                <Select value={formData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}>
                                     <SelectTrigger id="expenseCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="">None</SelectItem>
                                         {mainCategories.map(cat => (
                                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                                         ))}
@@ -164,7 +200,7 @@ export default function AddExpensePage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="subCategory">Sub category:</Label>
-                                <Select value={expenseData.subCategory || ''} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}>
+                                <Select value={formData.subCategory} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}>
                                     <SelectTrigger id="subCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                      <SelectContent>
                                         {subCategories.map(cat => (
@@ -175,7 +211,7 @@ export default function AddExpensePage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="referenceNo">Reference No:</Label>
-                                <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={expenseData.referenceNo || ''} onChange={handleInputChange} />
+                                <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="date">Date:*</Label>
@@ -186,11 +222,18 @@ export default function AddExpensePage() {
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="expenseFor">Expense for:</Label>
-                                <Select><SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger></Select>
+                                <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
+                                    <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
+                                    <SelectContent>
+                                        {users.map(user => (
+                                            <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="contact">Expense for contact:</Label>
-                                <Select value={expenseData.contact || ''} onValueChange={(value) => handleSelectChange('contact', value)}>
+                                <Select value={formData.contact} onValueChange={(value) => handleSelectChange('contact', value)}>
                                     <SelectTrigger id="contact"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                      <SelectContent>
                                         {allContacts.map(contact => (
@@ -200,46 +243,48 @@ export default function AddExpensePage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="attach-document">Attach Document:</Label>
-                                <Input id="attach-document" type="file" />
+                                <Label htmlFor="attachDocument">Attach Document:</Label>
+                                <Input id="attachDocument" type="file" />
                                 <p className="text-xs text-muted-foreground">Max File size: 5MB. Allowed File: .pdf, .csv, .zip, .doc, .docx, .jpeg, .jpg, .png</p>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="tax" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
-                                <Select><SelectTrigger id="tax"><SelectValue placeholder="None" /></SelectTrigger></Select>
+                                <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
+                                <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}>
+                                    <SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        {taxRates.map(tax => (
+                                            <SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="totalAmount">Total amount:*</Label>
-                                <Input 
-                                    id="totalAmount" 
-                                    type="number" 
-                                    placeholder="Total amount"
-                                    value={expenseData.totalAmount || ''}
-                                    onChange={handleTotalAmountChange}
-                                />
+                                <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
                             </div>
                             <div className="space-y-2 md:col-span-full">
                                 <Label htmlFor="expenseNote">Expense note:</Label>
-                                <Textarea id="expenseNote" value={expenseData.expenseNote || ''} onChange={handleInputChange} />
+                                <Textarea id="expenseNote" value={formData.expenseNote} onChange={handleChange} />
                             </div>
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="is-refund" />
-                                <Label htmlFor="is-refund" className="font-normal flex items-center gap-1">Is refund? <Info className="w-3 h-3"/></Label>
+                                <Checkbox id="isRefund" checked={formData.isRefund} onCheckedChange={(checked) => handleCheckboxChange('isRefund', !!checked)} />
+                                <Label htmlFor="isRefund" className="font-normal flex items-center gap-1">Is refund? <Info className="w-3 h-3"/></Label>
                             </div>
                         </div>
 
                         <div className="border-t pt-6">
                             <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="is-recurring" checked={isRecurring} onCheckedChange={(checked) => setIsRecurring(!!checked)} />
-                                <Label htmlFor="is-recurring" className="font-normal flex items-center gap-1">Is Recurring? <Info className="w-3 h-3"/></Label>
+                                <Checkbox id="isRecurring" checked={formData.isRecurring} onCheckedChange={(checked) => handleCheckboxChange('isRecurring', !!checked)} />
+                                <Label htmlFor="isRecurring" className="font-normal flex items-center gap-1">Is Recurring? <Info className="w-3 h-3"/></Label>
                             </div>
-                            {isRecurring && (
+                            {formData.isRecurring && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="recurring-interval">Recurring interval:*</Label>
+                                        <Label htmlFor="recurringInterval">Recurring interval:*</Label>
                                         <div className="flex gap-2">
-                                            <Input id="recurring-interval" type="number" />
-                                            <Select defaultValue="days">
+                                            <Input id="recurringInterval" type="number" value={formData.recurringInterval} onChange={handleChange}/>
+                                            <Select value={formData.recurringUnit} onValueChange={(value) => handleSelectChange('recurringUnit', value)}>
                                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="days">Days</SelectItem>
@@ -251,7 +296,7 @@ export default function AddExpensePage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="repetitions">No. of Repetitions:</Label>
-                                        <Input id="repetitions" type="number" />
+                                        <Input id="repetitions" type="number" value={formData.repetitions} onChange={handleChange}/>
                                         <p className="text-xs text-muted-foreground">If blank expense will be generated infinite times</p>
                                     </div>
                                 </div>
@@ -265,44 +310,38 @@ export default function AddExpensePage() {
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="amount">Amount:*</Label>
-                                <Input 
-                                    id="amount" 
-                                    type="number" 
-                                    placeholder="0.00"
-                                    value={paidAmount}
-                                    onChange={handlePaidAmountChange}
-                                />
+                                <Label htmlFor="paidAmount">Amount:*</Label>
+                                <Input id="paidAmount" type="number" placeholder="0.00" value={formData.paidAmount} onChange={handleChange} />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="paid-on">Paid on:*</Label>
+                                <Label htmlFor="paidOn">Paid on:*</Label>
                                  <Popover>
                                     <PopoverTrigger asChild>
                                         <Button
                                             variant={"outline"}
                                             className={cn(
                                                 "w-full justify-start text-left font-normal",
-                                                !paidOnDate && "text-muted-foreground"
+                                                !formData.paidOn && "text-muted-foreground"
                                             )}
                                         >
                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {paidOnDate ? format(paidOnDate, "PPP") : <span>Pick a date</span>}
+                                            {formData.paidOn ? format(formData.paidOn, "PPP") : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">
                                         <Calendar
                                             mode="single"
-                                            selected={paidOnDate}
-                                            onSelect={(date) => date && setPaidOnDate(date)}
+                                            selected={formData.paidOn}
+                                            onSelect={handleDateChange}
                                             initialFocus
                                         />
                                     </PopoverContent>
                                 </Popover>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="payment-method">Payment Method:*</Label>
-                                <Select defaultValue="cash">
-                                    <SelectTrigger id="payment-method"><SelectValue /></SelectTrigger>
+                                <Label htmlFor="paymentMethod">Payment Method:*</Label>
+                                <Select value={formData.paymentMethod} onValueChange={(value) => handleSelectChange('paymentMethod', value)}>
+                                    <SelectTrigger id="paymentMethod"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="cash">Cash</SelectItem>
                                         <SelectItem value="card">Card</SelectItem>
@@ -312,15 +351,18 @@ export default function AddExpensePage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="payment-account">Payment Account:</Label>
-                                <Select><SelectTrigger id="payment-account"><SelectValue placeholder="None" /></SelectTrigger></Select>
+                                <Label htmlFor="paymentAccount">Payment Account:</Label>
+                                <Select value={formData.paymentAccount} onValueChange={(value) => handleSelectChange('paymentAccount', value)}>
+                                    <SelectTrigger id="paymentAccount"><SelectValue placeholder="None" /></SelectTrigger>
+                                    <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2 md:col-span-full">
-                                <Label htmlFor="payment-note">Payment note:</Label>
-                                <Textarea id="payment-note" />
+                                <Label htmlFor="paymentNote">Payment note:</Label>
+                                <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
                             </div>
                         </div>
-                        <div className="text-right font-semibold mt-4">Payment due: {formatCurrency(expenseData.paymentDue || 0)}</div>
+                        <div className="text-right font-semibold mt-4">Payment due: {formatCurrency(paymentDue)}</div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-end">
@@ -331,3 +373,4 @@ export default function AddExpensePage() {
         </div>
     );
 }
+
