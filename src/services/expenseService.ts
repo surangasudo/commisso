@@ -13,26 +13,26 @@ export async function getExpenses(): Promise<Expense[]> {
       const docData = doc.data();
       return {
         id: doc.id,
-        date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
-        referenceNo: docData.referenceNo,
-        location: docData.location,
-        expenseCategory: docData.expenseCategory,
-        subCategory: docData.subCategory,
-        paymentStatus: docData.paymentStatus,
-        tax: docData.tax,
-        totalAmount: docData.totalAmount,
-        paymentDue: docData.paymentDue,
-        expenseFor: docData.expenseFor,
-        contact: docData.contact,
-        addedBy: docData.addedBy,
-        expenseNote: docData.expenseNote,
+        date: docData.date || new Date().toISOString(),
+        referenceNo: docData.referenceNo || '',
+        location: docData.location || '',
+        expenseCategory: docData.expenseCategory || '',
+        subCategory: docData.subCategory || null,
+        paymentStatus: docData.paymentStatus || 'Due',
+        tax: docData.tax || 0,
+        totalAmount: docData.totalAmount || 0,
+        paymentDue: docData.paymentDue || 0,
+        expenseFor: docData.expenseFor || null,
+        contact: docData.contact || null,
+        addedBy: docData.addedBy || '',
+        expenseNote: docData.expenseNote || null,
       } as Expense;
   });
   return data;
 }
 
-export async function addExpense(expense: Omit<Expense, 'id'>): Promise<DocumentData> {
-    return await addDoc(expensesCollection, expense);
+export async function addExpense(expense: Omit<Expense, 'id'>): Promise<void> {
+    await addDoc(expensesCollection, expense);
 }
 
 export async function deleteExpense(expenseId: string): Promise<void> {

@@ -63,8 +63,8 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     }
 }
 
-export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
-    return await addDoc(commissionProfilesCollection, profile);
+export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<void> {
+    await addDoc(commissionProfilesCollection, profile);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {

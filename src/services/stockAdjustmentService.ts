@@ -13,7 +13,7 @@ export async function getStockAdjustments(): Promise<StockAdjustment[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+          date: docData.date,
           referenceNo: docData.referenceNo,
           location: docData.location,
           adjustmentType: docData.adjustmentType,
@@ -26,8 +26,8 @@ export async function getStockAdjustments(): Promise<StockAdjustment[]> {
   return data;
 }
 
-export async function addStockAdjustment(adjustment: Omit<StockAdjustment, 'id'>): Promise<DocumentData> {
-    return await addDoc(stockAdjustmentsCollection, adjustment);
+export async function addStockAdjustment(adjustment: Omit<StockAdjustment, 'id'>): Promise<void> {
+    await addDoc(stockAdjustmentsCollection, adjustment);
 }
 
 export async function deleteStockAdjustment(id: string): Promise<void> {

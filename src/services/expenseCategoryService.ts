@@ -13,16 +13,16 @@ export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          name: docData.name,
-          code: docData.code,
-          parentId: docData.parentId
+          name: docData.name || '',
+          code: docData.code || '',
+          parentId: docData.parentId || null
       } as ExpenseCategory;
   });
   return data;
 }
 
-export async function addExpenseCategory(category: Omit<ExpenseCategory, 'id'>): Promise<DocumentData> {
-    return await addDoc(expenseCategoriesCollection, category);
+export async function addExpenseCategory(category: Omit<ExpenseCategory, 'id'>): Promise<void> {
+    await addDoc(expenseCategoriesCollection, category);
 }
 
 export async function updateExpenseCategory(id: string, category: Partial<Omit<ExpenseCategory, 'id'>>): Promise<void> {

@@ -13,7 +13,7 @@ export async function getPurchases(): Promise<Purchase[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+          date: docData.date,
           referenceNo: docData.referenceNo,
           location: docData.location,
           supplier: docData.supplier,
@@ -22,7 +22,7 @@ export async function getPurchases(): Promise<Purchase[]> {
           grandTotal: docData.grandTotal,
           paymentDue: docData.paymentDue,
           addedBy: docData.addedBy,
-          items: docData.items,
+          items: docData.items || [],
           taxAmount: docData.taxAmount,
       } as Purchase;
   });
@@ -37,7 +37,7 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
         const docData = docSnap.data();
         return {
             id: docSnap.id,
-            date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+            date: docData.date,
             referenceNo: docData.referenceNo,
             location: docData.location,
             supplier: docData.supplier,
@@ -46,7 +46,7 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
             grandTotal: docData.grandTotal,
             paymentDue: docData.paymentDue,
             addedBy: docData.addedBy,
-            items: docData.items,
+            items: docData.items || [],
             taxAmount: docData.taxAmount,
         } as Purchase;
     } else {
@@ -54,10 +54,8 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
     }
 }
 
-export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<DocumentData> {
-    // Firestore SDK handles plain JS objects and Date objects correctly.
-    // No need to sanitize before writing.
-    return await addDoc(purchasesCollection, purchase);
+export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void> {
+    await addDoc(purchasesCollection, purchase);
 }
 
 export async function deletePurchase(id: string): Promise<void> {

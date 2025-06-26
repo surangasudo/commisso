@@ -13,25 +13,25 @@ export async function getCustomers(): Promise<Customer[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          contactId: docData.contactId,
-          name: docData.name,
-          email: docData.email,
-          taxNumber: docData.taxNumber,
-          customerGroup: docData.customerGroup,
-          openingBalance: docData.openingBalance,
-          addedOn: docData.addedOn?.toDate ? docData.addedOn.toDate().toISOString() : docData.addedOn,
-          address: docData.address,
-          mobile: docData.mobile,
-          totalSaleDue: docData.totalSaleDue,
-          totalSaleReturnDue: docData.totalSaleReturnDue,
-          customField1: docData.customField1
+          contactId: docData.contactId || '',
+          name: docData.name || '',
+          email: docData.email || null,
+          taxNumber: docData.taxNumber || '',
+          customerGroup: docData.customerGroup || '',
+          openingBalance: docData.openingBalance || 0,
+          addedOn: docData.addedOn || new Date().toLocaleDateString('en-CA'),
+          address: docData.address || '',
+          mobile: docData.mobile || '',
+          totalSaleDue: docData.totalSaleDue || 0,
+          totalSaleReturnDue: docData.totalSaleReturnDue || 0,
+          customField1: docData.customField1 || ''
       } as Customer;
   });
   return data;
 }
 
-export async function addCustomer(customer: Omit<Customer, 'id'>): Promise<DocumentData> {
-    return await addDoc(customersCollection, customer);
+export async function addCustomer(customer: Omit<Customer, 'id'>): Promise<void> {
+    await addDoc(customersCollection, customer);
 }
 
 export async function deleteCustomer(id: string): Promise<void> {

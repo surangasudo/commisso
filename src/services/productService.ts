@@ -13,21 +13,21 @@ export async function getProducts(): Promise<DetailedProduct[]> {
         const docData = doc.data();
         return {
             id: doc.id,
-            image: docData.image,
-            name: docData.name,
-            businessLocation: docData.businessLocation,
-            unitPurchasePrice: docData.unitPurchasePrice,
-            sellingPrice: docData.sellingPrice,
-            currentStock: docData.currentStock,
-            productType: docData.productType,
-            category: docData.category,
-            brand: docData.brand,
-            tax: docData.tax,
-            sku: docData.sku,
-            unit: docData.unit,
-            totalUnitSold: docData.totalUnitSold,
-            totalUnitTransferred: docData.totalUnitTransferred,
-            totalUnitAdjusted: docData.totalUnitAdjusted,
+            image: docData.image || '',
+            name: docData.name || '',
+            businessLocation: docData.businessLocation || '',
+            unitPurchasePrice: docData.unitPurchasePrice || 0,
+            sellingPrice: docData.sellingPrice || 0,
+            currentStock: docData.currentStock || 0,
+            productType: docData.productType || 'Single',
+            category: docData.category || '',
+            brand: docData.brand || '',
+            tax: docData.tax || '',
+            sku: docData.sku || '',
+            unit: docData.unit || 'Pieces',
+            totalUnitSold: docData.totalUnitSold || 0,
+            totalUnitTransferred: docData.totalUnitTransferred || 0,
+            totalUnitAdjusted: docData.totalUnitAdjusted || 0,
         } as DetailedProduct;
     });
     return data;
@@ -41,21 +41,21 @@ export async function getProduct(id: string): Promise<DetailedProduct | null> {
         const docData = docSnap.data();
         const data = {
             id: docSnap.id,
-            image: docData.image,
-            name: docData.name,
-            businessLocation: docData.businessLocation,
-            unitPurchasePrice: docData.unitPurchasePrice,
-            sellingPrice: docData.sellingPrice,
-            currentStock: docData.currentStock,
-            productType: docData.productType,
-            category: docData.category,
-            brand: docData.brand,
-            tax: docData.tax,
-            sku: docData.sku,
-            unit: docData.unit,
-            totalUnitSold: docData.totalUnitSold,
-            totalUnitTransferred: docData.totalUnitTransferred,
-            totalUnitAdjusted: docData.totalUnitAdjusted,
+            image: docData.image || '',
+            name: docData.name || '',
+            businessLocation: docData.businessLocation || '',
+            unitPurchasePrice: docData.unitPurchasePrice || 0,
+            sellingPrice: docData.sellingPrice || 0,
+            currentStock: docData.currentStock || 0,
+            productType: docData.productType || 'Single',
+            category: docData.category || '',
+            brand: docData.brand || '',
+            tax: docData.tax || '',
+            sku: docData.sku || '',
+            unit: docData.unit || 'Pieces',
+            totalUnitSold: docData.totalUnitSold || 0,
+            totalUnitTransferred: docData.totalUnitTransferred || 0,
+            totalUnitAdjusted: docData.totalUnitAdjusted || 0,
         } as DetailedProduct;
         return data;
     } else {
@@ -63,8 +63,8 @@ export async function getProduct(id: string): Promise<DetailedProduct | null> {
     }
 }
 
-export async function addProduct(product: Omit<DetailedProduct, 'id'>): Promise<DocumentData> {
-    return await addDoc(productsCollection, product);
+export async function addProduct(product: Omit<DetailedProduct, 'id'>): Promise<void> {
+    await addDoc(productsCollection, product);
 }
 
 export async function updateProduct(id: string, product: Partial<Omit<DetailedProduct, 'id'>>): Promise<void> {
