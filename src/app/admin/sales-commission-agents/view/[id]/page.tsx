@@ -29,17 +29,6 @@ const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType,
     </div>
 );
 
-type CommissionBreakdown = {
-    category: string;
-    totalSales: number;
-    commissionEarned: number;
-};
-
-type CustomerContribution = {
-    name: string;
-    totalSpent: number;
-};
-
 type CommissionableSale = {
     id: string;
     date: string;
@@ -90,30 +79,17 @@ export default function ViewCommissionProfilePage() {
         fetchData();
     }, [id, router, toast]);
     
-    const { commissionBreakdown, customerContributions, commissionableSales, otherSalesData } = useMemo(() => {
+    const { commissionableSales } = useMemo(() => {
         if (!profile || !sales.length || !products.length) {
-            return { commissionBreakdown: [], customerContributions: [], commissionableSales: [], otherSalesData: null };
+            return { commissionableSales: [] };
         }
 
         const productMap = new Map(products.map(p => [p.id, p]));
         const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
 
-        // Initialize categoryData with only categories from the profile
-        const categoryData: { [key: string]: { totalSales: number; commissionEarned: number } } = {};
-        profile.commission.categories?.forEach(c => {
-            categoryData[c.category] = { totalSales: 0, commissionEarned: 0 };
-        });
-
-        const otherSalesSummary = { totalSales: 0, commissionEarned: 0 };
-        const customerData: { [key: string]: { totalSpent: number } } = {};
         const commissionableSalesResult: CommissionableSale[] = [];
 
         for (const sale of relevantSales) {
-            if (!customerData[sale.customerName]) {
-                customerData[sale.customerName] = { totalSpent: 0 };
-            }
-            customerData[sale.customerName].totalSpent += sale.totalAmount;
-
             let commissionForThisSale = 0;
             for (const item of sale.items) {
                 const product = productMap.get(item.productId);
@@ -125,16 +101,10 @@ export default function ViewCommissionProfilePage() {
                 const categoryRateData = profile.commission.categories?.find(c => c.category === category);
 
                 if (categoryRateData) {
-                    // This sale item falls into a specific commission category
                     const commissionAmount = itemValue * (categoryRateData.rate / 100);
-                    categoryData[categoryRateData.category].totalSales += itemValue;
-                    categoryData[categoryRateData.category].commissionEarned += commissionAmount;
                     commissionForThisSale += commissionAmount;
                 } else {
-                    // This sale item falls under the overall commission rate
                     const commissionAmount = itemValue * (profile.commission.overall / 100);
-                    otherSalesSummary.totalSales += itemValue;
-                    otherSalesSummary.commissionEarned += commissionAmount;
                     commissionForThisSale += commissionAmount;
                 }
             }
@@ -150,21 +120,9 @@ export default function ViewCommissionProfilePage() {
                 });
             }
         }
-        
-        const commissionBreakdownResult: CommissionBreakdown[] = Object.entries(categoryData)
-            .map(([category, data]) => ({ category, ...data }))
-            .sort((a,b) => b.commissionEarned - a.commissionEarned);
-
-        const customerContributionsResult: CustomerContribution[] = Object.entries(customerData)
-            .map(([name, data]) => ({ name, ...data }))
-            .sort((a,b) => b.totalSpent - a.totalSpent);
-
 
         return { 
-            commissionBreakdown: commissionBreakdownResult, 
-            customerContributions: customerContributionsResult, 
             commissionableSales: commissionableSalesResult.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-            otherSalesData: otherSalesSummary 
         };
     }, [profile, sales, products]);
     
@@ -280,59 +238,7 @@ export default function ViewCommissionProfilePage() {
                     </div>
                 </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><DollarSign className="w-5 h-5"/> Commission by Category</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Total Sales</TableHead><TableHead className="text-right">Commission Earned</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {commissionBreakdown.length > 0 ? commissionBreakdown.map(item => (
-                                    <TableRow key={item.category}>
-                                        <TableCell>{item.category}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(item.totalSales)}</TableCell>
-                                        <TableCell className="text-right font-semibold">{formatCurrency(item.commissionEarned)}</TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-12">No sales with category-specific commissions.</TableCell>
-                                    </TableRow>
-                                )}
-                                
-                                {otherSalesData && otherSalesData.totalSales > 0 && (
-                                     <TableRow>
-                                        <TableCell>Other Sales (at {profile.commission.overall}% overall rate)</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(otherSalesData.totalSales)}</TableCell>
-                                        <TableCell className="text-right font-semibold">{formatCurrency(otherSalesData.commissionEarned)}</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                            <TableFooter><TableRow><TableCell colSpan={2} className="text-right font-bold">Total Commission Earned</TableCell><TableCell className="text-right font-bold">{formatCurrency(commissionBreakdown.reduce((acc, item) => acc + item.commissionEarned, 0) + (otherSalesData?.commissionEarned || 0))}</TableCell></TableRow></TableFooter>
-                        </Table>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><UserIcon className="w-5 h-5"/> Top Customers</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                         <Table>
-                            <TableHeader><TableRow><TableHead>Customer Name</TableHead><TableHead className="text-right">Total Spent</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {customerContributions.length > 0 ? customerContributions.map(item => (
-                                    <TableRow key={item.name}>
-                                        <TableCell>{item.name}</TableCell>
-                                        <TableCell className="text-right font-semibold">{formatCurrency(item.totalSpent)}</TableCell>
-                                    </TableRow>
-                                )) : <TableRow><TableCell colSpan={2} className="text-center h-24">No customer data available.</TableCell></TableRow>}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
+            
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
