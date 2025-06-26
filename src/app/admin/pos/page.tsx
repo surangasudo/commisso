@@ -998,71 +998,69 @@ export default function PosPage() {
                     {/* Left Side: Cart */}
                     <div className="lg:col-span-3 flex flex-col gap-2">
                         <Card className="p-3 bg-card">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center gap-2">
-                                    <UserPlus className="text-muted-foreground flex-shrink-0"/>
-                                    <Select defaultValue="walk-in">
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select a customer" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="walk-in">Walk-In Customer</SelectItem>
-                                        {customers.map(customer => (
-                                            <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                    <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button size="icon" className="flex-shrink-0"><Plus/></Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Add New Customer</DialogTitle>
-                                                <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
-                                            </DialogHeader>
-                                            <div className="space-y-4 py-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="name">Name *</Label>
-                                                    <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="mobile">Mobile *</Label>
-                                                    <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="email">Email</Label>
-                                                    <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
-                                                </div>
+                             <div className="flex items-center gap-2">
+                                <UserPlus className="text-muted-foreground flex-shrink-0"/>
+                                <Select defaultValue="walk-in">
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select a customer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="walk-in">Walk-In Customer</SelectItem>
+                                    {customers.map(customer => (
+                                        <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button size="icon" className="flex-shrink-0"><Plus/></Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Add New Customer</DialogTitle>
+                                            <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="name">Name *</Label>
+                                                <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
                                             </div>
-                                            <DialogFooter>
-                                                <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-                                                <Button onClick={handleSaveCustomer}>Save Customer</Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-                                {saleSettings.enableCommissionAgent && (
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                        <CommissionSelector
-                                                entityType="Agent"
-                                                label="Agent"
-                                                profiles={commissionProfiles}
-                                                selectedProfile={selectedAgent}
-                                                onSelect={setSelectedAgent}
-                                                onRemove={() => setSelectedAgent(null)}
-                                            />
+                                            <div className="space-y-2">
+                                                <Label htmlFor="mobile">Mobile *</Label>
+                                                <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="email">Email</Label>
+                                                <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
+                                            </div>
                                         </div>
-                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
-                                    </div>
-                                )}
+                                        <DialogFooter>
+                                            <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                                            <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
-                            
+
                             {saleSettings.enableCommissionAgent && (
                                 <>
                                     <Separator className="my-4" />
-                                    <div className="space-y-1 mb-4">
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                             <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                <CommissionSelector
+                                                        entityType="Agent"
+                                                        label="Agent"
+                                                        profiles={commissionProfiles}
+                                                        selectedProfile={selectedAgent}
+                                                        onSelect={setSelectedAgent}
+                                                        onRemove={() => setSelectedAgent(null)}
+                                                    />
+                                                </div>
+                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1">

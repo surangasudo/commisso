@@ -5,10 +5,44 @@ import { useState, useEffect, useCallback } from 'react';
 // Define a type for the settings we care about on the POS page.
 type SaleSettings = {
     enableCommissionAgent: boolean;
+    defaultSaleDiscount: string;
+    defaultSellingPriceGroup: string;
+    isCommissionAgentPhoneCompulsory: boolean;
+    commissionAgent: string;
+    commissionCalculationType: string;
+    itemAdditionMethod: string;
+    amountRoundingMethod: string;
+    enableSalesOrder: boolean;
+    enableRecurringInvoice: boolean;
+    isPayTermRequired: boolean;
+    isStripeEnabled: boolean;
+    stripePublicKey: string;
+    stripeSecretKey: string;
+    isRazorpayEnabled: boolean;
+    razorpayKeyId: string;
+    razorpayKeySecret: string;
+    allowOverselling: boolean;
 };
 
 const defaultSaleSettings: SaleSettings = {
     enableCommissionAgent: false,
+    defaultSaleDiscount: '0',
+    defaultSellingPriceGroup: 'default',
+    isCommissionAgentPhoneCompulsory: false,
+    commissionAgent: 'none',
+    commissionCalculationType: 'invoice_value',
+    itemAdditionMethod: 'increase_quantity',
+    amountRoundingMethod: 'round_to_nearest_whole',
+    enableSalesOrder: false,
+    enableRecurringInvoice: false,
+    isPayTermRequired: false,
+    isStripeEnabled: false,
+    stripePublicKey: '',
+    stripeSecretKey: '',
+    isRazorpayEnabled: false,
+    razorpayKeyId: '',
+    razorpayKeySecret: '',
+    allowOverselling: false,
 };
 
 type BusinessSettings = {
@@ -30,6 +64,8 @@ export const useBusinessSettings = () => {
                 // Merge loaded settings with defaults to ensure all keys are present
                 const newSaleSettings = { ...defaultSaleSettings, ...(parsed.sale || {}) };
                 setSettings({ sale: newSaleSettings });
+            } else {
+                setSettings(defaultBusinessSettings);
             }
         } catch (error) {
             console.error("Failed to read business settings from localStorage", error);
