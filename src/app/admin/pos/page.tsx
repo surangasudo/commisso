@@ -1,6 +1,8 @@
+
 'use client';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Search,
   UserPlus,
@@ -946,9 +948,11 @@ export default function PosPage() {
              <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleCustomerDisplay}><Monitor /></Button>
              <ThemeToggle className="text-muted-foreground" />
              <Button variant="ghost" size="icon" className="text-muted-foreground"><HelpCircle /></Button>
-             <Button variant="destructive" className="h-9 px-3">
-                <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
-            </Button>
+             <Link href="/admin/expenses/add" passHref>
+                <Button variant="destructive" className="h-9 px-3">
+                    <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
+                </Button>
+            </Link>
         </div>
       </header>
 
@@ -1004,7 +1008,7 @@ export default function PosPage() {
                     </div>
                      <div className="flex items-center gap-2">
                         <div className="flex-1">
-                            <CommissionSelector
+                           <CommissionSelector
                                 entityType="Agent"
                                 label="Agent"
                                 profiles={commissionProfiles}
