@@ -106,7 +106,7 @@ export default function ViewCommissionProfilePage() {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
 
-                const profit = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
+                const profit = (item.unitPrice - (product.unitPurchasePrice || 0)) * item.quantity;
                 
                 const category = product.category;
                 const categoryRateData = profile.commission.categories?.find(c => c.category === category);
@@ -273,7 +273,7 @@ export default function ViewCommissionProfilePage() {
                                                     <TableHeader>
                                                         <TableRow>
                                                             <TableHead>Product</TableHead>
-                                                            <TableHead className="text-right">Profit on Item</TableHead>
+                                                            <TableHead className="text-right">Item Subtotal</TableHead>
                                                             <TableHead className="text-right">Commission Rate</TableHead>
                                                             <TableHead className="text-right">Commission Earned</TableHead>
                                                         </TableRow>
@@ -283,7 +283,7 @@ export default function ViewCommissionProfilePage() {
                                                             const product = products.find(p => p.id === item.productId);
                                                             if (!product) return null;
 
-                                                            const profitOnItem = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
+                                                            const profitOnItem = (item.unitPrice - (product.unitPurchasePrice || 0)) * item.quantity;
                                                             const category = product.category;
                                                             const categoryRateData = profile.commission.categories?.find(c => c.category === category);
                                                             const commissionRate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
@@ -292,7 +292,7 @@ export default function ViewCommissionProfilePage() {
                                                             return (
                                                                 <TableRow key={index} className="text-xs">
                                                                     <TableCell>{item.quantity} x {product.name}</TableCell>
-                                                                    <TableCell className="text-right">{formatCurrency(profitOnItem)}</TableCell>
+                                                                    <TableCell className="text-right">{formatCurrency(item.unitPrice * item.quantity)}</TableCell>
                                                                     <TableCell className="text-right">{commissionRate}%</TableCell>
                                                                     <TableCell className="text-right font-medium">{formatCurrency(commissionEarnedForItem)}</TableCell>
                                                                 </TableRow>
@@ -312,4 +312,3 @@ export default function ViewCommissionProfilePage() {
         </div>
     );
 }
-
