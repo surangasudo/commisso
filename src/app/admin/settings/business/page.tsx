@@ -43,7 +43,6 @@ import {
   Clock,
   Calculator,
   Search,
-  X,
   PlusCircle,
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -614,13 +613,137 @@ const ProductSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
     )
 };
 
-// ... other form components remain similar, using local state and updating context on save ...
-// For brevity, I'll omit the repetitive boilerplate for each form component.
-// The structure is the same:
-// 1. Get initial settings from props.
-// 2. Use `useState` to manage the form's local state.
-// 3. Use `useEffect` to sync with props if they change.
-// 4. Have an "Update Settings" button that calls `updateSettings(localState)`.
+const SaleSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['sale'], updateSettings: (newValues: Partial<AllSettings['sale']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+    
+    const handleCheckboxChange = (id: keyof AllSettings['sale'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+    
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Sale Settings Updated',
+            description: 'Your sale settings have been saved successfully.',
+        });
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Sale Settings</CardTitle>
+                <CardDescription>Manage your sales process and commission rules.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="defaultSaleDiscount">Default Sale Discount %:</Label>
+                        <Input id="defaultSaleDiscount" type="number" value={settings.defaultSaleDiscount} onChange={(e) => setSettings(s => ({...s, defaultSaleDiscount: e.target.value}))} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="defaultSellingPriceGroup">Default Selling Price Group:</Label>
+                        <Select value={settings.defaultSellingPriceGroup} onValueChange={(value) => setSettings(s => ({...s, defaultSellingPriceGroup: value}))}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="default">Default</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="itemAdditionMethod">Item Addition Method:</Label>
+                        <Select value={settings.itemAdditionMethod} onValueChange={(value) => setSettings(s => ({...s, itemAdditionMethod: value as any}))}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="increase_quantity">Increase item quantity if it already exists</SelectItem>
+                                <SelectItem value="add_new_line">Add item in new line</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="amountRoundingMethod">Amount rounding method:</Label>
+                        <Select value={settings.amountRoundingMethod} onValueChange={(value) => setSettings(s => ({...s, amountRoundingMethod: value as any}))}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="round_to_nearest_whole">Round to nearest whole number</SelectItem>
+                                <SelectItem value="round_to_nearest_decimal">Round to nearest decimal (multiple of 0.05)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="allowOverselling" checked={settings.allowOverselling} onCheckedChange={(checked) => handleCheckboxChange('allowOverselling', checked)} />
+                        <Label htmlFor="allowOverselling" className="font-normal">Allow Overselling</Label>
+                    </div>
+                 </div>
+                 <Separator className="my-6" />
+                 <div className="space-y-4">
+                     <h4 className="font-semibold text-base">Commission Agent</h4>
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enableCommissionAgent" checked={settings.enableCommissionAgent} onCheckedChange={(checked) => handleCheckboxChange('enableCommissionAgent', checked)} />
+                        <Label htmlFor="enableCommissionAgent" className="font-normal">Enable Commission Agent</Label>
+                    </div>
+                    {settings.enableCommissionAgent && (
+                         <div className="pl-6 space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="commissionAgent">Commission Agent:</Label>
+                                    <Select value={settings.commissionAgent} onValueChange={(value) => setSettings(s => ({...s, commissionAgent: value}))}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">None</SelectItem>
+                                            <SelectItem value="logged_in_user">Logged in user</SelectItem>
+                                            <SelectItem value="select_from_users_list">Select from user's list</SelectItem>
+                                            <SelectItem value="select_from_commission_agent_list">Select from commission agent's list</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="commissionCalculationType">Commission Calculation Type:</Label>
+                                     <Select value={settings.commissionCalculationType} onValueChange={(value) => setSettings(s => ({...s, commissionCalculationType: value as any}))}>
+                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="invoice_value">On Invoice Value</SelectItem>
+                                            <SelectItem value="payment_received">On Payment Received</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="isCommissionAgentPhoneCompulsory" checked={settings.isCommissionAgentPhoneCompulsory} onCheckedChange={(checked) => handleCheckboxChange('isCommissionAgentPhoneCompulsory', checked)} />
+                                <Label htmlFor="isCommissionAgentPhoneCompulsory" className="font-normal">Make it compulsory to enter commission agent phone number to make sale in default pricing group</Label>
+                            </div>
+                         </div>
+                    )}
+                 </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    )
+};
+
+
+const UnimplementedForm = ({ title }: { title: string }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle>{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
+                <p className="text-muted-foreground">{title} settings are under development.</p>
+            </div>
+        </CardContent>
+        <CardFooter>
+             <Button disabled>Update Settings</Button>
+        </CardFooter>
+    </Card>
+);
 
 export default function BusinessSettingsPage() {
     const { settings, updateSection } = useSettings();
@@ -662,45 +785,21 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="product">
                             <ProductSettingsForm settings={settings.product} updateSettings={(newValues) => updateSection('product', newValues)} />
                         </TabsContent>
-                         {/* <TabsContent value="contact">
-                            <ContactSettingsForm settings={settings.contact} updateSettings={(newValues) => updateSection('contact', newValues)} />
-                        </TabsContent>
+                        <TabsContent value="contact"><UnimplementedForm title="Contact Settings" /></TabsContent>
                         <TabsContent value="sale">
                             <SaleSettingsForm settings={settings.sale} updateSettings={(newValues) => updateSection('sale', newValues)} />
                         </TabsContent>
-                         <TabsContent value="pos">
-                            <PosSettingsForm settings={settings.pos} updateSettings={(newValues) => updateSection('pos', newValues)} />
-                        </TabsContent>
-                         <TabsContent value="purchases">
-                            <PurchaseSettingsForm settings={settings.purchase} updateSettings={(newValues) => updateSection('purchase', newValues)} />
-                        </TabsContent>
-                        <TabsContent value="payment">
-                            <PaymentSettingsForm settings={settings.payment} updateSettings={(newValues) => updateSection('payment', newValues)} />
-                        </TabsContent>
-                         <TabsContent value="dashboard">
-                            <DashboardSettingsForm settings={settings.dashboard} updateSettings={(newValues) => updateSection('dashboard', newValues)} />
-                        </TabsContent>
-                        <TabsContent value="system">
-                            <SystemSettingsForm settings={settings.system} updateSettings={(newValues) => updateSection('system', newValues)} />
-                        </TabsContent>
-                        <TabsContent value="prefixes">
-                            <PrefixesSettingsForm settings={settings.prefixes} updateSettings={(newValues) => updateSection('prefixes', newValues)} />
-                        </TabsContent>
-                        <TabsContent value="email_settings">
-                            <EmailSettingsForm settings={settings.email} updateSettings={(newValues) => updateSection('email', newValues)} />
-                        </TabsContent>
-                         <TabsContent value="sms_settings">
-                            <SmsSettingsForm settings={settings.sms} updateSettings={(newValues) => updateSection('sms', newValues)} />
-                        </TabsContent>
-                         <TabsContent value="reward_point_settings">
-                            <RewardPointSettingsForm settings={settings.rewardPoint} updateSettings={(newValues) => updateSection('rewardPoint', newValues)} />
-                        </TabsContent>
-                         <TabsContent value="modules">
-                            <ModulesSettingsForm settings={settings.modules} updateSettings={(newValues) => updateSection('modules', newValues)} />
-                        </TabsContent>
-                        <TabsContent value="custom_labels">
-                           <CustomLabelsSettingsForm settings={settings.customLabels} updateSettings={(newValues) => updateSection('customLabels', newValues)} />
-                        </TabsContent> */}
+                        <TabsContent value="pos"><UnimplementedForm title="POS Settings" /></TabsContent>
+                        <TabsContent value="purchases"><UnimplementedForm title="Purchase Settings" /></TabsContent>
+                        <TabsContent value="payment"><UnimplementedForm title="Payment Settings" /></TabsContent>
+                        <TabsContent value="dashboard"><UnimplementedForm title="Dashboard Settings" /></TabsContent>
+                        <TabsContent value="system"><UnimplementedForm title="System Settings" /></TabsContent>
+                        <TabsContent value="prefixes"><UnimplementedForm title="Prefixes Settings" /></TabsContent>
+                        <TabsContent value="email_settings"><UnimplementedForm title="Email Settings" /></TabsContent>
+                        <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
+                        <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
+                        <TabsContent value="modules"><UnimplementedForm title="Modules Settings" /></TabsContent>
+                        <TabsContent value="custom_labels"><UnimplementedForm title="Custom Labels Settings" /></TabsContent>
                     </div>
                 </Tabs>
                 <div className="text-center text-xs text-slate-400 p-1">
