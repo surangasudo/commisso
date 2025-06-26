@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Trash2, Info, User, ShoppingBag, Calendar, X } from "lucide-react";
-import { detailedProducts, type DetailedProduct, customers, commissionProfiles } from '@/lib/data';
+import { detailedProducts, type DetailedProduct, customers, type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -22,6 +23,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { AppFooter } from '@/components/app-footer';
+import { getCommissionProfiles } from '@/services/commissionService';
 
 type SaleItem = {
   product: DetailedProduct;
@@ -36,6 +38,7 @@ export default function AddSalePage() {
     const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentDate, setCurrentDate] = useState('');
+    const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
     
     const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
     const [newCustomerName, setNewCustomerName] = useState('');
@@ -47,11 +50,20 @@ export default function AddSalePage() {
     const [taxPercentage, setTaxPercentage] = useState(0);
     const [shipping, setShipping] = useState(0);
 
-
     useEffect(() => {
+        const fetchCommissionProfiles = async () => {
+            try {
+                const profiles = await getCommissionProfiles();
+                setCommissionProfiles(profiles);
+            } catch (error) {
+                console.error("Failed to fetch commission profiles:", error);
+            }
+        };
+
         const now = new Date();
         const formatted = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         setCurrentDate(formatted);
+        fetchCommissionProfiles();
     }, []);
     
     const searchResults = searchTerm
@@ -91,8 +103,8 @@ export default function AddSalePage() {
     const totalItems = saleItems.reduce((acc, item) => acc + item.quantity, 0);
     const subtotal = saleItems.reduce((acc, item) => acc + calculateSubtotal(item), 0);
 
-    const taxAmount = useMemo(() => subtotal * (taxPercentage / 100), [subtotal, taxPercentage]);
-    const totalPayable = useMemo(() => subtotal - discount + taxAmount + shipping, [subtotal, discount, taxAmount, shipping]);
+    const taxAmount = React.useMemo(() => subtotal * (taxPercentage / 100), [subtotal, taxPercentage]);
+    const totalPayable = React.useMemo(() => subtotal - discount + taxAmount + shipping, [subtotal, discount, taxAmount, shipping]);
 
     const handleSaveCustomer = () => {
         if (!newCustomerName || !newCustomerMobile) {
