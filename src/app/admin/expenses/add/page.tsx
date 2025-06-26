@@ -99,7 +99,13 @@ export default function AddExpensePage() {
     };
 
     const handleSelectChange = (field: keyof typeof formData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const newState = { ...prev, [field]: value };
+            if (field === 'expenseCategory') {
+                newState.subCategory = ''; // Reset subcategory when parent changes
+            }
+            return newState;
+        });
     };
 
     const handleCheckboxChange = (field: keyof typeof formData, checked: boolean) => {
@@ -138,14 +144,14 @@ export default function AddExpensePage() {
                 date: formData.paidOn.toISOString(),
                 referenceNo: formData.referenceNo || `EXP-${Date.now()}`,
                 location: formData.location,
-                expenseCategory: formData.expenseCategory || '',
+                expenseCategory: formData.expenseCategory === 'none' ? '' : formData.expenseCategory,
                 subCategory: formData.subCategory || null,
                 paymentStatus: paymentDue === 0 ? 'Paid' : (paymentDue >= totalAmount ? 'Due' : 'Partial'),
                 tax: taxAmount,
                 totalAmount: totalAmount,
                 paymentDue: paymentDue,
-                expenseFor: formData.expenseFor || null,
-                contact: formData.contact || null,
+                expenseFor: formData.expenseFor === 'none' ? null : formData.expenseFor || null,
+                contact: formData.contact === 'none' ? null : formData.contact || null,
                 addedBy: 'Admin', // Hardcoded for now
                 expenseNote: formData.expenseNote || null,
             };
@@ -191,7 +197,7 @@ export default function AddExpensePage() {
                                 <Select value={formData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}>
                                     <SelectTrigger id="expenseCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">None</SelectItem>
+                                        <SelectItem value="none">None</SelectItem>
                                         {mainCategories.map(cat => (
                                             <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                                         ))}
@@ -373,4 +379,3 @@ export default function AddExpensePage() {
         </div>
     );
 }
-
