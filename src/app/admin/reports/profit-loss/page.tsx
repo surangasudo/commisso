@@ -70,7 +70,7 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading
 
     return (
         <>
-            <div className="flex justify-between items-center mb-4 print:hidden">
+            <div className="flex justify-between items-center mb-4 print-hidden">
                 <div className="flex items-center gap-2">
                     <Label>Show</Label>
                     <Select defaultValue="25">
@@ -134,7 +134,7 @@ const ReportTable = <T extends {}>({ title, data, columns, getPdfData, isLoading
                     )}
                 </TableBody>
             </Table>
-            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground print:hidden">
+            <div className="flex justify-between items-center mt-4 text-sm text-muted-foreground print-hidden">
                 <span>Showing 1 to {data.length} of {data.length} entries</span>
                 <div className="flex items-center gap-1">
                     <Button variant="outline" size="sm">Previous</Button>
@@ -291,7 +291,7 @@ export default function ProfitLossReportPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between print:hidden">
+            <div className="flex items-center justify-between print-hidden">
                  <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                     <FileText className="w-8 h-8" />
                     Profit / Loss Report
@@ -346,7 +346,7 @@ export default function ProfitLossReportPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-hidden">
                 <Card className="p-4">
                     <ReportItem isLoading={isLoading} label="Total Sales:" value={formatCurrency(reportData?.totalSales || 0)} note="(Exc. tax, Discount)" />
                     <ReportItem isLoading={isLoading} label="Total purchase:" value={formatCurrency(reportData?.totalPurchases || 0)} note="(Exc. tax, Discount)" />
@@ -362,7 +362,7 @@ export default function ProfitLossReportPage() {
                  </Card>
             </div>
             
-            <div className="printable-area space-y-6">
+            <div className="space-y-6">
                 <Card>
                     <CardContent className="p-6">
                         {isLoading ? (
@@ -390,7 +390,7 @@ export default function ProfitLossReportPage() {
                 <Card>
                     <CardContent className="pt-6">
                         <Tabs defaultValue="products">
-                            <TabsList className="flex-wrap h-auto print:hidden">
+                            <TabsList className="flex-wrap h-auto print-hidden">
                                 <TabsTrigger value="products">Profit by products</TabsTrigger>
                                 <TabsTrigger value="categories">Profit by categories</TabsTrigger>
                                 <TabsTrigger value="brands">Profit by brands</TabsTrigger>

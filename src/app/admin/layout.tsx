@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -333,7 +334,7 @@ export default function AdminLayout({
         )}
       <SidebarInset>
         {!isPosPage && (
-            <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6">
+            <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 print-hidden">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="lg:hidden text-primary-foreground" />
                 <div className="hidden items-center gap-2 lg:flex">

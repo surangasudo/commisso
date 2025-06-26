@@ -91,42 +91,26 @@ body {
     }
 }
 
-/* More robust print styles */
+/* Print styles */
 @media print {
   body {
     background: white !important;
     color: black !important;
   }
 
-  /* Hide everything by default */
-  body * {
-    visibility: hidden;
-  }
-
-  /* Show only the printable area and its children */
-  .printable-area, .printable-area * {
-    visibility: visible;
-  }
-
-  /* Position the printable area at the top of the page */
-  .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  .print-hidden {
+    display: none !important;
   }
   
-  /* Ensure cards and tables look good on paper */
-  .printable-area .card {
+  .card {
     border: none !important;
     box-shadow: none !important;
   }
 
-  .printable-area .table {
+  .table {
     width: 100%;
   }
 
-  /* Page setup */
   @page {
     size: auto;
     margin: 0.5in;
