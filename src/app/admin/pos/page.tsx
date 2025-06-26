@@ -703,7 +703,7 @@ export default function PosPage() {
     );
   };
 
-  const clearCart = () => {
+  const clearCart = (showToast = true) => {
     setCart([]);
     setDiscount(0);
     setOrderTax(0);
@@ -712,10 +712,12 @@ export default function PosPage() {
     setSelectedSubAgent(null);
     setSelectedCompany(null);
     setSelectedSalesperson(null);
-    toast({
-        title: 'Cart Cleared',
-        description: 'The transaction has been cancelled.',
-    });
+    if (showToast) {
+        toast({
+            title: 'Cart Cleared',
+            description: 'The transaction has been cancelled.',
+        });
+    }
   };
 
   const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number): Omit<Sale, 'id'> => {
@@ -766,7 +768,7 @@ export default function PosPage() {
               title: 'Sale Finalized',
               description: `Payment of ${formatCurrency(sale.totalPaid)} received. Cart has been cleared.`,
           });
-          clearCart();
+          clearCart(false);
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
@@ -940,7 +942,7 @@ export default function PosPage() {
         </div>
         <div className="flex items-center gap-1">
              <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
-             <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={clearCart}><X /></Button>
+             <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={() => clearCart()}><X /></Button>
              <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
              <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
              <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
@@ -1266,7 +1268,7 @@ export default function PosPage() {
             </Dialog>
 
             <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>
-            <Button variant="destructive" className="text-xs sm:text-sm" onClick={clearCart}>Cancel</Button>
+            <Button variant="destructive" className="text-xs sm:text-sm" onClick={() => clearCart()}>Cancel</Button>
           </div>
           <div className="text-center md:text-right w-full md:w-auto">
               <span className="text-xs sm:text-sm text-muted-foreground">Total Payable:</span>
