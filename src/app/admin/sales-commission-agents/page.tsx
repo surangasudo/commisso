@@ -147,8 +147,9 @@ const CommissionPayoutDialog = ({
         }
         setIsPaying(true);
         try {
-            await payCommission(profile, totalToPay, method, note);
-            toast({ title: 'Success', description: `Payment of ${formatCurrency(totalToPay)} for ${profile.name} has been recorded.` });
+            const formattedAmount = formatCurrency(totalToPay);
+            await payCommission(profile, totalToPay, formattedAmount, method, note);
+            toast({ title: 'Success', description: `Payment of ${formattedAmount} for ${profile.name} has been recorded.` });
             onPaymentSuccess();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' });
