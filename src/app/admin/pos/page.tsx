@@ -34,6 +34,8 @@ import {
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -357,6 +359,83 @@ const CashPaymentDialog = ({
     );
 };
 
+const CommissionSelector = ({
+  entityType,
+  label,
+  profiles,
+  selectedProfile,
+  onSelect,
+  onRemove,
+}: {
+  entityType: CommissionProfile['entityType'];
+  label: string;
+  profiles: CommissionProfile[];
+  selectedProfile: CommissionProfile | null;
+  onSelect: (profile: CommissionProfile) => void;
+  onRemove: () => void;
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const filteredProfiles = useMemo(() => {
+    if (!searchTerm) return [];
+    return profiles.filter(
+      (p) =>
+        p.entityType === entityType &&
+        (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.phone.includes(searchTerm))
+    ).slice(0, 5);
+  }, [searchTerm, profiles, entityType]);
+
+  if (selectedProfile) {
+    return (
+      <div className="space-y-2">
+        <Label>{label}</Label>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-10 px-3 py-2 text-sm border rounded-md bg-muted flex items-center">
+            {selectedProfile.name}
+          </div>
+          <Button variant="ghost" size="icon" className="text-red-500" onClick={onRemove}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={`${entityType}-search`}>{label}</Label>
+      <div className="relative">
+        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+        <Input
+          id={`${entityType}-search`}
+          placeholder={`Search for ${label}...`}
+          className="pl-10 w-full"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          autoComplete="off"
+        />
+        {filteredProfiles.length > 0 && (
+          <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
+            {filteredProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="p-2 hover:bg-accent cursor-pointer text-sm"
+                onClick={() => {
+                  onSelect(profile);
+                  setSearchTerm('');
+                }}
+              >
+                <div>{profile.name}</div>
+                <div className="text-xs text-muted-foreground">{profile.phone}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 export default function PosPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -398,10 +477,12 @@ export default function PosPage() {
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
 
   // States for agent selection
-  const [agentSearchTerm, setAgentSearchTerm] = useState('');
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
-  const [filteredAgents, setFilteredAgents] = useState<CommissionProfile[]>([]);
-  const [selectedAgents, setSelectedAgents] = useState<CommissionProfile[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
+  const [selectedSubAgent, setSelectedSubAgent] = useState<CommissionProfile | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<CommissionProfile | null>(null);
+  const [selectedSalesperson, setSelectedSalesperson] = useState<CommissionProfile | null>(null);
+
 
   const fetchAndCalculateStock = useCallback(async () => {
       try {
@@ -473,20 +554,6 @@ export default function PosPage() {
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-  useEffect(() => {
-    if (agentSearchTerm) {
-        setFilteredAgents(
-            commissionProfiles.filter(profile =>
-                profile.phone.includes(agentSearchTerm) ||
-                profile.name.toLowerCase().includes(agentSearchTerm.toLowerCase())
-            )
-        );
-    } else {
-        setFilteredAgents([]);
-    }
-  }, [agentSearchTerm, commissionProfiles]);
-
-
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + item.product.sellingPrice * item.quantity, 0);
   }, [cart]);
@@ -550,25 +617,16 @@ export default function PosPage() {
       currentCart.filter((item) => item.product.id !== productId)
     );
   };
-  
-  const handleAddAgent = (profile: CommissionProfile) => {
-      if (!selectedAgents.some(a => a.id === profile.id)) {
-          setSelectedAgents(prev => [...prev, profile]);
-      }
-      setAgentSearchTerm('');
-  };
-
-  const handleRemoveAgent = (profileId: string) => {
-      setSelectedAgents(prev => prev.filter(a => a.id !== profileId));
-  };
-
 
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
     setOrderTax(0);
     setShipping(0);
-    setSelectedAgents([]);
+    setSelectedAgent(null);
+    setSelectedSubAgent(null);
+    setSelectedCompany(null);
+    setSelectedSalesperson(null);
     toast({
         title: 'Cart Cleared',
         description: 'The transaction has been cancelled.',
@@ -576,6 +634,13 @@ export default function PosPage() {
   };
 
   const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number): Omit<Sale, 'id'> => {
+      const commissionAgentIds = [
+          selectedAgent?.id,
+          selectedSubAgent?.id,
+          selectedCompany?.id,
+          selectedSalesperson?.id
+      ].filter((id): id is string => !!id);
+
       return {
           date: new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
           invoiceNo: `INV-${Date.now()}`,
@@ -601,7 +666,7 @@ export default function PosPage() {
               tax: 0, // Simplified
           })),
           taxAmount: orderTax,
-          commissionAgentIds: selectedAgents.length > 0 ? selectedAgents.map(a => a.id) : null,
+          commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
       };
   };
 
@@ -616,11 +681,7 @@ export default function PosPage() {
               title: 'Sale Finalized',
               description: `Payment of ${formatCurrency(sale.totalPaid)} received. Cart has been cleared.`,
           });
-          setCart([]);
-          setDiscount(0);
-          setOrderTax(0);
-          setShipping(0);
-          setSelectedAgents([]);
+          clearCart();
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
@@ -763,7 +824,7 @@ export default function PosPage() {
         {/* Left Side: Cart */}
         <div className="lg:col-span-3 flex flex-col gap-2">
             <Card className="p-3 bg-card">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                         <UserPlus className="text-muted-foreground flex-shrink-0"/>
                         <Select defaultValue="walk-in">
@@ -777,53 +838,47 @@ export default function PosPage() {
                         </Select>
                         <Button size="icon" className="flex-shrink-0"><Plus/></Button>
                     </div>
-                     <div className="relative md:col-span-2">
-                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-                        <Input
-                            placeholder="Add Commission Profiles..."
-                            className="pl-10 w-full"
-                            value={agentSearchTerm}
-                            onChange={(e) => setAgentSearchTerm(e.target.value)}
+                </div>
+                 <Separator className="my-4" />
+                 <div className="space-y-1 mb-4">
+                    <h3 className="text-sm font-medium text-muted-foreground">Commission Assignment</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <CommissionSelector
+                            entityType="Agent"
+                            label="Agent"
+                            profiles={commissionProfiles}
+                            selectedProfile={selectedAgent}
+                            onSelect={setSelectedAgent}
+                            onRemove={() => setSelectedAgent(null)}
                         />
-                        {filteredAgents.length > 0 && (
-                            <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
-                                {filteredAgents.map(profile => (
-                                    <div
-                                        key={profile.id}
-                                        className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
-                                        onClick={() => handleAddAgent(profile)}
-                                    >
-                                        <div>
-                                            <div className="font-medium">{profile.name}</div>
-                                            <div className="text-xs text-muted-foreground">{profile.phone}</div>
-                                        </div>
-                                        <Badge variant="outline">{profile.entityType}</Badge>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        <CommissionSelector
+                            entityType="Sub-Agent"
+                            label="Sub-Agent"
+                            profiles={commissionProfiles}
+                            selectedProfile={selectedSubAgent}
+                            onSelect={setSelectedSubAgent}
+                            onRemove={() => setSelectedSubAgent(null)}
+                        />
+                        <CommissionSelector
+                            entityType="Company"
+                            label="Company"
+                            profiles={commissionProfiles}
+                            selectedProfile={selectedCompany}
+                            onSelect={setSelectedCompany}
+                            onRemove={() => setSelectedCompany(null)}
+                        />
+                        <CommissionSelector
+                            entityType="Salesperson"
+                            label="Salesperson"
+                            profiles={commissionProfiles}
+                            selectedProfile={selectedSalesperson}
+                            onSelect={setSelectedSalesperson}
+                            onRemove={() => setSelectedSalesperson(null)}
+                        />
                     </div>
                 </div>
-                {selectedAgents.length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                        <h4 className="text-sm font-medium mb-2 text-muted-foreground">Assigned for Commission:</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {selectedAgents.map(agent => (
-                                <Badge key={agent.id} variant="secondary" className="pl-2 pr-1 py-1 text-sm">
-                                    {agent.name} <span className="text-muted-foreground/80 ml-1">({agent.entityType})</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveAgent(agent.id)}
-                                        className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </button>
-                                </Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                 <div className="mt-3 relative flex items-center">
+                 <Separator className="my-4" />
+                 <div className="relative flex items-center">
                     <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
                     <Input
                         placeholder="Product name/SKU"
