@@ -76,7 +76,7 @@ export default function AddProductPage() {
     if (!product.name || !product.unit || !product.sellingPrice) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields: Product Name, Unit, and Selling Price.",
+        description: "Product Name, Unit, and Selling Price are required.",
         variant: "destructive",
       });
       return;
