@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { detailedProducts, type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { getCommissionProfile, updateCommissionProfile } from '@/services/commissionService';
+import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditSalesCommissionAgentPage() {
@@ -27,14 +27,23 @@ export default function EditSalesCommissionAgentPage() {
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    const [productCategories, setProductCategories] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
         if (typeof id !== 'string') return;
         
-        const fetchProfile = async () => {
+        const fetchProfileAndCategories = async () => {
+            setIsLoading(true);
             try {
-                const profileToEdit = await getCommissionProfile(id);
+                const [profileToEdit, products] = await Promise.all([
+                    getCommissionProfile(id),
+                    getProducts()
+                ]);
+
+                const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                setProductCategories(categories);
+
                 if (profileToEdit) {
                     setEntityType(profileToEdit.entityType);
                     setAgentName(profileToEdit.name);
@@ -69,10 +78,8 @@ export default function EditSalesCommissionAgentPage() {
             }
         };
 
-        fetchProfile();
+        fetchProfileAndCategories();
     }, [id, router, toast]);
-
-    const productCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
 
     const addCategoryCommission = () => {
         setCategoryCommissions([...categoryCommissions, { id: Date.now(), category: '', rate: '' }]);

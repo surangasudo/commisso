@@ -1,6 +1,5 @@
-
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { detailedProducts, type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
+import { getProducts } from '@/services/productService';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
@@ -25,8 +25,25 @@ export default function AddSalesCommissionAgentPage() {
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    const [productCategories, setProductCategories] = useState<string[]>([]);
     
-    const productCategories = [...new Set(detailedProducts.map(p => p.category).filter(Boolean))];
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const products = await getProducts();
+                const categories = [...new Set(products.map(p => p.category).filter(Boolean))];
+                setProductCategories(categories);
+            } catch (error) {
+                console.error("Failed to fetch product categories", error);
+                toast({
+                    title: "Error",
+                    description: "Could not load product categories.",
+                    variant: "destructive"
+                });
+            }
+        };
+        fetchCategories();
+    }, [toast]);
 
     const addCategoryCommission = () => {
         setCategoryCommissions([...categoryCommissions, { id: Date.now(), category: '', rate: '' }]);
