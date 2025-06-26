@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,7 +12,7 @@ import { type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
-import { getProducts } from '@/services/productService';
+import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
@@ -26,29 +25,20 @@ export default function AddSalesCommissionAgentPage() {
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
-    const [productCategories, setProductCategories] = useState<string[]>([]);
+    const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const products = await getProducts();
-                let categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-
-                if (categories.length === 0) {
-                    // Fallback if no categories exist in products yet
-                    categories = ["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"];
-                }
-
+                const categories = await getProductCategories();
                 setProductCategories(categories);
             } catch (error) {
                 console.error("Failed to fetch product categories", error);
                 toast({
                     title: "Error loading categories",
-                    description: "Could not load product categories. Using a fallback list.",
+                    description: "Could not load product categories.",
                     variant: "destructive"
                 });
-                // Also provide fallback on error
-                setProductCategories(["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"]);
             }
         };
         fetchCategories();
@@ -219,7 +209,7 @@ export default function AddSalesCommissionAgentPage() {
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {productCategories.map(cat => (
-                                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>

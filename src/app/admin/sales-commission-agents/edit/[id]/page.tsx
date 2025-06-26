@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -11,7 +10,7 @@ import { X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from '@/components/ui/textarea';
 import { getCommissionProfile, updateCommissionProfile } from '@/services/commissionService';
-import { getProducts } from '@/services/productService';
+import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EditSalesCommissionAgentPage() {
@@ -27,7 +26,7 @@ export default function EditSalesCommissionAgentPage() {
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
-    const [productCategories, setProductCategories] = useState<string[]>([]);
+    const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     useEffect(() => {
@@ -36,17 +35,11 @@ export default function EditSalesCommissionAgentPage() {
         const fetchProfileAndCategories = async () => {
             setIsLoading(true);
             try {
-                const [profileToEdit, products] = await Promise.all([
+                const [profileToEdit, categories] = await Promise.all([
                     getCommissionProfile(id),
-                    getProducts()
+                    getProductCategories()
                 ]);
 
-                let categories = [...new Set(products.map(p => p.category).filter(Boolean))];
-                
-                if (categories.length === 0) {
-                    // Fallback if no categories exist in products yet
-                    categories = ["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"];
-                }
                 setProductCategories(categories);
 
                 if (profileToEdit) {
@@ -74,11 +67,9 @@ export default function EditSalesCommissionAgentPage() {
             } catch (error) {
                  toast({
                     title: "Error",
-                    description: "Failed to load profile data. Using a fallback category list.",
+                    description: "Failed to load profile data.",
                     variant: "destructive"
                 });
-                // Fallback on error
-                setProductCategories(["Accessories -- Shoes", "Food & Grocery", "Sports -- Exercise & Fitness"]);
                 console.error(error);
             } finally {
                 setIsLoading(false);
@@ -261,7 +252,7 @@ export default function EditSalesCommissionAgentPage() {
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {productCategories.map(cat => (
-                                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
