@@ -438,181 +438,183 @@ export default function SalesCommissionAgentsPage() {
   return (
     <>
       <Tabs defaultValue="profiles" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
-          <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
-          <TabsTrigger value="agents">Agents</TabsTrigger>
-          <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
-          <TabsTrigger value="companies">Companies</TabsTrigger>
-        </TabsList>
-        <TabsContent value="profiles">
-           <Card>
-              <CardHeader className="flex-row items-start justify-between">
-                <CardTitle>Commission Profiles</CardTitle>
-                <div className="flex flex-col items-end gap-2">
-                  <Link href="/admin/sales-commission-agents/add">
-                    <Button>Add Profile</Button>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export</Button>
-                    <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4">
+        <div className="printable-area">
+            <TabsList className="print-hidden">
+            <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
+            <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
+            <TabsTrigger value="agents">Agents</TabsTrigger>
+            <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
+            <TabsTrigger value="companies">Companies</TabsTrigger>
+            </TabsList>
+            <TabsContent value="profiles">
+            <Card>
+                <CardHeader className="flex-row items-start justify-between">
+                    <CardTitle>Commission Profiles</CardTitle>
+                    <div className="flex flex-col items-end gap-2 print-hidden">
+                    <Link href="/admin/sales-commission-agents/add">
+                        <Button>Add Profile</Button>
+                    </Link>
                     <div className="flex items-center gap-2">
-                        <Label htmlFor="profile-filter" className="text-sm">Filter by Type:</Label>
-                        <Select value={profileFilter} onValueChange={setProfileFilter}>
-                            <SelectTrigger id="profile-filter" className="w-[180px] h-9">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All Types</SelectItem>
-                                <SelectItem value="Agent">Agent</SelectItem>
-                                <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
-                                <SelectItem value="Company">Company</SelectItem>
-                                <SelectItem value="Salesperson">Salesperson</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Button variant="outline" size="sm" onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export</Button>
+                        <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
                     </div>
-                    <div className="relative sm:max-w-xs w-full">
-                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search profiles..." className="pl-8 w-full h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                     </div>
-                </div>
-                <div className="border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Entity Type</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Bank Details</TableHead>
-                        <TableHead>Commission Rate</TableHead>
-                        <TableHead>Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                            <TableCell><Skeleton className="h-8 w-48" /></TableCell>
-                          </TableRow>
-                        ))
-                      ) : filteredProfiles.map((profile) => (
-                        <TableRow key={profile.id}>
-                          <TableCell className="font-medium">{profile.name}</TableCell>
-                          <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
-                          <TableCell>{profile.phone}</TableCell>
-                          <TableCell>{profile.bankDetails || 'N/A'}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1 items-center">
-                                <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>
-                                {profile.commission.categories?.map(c => (
-                                    <Badge key={c.category} variant="outline">{c.category}: {c.rate}%</Badge>
-                                ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                              <div className="flex gap-1">
-                                  <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEdit(profile.id)}>
-                                      <Pencil className="mr-1 h-3 w-3" /> Edit
-                                  </Button>
-                                  <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700" onClick={() => handleView(profile.id)}>
-                                      <Eye className="mr-1 h-3 w-3" /> View
-                                  </Button>
-                                  <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(profile)}>
-                                      <Trash2 className="mr-1 h-3 w-3" /> Delete
-                                  </Button>
-                              </div>
-                          </TableCell>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 print-hidden">
+                        <div className="flex items-center gap-2">
+                            <Label htmlFor="profile-filter" className="text-sm">Filter by Type:</Label>
+                            <Select value={profileFilter} onValueChange={setProfileFilter}>
+                                <SelectTrigger id="profile-filter" className="w-[180px] h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">All Types</SelectItem>
+                                    <SelectItem value="Agent">Agent</SelectItem>
+                                    <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
+                                    <SelectItem value="Company">Company</SelectItem>
+                                    <SelectItem value="Salesperson">Salesperson</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="relative sm:max-w-xs w-full">
+                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search profiles..." className="pl-8 w-full h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                    </div>
+                    <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Entity Type</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Bank Details</TableHead>
+                            <TableHead>Commission Rate</TableHead>
+                            <TableHead className="print-hidden">Action</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-              <CardFooter className="py-4">
-                <div className="text-xs text-muted-foreground">
-                  Showing <strong>{filteredProfiles.length}</strong> of <strong>{profiles.length}</strong> entries
-                </div>
-              </CardFooter>
+                        </TableHeader>
+                        <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                <TableCell className="print-hidden"><Skeleton className="h-8 w-48" /></TableCell>
+                            </TableRow>
+                            ))
+                        ) : filteredProfiles.map((profile) => (
+                            <TableRow key={profile.id}>
+                            <TableCell className="font-medium">{profile.name}</TableCell>
+                            <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                            <TableCell>{profile.phone}</TableCell>
+                            <TableCell>{profile.bankDetails || 'N/A'}</TableCell>
+                            <TableCell>
+                                <div className="flex flex-wrap gap-1 items-center">
+                                    <Badge variant="secondary">Overall: {profile.commission.overall}%</Badge>
+                                    {profile.commission.categories?.map(c => (
+                                        <Badge key={c.category} variant="outline">{c.category}: {c.rate}%</Badge>
+                                    ))}
+                                </div>
+                            </TableCell>
+                            <TableCell className="print-hidden">
+                                <div className="flex gap-1">
+                                    <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => handleEdit(profile.id)}>
+                                        <Pencil className="mr-1 h-3 w-3" /> Edit
+                                    </Button>
+                                    <Button variant="outline" size="sm" className="h-8 text-cyan-600 border-cyan-200 hover:bg-cyan-50 hover:text-cyan-700" onClick={() => handleView(profile.id)}>
+                                        <Eye className="mr-1 h-3 w-3" /> View
+                                    </Button>
+                                    <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteClick(profile)}>
+                                        <Trash2 className="mr-1 h-3 w-3" /> Delete
+                                    </Button>
+                                </div>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </CardContent>
+                <CardFooter className="py-4 print-hidden">
+                    <div className="text-xs text-muted-foreground">
+                    Showing <strong>{filteredProfiles.length}</strong> of <strong>{profiles.length}</strong> entries
+                    </div>
+                </CardFooter>
             </Card>
-        </TabsContent>
-        <TabsContent value="salespersons">
-             <Card>
-              <CardHeader>
-                <CardTitle>Salesperson Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions for Salespersons.</p>
-              </CardHeader>
-              <CardContent>
-                  <PayoutsTable 
-                    profiles={salespersons} 
-                    handlePayClick={handlePayClick}
-                    handleView={handleView}
-                    isLoading={isLoading}
-                    formatCurrency={formatCurrency}
-                  />
-              </CardContent>
-             </Card>
-        </TabsContent>
-         <TabsContent value="agents">
-             <Card>
-              <CardHeader>
-                <CardTitle>Agent Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions for Agents.</p>
-              </CardHeader>
-              <CardContent>
-                  <PayoutsTable 
-                    profiles={agents} 
-                    handlePayClick={handlePayClick} 
-                    handleView={handleView}
-                    isLoading={isLoading}
-                    formatCurrency={formatCurrency}
-                  />
-              </CardContent>
-             </Card>
-        </TabsContent>
-        <TabsContent value="sub_agents">
-             <Card>
-              <CardHeader>
-                <CardTitle>Sub-Agent Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions for Sub-Agents.</p>
-              </CardHeader>
-              <CardContent>
-                  <PayoutsTable 
-                    profiles={subAgents} 
-                    handlePayClick={handlePayClick} 
-                    handleView={handleView}
-                    isLoading={isLoading}
-                    formatCurrency={formatCurrency}
-                  />
-              </CardContent>
-             </Card>
-        </TabsContent>
-         <TabsContent value="companies">
-             <Card>
-              <CardHeader>
-                <CardTitle>Company Commission Payouts</CardTitle>
-                <p className="text-sm text-muted-foreground">View pending commissions for Companies.</p>
-              </CardHeader>
-              <CardContent>
-                  <PayoutsTable 
-                    profiles={companies}
-                    handlePayClick={handlePayClick} 
-                    handleView={handleView}
-                    isLoading={isLoading}
-                    formatCurrency={formatCurrency}
-                  />
-              </CardContent>
-             </Card>
-        </TabsContent>
+            </TabsContent>
+            <TabsContent value="salespersons">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Salesperson Commission Payouts</CardTitle>
+                    <p className="text-sm text-muted-foreground">View pending commissions for Salespersons.</p>
+                </CardHeader>
+                <CardContent>
+                    <PayoutsTable 
+                        profiles={salespersons} 
+                        handlePayClick={handlePayClick}
+                        handleView={handleView}
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
+                    />
+                </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="agents">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Agent Commission Payouts</CardTitle>
+                    <p className="text-sm text-muted-foreground">View pending commissions for Agents.</p>
+                </CardHeader>
+                <CardContent>
+                    <PayoutsTable 
+                        profiles={agents} 
+                        handlePayClick={handlePayClick} 
+                        handleView={handleView}
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
+                    />
+                </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="sub_agents">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Sub-Agent Commission Payouts</CardTitle>
+                    <p className="text-sm text-muted-foreground">View pending commissions for Sub-Agents.</p>
+                </CardHeader>
+                <CardContent>
+                    <PayoutsTable 
+                        profiles={subAgents} 
+                        handlePayClick={handlePayClick} 
+                        handleView={handleView}
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
+                    />
+                </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="companies">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Company Commission Payouts</CardTitle>
+                    <p className="text-sm text-muted-foreground">View pending commissions for Companies.</p>
+                </CardHeader>
+                <CardContent>
+                    <PayoutsTable 
+                        profiles={companies}
+                        handlePayClick={handlePayClick} 
+                        handleView={handleView}
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
+                    />
+                </CardContent>
+                </Card>
+            </TabsContent>
+        </div>
       </Tabs>
       
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

@@ -93,26 +93,38 @@ body {
 
 /* Print styles */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
+  body * {
+    visibility: hidden;
   }
-
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0.5in;
+  }
   .print-hidden {
-    display: none !important;
+      display: none !important;
   }
-  
   .card {
     border: none !important;
     box-shadow: none !important;
   }
-
-  .table {
-    width: 100%;
+  body {
+      background: white !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
   }
-
+  [data-state="inactive"] {
+    display: none !important;
+  }
   @page {
     size: auto;
-    margin: 0.5in;
+    margin: 0;
   }
 }
