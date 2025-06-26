@@ -137,11 +137,6 @@ export default function ViewCommissionProfilePage() {
         };
     }, [profile, sales, products]);
     
-    const recalculatedPending = useMemo(() => {
-        if (!profile) return 0;
-        return totalCommissionEarned - (profile.totalCommissionPaid || 0);
-    }, [profile, totalCommissionEarned]);
-
     if (isLoading || !profile) {
         return (
             <div className="flex flex-col gap-6">
@@ -215,7 +210,7 @@ export default function ViewCommissionProfilePage() {
                         <CardContent className="space-y-4 text-lg">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Total Commission Earned</span>
-                                <span className="font-semibold">{formatCurrency(totalCommissionEarned)}</span>
+                                <span className="font-semibold">{formatCurrency(profile.totalCommissionEarned || 0)}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">(-) Total Commission Paid</span>
@@ -224,7 +219,7 @@ export default function ViewCommissionProfilePage() {
                             <Separator />
                             <div className="flex justify-between items-center text-xl font-bold">
                                 <span>Pending Commission</span>
-                                <span className="text-red-600">{formatCurrency(recalculatedPending)}</span>
+                                <span className="text-red-600">{formatCurrency((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0))}</span>
                             </div>
                         </CardContent>
                         <CardFooter>

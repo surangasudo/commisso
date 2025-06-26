@@ -43,9 +43,14 @@ const PayCommissionDialog = ({
     const [note, setNote] = useState('');
     const [isPaying, setIsPaying] = useState(false);
 
+    const pendingAmount = useMemo(() => {
+        if (!profile) return 0;
+        return (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+    }, [profile]);
+
     useEffect(() => {
         if (profile) {
-            setAmount(String(profile.totalCommissionPending || 0));
+            setAmount(String(pendingAmount > 0 ? pendingAmount.toFixed(2) : '0'));
             // Set default payment method based on entity type
             if (profile.entityType === 'Company') {
                 setMethod('cheque');
@@ -54,7 +59,7 @@ const PayCommissionDialog = ({
             }
             setNote('');
         }
-    }, [profile]);
+    }, [profile, pendingAmount]);
     
     const paymentMethods = profile?.entityType === 'Company' 
         ? [{ value: 'cheque', label: 'Cheque' }]
@@ -70,7 +75,7 @@ const PayCommissionDialog = ({
         }
         
         const payAmount = parseFloat(amount);
-        if (payAmount <= 0 || payAmount > (profile.totalCommissionPending || 0)) {
+        if (payAmount <= 0 || payAmount > pendingAmount) {
             toast({ title: 'Error', description: 'Invalid payment amount.', variant: 'destructive' });
             return;
         }
@@ -95,7 +100,7 @@ const PayCommissionDialog = ({
                 <DialogHeader>
                     <DialogTitle>Pay Commission to {profile.name}</DialogTitle>
                     <DialogDescription>
-                        Pending amount: <span className="font-bold">{formatCurrency(profile.totalCommissionPending || 0)}</span>
+                        Pending amount: <span className="font-bold">{formatCurrency(pendingAmount)}</span>
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -156,34 +161,37 @@ const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatC
                                 <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto"/></TableCell>
                             </TableRow>
                         ))
-                    ) : profiles.length > 0 ? profiles.map(profile => (
-                        <TableRow key={profile.id}>
-                            <TableCell className="font-medium">{profile.name}</TableCell>
-                            <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
-                            <TableCell className="text-right font-semibold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</TableCell>
-                            <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
-                            <TableCell className="text-center">
-                                <div className="flex justify-center gap-2">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="h-8 gap-1.5"
-                                      onClick={() => handleView(profile.id)}
-                                    >
-                                        <Eye className="w-4 h-4"/> View
-                                    </Button>
-                                    <Button 
-                                      size="sm" 
-                                      className="h-8 gap-1.5"
-                                      disabled={(profile.totalCommissionPending || 0) <= 0}
-                                      onClick={() => handlePayClick(profile)}
-                                    >
-                                        <Wallet className="w-4 h-4"/> Pay
-                                    </Button>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    )) : (
+                    ) : profiles.length > 0 ? profiles.map(profile => {
+                        const pendingAmount = (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+                        return (
+                            <TableRow key={profile.id}>
+                                <TableCell className="font-medium">{profile.name}</TableCell>
+                                <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
+                                <TableCell className="text-right font-semibold text-red-600">{formatCurrency(pendingAmount)}</TableCell>
+                                <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex justify-center gap-2">
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          className="h-8 gap-1.5"
+                                          onClick={() => handleView(profile.id)}
+                                        >
+                                            <Eye className="w-4 h-4"/> View
+                                        </Button>
+                                        <Button 
+                                          size="sm" 
+                                          className="h-8 gap-1.5"
+                                          disabled={pendingAmount <= 0}
+                                          onClick={() => handlePayClick(profile)}
+                                        >
+                                            <Wallet className="w-4 h-4"/> Pay
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    }) : (
                         <TableRow>
                             <TableCell colSpan={5} className="text-center h-24">No commission profiles found.</TableCell>
                         </TableRow>
@@ -235,7 +243,7 @@ export default function SalesCommissionAgentsPage() {
                         rate: c.rate || 0,
                     })) : [],
                 },
-                totalCommissionPending: docData.totalCommissionPending || 0,
+                totalCommissionEarned: docData.totalCommissionEarned || 0,
                 totalCommissionPaid: docData.totalCommissionPaid || 0,
             } as CommissionProfile;
         });

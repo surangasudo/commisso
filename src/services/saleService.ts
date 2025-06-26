@@ -153,8 +153,8 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
             const agentProfile = agentProfiles.get(agentId);
             if (!agentProfile) continue;
             
-            const currentPending = agentProfile.totalCommissionPending || 0;
-            transaction.update(agentRef, { totalCommissionPending: currentPending + agentCommissionTotals[agentId] });
+            const currentEarned = agentProfile.totalCommissionEarned || 0;
+            transaction.update(agentRef, { totalCommissionEarned: currentEarned + agentCommissionTotals[agentId] });
         }
 
         // 3. Create the new sale document

@@ -28,7 +28,7 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
                     rate: c.rate || 0,
                 })) : [],
             },
-            totalCommissionPending: docData.totalCommissionPending || 0,
+            totalCommissionEarned: docData.totalCommissionEarned || 0,
             totalCommissionPaid: docData.totalCommissionPaid || 0,
       } as CommissionProfile;
   });
@@ -58,7 +58,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
                     rate: c.rate || 0,
                 })) : [],
             },
-            totalCommissionPending: docData.totalCommissionPending || 0,
+            totalCommissionEarned: docData.totalCommissionEarned || 0,
             totalCommissionPaid: docData.totalCommissionPaid || 0,
         } as CommissionProfile;
         return data;
@@ -70,7 +70,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
 export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
     const profileWithDefaults = {
       ...profile,
-      totalCommissionPending: 0,
+      totalCommissionEarned: 0,
       totalCommissionPaid: 0,
     };
     return await addDoc(commissionProfilesCollection, profileWithDefaults);
@@ -97,16 +97,22 @@ export async function payCommission(profileId: string, amountToPay: number): Pro
             }
             
             const currentData = profileDoc.data();
-            const currentPending = currentData.totalCommissionPending || 0;
             const currentPaid = currentData.totalCommissionPaid || 0;
+            const currentEarned = currentData.totalCommissionEarned || 0;
+            const pending = currentEarned - currentPaid;
 
-            const newPending = currentPending - amountToPay;
+            if (amountToPay > pending) {
+                console.warn(`Attempt to pay ${amountToPay} which is more than pending ${pending}. Capping payment.`);
+                amountToPay = pending;
+            }
+
+            if (amountToPay <= 0) {
+                console.warn("Payment amount is zero or less. No transaction will occur.");
+                return;
+            }
+
             const newPaid = currentPaid + amountToPay;
-
-            transaction.update(docRef, { 
-                totalCommissionPending: newPending,
-                totalCommissionPaid: newPaid
-            });
+            transaction.update(docRef, { totalCommissionPaid: newPaid });
         });
     } catch (e) {
         console.error("Transaction failed: ", e);
