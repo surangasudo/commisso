@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Coins, Plus, Pencil, Trash2, CheckCircle } from "lucide-react";
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { useSettings } from "@/hooks/use-settings";
 
 type Currency = {
   id: string;
@@ -28,6 +29,7 @@ const initialCurrencies: Currency[] = [
 ];
 
 export default function MultiCurrencyPage() {
+  const { settings, updateSection } = useSettings();
   const [currencies, setCurrencies] = useState(initialCurrencies);
   
   // Add dialog state
@@ -39,14 +41,26 @@ export default function MultiCurrencyPage() {
   const [editingCurrency, setEditingCurrency] = useState<Currency | null>(null);
   const [editedCurrency, setEditedCurrency] = useState({ name: '', code: '', symbol: '', exchangeRate: '' });
 
-  const baseCurrency = useMemo(() => currencies.find(c => c.isBaseCurrency)!, [currencies]);
+  const baseCurrency = useMemo(() => {
+    const currentBaseCode = settings.business.currency.toUpperCase();
+    const base = currencies.find(c => c.code === currentBaseCode);
+    if (base) return base;
+    return currencies.find(c => c.isBaseCurrency) || currencies[0];
+  }, [settings.business.currency, currencies]);
+
+  useEffect(() => {
+    // Sync local currency list with global base currency
+    const currentBaseCode = settings.business.currency.toUpperCase();
+    setCurrencies(prev => prev.map(c => ({...c, isBaseCurrency: c.code === currentBaseCode})));
+  }, [settings.business.currency]);
+
 
   const handleAddCurrency = () => {
     if (newCurrency.name.trim() && newCurrency.code.trim() && newCurrency.symbol.trim() && newCurrency.exchangeRate) {
       const currencyToAdd: Currency = {
         id: `curr-${Date.now()}`,
         name: newCurrency.name,
-        code: newCurrency.code,
+        code: newCurrency.code.toUpperCase(),
         symbol: newCurrency.symbol,
         exchangeRate: Number(newCurrency.exchangeRate),
       };
@@ -74,7 +88,7 @@ export default function MultiCurrencyPage() {
             c.id === editingCurrency.id 
             ? { ...c, 
                 name: editedCurrency.name,
-                code: editedCurrency.code,
+                code: editedCurrency.code.toUpperCase(),
                 symbol: editedCurrency.symbol,
                 exchangeRate: Number(editedCurrency.exchangeRate)
               } 
@@ -106,6 +120,7 @@ export default function MultiCurrencyPage() {
     });
 
     setCurrencies(updatedCurrencies);
+    updateSection('business', { currency: newBase.code.toLowerCase() });
   };
 
   return (

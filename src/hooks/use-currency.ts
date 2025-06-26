@@ -1,6 +1,7 @@
 
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+
+import { useSettings } from '@/hooks/use-settings';
 
 const getCurrencySymbol = (currencyCode: string): string => {
     const currencyMap: { [key: string]: string } = {
@@ -20,55 +21,21 @@ type CurrencySettings = {
 }
 
 export const useCurrency = (): CurrencySettings & { formatCurrency: (value: number) => string } => {
-    const [settings, setSettings] = useState<CurrencySettings>({ symbol: '$', placement: 'before' });
+    const { settings } = useSettings();
 
-    const loadSettings = useCallback(() => {
-        try {
-            const savedSettings = localStorage.getItem('businessSettings');
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                const businessSettings = parsed.business || {};
-                const currencyCode = businessSettings.currency || 'usd';
-                const currencyPlacement = businessSettings.currencyPlacement || 'before';
-                
-                setSettings({
-                    symbol: getCurrencySymbol(currencyCode),
-                    placement: currencyPlacement,
-                });
-            } else {
-                 setSettings({ symbol: '$', placement: 'before' });
-            }
-        } catch (error) {
-            console.error("Failed to read currency from localStorage", error);
-            setSettings({ symbol: '$', placement: 'before' });
-        }
-    }, []);
+    const currencyCode = settings.business.currency || 'usd';
+    const placement = settings.business.currencyPlacement || 'before';
+    const symbol = getCurrencySymbol(currencyCode);
 
-    useEffect(() => {
-        loadSettings();
-
-        const handleSettingsUpdate = () => {
-            loadSettings();
-        };
-
-        window.addEventListener('storage', handleSettingsUpdate);
-        window.addEventListener('settingsUpdated', handleSettingsUpdate);
-
-        return () => {
-            window.removeEventListener('storage', handleSettingsUpdate);
-            window.removeEventListener('settingsUpdated', handleSettingsUpdate);
-        };
-    }, [loadSettings]);
-    
     const formatCurrency = (value: number) => {
         if (typeof value !== 'number') {
             value = 0;
         }
-        if (settings.placement === 'after') {
-            return `${value.toFixed(2)} ${settings.symbol}`;
+        if (placement === 'after') {
+            return `${value.toFixed(2)} ${symbol}`;
         }
-        return `${settings.symbol}${value.toFixed(2)}`;
+        return `${symbol}${value.toFixed(2)}`;
     };
 
-    return { ...settings, formatCurrency };
+    return { symbol, placement, formatCurrency };
 };
