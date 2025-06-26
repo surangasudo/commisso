@@ -1,9 +1,11 @@
 
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet } from 'lucide-react';
+import { onSnapshot, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -13,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { getCommissionProfiles, deleteCommissionProfile, payCommission } from '@/services/commissionService';
+import { deleteCommissionProfile, payCommission } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +52,7 @@ const PayCommissionDialog = ({
             } else {
                 setMethod('cash');
             }
+            setNote('');
         }
     }, [profile]);
     
@@ -195,23 +198,45 @@ export default function SalesCommissionAgentsPage() {
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [profileToPay, setProfileToPay] = useState<CommissionProfile | null>(null);
 
-
-  const fetchProfiles = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getCommissionProfiles();
-      setProfiles(data);
-    } catch (error) {
-      console.error("Failed to fetch commission profiles:", error);
-      toast({ title: 'Error', description: 'Could not load commission profiles.', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
+    setIsLoading(true);
+    const commissionProfilesCollectionRef = collection(db, 'commissionProfiles');
+
+    const unsubscribe = onSnapshot(commissionProfilesCollectionRef, (snapshot) => {
+        const data = snapshot.docs.map(doc => {
+            const docData = doc.data();
+            const commissionData = docData.commission || {};
+            const categoriesData = commissionData.categories || [];
+
+            return {
+                id: doc.id,
+                name: docData.name || '',
+                entityType: docData.entityType || '',
+                phone: docData.phone || '',
+                email: docData.email || '',
+                bankDetails: docData.bankDetails || '',
+                commission: {
+                    overall: commissionData.overall || 0,
+                    categories: Array.isArray(categoriesData) ? categoriesData.map(c => ({
+                        category: c.category || '',
+                        rate: c.rate || 0,
+                    })) : [],
+                },
+                totalCommissionPending: docData.totalCommissionPending || 0,
+                totalCommissionPaid: docData.totalCommissionPaid || 0,
+            } as CommissionProfile;
+        });
+        setProfiles(data);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching commission profiles in real-time:", error);
+        toast({ title: 'Error', description: 'Could not load commission profiles in real-time.', variant: 'destructive' });
+        setIsLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [toast]);
   
   const agentsAndSubAgents = useMemo(() => profiles.filter(p => p.entityType === 'Agent' || p.entityType === 'Sub-Agent'), [profiles]);
   const companies = useMemo(() => profiles.filter(p => p.entityType === 'Company'), [profiles]);
@@ -233,7 +258,7 @@ export default function SalesCommissionAgentsPage() {
     if (profileToDelete) {
       try {
         await deleteCommissionProfile(profileToDelete.id);
-        setProfiles(profiles.filter(p => p.id !== profileToDelete.id));
+        // State will update via the listener, no need to manually filter
         toast({ title: 'Success', description: `Profile for ${profileToDelete.name} deleted.` });
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to delete profile.', variant: 'destructive' });
@@ -253,7 +278,7 @@ export default function SalesCommissionAgentsPage() {
   const handlePaymentSuccess = () => {
       setIsPayDialogOpen(false);
       setProfileToPay(null);
-      fetchProfiles();
+      // The listener will handle updating the state automatically.
   }
 
   const getExportData = () => profiles.map(p => ({

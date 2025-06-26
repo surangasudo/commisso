@@ -14,9 +14,6 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
       const commissionData = docData.commission || {};
       const categoriesData = commissionData.categories || [];
 
-      // Add mock pending commission for demonstration
-      const mockPending = (docData.name?.length || 5) * 123.45;
-
       return {
             id: doc.id,
             name: docData.name || '',
@@ -31,7 +28,7 @@ export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
                     rate: c.rate || 0,
                 })) : [],
             },
-            totalCommissionPending: docData.totalCommissionPending ?? mockPending,
+            totalCommissionPending: docData.totalCommissionPending || 0,
             totalCommissionPaid: docData.totalCommissionPaid || 0,
       } as CommissionProfile;
   });
@@ -47,8 +44,6 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         const commissionData = docData.commission || {};
         const categoriesData = commissionData.categories || [];
         
-        const mockPending = (docData.name?.length || 5) * 123.45;
-
         const data = {
             id: docSnap.id,
             name: docData.name || '',
@@ -63,7 +58,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
                     rate: c.rate || 0,
                 })) : [],
             },
-            totalCommissionPending: docData.totalCommissionPending ?? mockPending,
+            totalCommissionPending: docData.totalCommissionPending || 0,
             totalCommissionPaid: docData.totalCommissionPaid || 0,
         } as CommissionProfile;
         return data;
