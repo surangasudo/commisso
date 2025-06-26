@@ -15,6 +15,8 @@ import { getSales } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/use-currency';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -243,34 +245,58 @@ export default function ViewCommissionProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
                     <CardDescription>
-                        Individual sales that have generated commission for this profile.
+                        Click on a sale to see the items in the invoice.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Invoice No.</TableHead>
-                                <TableHead>Customer</TableHead>
-                                <TableHead className="text-right">Sale Amount</TableHead>
-                                <TableHead className="text-right">Commission Earned</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {commissionableSales.length > 0 ? commissionableSales.map(sale => (
-                                <TableRow key={sale.id}>
-                                    <TableCell>{sale.date}</TableCell>
-                                    <TableCell>{sale.invoiceNo}</TableCell>
-                                    <TableCell>{sale.customerName}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
-                                    <TableCell className="text-right font-semibold">{formatCurrency(sale.commissionEarned)}</TableCell>
-                                </TableRow>
-                            )) : <TableRow><TableCell colSpan={5} className="text-center h-24">No sales data available for this profile.</TableCell></TableRow>}
-                        </TableBody>
-                    </Table>
+                    <div className="grid grid-cols-5 gap-4 w-full text-sm font-semibold px-4 pb-2 border-b">
+                        <span className="col-span-1">Date</span>
+                        <span className="col-span-1">Invoice No.</span>
+                        <span className="col-span-1">Customer</span>
+                        <span className="text-right">Sale Amount</span>
+                        <span className="text-right">Commission Earned</span>
+                    </div>
+                    <Accordion type="single" collapsible className="w-full">
+                        {commissionableSales.length > 0 ? (
+                            commissionableSales.map(sale => {
+                                const fullSale = sales.find(s => s.id === sale.id);
+                                const saleItems = fullSale?.items || [];
+
+                                return (
+                                    <AccordionItem value={sale.id} key={sale.id} className="border-b">
+                                        <AccordionTrigger className="hover:bg-accent/50 px-4 py-2 rounded-md [&[data-state=open]]:bg-accent/50">
+                                            <div className="grid grid-cols-5 gap-4 w-full text-sm text-left">
+                                                <span className="truncate col-span-1">{sale.date}</span>
+                                                <span className="font-mono col-span-1">{sale.invoiceNo}</span>
+                                                <span className="truncate col-span-1">{sale.customerName}</span>
+                                                <span className="text-right">{formatCurrency(sale.totalAmount)}</span>
+                                                <span className="text-right font-semibold">{formatCurrency(sale.commissionEarned)}</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent>
+                                            <div className="pl-8 pr-4 py-3 bg-muted/30">
+                                                <h4 className="font-semibold text-xs mb-2 uppercase text-muted-foreground">Invoice Items:</h4>
+                                                <ul className="space-y-1 text-sm">
+                                                    {saleItems.map((item, index) => {
+                                                        const product = products.find(p => p.id === item.productId);
+                                                        return (
+                                                            <li key={index} className="flex justify-between items-center">
+                                                                <span className="text-muted-foreground">{item.quantity} x {product?.name || 'Unknown'}</span>
+                                                                <span className="text-muted-foreground">@{formatCurrency(item.unitPrice)}</span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                );
+                            })
+                        ) : <div className="text-center py-10 text-muted-foreground">No sales data available for this profile.</div>}
+                    </Accordion>
                 </CardContent>
             </Card>
         </div>
     );
 }
+
