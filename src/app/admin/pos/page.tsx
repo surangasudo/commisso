@@ -688,6 +688,13 @@ export default function PosPage() {
     );
   }, [searchTerm, products]);
 
+  const searchResults = useMemo(() => {
+      if (!searchTerm) return [];
+      return products.filter((p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+      ).slice(0, 5);
+  }, [searchTerm, products]);
+
   const addToCart = (product: DetailedProduct) => {
     setCart((currentCart) => {
       const existingItem = currentCart.find(
@@ -1162,14 +1169,17 @@ export default function PosPage() {
                                 />
                                 <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
                             </div>
-                             {!posSettings.dontShowProductSuggestion && searchResults.length > 0 && (
+                            {!posSettings.dontShowProductSuggestion && searchTerm && searchResults.length > 0 && (
                                 <div className="relative">
                                 <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg -mt-1 top-full">
                                     {searchResults.map((product) => (
                                     <div
                                         key={product.id}
                                         className="p-2 hover:bg-accent cursor-pointer text-sm"
-                                        onClick={() => addToCart(product)}
+                                        onClick={() => {
+                                            addToCart(product);
+                                            setSearchTerm('');
+                                        }}
                                     >
                                         {product.name} ({product.sku})
                                     </div>
