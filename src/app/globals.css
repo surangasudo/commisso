@@ -99,6 +99,7 @@ body {
   .printable-area, .printable-area * {
     visibility: visible;
   }
+  /* Style for full-page reports */
   .printable-area {
     position: absolute;
     left: 0;
@@ -106,6 +107,18 @@ body {
     width: 100%;
     margin: 0;
     padding: 0.5in;
+  }
+  /* Specific style for the small POS receipt */
+  .receipt-printable-area, .receipt-printable-area * {
+    visibility: visible;
+  }
+  .receipt-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: auto; /* Let the content define the width */
+    margin: 0;
+    padding: 0;
   }
   .print-hidden {
       display: none !important;
