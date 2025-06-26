@@ -90,15 +90,21 @@ export default function ViewCommissionProfilePage() {
         fetchData();
     }, [id, router, toast]);
     
-    const { commissionBreakdown, customerContributions, commissionableSales } = useMemo(() => {
+    const { commissionBreakdown, customerContributions, commissionableSales, otherSalesData } = useMemo(() => {
         if (!profile || !sales.length || !products.length) {
-            return { commissionBreakdown: [], customerContributions: [], commissionableSales: [] };
+            return { commissionBreakdown: [], customerContributions: [], commissionableSales: [], otherSalesData: null };
         }
 
         const productMap = new Map(products.map(p => [p.id, p]));
         const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
 
+        // Initialize categoryData with only categories from the profile
         const categoryData: { [key: string]: { totalSales: number; commissionEarned: number } } = {};
+        profile.commission.categories?.forEach(c => {
+            categoryData[c.category] = { totalSales: 0, commissionEarned: 0 };
+        });
+
+        const otherSalesSummary = { totalSales: 0, commissionEarned: 0 };
         const customerData: { [key: string]: { totalSpent: number } } = {};
         const commissionableSalesResult: CommissionableSale[] = [];
 
@@ -115,22 +121,26 @@ export default function ViewCommissionProfilePage() {
 
                 const itemValue = item.quantity * item.unitPrice;
                 
-                const category = product.category || 'Uncategorized';
-                if (!categoryData[category]) {
-                    categoryData[category] = { totalSales: 0, commissionEarned: 0 };
+                const category = product.category;
+                const categoryRateData = profile.commission.categories?.find(c => c.category === category);
+
+                if (categoryRateData) {
+                    // This sale item falls into a specific commission category
+                    const commissionAmount = itemValue * (categoryRateData.rate / 100);
+                    categoryData[categoryRateData.category].totalSales += itemValue;
+                    categoryData[categoryRateData.category].commissionEarned += commissionAmount;
+                    commissionForThisSale += commissionAmount;
+                } else {
+                    // This sale item falls under the overall commission rate
+                    const commissionAmount = itemValue * (profile.commission.overall / 100);
+                    otherSalesSummary.totalSales += itemValue;
+                    otherSalesSummary.commissionEarned += commissionAmount;
+                    commissionForThisSale += commissionAmount;
                 }
-
-                const categoryRate = profile.commission.categories?.find(c => c.category === category)?.rate;
-                const commissionRate = categoryRate !== undefined ? categoryRate : profile.commission.overall;
-                const commissionAmount = itemValue * (commissionRate / 100);
-
-                categoryData[category].totalSales += itemValue;
-                categoryData[category].commissionEarned += commissionAmount;
-                commissionForThisSale += commissionAmount;
             }
 
-            if(sale.items.length > 0 && sale.totalAmount > 0){
-                 commissionableSalesResult.push({
+            if (sale.items.length > 0 && sale.totalAmount > 0) {
+                commissionableSalesResult.push({
                     id: sale.id,
                     date: new Date(sale.date).toLocaleString(),
                     invoiceNo: sale.invoiceNo,
@@ -150,7 +160,12 @@ export default function ViewCommissionProfilePage() {
             .sort((a,b) => b.totalSpent - a.totalSpent);
 
 
-        return { commissionBreakdown: commissionBreakdownResult, customerContributions: customerContributionsResult, commissionableSales: commissionableSalesResult.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) };
+        return { 
+            commissionBreakdown: commissionBreakdownResult, 
+            customerContributions: customerContributionsResult, 
+            commissionableSales: commissionableSalesResult.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+            otherSalesData: otherSalesSummary 
+        };
     }, [profile, sales, products]);
     
     if (isLoading || !profile) {
@@ -239,9 +254,21 @@ export default function ViewCommissionProfilePage() {
                                         <TableCell className="text-right">{formatCurrency(item.totalSales)}</TableCell>
                                         <TableCell className="text-right font-semibold">{formatCurrency(item.commissionEarned)}</TableCell>
                                     </TableRow>
-                                )) : <TableRow><TableCell colSpan={3} className="text-center h-24">No commission data available.</TableCell></TableRow>}
+                                )) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-12">No sales with category-specific commissions.</TableCell>
+                                    </TableRow>
+                                )}
+                                
+                                {otherSalesData && otherSalesData.totalSales > 0 && (
+                                     <TableRow>
+                                        <TableCell>Other Sales (at {profile.commission.overall}% overall rate)</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(otherSalesData.totalSales)}</TableCell>
+                                        <TableCell className="text-right font-semibold">{formatCurrency(otherSalesData.commissionEarned)}</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
-                            <TableFooter><TableRow><TableCell colSpan={2} className="text-right font-bold">Total</TableCell><TableCell className="text-right font-bold">{formatCurrency(commissionBreakdown.reduce((acc, item) => acc + item.commissionEarned, 0))}</TableCell></TableRow></TableFooter>
+                            <TableFooter><TableRow><TableCell colSpan={2} className="text-right font-bold">Total Commission Earned</TableCell><TableCell className="text-right font-bold">{formatCurrency(commissionBreakdown.reduce((acc, item) => acc + item.commissionEarned, 0) + (otherSalesData?.commissionEarned || 0))}</TableCell></TableRow></TableFooter>
                         </Table>
                     </CardContent>
                 </Card>
@@ -299,4 +326,3 @@ export default function ViewCommissionProfilePage() {
         </div>
     );
 }
-
