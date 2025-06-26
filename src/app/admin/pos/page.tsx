@@ -43,7 +43,7 @@ import { getProducts } from '@/services/productService';
 import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
 import { addSale, getSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
-import { getCommissionProfiles } from '@/services/commissionService';
+import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
 import { getCustomers, addCustomer } from '@/services/customerService';
 import {
   Select,
@@ -392,6 +392,7 @@ const CommissionSelector = ({
         <div className="flex items-center gap-2">
           <div className="flex-1 h-10 px-3 py-2 text-sm border rounded-md bg-muted flex items-center">
             {selectedProfile.name}
+            <Badge variant="secondary" className="ml-2">{selectedProfile.entityType}</Badge>
           </div>
           <Button variant="ghost" size="icon" className="text-red-500" onClick={onRemove}>
             <X className="h-4 w-4" />
@@ -408,7 +409,7 @@ const CommissionSelector = ({
         <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
         <Input
           id={`${entityType}-search`}
-          placeholder={`Search for ${label}...`}
+          placeholder={`Search ${label}...`}
           className="pl-10 w-full"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -425,7 +426,7 @@ const CommissionSelector = ({
                   setSearchTerm('');
                 }}
               >
-                <div>{profile.name}</div>
+                <div>{profile.name} <Badge variant="secondary">{profile.entityType}</Badge></div>
                 <div className="text-xs text-muted-foreground">{profile.phone}</div>
               </div>
             ))}
@@ -434,6 +435,72 @@ const CommissionSelector = ({
       </div>
     </div>
   );
+};
+
+const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfileAdded }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    profileType: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | '';
+    onProfileAdded: () => void;
+}) => {
+    const { toast } = useToast();
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+
+    useEffect(() => {
+        if (open) {
+            setName('');
+            setPhone('');
+        }
+    }, [open]);
+
+    const handleSave = async () => {
+        if (!name || !phone || !profileType) {
+            toast({ title: 'Validation Error', description: 'Name and Phone are required.', variant: 'destructive' });
+            return;
+        }
+
+        const newProfile: Omit<CommissionProfile, 'id'> = {
+            name,
+            entityType: profileType,
+            phone,
+            commission: { overall: 0 } // Default commission
+        };
+
+        try {
+            await addCommissionProfile(newProfile);
+            toast({ title: 'Success', description: `${profileType} has been added.` });
+            onProfileAdded();
+            onOpenChange(false);
+        } catch (error) {
+            console.error(`Failed to add ${profileType}:`, error);
+            toast({ title: 'Error', description: `Failed to add ${profileType}.`, variant: 'destructive' });
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Add New {profileType}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="profile-name">Name *</Label>
+                        <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={`${profileType} Name`} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="profile-phone">Phone Number *</Label>
+                        <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave}>Save</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 };
 
 
@@ -451,6 +518,10 @@ export default function PosPage() {
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', email: '' });
+  
+  const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
+  const [profileTypeToAdd, setProfileTypeToAdd] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
+
 
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
@@ -489,8 +560,13 @@ export default function PosPage() {
 
 
   const fetchAndCalculateStock = useCallback(async () => {
-      try {
+      // Set loading to true only if it's the initial fetch.
+      // For re-fetches, we can update in the background.
+      if (products.length === 0) {
         setIsLoading(true);
+      }
+        
+      try {
         const [productsData, salesData, purchasesData, profilesData, customersData] = await Promise.all([
           getProducts(),
           getSales(),
@@ -531,7 +607,7 @@ export default function PosPage() {
       } finally {
         setIsLoading(false);
       }
-    }, [toast]);
+    }, [toast, products.length]);
 
   useEffect(() => {
     fetchAndCalculateStock();
@@ -843,6 +919,11 @@ export default function PosPage() {
             });
         }
     };
+    
+    const handleOpenAddProfileDialog = (type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson') => {
+        setProfileTypeToAdd(type);
+        setIsAddProfileOpen(true);
+    };
 
   return (
     <TooltipProvider>
@@ -921,43 +1002,62 @@ export default function PosPage() {
                             </DialogContent>
                         </Dialog>
                     </div>
+                     <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                            <CommissionSelector
+                                entityType="Agent"
+                                label="Agent"
+                                profiles={commissionProfiles}
+                                selectedProfile={selectedAgent}
+                                onSelect={setSelectedAgent}
+                                onRemove={() => setSelectedAgent(null)}
+                            />
+                        </div>
+                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
+                    </div>
                 </div>
                  <Separator className="my-4" />
                  <div className="space-y-1 mb-4">
-                    <h3 className="text-sm font-medium text-muted-foreground">Commission Assignment</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <CommissionSelector
-                            entityType="Agent"
-                            label="Agent"
-                            profiles={commissionProfiles}
-                            selectedProfile={selectedAgent}
-                            onSelect={setSelectedAgent}
-                            onRemove={() => setSelectedAgent(null)}
-                        />
-                         <CommissionSelector
-                            entityType="Salesperson"
-                            label="Salesperson"
-                            profiles={commissionProfiles}
-                            selectedProfile={selectedSalesperson}
-                            onSelect={setSelectedSalesperson}
-                            onRemove={() => setSelectedSalesperson(null)}
-                        />
-                        <CommissionSelector
-                            entityType="Sub-Agent"
-                            label="Sub Agent"
-                            profiles={commissionProfiles}
-                            selectedProfile={selectedSubAgent}
-                            onSelect={setSelectedSubAgent}
-                            onRemove={() => setSelectedSubAgent(null)}
-                        />
-                        <CommissionSelector
-                            entityType="Company"
-                            label="Company"
-                            profiles={commissionProfiles}
-                            selectedProfile={selectedCompany}
-                            onSelect={setSelectedCompany}
-                            onRemove={() => setSelectedCompany(null)}
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <CommissionSelector
+                                    entityType="Salesperson"
+                                    label="Salesperson"
+                                    profiles={commissionProfiles}
+                                    selectedProfile={selectedSalesperson}
+                                    onSelect={setSelectedSalesperson}
+                                    onRemove={() => setSelectedSalesperson(null)}
+                                />
+                            </div>
+                           <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <CommissionSelector
+                                    entityType="Sub-Agent"
+                                    label="Sub"
+                                    profiles={commissionProfiles}
+                                    selectedProfile={selectedSubAgent}
+                                    onSelect={setSelectedSubAgent}
+                                    onRemove={() => setSelectedSubAgent(null)}
+                                />
+                            </div>
+                             <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <CommissionSelector
+                                    entityType="Company"
+                                    label="Com"
+                                    profiles={commissionProfiles}
+                                    selectedProfile={selectedCompany}
+                                    onSelect={setSelectedCompany}
+                                    onRemove={() => setSelectedCompany(null)}
+                                />
+                            </div>
+                           <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
+                        </div>
                     </div>
                 </div>
                  <Separator className="my-4" />
@@ -1201,6 +1301,12 @@ export default function PosPage() {
         onOpenChange={setIsCashPaymentOpen}
         totalPayable={totalPayable}
         onFinalize={handleFinalizeCashPayment}
+      />
+       <AddCommissionProfileDialog
+        open={isAddProfileOpen}
+        onOpenChange={setIsAddProfileOpen}
+        profileType={profileTypeToAdd}
+        onProfileAdded={fetchAndCalculateStock}
       />
       <AppFooter />
     </div>
