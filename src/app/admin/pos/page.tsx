@@ -852,8 +852,16 @@ export default function PosPage() {
                             onRemove={() => setSelectedAgent(null)}
                         />
                         <CommissionSelector
+                            entityType="Salesperson"
+                            label="Salesperson"
+                            profiles={commissionProfiles}
+                            selectedProfile={selectedSalesperson}
+                            onSelect={setSelectedSalesperson}
+                            onRemove={() => setSelectedSalesperson(null)}
+                        />
+                        <CommissionSelector
                             entityType="Sub-Agent"
-                            label="Sub-Agent"
+                            label="Sub Agent"
                             profiles={commissionProfiles}
                             selectedProfile={selectedSubAgent}
                             onSelect={setSelectedSubAgent}
@@ -866,14 +874,6 @@ export default function PosPage() {
                             selectedProfile={selectedCompany}
                             onSelect={setSelectedCompany}
                             onRemove={() => setSelectedCompany(null)}
-                        />
-                        <CommissionSelector
-                            entityType="Salesperson"
-                            label="Salesperson"
-                            profiles={commissionProfiles}
-                            selectedProfile={selectedSalesperson}
-                            onSelect={setSelectedSalesperson}
-                            onRemove={() => setSelectedSalesperson(null)}
                         />
                     </div>
                 </div>
