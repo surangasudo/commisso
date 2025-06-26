@@ -1,7 +1,7 @@
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Info } from "lucide-react";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,9 @@ import { useToast } from "@/hooks/use-toast";
 import { addProduct } from '@/services/productService';
 import { type DetailedProduct } from '@/lib/data';
 import { FirebaseError } from 'firebase/app';
+import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
+import { getBrands, type Brand } from '@/services/brandService';
+
 
 const initialProductState: Partial<DetailedProduct> = {
     name: '',
@@ -34,6 +37,24 @@ export default function AddProductPage() {
   const { toast } = useToast();
   const [product, setProduct] = useState(initialProductState);
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [catData, brandData] = await Promise.all([
+            getProductCategories(),
+            getBrands()
+        ]);
+        setCategories(catData);
+        setBrands(brandData);
+      } catch (error) {
+        toast({ title: "Error", description: "Could not load categories or brands.", variant: "destructive" });
+      }
+    }
+    fetchData();
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value, type } = e.target;
@@ -161,10 +182,9 @@ export default function AddProductPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="Nike">Nike</SelectItem>
-                                    <SelectItem value="Puma">Puma</SelectItem>
-                                    <SelectItem value="Oreo">Oreo</SelectItem>
-                                    <SelectItem value="Bowflex">Bowflex</SelectItem>
+                                    {brands.map(brand => (
+                                        <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -176,9 +196,9 @@ export default function AddProductPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="Accessories -- Shoes">Accessories -- Shoes</SelectItem>
-                                    <SelectItem value="Food & Grocery">Food & Grocery</SelectItem>
-                                    <SelectItem value="Sports -- Exercise & Fitness">Sports -- Exercise & Fitness</SelectItem>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

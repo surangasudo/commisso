@@ -15,6 +15,9 @@ import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { FirebaseError } from "firebase/app";
+import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
+import { getBrands, type Brand } from '@/services/brandService';
+
 
 export default function EditProductPage() {
   const { id } = useParams();
@@ -22,11 +25,21 @@ export default function EditProductPage() {
   const { toast } = useToast();
   const [product, setProduct] = useState<DetailedProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   const fetchProduct = useCallback(async (productId: string) => {
     setIsLoading(true);
     try {
-      const productToEdit = await getProduct(productId);
+      const [productToEdit, catData, brandData] = await Promise.all([
+          getProduct(productId),
+          getProductCategories(),
+          getBrands()
+      ]);
+
+      setCategories(catData);
+      setBrands(brandData);
+      
       if (productToEdit) {
         setProduct(productToEdit);
       } else {
@@ -185,10 +198,9 @@ export default function EditProductPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="Nike">Nike</SelectItem>
-                                    <SelectItem value="Puma">Puma</SelectItem>
-                                    <SelectItem value="Oreo">Oreo</SelectItem>
-                                    <SelectItem value="Bowflex">Bowflex</SelectItem>
+                                    {brands.map(brand => (
+                                        <SelectItem key={brand.id} value={brand.name}>{brand.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -200,9 +212,9 @@ export default function EditProductPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="Accessories -- Shoes">Accessories -- Shoes</SelectItem>
-                                    <SelectItem value="Food & Grocery">Food & Grocery</SelectItem>
-                                    <SelectItem value="Sports -- Exercise & Fitness">Sports -- Exercise & Fitness</SelectItem>
+                                    {categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
