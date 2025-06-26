@@ -728,6 +728,109 @@ const SaleSettingsForm = ({ settings: initialSettingsData, updateSettings }: { s
     )
 };
 
+const PosSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['pos'], updateSettings: (newValues: Partial<AllSettings['pos']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleCheckboxChange = (id: keyof AllSettings['pos'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'POS Settings Updated',
+            description: 'Your Point of Sale settings have been saved successfully.',
+        });
+    };
+
+    const shortcutFields = [
+        { id: 'expressCheckout', label: 'Express Checkout' },
+        { id: 'payAndCheckout', label: 'Pay & Checkout' },
+        { id: 'draftShortcut', label: 'Draft' },
+        { id: 'cancelShortcut', label: 'Cancel Transaction' },
+        { id: 'goToQuantity', label: 'Go to quantity field' },
+        { id: 'weighingScaleShortcut', label: 'Weighing Scale' },
+        { id: 'editDiscount', label: 'Edit Discount' },
+        { id: 'editOrderTax', label: 'Edit Order Tax' },
+        { id: 'addPaymentRow', label: 'Add Payment Row' },
+        { id: 'finalizePayment', label: 'Finalize Payment' },
+        { id: 'addNewProduct', label: 'Add new product' },
+    ];
+    
+    const generalToggles = [
+        { id: 'disableMultiplePay', label: 'Disable Multiple Pay' },
+        { id: 'disableDraft', label: 'Disable Draft' },
+        { id: 'disableExpressCheckout', label: 'Disable Express Checkout' },
+        { id: 'disableDiscount', label: 'Disable Discount' },
+        { id: 'disableSuspendSale', label: 'Disable Suspend Sale' },
+        { id: 'disableCreditSaleButton', label: 'Disable Credit Sale button' },
+        { id: 'dontShowProductSuggestion', label: 'Don\'t show product suggestion' },
+        { id: 'dontShowRecentTransactions', label: 'Don\'t show recent transactions' },
+        { id: 'enableTransactionDate', label: 'Enable transaction date in POS screen' },
+        { id: 'isServiceStaffRequired', label: 'Is service staff required' },
+        { id: 'subtotalEditable', label: 'Make Subtotal Editable' },
+        { id: 'enableServiceStaffInProductLine', label: 'Enable service staff in product line' },
+        { id: 'showInvoiceScheme', label: 'Show Invoice Scheme' },
+        { id: 'showInvoiceLayoutDropdown', label: 'Show Invoice Layout Dropdown' },
+        { id: 'showPricingTooltip', label: 'Show pricing tooltip' },
+        { id: 'printInvoiceOnSuspend', label: 'Print invoice on suspend' }
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Point of Sale Settings</CardTitle>
+                <CardDescription>Customize the behavior and layout of your POS screen.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="multiple" defaultValue={['general', 'shortcuts']} className="w-full">
+                    <AccordionItem value="general">
+                        <AccordionTrigger className="text-base font-semibold">General Settings</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+                                {generalToggles.map(toggle => (
+                                     <div key={toggle.id} className="flex items-center space-x-2">
+                                        <Checkbox id={toggle.id} checked={settings[toggle.id as keyof typeof settings]} onCheckedChange={(checked) => handleCheckboxChange(toggle.id as keyof AllSettings['pos'], checked)} />
+                                        <Label htmlFor={toggle.id} className="font-normal">{toggle.label}</Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                    
+                    <AccordionItem value="shortcuts">
+                        <AccordionTrigger className="text-base font-semibold">Keyboard Shortcuts</AccordionTrigger>
+                        <AccordionContent>
+                            <p className="text-sm text-muted-foreground pt-2 pb-4">Define keyboard shortcuts for common POS actions. Use formats like `shift+e`.</p>
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 pt-4">
+                                 {shortcutFields.map(field => (
+                                    <div key={field.id} className="space-y-2">
+                                        <Label htmlFor={field.id}>{field.label}:</Label>
+                                        <Input id={field.id} value={settings[field.id as keyof typeof settings] as string} onChange={handleInputChange} />
+                                    </div>
+                                 ))}
+                             </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
@@ -789,7 +892,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="sale">
                             <SaleSettingsForm settings={settings.sale} updateSettings={(newValues) => updateSection('sale', newValues)} />
                         </TabsContent>
-                        <TabsContent value="pos"><UnimplementedForm title="POS Settings" /></TabsContent>
+                        <TabsContent value="pos">
+                            <PosSettingsForm settings={settings.pos} updateSettings={(newValues) => updateSection('pos', newValues)} />
+                        </TabsContent>
                         <TabsContent value="purchases"><UnimplementedForm title="Purchase Settings" /></TabsContent>
                         <TabsContent value="payment"><UnimplementedForm title="Payment Settings" /></TabsContent>
                         <TabsContent value="dashboard"><UnimplementedForm title="Dashboard Settings" /></TabsContent>
