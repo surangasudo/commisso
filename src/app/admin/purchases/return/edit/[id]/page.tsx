@@ -5,7 +5,7 @@ import { Pencil } from "lucide-react";
 import { useParams } from 'next/navigation';
 
 export default function EditPurchaseReturnPage() {
-  const { id } = React.use(useParams());
+  const { id } = useParams();
 
   return (
     <div className="flex flex-col gap-6">
