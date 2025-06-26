@@ -10,13 +10,9 @@ import { type CommissionProfile, type Sale, type DetailedProduct } from '@/lib/d
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { getCommissionProfile } from '@/services/commissionService';
-import { getSales } from '@/services/saleService';
-import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/use-currency';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const DetailItem = ({ icon, label, value, children }: { icon: React.ElementType, label: string, value?: string | undefined, children?: React.ReactNode }) => (
     <div className="flex items-start gap-4">
@@ -40,47 +36,59 @@ type CommissionableSale = {
     commissionEarned: number;
 };
 
+// --- MOCK DATA FOR DEMONSTRATION ---
+const mockProfileData: CommissionProfile = {
+  id: 'comm-1',
+  name: 'Ura',
+  entityType: 'Agent',
+  phone: '123-456-7890',
+  email: 'ura@example.com',
+  bankDetails: 'N/A',
+  commission: { overall: 30, categories: [] },
+  totalCommissionPaid: 0,
+  totalCommissionPending: 0, // This will be recalculated
+};
+
+const mockProductsData: DetailedProduct[] = [
+  { id: 'prod-mock-1', name: 'Pro-Grade Laptop', sku: 'LP-PRO-01', unitPurchasePrice: 5328, sellingPrice: 20000, image: '', businessLocation: 'Awesome Shop', currentStock: 5, productType: 'Single', category: 'Electronics', brand: 'Generic', tax: '', unit: 'pcs' },
+  { id: 'prod-mock-2', name: '4K Projector', sku: 'PRJ-4K-01', unitPurchasePrice: 5000, sellingPrice: 15000, image: '', businessLocation: 'Awesome Shop', currentStock: 10, productType: 'Single', category: 'Electronics', brand: 'Generic', tax: '', unit: 'pcs' },
+];
+
+const mockSalesData: Sale[] = [
+  {
+    id: 'sale-mock-1',
+    date: '2025-07-20T11:00:00Z',
+    invoiceNo: 'INV-DEMO-001',
+    customerName: 'Creative Studios Inc.',
+    commissionAgentIds: ['comm-1'],
+    totalAmount: 20000,
+    items: [{ productId: 'prod-mock-1', quantity: 1, unitPrice: 20000, tax: 0 }],
+    contactNumber: '555-0111', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Card', totalPaid: 20000, sellDue: 0, sellReturnDue: 0, shippingStatus: 'Delivered', totalItems: 1, addedBy: 'Admin', sellNote: null, staffNote: null, shippingDetails: null,
+  },
+  {
+    id: 'sale-mock-2',
+    date: '2025-07-22T15:45:00Z',
+    invoiceNo: 'INV-DEMO-002',
+    customerName: 'Home Cinema Enthusiasts',
+    commissionAgentIds: ['comm-1'],
+    totalAmount: 15000,
+    items: [{ productId: 'prod-mock-2', quantity: 1, unitPrice: 15000, tax: 0 }],
+    contactNumber: '555-0112', location: 'Awesome Shop', paymentStatus: 'Paid', paymentMethod: 'Cash', totalPaid: 15000, sellDue: 0, sellReturnDue: 0, shippingStatus: 'Delivered', totalItems: 1, addedBy: 'Admin', sellNote: null, staffNote: null, shippingDetails: null,
+  },
+];
+// --- END MOCK DATA ---
+
 export default function ViewCommissionProfilePage() {
-    const params = useParams();
     const router = useRouter();
-    const { id } = params;
-    const { toast } = useToast();
+    const { id } = useParams();
     const { formatCurrency } = useCurrency();
 
-    const [profile, setProfile] = useState<CommissionProfile | null>(null);
-    const [sales, setSales] = useState<Sale[]>([]);
-    const [products, setProducts] = useState<DetailedProduct[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    // Use mock data directly instead of fetching
+    const [profile] = useState<CommissionProfile | null>(mockProfileData);
+    const [sales] = useState<Sale[]>(mockSalesData);
+    const [products] = useState<DetailedProduct[]>(mockProductsData);
+    const [isLoading] = useState(false); // Set loading to false as data is hardcoded
 
-    useEffect(() => {
-        if (typeof id !== 'string') return;
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const [profileData, salesData, productsData] = await Promise.all([
-                    getCommissionProfile(id),
-                    getSales(),
-                    getProducts()
-                ]);
-
-                if (profileData) {
-                    setProfile(profileData);
-                    setSales(salesData);
-                    setProducts(productsData);
-                } else {
-                    toast({ title: "Error", description: "Commission profile not found.", variant: "destructive" });
-                    router.push('/admin/sales-commission-agents');
-                }
-            } catch (error) {
-                console.error("Failed to fetch profile details:", error);
-                toast({ title: "Error", description: "Failed to load profile data.", variant: "destructive" });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
-    }, [id, router, toast]);
-    
     const { commissionableSales } = useMemo(() => {
         if (!profile || !sales.length || !products.length) {
             return { commissionableSales: [] };
@@ -240,7 +248,7 @@ export default function ViewCommissionProfilePage() {
                         <span className="text-right">Sale Amount</span>
                         <span className="text-right">Commission Earned</span>
                     </div>
-                    <Accordion type="single" collapsible className="w-full">
+                    <Accordion type="single" collapsible className="w-full" defaultValue={commissionableSales[0]?.id}>
                         {commissionableSales.length > 0 ? (
                             commissionableSales.map(sale => {
                                 const fullSale = sales.find(s => s.id === sale.id);
@@ -303,3 +311,4 @@ export default function ViewCommissionProfilePage() {
         </div>
     );
 }
+
