@@ -76,6 +76,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppFooter } from '@/components/app-footer';
 import { PrintableReceipt } from '@/components/printable-receipt';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -519,6 +520,7 @@ export default function PosPage() {
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
+  const { sale: saleSettings } = useBusinessSettings();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -1040,64 +1042,72 @@ export default function PosPage() {
                                         </DialogContent>
                                     </Dialog>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex-1">
-                                    <CommissionSelector
-                                            entityType="Agent"
-                                            label="Agent"
-                                            profiles={commissionProfiles}
-                                            selectedProfile={selectedAgent}
-                                            onSelect={setSelectedAgent}
-                                            onRemove={() => setSelectedAgent(null)}
-                                        />
+                                {saleSettings.enableCommissionAgent && (
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                        <CommissionSelector
+                                                entityType="Agent"
+                                                label="Agent"
+                                                profiles={commissionProfiles}
+                                                selectedProfile={selectedAgent}
+                                                onSelect={setSelectedAgent}
+                                                onRemove={() => setSelectedAgent(null)}
+                                            />
+                                        </div>
+                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
                                     </div>
-                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
-                                </div>
+                                )}
                             </div>
-                            <Separator className="my-4" />
-                            <div className="space-y-1 mb-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                            <CommissionSelector
-                                                entityType="Salesperson"
-                                                label="Salesperson"
-                                                profiles={commissionProfiles}
-                                                selectedProfile={selectedSalesperson}
-                                                onSelect={setSelectedSalesperson}
-                                                onRemove={() => setSelectedSalesperson(null)}
-                                            />
+                            
+                            {saleSettings.enableCommissionAgent && (
+                                <>
+                                    <Separator className="my-4" />
+                                    <div className="space-y-1 mb-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <CommissionSelector
+                                                        entityType="Salesperson"
+                                                        label="Salesperson"
+                                                        profiles={commissionProfiles}
+                                                        selectedProfile={selectedSalesperson}
+                                                        onSelect={setSelectedSalesperson}
+                                                        onRemove={() => setSelectedSalesperson(null)}
+                                                    />
+                                                </div>
+                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <CommissionSelector
+                                                        entityType="Sub-Agent"
+                                                        label="Sub"
+                                                        profiles={commissionProfiles}
+                                                        selectedProfile={selectedSubAgent}
+                                                        onSelect={setSelectedSubAgent}
+                                                        onRemove={() => setSelectedSubAgent(null)}
+                                                    />
+                                                </div>
+                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <CommissionSelector
+                                                        entityType="Company"
+                                                        label="Com"
+                                                        profiles={commissionProfiles}
+                                                        selectedProfile={selectedCompany}
+                                                        onSelect={setSelectedCompany}
+                                                        onRemove={() => setSelectedCompany(null)}
+                                                    />
+                                                </div>
+                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
+                                            </div>
                                         </div>
-                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                            <CommissionSelector
-                                                entityType="Sub-Agent"
-                                                label="Sub"
-                                                profiles={commissionProfiles}
-                                                selectedProfile={selectedSubAgent}
-                                                onSelect={setSelectedSubAgent}
-                                                onRemove={() => setSelectedSubAgent(null)}
-                                            />
-                                        </div>
-                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                            <CommissionSelector
-                                                entityType="Company"
-                                                label="Com"
-                                                profiles={commissionProfiles}
-                                                selectedProfile={selectedCompany}
-                                                onSelect={setSelectedCompany}
-                                                onRemove={() => setSelectedCompany(null)}
-                                            />
-                                        </div>
-                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
-                                    </div>
-                                </div>
-                            </div>
+                                </>
+                            )}
+                            
                             <Separator className="my-4" />
                             <div className="relative flex items-center">
                                 <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
@@ -1349,7 +1359,9 @@ export default function PosPage() {
                 <AppFooter />
             </div>
         </TooltipProvider>
-        <PrintableReceipt sale={saleToPrint} products={products} />
+        <div className="receipt-printable-area">
+            <PrintableReceipt sale={saleToPrint} products={products} />
+        </div>
     </>
   );
 }
