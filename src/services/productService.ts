@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, deleteDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type DetailedProduct } from '@/lib/data';
 import { sanitizeForClient } from '@/lib/firestore-utils';
 
@@ -13,8 +13,25 @@ export async function getProducts(): Promise<DetailedProduct[]> {
     return sanitizeForClient<DetailedProduct[]>(data);
 }
 
+export async function getProduct(id: string): Promise<DetailedProduct | null> {
+    const docRef = doc(db, 'products', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const data = { id: docSnap.id, ...docSnap.data() };
+        return sanitizeForClient<DetailedProduct>(data);
+    } else {
+        return null;
+    }
+}
+
 export async function addProduct(product: Omit<DetailedProduct, 'id'>): Promise<DocumentData> {
     return await addDoc(productsCollection, product);
+}
+
+export async function updateProduct(id: string, product: Partial<Omit<DetailedProduct, 'id'>>): Promise<void> {
+    const docRef = doc(db, 'products', id);
+    await updateDoc(docRef, product);
 }
 
 export async function deleteProduct(productId: string): Promise<void> {

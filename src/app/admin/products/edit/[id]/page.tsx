@@ -1,9 +1,10 @@
 'use client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Info } from "lucide-react";
-import { useParams } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
-import { detailedProducts, type DetailedProduct } from '@/lib/data';
+import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { type DetailedProduct } from '@/lib/data';
+import { getProduct, updateProduct } from '@/services/productService';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -11,55 +12,120 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { FirebaseError } from "firebase/app";
 
 export default function EditProductPage() {
   const { id } = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const [product, setProduct] = useState<DetailedProduct | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (id) {
-      const productToEdit = detailedProducts.find(p => p.id === id);
+  const fetchProduct = useCallback(async (productId: string) => {
+    setIsLoading(true);
+    try {
+      const productToEdit = await getProduct(productId);
       if (productToEdit) {
         setProduct(productToEdit);
+      } else {
+        toast({
+          title: "Error",
+          description: "Product not found.",
+          variant: "destructive",
+        });
+        router.push('/admin/products/list');
       }
+    } catch (error) {
+      console.error("Failed to fetch product:", error);
+      toast({
+        title: "Error",
+        description: "Could not load product details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  }, [id]);
+  }, [router, toast]);
+
+  useEffect(() => {
+    if (typeof id === 'string') {
+      fetchProduct(id);
+    }
+  }, [id, fetchProduct]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (product) {
       const { name, value, type } = e.target;
       const newValue = type === 'number' ? parseFloat(value) || 0 : value;
-      setProduct({ ...product, [name]: newValue });
+      setProduct({ ...product, [name]: newValue as any });
     }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: keyof DetailedProduct, value: string) => {
     if (product) {
-      setProduct({ ...product, [name]: value });
+      setProduct({ ...product, [name]: value as any });
     }
   };
   
   const handleCheckboxChange = (name: string, checked: boolean) => {
-    // This is a placeholder since we don't have this field in the data yet
+    // Placeholder for future implementation
   };
 
-  if (!product) {
+  const handleUpdateProduct = async () => {
+    if (!product || typeof id !== 'string') return;
+    
+    setIsLoading(true);
+    try {
+        const { id: productId, ...productToUpdate } = product;
+        await updateProduct(id, productToUpdate);
+        toast({
+            title: "Product Updated",
+            description: `"${product.name}" has been successfully updated.`,
+        });
+        router.push('/admin/products/list');
+    } catch (error) {
+        console.error("Failed to update product:", error);
+        if (error instanceof FirebaseError && error.code === 'permission-denied') {
+            toast({
+                title: "Permission Error",
+                description: "You don't have permission to update products.",
+                variant: "destructive",
+                duration: 9000,
+            });
+        } else {
+            toast({
+                title: "Error",
+                description: "Failed to update the product. Please try again.",
+                variant: "destructive",
+            });
+        }
+    } finally {
+        setIsLoading(false);
+    }
+  }
+
+  if (isLoading || !product) {
     return (
         <div className="flex flex-col gap-6">
-        <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
-            <Package className="w-8 h-8" />
-            Edit Product
-        </h1>
-        <Card>
-            <CardHeader>
-            <CardTitle>Loading Product...</CardTitle>
-            </CardHeader>
-            <CardContent>
-            <div className="flex items-center justify-center h-64 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Please wait while we load the product details.</p>
-            </div>
-            </CardContent>
-        </Card>
+            <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
+                <Package className="w-8 h-8" />
+                Edit Product
+            </h1>
+            <Card>
+                <CardHeader>
+                    <CardTitle><Skeleton className="h-7 w-48" /></CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                        <div className="space-y-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-10 w-full" /></div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
   }
@@ -100,7 +166,7 @@ export default function EditProductPage() {
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="unit">Unit *</Label>
-                            <Select name="unit" defaultValue="Pieces">
+                            <Select name="unit" value={product.unit} onValueChange={(value) => handleSelectChange('unit', value)}>
                                 <SelectTrigger id="unit">
                                     <SelectValue placeholder="Select Unit" />
                                 </SelectTrigger>
@@ -205,18 +271,20 @@ export default function EditProductPage() {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="purchase-price">Default Purchase Price</Label>
-                            <Input id="purchase-price" name="unitPurchasePrice" type="number" value={product.unitPurchasePrice} onChange={handleInputChange}/>
+                            <Label htmlFor="unitPurchasePrice">Default Purchase Price</Label>
+                            <Input id="unitPurchasePrice" name="unitPurchasePrice" type="number" value={product.unitPurchasePrice} onChange={handleInputChange}/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="selling-price">Default Selling Price *</Label>
-                            <Input id="selling-price" name="sellingPrice" type="number" value={product.sellingPrice} onChange={handleInputChange}/>
+                            <Label htmlFor="sellingPrice">Default Selling Price *</Label>
+                            <Input id="sellingPrice" name="sellingPrice" type="number" value={product.sellingPrice} onChange={handleInputChange}/>
                         </div>
                     </div>
                 </CardContent>
             </Card>
             <div className="flex justify-end">
-                <Button size="lg">Save Changes</Button>
+                <Button size="lg" onClick={handleUpdateProduct} disabled={isLoading}>
+                    {isLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
             </div>
         </div>
     </div>
