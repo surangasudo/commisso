@@ -12,8 +12,30 @@ export type ProductCategory = {
 
 const productCategoriesCollection = collection(db, 'productCategories');
 
+// Default categories to seed
+const defaultCategories: Omit<ProductCategory, 'id'>[] = [
+    { name: 'Electronics', code: 'ELEC' },
+    { name: 'Clothing', code: 'CLOTH' },
+    { name: 'Groceries', code: 'GROC' },
+    { name: 'Books', code: 'BOOK' },
+    { name: 'Sports', code: 'SPORT' },
+];
+
+async function seedDefaultCategories(): Promise<void> {
+    for (const category of defaultCategories) {
+        await addDoc(productCategoriesCollection, category);
+    }
+}
+
 export async function getProductCategories(): Promise<ProductCategory[]> {
-  const snapshot = await getDocs(productCategoriesCollection);
+  let snapshot = await getDocs(productCategoriesCollection);
+
+  // If the collection is empty, seed it with default data and re-fetch
+  if (snapshot.empty) {
+      await seedDefaultCategories();
+      snapshot = await getDocs(productCategoriesCollection);
+  }
+
   const data = snapshot.docs.map(doc => {
       const docData = doc.data();
       return {
