@@ -245,7 +245,7 @@ export default function ViewCommissionProfilePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
                     <CardDescription>
-                        Click on a sale to see the items in the invoice.
+                        Click on a sale to see the items and commission breakdown for that invoice.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -275,18 +275,38 @@ export default function ViewCommissionProfilePage() {
                                         </AccordionTrigger>
                                         <AccordionContent>
                                             <div className="pl-8 pr-4 py-3 bg-muted/30">
-                                                <h4 className="font-semibold text-xs mb-2 uppercase text-muted-foreground">Invoice Items:</h4>
-                                                <ul className="space-y-1 text-sm">
-                                                    {saleItems.map((item, index) => {
-                                                        const product = products.find(p => p.id === item.productId);
-                                                        return (
-                                                            <li key={index} className="flex justify-between items-center">
-                                                                <span className="text-muted-foreground">{item.quantity} x {product?.name || 'Unknown'}</span>
-                                                                <span className="text-muted-foreground">@{formatCurrency(item.unitPrice)}</span>
-                                                            </li>
-                                                        );
-                                                    })}
-                                                </ul>
+                                                <h4 className="font-semibold text-xs mb-2 uppercase text-muted-foreground">Invoice Items & Commission Breakdown:</h4>
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Product</TableHead>
+                                                            <TableHead className="text-right">Subtotal</TableHead>
+                                                            <TableHead className="text-right">Commission Rate</TableHead>
+                                                            <TableHead className="text-right">Commission Earned</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {saleItems.map((item, index) => {
+                                                            const product = products.find(p => p.id === item.productId);
+                                                            if (!product) return null;
+
+                                                            const itemValue = item.quantity * item.unitPrice;
+                                                            const category = product.category;
+                                                            const categoryRateData = profile.commission.categories?.find(c => c.category === category);
+                                                            const commissionRate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
+                                                            const commissionEarnedForItem = itemValue * (commissionRate / 100);
+                                                            
+                                                            return (
+                                                                <TableRow key={index} className="text-xs">
+                                                                    <TableCell>{item.quantity} x {product.name}</TableCell>
+                                                                    <TableCell className="text-right">{formatCurrency(itemValue)}</TableCell>
+                                                                    <TableCell className="text-right">{commissionRate}%</TableCell>
+                                                                    <TableCell className="text-right font-medium">{formatCurrency(commissionEarnedForItem)}</TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })}
+                                                    </TableBody>
+                                                </Table>
                                             </div>
                                         </AccordionContent>
                                     </AccordionItem>
