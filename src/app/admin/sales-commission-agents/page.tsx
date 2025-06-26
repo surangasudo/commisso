@@ -132,7 +132,7 @@ const PayCommissionDialog = ({
     );
 };
 
-const PayoutsTable = ({ profiles, handlePayClick, isLoading, formatCurrency }: { profiles: CommissionProfile[], handlePayClick: (profile: CommissionProfile) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
+const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatCurrency }: { profiles: CommissionProfile[], handlePayClick: (profile: CommissionProfile) => void, handleView: (id: string) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
     return (
         <div className="border rounded-md">
             <Table>
@@ -163,14 +163,24 @@ const PayoutsTable = ({ profiles, handlePayClick, isLoading, formatCurrency }: {
                             <TableCell className="text-right font-semibold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</TableCell>
                             <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
                             <TableCell className="text-center">
-                                <Button 
-                                  size="sm" 
-                                  className="h-8 gap-1.5"
-                                  disabled={(profile.totalCommissionPending || 0) <= 0}
-                                  onClick={() => handlePayClick(profile)}
-                                >
-                                    <Wallet className="w-4 h-4"/> Pay
-                                </Button>
+                                <div className="flex justify-center gap-2">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      className="h-8 gap-1.5"
+                                      onClick={() => handleView(profile.id)}
+                                    >
+                                        <Eye className="w-4 h-4"/> View
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      className="h-8 gap-1.5"
+                                      disabled={(profile.totalCommissionPending || 0) <= 0}
+                                      onClick={() => handlePayClick(profile)}
+                                    >
+                                        <Wallet className="w-4 h-4"/> Pay
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                     )) : (
@@ -426,7 +436,8 @@ export default function SalesCommissionAgentsPage() {
               <CardContent>
                   <PayoutsTable 
                     profiles={salespersons} 
-                    handlePayClick={handlePayClick} 
+                    handlePayClick={handlePayClick}
+                    handleView={handleView}
                     isLoading={isLoading}
                     formatCurrency={formatCurrency}
                   />
@@ -443,6 +454,7 @@ export default function SalesCommissionAgentsPage() {
                   <PayoutsTable 
                     profiles={agents} 
                     handlePayClick={handlePayClick} 
+                    handleView={handleView}
                     isLoading={isLoading}
                     formatCurrency={formatCurrency}
                   />
@@ -459,6 +471,7 @@ export default function SalesCommissionAgentsPage() {
                   <PayoutsTable 
                     profiles={subAgents} 
                     handlePayClick={handlePayClick} 
+                    handleView={handleView}
                     isLoading={isLoading}
                     formatCurrency={formatCurrency}
                   />
@@ -475,6 +488,7 @@ export default function SalesCommissionAgentsPage() {
                   <PayoutsTable 
                     profiles={companies}
                     handlePayClick={handlePayClick} 
+                    handleView={handleView}
                     isLoading={isLoading}
                     formatCurrency={formatCurrency}
                   />
