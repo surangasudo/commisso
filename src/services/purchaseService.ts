@@ -13,7 +13,7 @@ export async function getPurchases(): Promise<Purchase[]> {
       const docData = doc.data();
       return {
           id: doc.id,
-          date: docData.date,
+          date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
           referenceNo: docData.referenceNo,
           location: docData.location,
           supplier: docData.supplier,
@@ -37,7 +37,7 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
         const docData = docSnap.data();
         return {
             id: docSnap.id,
-            date: docData.date,
+            date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
             referenceNo: docData.referenceNo,
             location: docData.location,
             supplier: docData.supplier,
