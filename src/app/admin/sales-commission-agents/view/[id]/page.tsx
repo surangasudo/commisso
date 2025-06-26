@@ -108,13 +108,13 @@ export default function ViewCommissionProfilePage() {
                 const product = productMap.get(item.productId);
                 if (!product) continue;
 
-                const profit = (item.unitPrice - (product.unitPurchasePrice || 0)) * item.quantity;
+                const saleValue = item.unitPrice * item.quantity;
                 
                 const category = product.category;
                 const categoryRateData = profile.commission.categories?.find(c => c.category === category);
                 const rate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
 
-                const commissionAmount = profit * (rate / 100);
+                const commissionAmount = saleValue * (rate / 100);
                 commissionForThisSale += commissionAmount;
             }
             totalCommission += commissionForThisSale;
@@ -239,7 +239,7 @@ export default function ViewCommissionProfilePage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ShoppingCart className="w-5 h-5"/> Commissionable Sales</CardTitle>
                         <CardDescription>
-                            Click on a sale to see the items and commission breakdown for that invoice. Commission is calculated on profit.
+                            Click on a sale to see the items and commission breakdown for that invoice. Commission is calculated on the total value of each item.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -285,13 +285,12 @@ export default function ViewCommissionProfilePage() {
                                                                 if (!product) return null;
 
                                                                 const itemSubtotal = item.unitPrice * item.quantity;
-                                                                const profitOnItem = (item.unitPrice - (product.unitPurchasePrice || 0)) * item.quantity;
                                                                 const category = product.category;
                                                                 const categoryRateData = profile.commission.categories?.find(c => c.category === category);
                                                                 const commissionRate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
-                                                                const commissionEarnedForItem = profitOnItem * (commissionRate / 100);
+                                                                const commissionEarnedForItem = itemSubtotal * (commissionRate / 100);
                                                                 
-                                                                const tooltipText = `Calculation: (${formatCurrency(item.unitPrice)} - ${formatCurrency(product.unitPurchasePrice || 0)}) x ${item.quantity} x ${commissionRate}%`;
+                                                                const tooltipText = `Calculation: ${formatCurrency(itemSubtotal)} x ${commissionRate}%`;
                                                                 
                                                                 return (
                                                                     <TableRow key={index} className="text-xs">

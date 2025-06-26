@@ -112,10 +112,10 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
             const productData = productDataMap.get(item.productId);
             if (!productData) continue; 
 
-            // Calculate commission for this item based on profit
-            const profit = (item.unitPrice - (productData.unitPurchasePrice || 0)) * item.quantity;
+            // Calculate commission for this item based on sale value
+            const saleValue = item.unitPrice * item.quantity;
             
-            if (sale.commissionAgentIds && profit > 0) {
+            if (sale.commissionAgentIds && saleValue > 0) {
                 for (const agentId of sale.commissionAgentIds) {
                     const agentProfile = agentProfiles.get(agentId);
                     if (!agentProfile) continue;
@@ -130,7 +130,7 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
                     const categoryRateData = categories.find((c: any) => c.category === productData.category);
                     const rate = categoryRateData ? categoryRateData.rate : commission.overall;
                     
-                    agentCommissionTotals[agentId] += profit * (rate / 100);
+                    agentCommissionTotals[agentId] += saleValue * (rate / 100);
                 }
             }
         }
