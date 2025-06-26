@@ -82,8 +82,7 @@ const CommissionPayoutDialog = ({
                         if (!product) continue;
                         
                         const saleValue = item.unitPrice * item.quantity;
-                        const categoryRateData = profile.commission.categories?.find(c => c.category === product.category);
-                        const rate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
+                        const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
                         
                         commissionForThisSale += saleValue * (rate / 100);
                     }
@@ -148,11 +147,12 @@ const CommissionPayoutDialog = ({
         }
         setIsPaying(true);
         try {
-            await payCommission(profile.id, totalToPay);
+            await payCommission(profile, totalToPay, method, note);
             toast({ title: 'Success', description: `Payment of ${formatCurrency(totalToPay)} for ${profile.name} has been recorded.` });
             onPaymentSuccess();
         } catch (error) {
             toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' });
+            console.error(error);
         } finally {
             setIsPaying(false);
         }

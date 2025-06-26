@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
-import { type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile, type Expense } from '@/lib/data';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
@@ -86,14 +86,20 @@ export async function deleteCommissionProfile(id: string): Promise<void> {
     await deleteDoc(docRef);
 }
 
-export async function payCommission(profileId: string, amountToPay: number): Promise<void> {
-    const docRef = doc(db, 'commissionProfiles', profileId);
+export async function payCommission(
+    profile: CommissionProfile,
+    amountToPay: number,
+    paymentMethod: string,
+    paymentNote: string
+): Promise<void> {
+    const profileDocRef = doc(db, 'commissionProfiles', profile.id);
+    const expensesCollectionRef = collection(db, 'expenses');
 
     try {
         await runTransaction(db, async (transaction) => {
-            const profileDoc = await transaction.get(docRef);
+            const profileDoc = await transaction.get(profileDocRef);
             if (!profileDoc.exists()) {
-                throw "Document does not exist!";
+                throw "Profile document does not exist!";
             }
             
             const currentData = profileDoc.data();
@@ -112,10 +118,30 @@ export async function payCommission(profileId: string, amountToPay: number): Pro
             }
 
             const newPaid = currentPaid + amountToPay;
-            transaction.update(docRef, { totalCommissionPaid: newPaid });
+            transaction.update(profileDocRef, { totalCommissionPaid: newPaid });
+
+            // Create a corresponding expense record
+            const newExpense: Omit<Expense, 'id'> = {
+                date: new Date().toISOString(),
+                referenceNo: `COMM-${Date.now()}`,
+                location: 'Awesome Shop', // Default location for business-wide expenses
+                expenseCategory: 'Sales Commission',
+                subCategory: null,
+                paymentStatus: 'Paid',
+                tax: 0,
+                totalAmount: amountToPay,
+                paymentDue: 0,
+                expenseFor: null,
+                contact: profile.name, // Link the expense to the agent
+                addedBy: 'System', // Or current logged in user
+                expenseNote: `Commission payout to ${profile.name}. Method: ${paymentMethod}. Note: ${paymentNote}`.trim(),
+            };
+            
+            const newExpenseRef = doc(expensesCollectionRef);
+            transaction.set(newExpenseRef, newExpense);
         });
     } catch (e) {
-        console.error("Transaction failed: ", e);
+        console.error("Commission payment transaction failed: ", e);
         throw e;
     }
 }

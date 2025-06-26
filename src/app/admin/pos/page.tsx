@@ -148,7 +148,10 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
     const [closingCash, setClosingCash] = useState('');
     const openingCash = 100.00; // Mock data
     const totalCashSales = totalPayable; // Simplified for demo
-    const expected = openingCash + totalCashSales;
+    const totalRefunds = 0; // Mock data
+    const totalExpenses = 0; // Mock data for expenses paid from till
+
+    const expected = openingCash + totalCashSales - totalRefunds - totalExpenses;
     const difference = parseFloat(closingCash) - expected || 0;
 
     const handleCloseRegister = () => {
@@ -168,6 +171,8 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
                 <div className="space-y-4 py-4">
                     <div className="flex justify-between"><span>Opening Cash:</span><span>{formatCurrency(openingCash)}</span></div>
                     <div className="flex justify-between"><span>Total Cash Sales:</span><span>{formatCurrency(totalCashSales)}</span></div>
+                    <div className="flex justify-between"><span>Total Cash Refunds:</span><span>- {formatCurrency(totalRefunds)}</span></div>
+                    <div className="flex justify-between"><span>Total Cash Expenses:</span><span>- {formatCurrency(totalExpenses)}</span></div>
                     <Separator/>
                     <div className="flex justify-between font-bold"><span>Expected In Register:</span><span>{formatCurrency(expected)}</span></div>
                     <div className="grid grid-cols-4 items-center gap-4">
