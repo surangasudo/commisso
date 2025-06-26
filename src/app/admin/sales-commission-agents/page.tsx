@@ -198,6 +198,9 @@ export default function SalesCommissionAgentsPage() {
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
   const [profileToPay, setProfileToPay] = useState<CommissionProfile | null>(null);
 
+  const [profileFilter, setProfileFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+
   useEffect(() => {
     setIsLoading(true);
     const commissionProfilesCollectionRef = collection(db, 'commissionProfiles');
@@ -239,6 +242,14 @@ export default function SalesCommissionAgentsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter(p => {
+        const filterMatch = profileFilter === 'All' || p.entityType === profileFilter;
+        const searchMatch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.phone.includes(searchTerm);
+        return filterMatch && searchMatch;
+    });
+  }, [profiles, profileFilter, searchTerm]);
+
   const salespersons = useMemo(() => profiles.filter(p => p.entityType === 'Salesperson'), [profiles]);
   const agents = useMemo(() => profiles.filter(p => p.entityType === 'Agent'), [profiles]);
   const subAgents = useMemo(() => profiles.filter(p => p.entityType === 'Sub-Agent'), [profiles]);
@@ -284,7 +295,7 @@ export default function SalesCommissionAgentsPage() {
       // The listener will handle updating the state automatically.
   }
 
-  const getExportData = () => profiles.map(p => ({
+  const getExportData = () => filteredProfiles.map(p => ({
     name: p.name,
     entityType: p.entityType,
     phone: p.phone,
@@ -321,11 +332,26 @@ export default function SalesCommissionAgentsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-4">
-                  <div className="relative sm:max-w-xs">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Search profiles..." className="pl-8 w-full h-9" />
-                  </div>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="profile-filter" className="text-sm">Filter by Type:</Label>
+                        <Select value={profileFilter} onValueChange={setProfileFilter}>
+                            <SelectTrigger id="profile-filter" className="w-[180px] h-9">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="All">All Types</SelectItem>
+                                <SelectItem value="Agent">Agent</SelectItem>
+                                <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
+                                <SelectItem value="Company">Company</SelectItem>
+                                <SelectItem value="Salesperson">Salesperson</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="relative sm:max-w-xs w-full">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input placeholder="Search profiles..." className="pl-8 w-full h-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    </div>
                 </div>
                 <div className="border rounded-md">
                   <Table>
@@ -351,7 +377,7 @@ export default function SalesCommissionAgentsPage() {
                             <TableCell><Skeleton className="h-8 w-48" /></TableCell>
                           </TableRow>
                         ))
-                      ) : profiles.map((profile) => (
+                      ) : filteredProfiles.map((profile) => (
                         <TableRow key={profile.id}>
                           <TableCell className="font-medium">{profile.name}</TableCell>
                           <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
@@ -386,7 +412,7 @@ export default function SalesCommissionAgentsPage() {
               </CardContent>
               <CardFooter className="py-4">
                 <div className="text-xs text-muted-foreground">
-                  Showing <strong>1 to {profiles.length}</strong> of <strong>{profiles.length}</strong> entries
+                  Showing <strong>{filteredProfiles.length}</strong> of <strong>{profiles.length}</strong> entries
                 </div>
               </CardFooter>
             </Card>
