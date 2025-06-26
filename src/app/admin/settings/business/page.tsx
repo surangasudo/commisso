@@ -602,8 +602,8 @@ const TaxSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
         updateSettings({ [id]: value as any });
     };
     
-    const handleCheckboxChange = (id: keyof AllSettings['tax'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['tax'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -640,7 +640,7 @@ const TaxSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
                 </div>
                 <div className="border-t pt-6">
                     <div className="flex items-center space-x-2 mb-4">
-                        <Checkbox id="enableInlineTax" checked={settings.enableInlineTax} onCheckedChange={(checked) => handleCheckboxChange('enableInlineTax', !!checked)} />
+                        <Checkbox id="enableInlineTax" checked={settings.enableInlineTax} onCheckedChange={(checked) => handleCheckboxChange('enableInlineTax', checked)} />
                         <Label htmlFor="enableInlineTax" className="font-normal">Enable inline tax in purchase and sell</Label>
                     </div>
                     <div className="space-y-2 max-w-sm">
@@ -674,8 +674,8 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
         updateSettings({ [id]: value });
     };
     
-    const handleCheckboxChange = (id: keyof AllSettings['product'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['product'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleSelectChange = (id: keyof AllSettings['product'], value: string) => {
@@ -704,15 +704,15 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                         <Input id="skuPrefix" value={settings.skuPrefix} onChange={handleInputChange} />
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableBrands" checked={settings.enableBrands} onCheckedChange={(checked) => handleCheckboxChange('enableBrands', !!checked)} />
+                        <Checkbox id="enableBrands" checked={settings.enableBrands} onCheckedChange={(checked) => handleCheckboxChange('enableBrands', checked)} />
                         <Label htmlFor="enableBrands" className="font-normal">Enable Brands</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enablePriceAndTax" checked={settings.enablePriceAndTax} onCheckedChange={(checked) => handleCheckboxChange('enablePriceAndTax', !!checked)} />
+                        <Checkbox id="enablePriceAndTax" checked={settings.enablePriceAndTax} onCheckedChange={(checked) => handleCheckboxChange('enablePriceAndTax', checked)} />
                         <Label htmlFor="enablePriceAndTax" className="font-normal">Enable Price & Tax info</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableRacks" checked={settings.enableRacks} onCheckedChange={(checked) => handleCheckboxChange('enableRacks', !!checked)} />
+                        <Checkbox id="enableRacks" checked={settings.enableRacks} onCheckedChange={(checked) => handleCheckboxChange('enableRacks', checked)} />
                         <Label htmlFor="enableRacks" className="font-normal flex items-center gap-1">Enable Racks
                             <Tooltip>
                                 <TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger>
@@ -721,7 +721,7 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                         </Label>
                     </div>
                      <div className="flex items-center space-x-2">
-                        <Checkbox id="enableWarranty" checked={settings.enableWarranty} onCheckedChange={(checked) => handleCheckboxChange('enableWarranty', !!checked)} />
+                        <Checkbox id="enableWarranty" checked={settings.enableWarranty} onCheckedChange={(checked) => handleCheckboxChange('enableWarranty', checked)} />
                         <Label htmlFor="enableWarranty" className="font-normal">Enable Warranty</Label>
                     </div>
                 </div>
@@ -731,7 +731,7 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                     <div className="space-y-2">
                         <Label htmlFor="enableProductExpiryCheckbox" className="flex items-center gap-1">Enable Product Expiry: <Info className="w-3 h-3 text-muted-foreground"/></Label>
                         <div className="flex items-center gap-2">
-                             <Checkbox id="enableProductExpiryCheckbox" checked={settings.enableProductExpiry} onCheckedChange={(checked) => handleCheckboxChange('enableProductExpiry', !!checked)} />
+                             <Checkbox id="enableProductExpiryCheckbox" checked={settings.enableProductExpiry} onCheckedChange={(checked) => handleCheckboxChange('enableProductExpiry', checked)} />
                             <Select disabled={!settings.enableProductExpiry} value={settings.addItemExpiry} onValueChange={(value) => handleSelectChange('addItemExpiry', value as string)}>
                                 <SelectTrigger className="flex-1">
                                     <SelectValue placeholder="Add item expiry" />
@@ -777,7 +777,7 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                     )}
                     
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', !!checked)} />
+                        <Checkbox id="enableCategories" checked={settings.enableCategories} onCheckedChange={(checked) => handleCheckboxChange('enableCategories', checked)} />
                         <Label htmlFor="enableCategories" className="font-normal">Enable Categories</Label>
                     </div>
                      <div className="space-y-2">
@@ -794,11 +794,11 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                         </Select>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableRow" checked={settings.enableRow} onCheckedChange={(checked) => handleCheckboxChange('enableRow', !!checked)} />
+                        <Checkbox id="enableRow" checked={settings.enableRow} onCheckedChange={(checked) => handleCheckboxChange('enableRow', checked)} />
                         <Label htmlFor="enableRow" className="font-normal">Enable Row</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="isProductImageRequired" checked={settings.isProductImageRequired} onCheckedChange={(checked) => handleCheckboxChange('isProductImageRequired', !!checked)} />
+                        <Checkbox id="isProductImageRequired" checked={settings.isProductImageRequired} onCheckedChange={(checked) => handleCheckboxChange('isProductImageRequired', checked)} />
                         <Label htmlFor="isProductImageRequired" className="font-normal">Is product image required?</Label>
                     </div>
                 </div>
@@ -806,15 +806,15 @@ const ProductSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                 {/* Column 3 */}
                 <div className="space-y-6">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableSubCategories" checked={settings.enableSubCategories} onCheckedChange={(checked) => handleCheckboxChange('enableSubCategories', !!checked)} />
+                        <Checkbox id="enableSubCategories" checked={settings.enableSubCategories} onCheckedChange={(checked) => handleCheckboxChange('enableSubCategories', checked)} />
                         <Label htmlFor="enableSubCategories" className="font-normal">Enable Sub-Categories</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableSubUnits" checked={settings.enableSubUnits} onCheckedChange={(checked) => handleCheckboxChange('enableSubUnits', !!checked)} />
+                        <Checkbox id="enableSubUnits" checked={settings.enableSubUnits} onCheckedChange={(checked) => handleCheckboxChange('enableSubUnits', checked)} />
                         <Label htmlFor="enableSubUnits" className="font-normal flex items-center gap-1">Enable Sub Units <Info className="w-3 h-3 text-muted-foreground"/></Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enablePosition" checked={settings.enablePosition} onCheckedChange={(checked) => handleCheckboxChange('enablePosition', !!checked)} />
+                        <Checkbox id="enablePosition" checked={settings.enablePosition} onCheckedChange={(checked) => handleCheckboxChange('enablePosition', checked)} />
                         <Label htmlFor="enablePosition" className="font-normal">Enable Position</Label>
                     </div>
                 </div>
@@ -898,8 +898,8 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
         updateSettings({ [id]: value as any });
     };
     
-    const handleCheckboxChange = (id: keyof AllSettings['sale'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['sale'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -957,7 +957,7 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
 
                 <div className="border-t pt-6 space-y-4">
                     <div className="flex items-center space-x-2 mb-4">
-                        <Checkbox id="enableCommissionAgent" checked={settings.enableCommissionAgent} onCheckedChange={(checked) => handleCheckboxChange('enableCommissionAgent', !!checked)} />
+                        <Checkbox id="enableCommissionAgent" checked={settings.enableCommissionAgent} onCheckedChange={(checked) => handleCheckboxChange('enableCommissionAgent', checked)} />
                         <Label htmlFor="enableCommissionAgent" className="font-normal text-lg flex items-center gap-1">
                             Enable Commission Agent
                             <Tooltip>
@@ -1001,7 +1001,7 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
                                 <Checkbox 
                                     id="isCommissionAgentPhoneCompulsory" 
                                     checked={settings.isCommissionAgentPhoneCompulsory} 
-                                    onCheckedChange={(checked) => handleCheckboxChange('isCommissionAgentPhoneCompulsory', !!checked)} 
+                                    onCheckedChange={(checked) => handleCheckboxChange('isCommissionAgentPhoneCompulsory', checked)} 
                                 />
                                 <Label htmlFor="isCommissionAgentPhoneCompulsory" className="font-normal">
                                     Make it compulsory to enter commission agent phone number to make sale in default pricing group
@@ -1016,7 +1016,7 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
                     <div className="space-y-6">
                         <div>
                             <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="isStripeEnabled" checked={settings.isStripeEnabled} onCheckedChange={(checked) => handleCheckboxChange('isStripeEnabled', !!checked)} />
+                                <Checkbox id="isStripeEnabled" checked={settings.isStripeEnabled} onCheckedChange={(checked) => handleCheckboxChange('isStripeEnabled', checked)} />
                                 <Label htmlFor="isStripeEnabled" className="font-normal">Enable Stripe</Label>
                             </div>
                             {settings.isStripeEnabled && (
@@ -1034,7 +1034,7 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
                         </div>
                         <div>
                             <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="isRazorpayEnabled" checked={settings.isRazorpayEnabled} onCheckedChange={(checked) => handleCheckboxChange('isRazorpayEnabled', !!checked)} />
+                                <Checkbox id="isRazorpayEnabled" checked={settings.isRazorpayEnabled} onCheckedChange={(checked) => handleCheckboxChange('isRazorpayEnabled', checked)} />
                                 <Label htmlFor="isRazorpayEnabled" className="font-normal">Enable Razorpay</Label>
                             </div>
                             {settings.isRazorpayEnabled && (
@@ -1055,19 +1055,19 @@ const SaleSettingsForm = ({ settings, updateSettings }: { settings: AllSettings[
 
                  <div className="border-t pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableSalesOrder" checked={settings.enableSalesOrder} onCheckedChange={(checked) => handleCheckboxChange('enableSalesOrder', !!checked)} />
+                        <Checkbox id="enableSalesOrder" checked={settings.enableSalesOrder} onCheckedChange={(checked) => handleCheckboxChange('enableSalesOrder', checked)} />
                         <Label htmlFor="enableSalesOrder" className="font-normal">Enable Sales Order</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableRecurringInvoice" checked={settings.enableRecurringInvoice} onCheckedChange={(checked) => handleCheckboxChange('enableRecurringInvoice', !!checked)} />
+                        <Checkbox id="enableRecurringInvoice" checked={settings.enableRecurringInvoice} onCheckedChange={(checked) => handleCheckboxChange('enableRecurringInvoice', checked)} />
                         <Label htmlFor="enableRecurringInvoice" className="font-normal flex items-center gap-1">Enable Recurring Invoice <Info className="w-3 h-3 text-muted-foreground"/></Label>
                     </div>
                      <div className="flex items-center space-x-2">
-                        <Checkbox id="isPayTermRequired" checked={settings.isPayTermRequired} onCheckedChange={(checked) => handleCheckboxChange('isPayTermRequired', !!checked)} />
+                        <Checkbox id="isPayTermRequired" checked={settings.isPayTermRequired} onCheckedChange={(checked) => handleCheckboxChange('isPayTermRequired', checked)} />
                         <Label htmlFor="isPayTermRequired" className="font-normal">Is pay term required?</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="allowOverselling" checked={settings.allowOverselling} onCheckedChange={(checked) => handleCheckboxChange('allowOverselling', !!checked)} />
+                        <Checkbox id="allowOverselling" checked={settings.allowOverselling} onCheckedChange={(checked) => handleCheckboxChange('allowOverselling', checked)} />
                         <Label htmlFor="allowOverselling" className="font-normal">Allow Overselling</Label>
                     </div>
                 </div>
@@ -1086,8 +1086,8 @@ const PosSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
         updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof AllSettings['pos'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['pos'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
     
      const handleSelectChange = (id: keyof AllSettings['pos'], value: string) => {
@@ -1175,7 +1175,7 @@ const PosSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                         {posSettingsCheckboxes.map(cb => (
                             <div key={cb.id} className="flex items-center space-x-2">
-                                <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, !!checked)} />
+                                <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, checked)} />
                                 <Label htmlFor={cb.id} className="font-normal flex items-center gap-1.5">{cb.label}
                                  {cb.tooltip && (
                                      <Tooltip>
@@ -1244,8 +1244,8 @@ const PosSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['
 const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['purchase'], updateSettings: (newValues: Partial<AllSettings['purchase']>) => void }) => {
     const { toast } = useToast();
 
-    const handleCheckboxChange = (id: keyof AllSettings['purchase'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['purchase'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -1265,7 +1265,7 @@ const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
                     <div className="space-y-6">
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', !!checked)} />
+                            <Checkbox id="enableEditingProductPrice" checked={settings.enableEditingProductPrice} onCheckedChange={(checked) => handleCheckboxChange('enableEditingProductPrice', checked)} />
                             <Label htmlFor="enableEditingProductPrice" className="font-normal flex items-center gap-1.5">
                                 Enable editing product price from purchase screen
                                 <Tooltip>
@@ -1275,7 +1275,7 @@ const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', !!checked)} />
+                            <Checkbox id="enableLotNumber" checked={settings.enableLotNumber} onCheckedChange={(checked) => handleCheckboxChange('enableLotNumber', checked)} />
                             <Label htmlFor="enableLotNumber" className="font-normal flex items-center gap-1.5">
                                 Enable Lot Number
                                 <Tooltip>
@@ -1285,7 +1285,7 @@ const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="enablePurchaseRequisition" checked={settings.enablePurchaseRequisition} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseRequisition', !!checked)} />
+                            <Checkbox id="enablePurchaseRequisition" checked={settings.enablePurchaseRequisition} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseRequisition', checked)} />
                             <Label htmlFor="enablePurchaseRequisition" className="font-normal flex items-center gap-1.5">
                                 Enable Purchase Requisition
                                 <Tooltip>
@@ -1297,7 +1297,7 @@ const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                     </div>
                     <div className="space-y-6">
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', !!checked)} />
+                            <Checkbox id="enablePurchaseStatus" checked={settings.enablePurchaseStatus} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseStatus', checked)} />
                             <Label htmlFor="enablePurchaseStatus" className="font-normal flex items-center gap-1.5">
                                 Enable Purchase Status
                                 <Tooltip>
@@ -1307,7 +1307,7 @@ const PurchaseSettingsForm = ({ settings, updateSettings }: { settings: AllSetti
                             </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', !!checked)} />
+                            <Checkbox id="enablePurchaseOrder" checked={settings.enablePurchaseOrder} onCheckedChange={(checked) => handleCheckboxChange('enablePurchaseOrder', checked)} />
                             <Label htmlFor="enablePurchaseOrder" className="font-normal flex items-center gap-1.5">
                                 Enable Purchase Order
                                 <Tooltip>
@@ -1337,8 +1337,8 @@ const PaymentSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
         updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof AllSettings['payment'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['payment'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -1377,7 +1377,7 @@ const PaymentSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                             </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', !!checked)} />
+                            <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', checked)} />
                             <Label htmlFor="strictCheck" className="font-normal flex items-center gap-1.5">
                                 Strict check
                                 <Tooltip>
@@ -1396,7 +1396,7 @@ const PaymentSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                     <div className="space-y-6">
                         <div>
                             <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="enableStripe" checked={settings.enableStripe} onCheckedChange={(checked) => handleCheckboxChange('enableStripe', !!checked)} />
+                                <Checkbox id="enableStripe" checked={settings.enableStripe} onCheckedChange={(checked) => handleCheckboxChange('enableStripe', checked)} />
                                 <Label htmlFor="enableStripe" className="font-normal">Enable Stripe</Label>
                             </div>
                             {settings.enableStripe && (
@@ -1414,7 +1414,7 @@ const PaymentSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                         </div>
                          <div>
                              <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="enablePaypal" checked={settings.enablePaypal} onCheckedChange={(checked) => handleCheckboxChange('enablePaypal', !!checked)} />
+                                <Checkbox id="enablePaypal" checked={settings.enablePaypal} onCheckedChange={(checked) => handleCheckboxChange('enablePaypal', checked)} />
                                 <Label htmlFor="enablePaypal" className="font-normal">Enable PayPal</Label>
                             </div>
                             {settings.enablePaypal && (
@@ -1458,8 +1458,8 @@ const DashboardSettingsForm = ({ settings, updateSettings }: { settings: AllSett
         updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof AllSettings['dashboard'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['dashboard'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -1503,7 +1503,7 @@ const DashboardSettingsForm = ({ settings, updateSettings }: { settings: AllSett
                         </Select>
                     </div>
                     <div className="flex items-center space-x-2 self-end pb-2">
-                        <Checkbox id="enableStockExpiryAlert" checked={settings.enableStockExpiryAlert} onCheckedChange={(checked) => handleCheckboxChange('enableStockExpiryAlert', !!checked)} />
+                        <Checkbox id="enableStockExpiryAlert" checked={settings.enableStockExpiryAlert} onCheckedChange={(checked) => handleCheckboxChange('enableStockExpiryAlert', checked)} />
                         <Label htmlFor="enableStockExpiryAlert" className="font-normal">
                             Enable Stock Expiry Alert
                         </Label>
@@ -1529,8 +1529,8 @@ const SystemSettingsForm = ({ settings, updateSettings }: { settings: AllSetting
         updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof AllSettings['system'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['system'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -1594,7 +1594,7 @@ const SystemSettingsForm = ({ settings, updateSettings }: { settings: AllSetting
                 
                 <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', !!checked)} />
+                        <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', checked)} />
                         <Label htmlFor="isGoogleDriveEnabled" className="font-normal">Enable Google Drive</Label>
                     </div>
                     {settings.isGoogleDriveEnabled && (
@@ -1609,7 +1609,7 @@ const SystemSettingsForm = ({ settings, updateSettings }: { settings: AllSetting
                 
                 <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', !!checked)} />
+                        <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', checked)} />
                         <Label htmlFor="enableRepairModule" className="font-normal flex items-center gap-1.5">
                             Enable Repair Module
                             <Tooltip>
@@ -1624,7 +1624,7 @@ const SystemSettingsForm = ({ settings, updateSettings }: { settings: AllSetting
 
                 <div className="space-y-4">
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="showHelpText" checked={settings.showHelpText} onCheckedChange={(checked) => handleCheckboxChange('showHelpText', !!checked)} />
+                        <Checkbox id="showHelpText" checked={settings.showHelpText} onCheckedChange={(checked) => handleCheckboxChange('showHelpText', checked)} />
                         <Label htmlFor="showHelpText" className="font-normal">Show help text</Label>
                     </div>
                 </div>
@@ -1947,8 +1947,8 @@ const RewardPointSettingsForm = ({ settings, updateSettings }: { settings: AllSe
         updateSettings({ [id]: value as any });
     };
 
-    const handleCheckboxChange = (id: keyof AllSettings['rewardPoint'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['rewardPoint'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
      const handleSelectChange = (id: keyof AllSettings['rewardPoint'], value: string) => {
@@ -1970,7 +1970,7 @@ const RewardPointSettingsForm = ({ settings, updateSettings }: { settings: AllSe
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
                 <div className="flex items-center space-x-2">
-                    <Checkbox id="enableRewardPoint" checked={settings.enableRewardPoint} onCheckedChange={(checked) => handleCheckboxChange('enableRewardPoint', !!checked)} />
+                    <Checkbox id="enableRewardPoint" checked={settings.enableRewardPoint} onCheckedChange={(checked) => handleCheckboxChange('enableRewardPoint', checked)} />
                     <Label htmlFor="enableRewardPoint" className="text-lg font-normal">Enable Reward Point</Label>
                 </div>
                 {settings.enableRewardPoint && (
@@ -2049,8 +2049,8 @@ const RewardPointSettingsForm = ({ settings, updateSettings }: { settings: AllSe
 const ModulesSettingsForm = ({ settings, updateSettings }: { settings: AllSettings['modules'], updateSettings: (newValues: Partial<AllSettings['modules']>) => void }) => {
     const { toast } = useToast();
 
-    const handleCheckboxChange = (id: keyof AllSettings['modules'], checked: boolean) => {
-        updateSettings({ [id]: checked });
+    const handleCheckboxChange = (id: keyof AllSettings['modules'], checked: boolean | 'indeterminate') => {
+        updateSettings({ [id]: checked === true });
     };
 
     const handleUpdateSettings = () => {
@@ -2082,7 +2082,7 @@ const ModulesSettingsForm = ({ settings, updateSettings }: { settings: AllSettin
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {moduleCheckboxes.map(cb => (
                         <div key={cb.id} className="flex items-center space-x-2">
-                            <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, !!checked)} />
+                            <Checkbox id={cb.id} checked={settings[cb.id]} onCheckedChange={(checked) => handleCheckboxChange(cb.id, checked)} />
                             <Label htmlFor={cb.id} className="font-normal flex items-center gap-1.5">
                                 {cb.label}
                                 {cb.tooltip && (
@@ -2310,4 +2310,3 @@ export default function BusinessSettingsPage() {
         </TooltipProvider>
     );
 }
-
