@@ -132,6 +132,11 @@ export default function ViewCommissionProfilePage() {
         return commissionableSales.reduce((acc, sale) => acc + sale.commissionEarned, 0);
     }, [commissionableSales]);
 
+    const recalculatedPending = useMemo(() => {
+        if (!profile) return 0;
+        return totalCommissionEarned - (profile.totalCommissionPaid || 0);
+    }, [profile, totalCommissionEarned]);
+
     if (isLoading || !profile) {
         return (
             <div className="flex flex-col gap-6">
@@ -183,7 +188,7 @@ export default function ViewCommissionProfilePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{formatCurrency(totalCommissionEarned)}</div>
-                        <p className="text-xs text-muted-foreground">All-time earnings from all sales</p>
+                        <p className="text-xs text-muted-foreground">Sum of commission from all sales below</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -202,8 +207,8 @@ export default function ViewCommissionProfilePage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</div>
-                        <p className="text-xs text-muted-foreground">Current outstanding balance</p>
+                        <div className="text-2xl font-bold text-red-600">{formatCurrency(recalculatedPending)}</div>
+                        <p className="text-xs text-muted-foreground">(Total Earned - Total Paid)</p>
                     </CardContent>
                 </Card>
             </div>
@@ -319,4 +324,3 @@ export default function ViewCommissionProfilePage() {
         </div>
     );
 }
-
