@@ -40,10 +40,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase, type CommissionProfile } from '@/lib/data';
+import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
 import { addSale, getSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles } from '@/services/commissionService';
+import { getCustomers, addCustomer } from '@/services/customerService';
 import {
   Select,
   SelectContent,
@@ -445,7 +446,11 @@ export default function PosPage() {
   const { formatCurrency } = useCurrency();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', email: '' });
 
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
@@ -486,12 +491,15 @@ export default function PosPage() {
   const fetchAndCalculateStock = useCallback(async () => {
       try {
         setIsLoading(true);
-        const [productsData, salesData, purchasesData, profilesData] = await Promise.all([
+        const [productsData, salesData, purchasesData, profilesData, customersData] = await Promise.all([
           getProducts(),
           getSales(),
           getPurchases(),
           getCommissionProfiles(),
+          getCustomers(),
         ]);
+
+        setCustomers(customersData);
 
         const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
           acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
@@ -790,6 +798,52 @@ export default function PosPage() {
     const handleRefresh = () => window.location.reload();
     const handleCustomerDisplay = () => window.open('/customer-display', '_blank', 'noopener,noreferrer');
 
+    const handleSaveCustomer = async () => {
+        if (!newCustomer.name || !newCustomer.mobile) {
+            toast({
+                title: "Validation Error",
+                description: "Name and Mobile Number are required.",
+                variant: "destructive"
+            });
+            return;
+        }
+
+        try {
+            const customerToAdd: Omit<Customer, 'id'> = {
+                contactId: '',
+                name: newCustomer.name,
+                email: newCustomer.email || null,
+                taxNumber: '',
+                customerGroup: 'retail',
+                openingBalance: 0,
+                addedOn: new Date().toLocaleDateString('en-CA'),
+                address: '',
+                mobile: newCustomer.mobile,
+                totalSaleDue: 0,
+                totalSaleReturnDue: 0,
+            };
+            await addCustomer(customerToAdd);
+            toast({
+                title: "Success",
+                description: "Customer has been added successfully."
+            });
+            
+            // Re-fetch customers to update the list
+            const updatedCustomers = await getCustomers();
+            setCustomers(updatedCustomers);
+
+            setIsAddCustomerOpen(false);
+            setNewCustomer({ name: '', mobile: '', email: '' });
+        } catch (error) {
+            console.error("Failed to add customer:", error);
+            toast({
+                title: "Error",
+                description: "Failed to add customer. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
+
   return (
     <TooltipProvider>
     <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -832,10 +886,40 @@ export default function PosPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="walk-in">Walk-In Customer</SelectItem>
-                            <SelectItem value="john-doe">John Doe</SelectItem>
+                             {customers.map(customer => (
+                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <Button size="icon" className="flex-shrink-0"><Plus/></Button>
+                        <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                            <DialogTrigger asChild>
+                                <Button size="icon" className="flex-shrink-0"><Plus/></Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New Customer</DialogTitle>
+                                    <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Name *</Label>
+                                        <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mobile">Mobile *</Label>
+                                        <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 </div>
                  <Separator className="my-4" />
@@ -850,7 +934,7 @@ export default function PosPage() {
                             onSelect={setSelectedAgent}
                             onRemove={() => setSelectedAgent(null)}
                         />
-                        <CommissionSelector
+                         <CommissionSelector
                             entityType="Salesperson"
                             label="Salesperson"
                             profiles={commissionProfiles}
