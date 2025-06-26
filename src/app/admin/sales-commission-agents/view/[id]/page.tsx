@@ -2,10 +2,10 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
-import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, DollarSign, ShoppingCart } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, ShoppingCart } from "lucide-react";
 import { type CommissionProfile, type Sale, type DetailedProduct } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -146,22 +146,13 @@ export default function ViewCommissionProfilePage() {
                         <Skeleton className="h-9 w-72" />
                     </h1>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Skeleton className="h-28 w-full" />
-                    <Skeleton className="h-28 w-full" />
-                    <Skeleton className="h-28 w-full" />
-                </div>
+                <Card><CardContent className="p-6"><Skeleton className="h-40 w-full" /></CardContent></Card>
                 <Card>
                     <CardHeader>
                         <CardTitle><Skeleton className="h-7 w-48" /></CardTitle>
-                        <CardDescription><Skeleton className="h-6 w-20" /></CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
-                            <Skeleton className="h-16 w-full" />
-                        </div>
+                         <Skeleton className="h-20 w-full" />
                     </CardContent>
                 </Card>
             </div>
@@ -180,71 +171,63 @@ export default function ViewCommissionProfilePage() {
                 </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Commission Earned</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader>
+                        <CardTitle>{profile.name}</CardTitle>
+                        <CardDescription>
+                            <Badge variant="outline">{profile.entityType}</Badge>
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(totalCommissionEarned)}</div>
-                        <p className="text-xs text-muted-foreground">Sum of commission from all sales below</p>
+                        <div className="space-y-4">
+                            <DetailItem icon={Phone} label="Phone Number" value={profile.phone} />
+                            <DetailItem icon={Mail} label="Email" value={profile.email || 'N/A'} />
+                            <DetailItem icon={Banknote} label="Bank Details" value={profile.bankDetails || 'N/A'} />
+                             <DetailItem icon={Percent} label="Overall Commission Rate" value={`${profile.commission.overall}%`} />
+                            {profile.commission.categories && profile.commission.categories.length > 0 && (
+                                <DetailItem icon={Tag} label="Category-Specific Rates">
+                                    <div className="flex flex-col gap-1 mt-1">
+                                        {profile.commission.categories.map(c => (
+                                            <div key={c.category} className="flex justify-between gap-4">
+                                                <span className="text-sm">{c.category}:</span>
+                                                <span className="font-semibold">{c.rate}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </DetailItem>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
+                
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Commission Paid</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader>
+                        <CardTitle>Commission Summary</CardTitle>
+                        <CardDescription>A summary of the agent's commission status.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(profile.totalCommissionPaid || 0)}</div>
-                        <p className="text-xs text-muted-foreground">All-time payouts recorded</p>
+                    <CardContent className="space-y-4 text-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Total Commission Earned</span>
+                            <span className="font-semibold">{formatCurrency(totalCommissionEarned)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">(-) Total Commission Paid</span>
+                            <span className="font-semibold">({formatCurrency(profile.totalCommissionPaid || 0)})</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center text-xl font-bold">
+                            <span>Pending Commission</span>
+                            <span className="text-red-600">{formatCurrency(recalculatedPending)}</span>
+                        </div>
                     </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Commission</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{formatCurrency(recalculatedPending)}</div>
-                        <p className="text-xs text-muted-foreground">(Total Earned - Total Paid)</p>
-                    </CardContent>
+                     <CardFooter>
+                        <p className="text-xs text-muted-foreground">
+                            The pending amount is calculated based on total earned commission minus total paid commission.
+                        </p>
+                    </CardFooter>
                 </Card>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>{profile.name}</CardTitle>
-                    <CardDescription>
-                        <Badge variant="outline">{profile.entityType}</Badge>
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <DetailItem icon={Phone} label="Phone Number" value={profile.phone} />
-                        <DetailItem icon={Mail} label="Email" value={profile.email || 'N/A'} />
-                        <DetailItem icon={Banknote} label="Bank Details" value={profile.bankDetails || 'N/A'} />
-                    </div>
-                    <Separator className="my-6" />
-                    <h3 className="text-lg font-semibold mb-4">Commission Structure</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <DetailItem icon={Percent} label="Overall Commission Rate" value={`${profile.commission.overall}%`} />
-                        {profile.commission.categories && profile.commission.categories.length > 0 && (
-                             <DetailItem icon={Tag} label="Category-Specific Rates">
-                                <div className="flex flex-col gap-1 mt-1">
-                                    {profile.commission.categories.map(c => (
-                                        <div key={c.category} className="flex justify-between gap-4">
-                                            <span className="text-sm">{c.category}:</span>
-                                            <span className="font-semibold">{c.rate}%</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </DetailItem>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
             
              <Card>
                 <CardHeader>
