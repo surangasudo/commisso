@@ -168,6 +168,10 @@ export default function ViewCommissionProfilePage() {
         };
     }, [profile, sales, products]);
     
+    const totalCommissionEarned = useMemo(() => {
+        return commissionableSales.reduce((acc, sale) => acc + sale.commissionEarned, 0);
+    }, [commissionableSales]);
+
     if (isLoading || !profile) {
         return (
             <div className="flex flex-col gap-6">
@@ -176,6 +180,11 @@ export default function ViewCommissionProfilePage() {
                         <UserIcon className="w-8 h-8" />
                         <Skeleton className="h-9 w-72" />
                     </h1>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Skeleton className="h-28 w-full" />
+                    <Skeleton className="h-28 w-full" />
+                    <Skeleton className="h-28 w-full" />
                 </div>
                 <Card>
                     <CardHeader>
@@ -206,6 +215,39 @@ export default function ViewCommissionProfilePage() {
                 </Button>
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Commission Earned</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(totalCommissionEarned)}</div>
+                        <p className="text-xs text-muted-foreground">All-time earnings from all sales</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Commission Paid</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{formatCurrency(profile.totalCommissionPaid || 0)}</div>
+                        <p className="text-xs text-muted-foreground">All-time payouts recorded</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Pending Commission</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-red-600">{formatCurrency(profile.totalCommissionPending || 0)}</div>
+                        <p className="text-xs text-muted-foreground">Current outstanding balance</p>
+                    </CardContent>
+                </Card>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle>{profile.name}</CardTitle>
