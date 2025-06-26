@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -34,6 +35,8 @@ export const useCurrency = (): CurrencySettings & { formatCurrency: (value: numb
                     symbol: getCurrencySymbol(currencyCode),
                     placement: currencyPlacement,
                 });
+            } else {
+                 setSettings({ symbol: '$', placement: 'before' });
             }
         } catch (error) {
             console.error("Failed to read currency from localStorage", error);
@@ -42,18 +45,18 @@ export const useCurrency = (): CurrencySettings & { formatCurrency: (value: numb
     }, []);
 
     useEffect(() => {
-        loadSettings(); // Initial load
+        loadSettings();
 
-        const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === 'businessSettings') {
-                loadSettings();
-            }
+        const handleSettingsUpdate = () => {
+            loadSettings();
         };
 
-        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('storage', handleSettingsUpdate);
+        window.addEventListener('settingsUpdated', handleSettingsUpdate);
 
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('storage', handleSettingsUpdate);
+            window.removeEventListener('settingsUpdated', handleSettingsUpdate);
         };
     }, [loadSettings]);
     
