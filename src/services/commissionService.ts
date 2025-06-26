@@ -4,14 +4,13 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type CommissionProfile } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
 export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sanitizeForClient<CommissionProfile[]>(data);
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as CommissionProfile[];
+  return data;
 }
 
 export async function getCommissionProfile(id: string): Promise<CommissionProfile | null> {
@@ -19,8 +18,8 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() };
-        return sanitizeForClient<CommissionProfile>(data);
+        const data = { id: docSnap.id, ...docSnap.data() } as CommissionProfile;
+        return data;
     } else {
         return null;
     }

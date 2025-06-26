@@ -3,14 +3,20 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type Sale } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const salesCollection = collection(db, 'sales');
 
 export async function getSales(): Promise<Sale[]> {
   const snapshot = await getDocs(salesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sanitizeForClient<Sale[]>(data);
+  const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+          id: doc.id,
+          ...docData,
+          date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+      } as Sale;
+  });
+  return data;
 }
 
 export async function getSale(id: string): Promise<Sale | null> {
@@ -18,8 +24,12 @@ export async function getSale(id: string): Promise<Sale | null> {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() };
-        return sanitizeForClient<Sale>(data);
+        const data = docSnap.data();
+        return {
+            id: docSnap.id,
+            ...data,
+            date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
+        } as Sale;
     } else {
         return null;
     }

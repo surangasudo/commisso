@@ -3,14 +3,20 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const suppliersCollection = collection(db, 'suppliers');
 
 export async function getSuppliers(): Promise<Supplier[]> {
   const snapshot = await getDocs(suppliersCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sanitizeForClient<Supplier[]>(data);
+  const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+          id: doc.id,
+          ...docData,
+          addedOn: docData.addedOn?.toDate ? docData.addedOn.toDate().toISOString() : docData.addedOn,
+      } as Supplier;
+  });
+  return data;
 }
 
 export async function addSupplier(supplier: Omit<Supplier, 'id'>): Promise<DocumentData> {

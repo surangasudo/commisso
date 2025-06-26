@@ -4,14 +4,20 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Expense } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const expensesCollection = collection(db, 'expenses');
 
 export async function getExpenses(): Promise<Expense[]> {
   const snapshot = await getDocs(expensesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sanitizeForClient<Expense[]>(data);
+  const data = snapshot.docs.map(doc => {
+      const docData = doc.data();
+      return {
+        id: doc.id,
+        ...docData,
+        date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
+      } as Expense;
+  });
+  return data;
 }
 
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<DocumentData> {

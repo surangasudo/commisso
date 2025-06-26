@@ -3,14 +3,13 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type ExpenseCategory } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   const snapshot = await getDocs(expenseCategoriesCollection);
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sanitizeForClient<ExpenseCategory[]>(data);
+  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpenseCategory[];
+  return data;
 }
 
 export async function addExpenseCategory(category: Omit<ExpenseCategory, 'id'>): Promise<DocumentData> {

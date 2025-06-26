@@ -3,14 +3,13 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type DetailedProduct } from '@/lib/data';
-import { sanitizeForClient } from '@/lib/firestore-utils';
 
 const productsCollection = collection(db, 'products');
 
 export async function getProducts(): Promise<DetailedProduct[]> {
     const snapshot = await getDocs(productsCollection);
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return sanitizeForClient<DetailedProduct[]>(data);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as DetailedProduct[];
+    return data;
 }
 
 export async function getProduct(id: string): Promise<DetailedProduct | null> {
@@ -18,8 +17,8 @@ export async function getProduct(id: string): Promise<DetailedProduct | null> {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = { id: docSnap.id, ...docSnap.data() };
-        return sanitizeForClient<DetailedProduct>(data);
+        const data = { id: docSnap.id, ...docSnap.data() } as DetailedProduct;
+        return data;
     } else {
         return null;
     }
