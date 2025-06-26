@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -768,11 +769,14 @@ export default function PosPage() {
                     <div className="relative">
                         {selectedAgent ? (
                             <div className="flex items-center justify-between rounded-md border h-10 px-3">
-                                <div className="flex items-center gap-2">
-                                    <Briefcase className="h-5 w-5 text-muted-foreground" />
-                                    <span className="text-sm font-medium">{selectedAgent.name}</span>
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                    <div className="flex-1 truncate">
+                                        <div className="text-sm font-medium truncate">{selectedAgent.name}</div>
+                                        <div className="text-xs text-muted-foreground">{selectedAgent.entityType}</div>
+                                    </div>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedAgent(null)}>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0" onClick={() => setSelectedAgent(null)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -780,7 +784,7 @@ export default function PosPage() {
                             <div className="relative h-full">
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                                 <Input
-                                    placeholder="Agent name/phone"
+                                    placeholder="Search Commission Profiles..."
                                     className="pl-10 w-full"
                                     value={agentSearchTerm}
                                     onChange={(e) => setAgentSearchTerm(e.target.value)}
@@ -796,7 +800,11 @@ export default function PosPage() {
                                                     setAgentSearchTerm('');
                                                 }}
                                             >
-                                                <span>{profile.name} ({profile.phone})</span>
+                                                <div>
+                                                    <div className="font-medium">{profile.name}</div>
+                                                    <div className="text-xs text-muted-foreground">{profile.phone}</div>
+                                                </div>
+                                                <Badge variant="outline">{profile.entityType}</Badge>
                                             </div>
                                         ))}
                                     </div>
