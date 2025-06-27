@@ -13,23 +13,18 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(number: string): string {
-  // 1. Remove all non-digit characters.
-  const cleaned = number.replace(/\D/g, '');
+  let cleaned = number.replace(/\D/g, '');
 
-  // 2. Check for '94' prefix (11 digits total).
   if (cleaned.startsWith('94') && cleaned.length === 11) {
     return cleaned;
   }
-  // 3. Check for '0' prefix (10 digits total) and convert.
   if (cleaned.startsWith('0') && cleaned.length === 10) {
     return '94' + cleaned.slice(1);
   }
-  // 4. Check for no prefix (9 digits total) and convert.
   if (cleaned.length === 9) {
     return '94' + cleaned;
   }
-  // 5. If none of the above match, the number is invalid.
-  throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
+  throw new Error(`Invalid Sri Lankan phone number: ${number}`);
 }
 
 
