@@ -56,7 +56,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
   const recipients = [formattedNumber];
 
   try {
-    const response = await fetch('https://app.text.lk/api/v2/sms/send', {
+    const response = await fetch('https://app.text.lk/api/v3/sms/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
