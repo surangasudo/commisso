@@ -16,6 +16,7 @@ import { type DetailedProduct } from '@/lib/data';
 import { FirebaseError } from 'firebase/app';
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { getBrands, type Brand } from '@/services/brandService';
+import { useBusinessSettings } from "@/hooks/use-business-settings";
 
 
 const initialProductState: Partial<DetailedProduct> = {
@@ -25,7 +26,7 @@ const initialProductState: Partial<DetailedProduct> = {
     unit: 'Pieces',
     brand: '',
     category: '',
-    businessLocation: 'Awesome Shop',
+    businessLocation: '',
     image: 'https://placehold.co/40x40.png',
     unitPurchasePrice: 0,
     sellingPrice: 0,
@@ -36,7 +37,11 @@ const initialProductState: Partial<DetailedProduct> = {
 export default function AddProductPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [product, setProduct] = useState(initialProductState);
+  const settings = useBusinessSettings();
+  const [product, setProduct] = useState({
+      ...initialProductState,
+      businessLocation: settings.business.businessName,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -92,7 +97,7 @@ export default function AddProductPage() {
         unit: product.unit,
         brand: product.brand || '',
         category: product.category || '',
-        businessLocation: product.businessLocation || 'Awesome Shop',
+        businessLocation: product.businessLocation || settings.business.businessName,
         image: product.image || 'https://placehold.co/40x40.png',
         unitPurchasePrice: Number(product.unitPurchasePrice) || 0,
         sellingPrice: Number(product.sellingPrice) || 0,
@@ -211,7 +216,7 @@ export default function AddProductPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
+                                    <SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

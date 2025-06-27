@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -11,16 +12,11 @@ import { getPurchases } from '@/services/purchaseService';
 import { getExpenses } from '@/services/expenseService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays } from 'date-fns';
-
-const chartConfig = {
-  sales: {
-    label: "Awesome Shop",
-    color: "hsl(var(--chart-1))",
-  },
-};
+import { useSettings } from '@/hooks/use-settings';
 
 export default function DashboardPage() {
   const { formatCurrency } = useCurrency();
+  const { settings: businessSettings } = useSettings();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState([
     { title: 'Total Sales', value: 0, icon: ShoppingCart, color: 'bg-sky-100 text-sky-600' },
@@ -33,6 +29,13 @@ export default function DashboardPage() {
     { title: 'Expense', value: 0, icon: Wallet, color: 'bg-red-100 text-red-600' },
   ]);
   const [salesChartData, setSalesChartData] = useState<{ date: string; sales: number }[]>([]);
+  
+  const chartConfig = {
+    sales: {
+      label: businessSettings.business.businessName,
+      color: "hsl(var(--chart-1))",
+    },
+  };
 
   useEffect(() => {
     async function fetchData() {

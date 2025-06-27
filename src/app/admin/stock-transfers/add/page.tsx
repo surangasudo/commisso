@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '@/hooks/use-currency';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AppFooter } from '@/components/app-footer';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 const transferItemSchema = z.object({
     productId: z.string(),
@@ -49,6 +50,7 @@ export default function AddStockTransferPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const settings = useBusinessSettings();
 
     const [products, setProducts] = useState<DetailedProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -157,11 +159,11 @@ export default function AddStockTransferPage() {
                                 )}/>
                                 <FormField control={form.control} name="locationFrom" render={({ field }) => (
                                     <FormItem><FormLabel>Location (From):*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Please Select" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem><SelectItem value="Warehouse A">Warehouse A</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Please Select" /></SelectTrigger></FormControl><SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem><SelectItem value="Warehouse A">Warehouse A</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="locationTo" render={({ field }) => (
                                     <FormItem><FormLabel>Location (To):*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Please Select" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem><SelectItem value="Warehouse B">Warehouse B</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Please Select" /></SelectTrigger></FormControl><SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem><SelectItem value="Warehouse B">Warehouse B</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                             </div>
                         </CardContent>

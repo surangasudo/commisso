@@ -14,7 +14,7 @@ type PrintableReceiptProps = {
 
 export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
     const { formatCurrency } = useCurrency();
-    const { appName } = useSettings();
+    const { settings } = useSettings();
 
     if (!sale) {
         return null;
@@ -31,8 +31,8 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
         <div className="receipt-printable-area hidden print:block font-mono text-xs w-[300px] mx-auto">
             <div className="text-center p-4">
                 <Logo className="mx-auto h-12 w-12 mb-2" />
-                <h1 className="text-lg font-bold">{appName}</h1>
-                <p>Awesome Shop</p>
+                <h1 className="text-lg font-bold">{settings.system.appName}</h1>
+                <p>{settings.business.businessName}</p>
                 <p>123 Main Street, Phoenix, AZ</p>
                 <p>Tel: 555-123-4567</p>
                 <p className="mt-2 text-sm">Sale Invoice</p>

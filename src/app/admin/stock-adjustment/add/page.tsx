@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -22,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '@/hooks/use-currency';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { AppFooter } from '@/components/app-footer';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 const adjustmentItemSchema = z.object({
     productId: z.string(),
@@ -46,6 +48,7 @@ export default function AddStockAdjustmentPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const settings = useBusinessSettings();
 
     const [products, setProducts] = useState<DetailedProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +57,7 @@ export default function AddStockAdjustmentPage() {
     const form = useForm<StockAdjustmentFormValues>({
         resolver: zodResolver(stockAdjustmentSchema),
         defaultValues: {
-            location: 'Awesome Shop',
+            location: settings.business.businessName,
             date: new Date(),
             adjustmentType: 'Normal',
             items: [],
@@ -144,7 +147,7 @@ export default function AddStockAdjustmentPage() {
                                     <FormItem><FormLabel>Business Location:*</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem></SelectContent>
+                                        <SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent>
                                     </Select><FormMessage /></FormItem>
                                 )}/>
                                 <FormField control={form.control} name="referenceNo" render={({ field }) => (
@@ -158,9 +161,7 @@ export default function AddStockAdjustmentPage() {
                                 <FormField control={form.control} name="adjustmentType" render={({ field }) => (
                                     <FormItem><FormLabel className="flex items-center gap-1">Adjustment type:* <Info className="w-3 h-3 text-muted-foreground" /></FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Abnormal">Abnormal</SelectItem></SelectContent>
-                                    </Select><FormMessage /></FormItem>
+                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Abnormal">Abnormal</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                                 )}/>
                             </div>
                         </CardContent>

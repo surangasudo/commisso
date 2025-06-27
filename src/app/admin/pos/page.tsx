@@ -776,7 +776,7 @@ export default function PosPage() {
           invoiceNo: `INV-${Date.now()}`,
           customerName: 'Walk-In Customer', // Simplified
           contactNumber: 'N/A', // Simplified
-          location: 'Awesome Shop',
+          location: settings.business.businessName,
           paymentStatus: paymentStatus,
           paymentMethod: paymentMethod,
           totalAmount: totalPayable,
@@ -1017,7 +1017,7 @@ export default function PosPage() {
             <div className="flex flex-col h-screen bg-background text-foreground font-sans print-hidden">
                 <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
                     <div className="flex items-center gap-2">
-                        <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
+                        <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">{settings.business.businessName}</span></h2>
                         {settings.pos.enableTransactionDate && (
                             <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />

@@ -24,6 +24,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FirebaseError } from 'firebase/app';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 type Contact = { id: string; name: string };
 type TaxRate = { id: string; name: string; rate: number };
@@ -32,9 +33,10 @@ export default function AddExpensePage() {
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const settings = useBusinessSettings();
 
     const [formData, setFormData] = useState({
-        location: 'Awesome Shop',
+        location: settings.business.businessName,
         expenseCategory: '',
         subCategory: '',
         referenceNo: '',
@@ -189,7 +191,7 @@ export default function AddExpensePage() {
                                 <Label htmlFor="location">Business Location:*</Label>
                                 <Select value={formData.location} onValueChange={(value) => handleSelectChange('location', value)}>
                                     <SelectTrigger id="location"><SelectValue /></SelectTrigger>
-                                    <SelectContent><SelectItem value="Awesome Shop">Awesome Shop</SelectItem></SelectContent>
+                                    <SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent>
                                 </Select>
                             </div>
                             <div className="space-y-2">
