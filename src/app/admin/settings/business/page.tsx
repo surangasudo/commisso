@@ -75,7 +75,7 @@ const settingsTabs = [
   { value: "custom_labels", label: "Custom Labels", icon: Tags },
 ];
 
-const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSettings }: { settings: AllSettings['business'], updateSettings: (newValues: Partial<AllSettings['business']>) => void }) => {
+const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSettings }: { settings: AllSettings['business'], updateSettings: (newValues: AllSettings['business']) => void }) => {
     const { toast } = useToast();
     const [settings, setSettings] = useState(initialBusinessSettings);
 
@@ -1286,7 +1286,6 @@ const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { 
         <>
             <CardHeader>
                 <CardTitle>Email Settings</CardTitle>
-                <CardDescription>Configure your email service for sending notifications.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2 max-w-sm">
@@ -1365,6 +1364,16 @@ export default function BusinessSettingsPage() {
         return <div>Loading Settings...</div>; // Or a skeleton loader
     }
     
+    const handleBusinessUpdate = (newBusinessSettings: AllSettings['business']) => {
+        if (settings.business.businessName !== newBusinessSettings.businessName) {
+            // Only update fromName if it hasn't been manually changed
+            if (settings.email.fromName === settings.business.businessName) {
+                updateSection('email', { fromName: newBusinessSettings.businessName });
+            }
+        }
+        updateSection('business', newBusinessSettings);
+    };
+    
     return (
         <TooltipProvider>
             <div className="flex flex-col gap-6">
@@ -1390,7 +1399,7 @@ export default function BusinessSettingsPage() {
                     </TabsList>
                     <div className="lg:col-span-3">
                         <TabsContent value="business">
-                            <BusinessSettingsForm settings={settings.business} updateSettings={(newValues) => updateSection('business', newValues)} />
+                            <BusinessSettingsForm settings={settings.business} updateSettings={handleBusinessUpdate} />
                         </TabsContent>
                          <TabsContent value="tax">
                             <TaxSettingsForm settings={settings.tax} updateSettings={(newValues) => updateSection('tax', newValues)} />
