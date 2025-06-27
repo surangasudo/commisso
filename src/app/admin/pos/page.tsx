@@ -76,7 +76,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppFooter } from '@/components/app-footer';
 import { PrintableReceipt } from '@/components/printable-receipt';
-import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { useSettings } from '@/hooks/use-settings';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -531,7 +531,7 @@ export default function PosPage() {
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
-  const settings = useBusinessSettings();
+  const { settings } = useSettings();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -828,7 +828,7 @@ export default function PosPage() {
       }
 
       try {
-          await addSale(sale);
+          await addSale(sale, settings.sale.commissionCalculationType);
           toast({
               title: 'Sale Finalized',
               description: `Payment of ${formatCurrency(sale.totalPaid)} received.`,
@@ -1109,7 +1109,7 @@ export default function PosPage() {
                                 )}
                             </div>
 
-                            {(settings.sale.enableCommissionAgent || settings.modules.serviceStaff) && (
+                            {settings.sale.enableCommissionAgent || settings.modules.serviceStaff ? (
                                 <>
                                     <Separator className="my-4" />
                                     {settings.modules.advancedCommission ? (
@@ -1152,7 +1152,7 @@ export default function PosPage() {
                                         </div>
                                     )}
                                 </>
-                            )}
+                            ): null}
                             
                             <Separator className="my-4" />
                             <div className="relative flex items-center">
