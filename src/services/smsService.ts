@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -12,31 +13,31 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(phoneNumber: string): string {
-    // This is a pre-condition check. The function should not be called with falsy values.
-    if (!phoneNumber || typeof phoneNumber !== 'string') {
-        throw new Error('Invalid input: Phone number must be a non-empty string.');
-    }
-    
-    // Remove all non-digit characters.
-    const cleaned = phoneNumber.replace(/\D/g, '');
+  // This is a pre-condition check. The function should not be called with falsy values.
+  if (!phoneNumber || typeof phoneNumber !== 'string') {
+      throw new Error('Invalid input: Phone number must be a non-empty string.');
+  }
+  
+  // Remove all non-digit characters.
+  const cleaned = phoneNumber.replace(/\D/g, '');
 
-    // Case 1: Number starts with '94' and is 11 digits long (e.g., 94712345678)
-    if (cleaned.startsWith('94') && cleaned.length === 11) {
-        return cleaned;
-    }
-    
-    // Case 2: Number starts with '0' and is 10 digits long (e.g., 0712345678)
-    if (cleaned.startsWith('0') && cleaned.length === 10) {
-        return '94' + cleaned.substring(1);
-    }
-    
-    // Case 3: Number is 9 digits long (e.g., 712345678)
-    if (cleaned.length === 9) {
-        return '94' + cleaned;
-    }
+  // Case 1: Number starts with '94' and is 11 digits long (e.g., 94712345678)
+  if (cleaned.startsWith('94') && cleaned.length === 11) {
+      return cleaned;
+  }
+  
+  // Case 2: Number starts with '0' and is 10 digits long (e.g., 0712345678)
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
+      return '94' + cleaned.substring(1);
+  }
+  
+  // Case 3: Number is 9 digits long (e.g., 712345678)
+  if (cleaned.length === 9) {
+      return '94' + cleaned;
+  }
 
-    // If none of the valid formats match, throw an error.
-    throw new Error(`Invalid Sri Lankan phone number format provided: "${phoneNumber}"`);
+  // If none of the valid formats match, throw an error.
+  throw new Error(`Invalid Sri Lankan phone number format provided: "${phoneNumber}"`);
 }
 
 
