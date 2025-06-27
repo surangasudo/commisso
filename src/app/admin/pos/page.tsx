@@ -1105,7 +1105,7 @@ export default function PosPage() {
                                 )}
                             </div>
 
-                            {settings.sale.enableCommissionAgent && (
+                            {(settings.sale.enableCommissionAgent || settings.modules.serviceStaff) && (
                                 <>
                                     <Separator className="my-4" />
                                     {settings.modules.advancedCommission ? (
