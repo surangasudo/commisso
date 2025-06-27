@@ -455,6 +455,11 @@ export default function SalesCommissionAgentsPage() {
   
   const [smsStatuses, setSmsStatuses] = useState<Record<string, 'success' | 'failed'>>({});
 
+  const [selectedAgent, setSelectedAgent] = useState('all');
+  const [selectedSubAgent, setSelectedSubAgent] = useState('all');
+  const [selectedCompany, setSelectedCompany] = useState('all');
+  const [selectedSalesperson, setSelectedSalesperson] = useState('all');
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -507,6 +512,39 @@ export default function SalesCommissionAgentsPage() {
   const agents = useMemo(() => profiles.filter(p => p.entityType === 'Agent'), [profiles]);
   const subAgents = useMemo(() => profiles.filter(p => p.entityType === 'Sub-Agent'), [profiles]);
   const companies = useMemo(() => profiles.filter(p => p.entityType === 'Company'), [profiles]);
+  
+  const salespersonData = useMemo(() => {
+    let data = profiles.filter(p => p.entityType === 'Salesperson');
+    if (selectedSalesperson !== 'all') {
+        data = data.filter(p => p.id === selectedSalesperson);
+    }
+    return data;
+  }, [profiles, selectedSalesperson]);
+
+  const agentData = useMemo(() => {
+    let data = profiles.filter(p => p.entityType === 'Agent');
+    if (selectedAgent !== 'all') {
+        data = data.filter(p => p.id === selectedAgent);
+    }
+    return data;
+  }, [profiles, selectedAgent]);
+
+  const subAgentData = useMemo(() => {
+    let data = profiles.filter(p => p.entityType === 'Sub-Agent');
+    if (selectedSubAgent !== 'all') {
+        data = data.filter(p => p.id === selectedSubAgent);
+    }
+    return data;
+  }, [profiles, selectedSubAgent]);
+
+  const companyData = useMemo(() => {
+    let data = profiles.filter(p => p.entityType === 'Company');
+    if (selectedCompany !== 'all') {
+        data = data.filter(p => p.id === selectedCompany);
+    }
+    return data;
+  }, [profiles, selectedCompany]);
+
 
   const handleEdit = (profileId: string) => {
     router.push(`/admin/sales-commission-agents/edit/${profileId}`);
@@ -717,8 +755,18 @@ export default function SalesCommissionAgentsPage() {
                     <p className="text-sm text-muted-foreground">View pending commissions for Salespersons.</p>
                 </CardHeader>
                 <CardContent>
+                     <div className="space-y-2 max-w-sm print:hidden mb-4">
+                        <Label>Filter by Salesperson</Label>
+                        <Select value={selectedSalesperson} onValueChange={setSelectedSalesperson}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Salespersons</SelectItem>
+                                {salespersons.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <PayoutsTable 
-                        profiles={salespersons} 
+                        profiles={salespersonData} 
                         smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick}
                         handleView={handleView}
@@ -735,8 +783,18 @@ export default function SalesCommissionAgentsPage() {
                     <p className="text-sm text-muted-foreground">View pending commissions for Agents.</p>
                 </CardHeader>
                 <CardContent>
+                     <div className="space-y-2 max-w-sm print:hidden mb-4">
+                        <Label>Filter by Agent</Label>
+                        <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Agents</SelectItem>
+                                {agents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <PayoutsTable 
-                        profiles={agents} 
+                        profiles={agentData} 
                         smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
@@ -753,8 +811,18 @@ export default function SalesCommissionAgentsPage() {
                     <p className="text-sm text-muted-foreground">View pending commissions for Sub-Agents.</p>
                 </CardHeader>
                 <CardContent>
+                     <div className="space-y-2 max-w-sm print:hidden mb-4">
+                        <Label>Filter by Sub-Agent</Label>
+                        <Select value={selectedSubAgent} onValueChange={setSelectedSubAgent}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Sub-Agents</SelectItem>
+                                {subAgents.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <PayoutsTable 
-                        profiles={subAgents} 
+                        profiles={subAgentData} 
                         smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
@@ -771,8 +839,18 @@ export default function SalesCommissionAgentsPage() {
                     <p className="text-sm text-muted-foreground">View pending commissions for Companies.</p>
                 </CardHeader>
                 <CardContent>
+                    <div className="space-y-2 max-w-sm print:hidden mb-4">
+                        <Label>Filter by Company</Label>
+                        <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Companies</SelectItem>
+                                {companies.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <PayoutsTable 
-                        profiles={companies}
+                        profiles={companyData}
                         smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
