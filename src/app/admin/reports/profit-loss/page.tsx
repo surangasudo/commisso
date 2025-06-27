@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -358,6 +357,7 @@ export default function ProfitLossReportPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All locations</SelectItem>
+                            <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
                         </SelectContent>
                     </Select>
                     <DropdownMenu>
