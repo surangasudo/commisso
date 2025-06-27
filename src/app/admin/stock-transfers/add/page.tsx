@@ -108,7 +108,7 @@ export default function AddStockTransferPage() {
 
     const totalAmount = useMemo(() => {
         const itemsTotal = formValues.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-        return itemsTotal + (formValues.shippingCharges || 0);
+        return itemsTotal + (Number(formValues.shippingCharges) || 0);
     }, [formValues.items, formValues.shippingCharges]);
 
     async function onSubmit(values: StockTransferFormValues) {
