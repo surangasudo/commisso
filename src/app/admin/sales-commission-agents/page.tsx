@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
@@ -464,22 +464,22 @@ export default function SalesCommissionAgentsPage() {
   const [selectedCompany, setSelectedCompany] = useState('all');
   const [selectedSalesperson, setSelectedSalesperson] = useState('all');
 
+  const fetchProfiles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const profilesData = await getCommissionProfiles();
+        setProfiles(profilesData);
+    } catch (error) {
+        console.error("Error fetching commission profiles:", error);
+        toast({ title: 'Error', description: 'Could not load commission profiles.', variant: 'destructive' });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    const fetchData = async () => {
-        setIsLoading(true);
-        try {
-            const profilesData = await getCommissionProfiles();
-            setProfiles(profilesData);
-        } catch (error) {
-            console.error("Error fetching commission profiles:", error);
-            toast({ title: 'Error', description: 'Could not load commission profiles.', variant: 'destructive' });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    fetchData();
-  }, [toast]);
+    fetchProfiles();
+  }, [fetchProfiles]);
   
   const filteredProfiles = useMemo(() => {
     return profiles.filter(p => {
@@ -545,6 +545,7 @@ export default function SalesCommissionAgentsPage() {
       try {
         await deleteCommissionProfile(profileToDelete.id);
         toast({ title: 'Success', description: `Profile for ${profileToDelete.name} deleted.` });
+        await fetchProfiles();
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to delete profile.', variant: 'destructive' });
         console.error("Failed to delete profile:", error);
@@ -560,25 +561,28 @@ export default function SalesCommissionAgentsPage() {
     setIsPayDialogOpen(true);
   };
   
-  const handlePaymentComplete = (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string }) => {
+  const handlePaymentComplete = async (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string }) => {
+    setIsPayDialogOpen(false);
+    setProfileToPay(null);
+
     setSmsStatuses(prev => ({
         ...prev,
         [profileId]: result.smsSent ? 'success' : 'failed'
     }));
 
-    if (result.smsSent) {
-        toast({ title: 'Success', description: 'Payment recorded and SMS sent.' });
-    } else {
+    if (result.paymentRecorded) {
+        toast({ title: 'Success', description: result.smsSent ? 'Payment recorded and SMS sent.' : 'Payment recorded.' });
+        await fetchProfiles();
+    }
+    
+    if (!result.smsSent && result.error) {
         toast({
-            title: 'Payment Recorded, SMS Failed',
-            description: result.error || 'An unknown error occurred sending the SMS.',
+            title: 'SMS Failed',
+            description: result.error,
             variant: 'destructive',
             duration: 9000,
         });
     }
-
-    setIsPayDialogOpen(false);
-    setProfileToPay(null);
   };
 
   const getExportData = () => filteredProfiles.map(p => ({
