@@ -12,28 +12,32 @@
  * @returns The formatted phone number string.
  */
 function formatSriLankanNumber(number: string): string {
-  // Remove spaces, hyphens, and parentheses
+  // Remove common special characters like spaces, hyphens, and parentheses
   let cleaned = number.replace(/[\s-()]/g, '');
 
-  // If it starts with '+94', remove the '+'
-  if (cleaned.startsWith('+94')) {
-    return cleaned.substring(1);
+  // If the number starts with a '+', remove it for further processing.
+  if (cleaned.startsWith('+')) {
+    cleaned = cleaned.substring(1);
   }
-  // If it starts with a '0', remove it and prepend '94'
-  if (cleaned.startsWith('0')) {
-    return '94' + cleaned.substring(1);
-  }
-  // If it's a 9-digit number starting with 7, prepend '94'
-  if (cleaned.length === 9 && cleaned.startsWith('7')) {
-    return '94' + cleaned;
-  }
-  // If it already starts with '94', assume it's correct
+
+  // Now, 'cleaned' is guaranteed not to have a '+' prefix.
+  // The rest of the logic can assume a string of digits.
+
+  // If it starts with '94' (country code), it's likely already in the correct format.
   if (cleaned.startsWith('94')) {
     return cleaned;
   }
+  // If it starts with a '0', it's a local format. Replace '0' with '94'.
+  if (cleaned.startsWith('0')) {
+    return '94' + cleaned.substring(1);
+  }
+  // If it's a 9-digit number (local format without leading 0), prepend '94'.
+  if (cleaned.length === 9) {
+    return '94' + cleaned;
+  }
   
-  // As a fallback, return the cleaned number, but it might fail
-  console.warn(`Could not automatically format phone number: ${number}. Sending as is.`);
+  // As a fallback, return the number after basic cleaning, but warn the user.
+  console.warn(`Could not automatically format phone number: ${number}. Attempting to send as ${cleaned}.`);
   return cleaned;
 }
 
