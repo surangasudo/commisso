@@ -54,7 +54,10 @@ const CommissionPayoutDialog = ({
 }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const settings = useBusinessSettings();
     
+    const [allSales, setAllSales] = useState<Sale[]>([]);
+    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
     const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
     const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
@@ -69,10 +72,13 @@ const CommissionPayoutDialog = ({
             setIsLoading(true);
 
             try {
-                const [allSales, allProducts] = await Promise.all([getSales(), getProducts()]);
-                const productMap = new Map(allProducts.map(p => [p.id, p]));
+                const [salesData, productsData] = await Promise.all([getSales(), getProducts()]);
+                setAllSales(salesData);
+                setAllProducts(productsData);
 
-                const agentSales = allSales.filter(s => s.commissionAgentIds?.includes(profile.id));
+                const productMap = new Map(productsData.map(p => [p.id, p]));
+
+                const agentSales = salesData.filter(s => s.commissionAgentIds?.includes(profile.id));
                 const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
                 let paidAmountRemaining = profile.totalCommissionPaid || 0;
@@ -149,8 +155,44 @@ const CommissionPayoutDialog = ({
              return;
         }
         setIsPaying(true);
+
         try {
-            const result = await payCommission(profile, totalToPay, formatCurrency(totalToPay), method, note);
+            // --- Build detailed SMS message ---
+            const businessName = settings.business.businessName;
+            // Placeholder phone number as it's not in the settings data model
+            const businessPhone = "555-123-4567"; 
+
+            const productMap = new Map(allProducts.map(p => [p.id, p]));
+            const categoryBreakdown: Record<string, { totalSale: number; commission: number }> = {};
+
+            const selectedSales = allSales.filter(s => selectedSaleIds.has(s.id));
+
+            for (const sale of selectedSales) {
+                for (const item of sale.items) {
+                    const product = productMap.get(item.productId);
+                    if (!product || !product.category) continue;
+                    
+                    if (!categoryBreakdown[product.category]) {
+                        categoryBreakdown[product.category] = { totalSale: 0, commission: 0 };
+                    }
+                    
+                    const saleValue = item.unitPrice * item.quantity;
+                    const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
+                    const commissionValue = saleValue * (rate / 100);
+
+                    categoryBreakdown[product.category].totalSale += saleValue;
+                    categoryBreakdown[product.category].commission += commissionValue;
+                }
+            }
+
+            const breakdownString = Object.entries(categoryBreakdown)
+                .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}, com:${formatCurrency(data.commission)}`)
+                .join(', ');
+            
+            const smsMessage = `Thank you for visiting ${businessName}. Your total sale ${breakdownString}. Total earnings: ${formatCurrency(totalToPay)}. Inquiry: ${businessPhone}`;
+            // --- End of message building ---
+
+            const result = await payCommission(profile, totalToPay, method, note, smsMessage);
             onPaymentComplete(profile.id, result);
         } catch (error: any) {
             toast({

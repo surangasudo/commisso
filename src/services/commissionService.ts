@@ -90,9 +90,9 @@ export async function deleteCommissionProfile(id: string): Promise<void> {
 export async function payCommission(
     profile: CommissionProfile,
     amountToPay: number,
-    formattedAmount: string,
     paymentMethod: string,
-    paymentNote: string
+    paymentNote: string,
+    smsMessage: string,
 ): Promise<{ paymentRecorded: boolean; smsSent: boolean; error?: string }> {
     const profileDocRef = doc(db, 'commissionProfiles', profile.id);
     const expensesCollectionRef = collection(db, 'expenses');
@@ -144,9 +144,8 @@ export async function payCommission(
         });
 
         // After the transaction is successful, send the SMS
-        if (profile.phone && profile.phone.trim() !== '') {
-            const message = `Hi ${profile.name}, a commission payment of ${formattedAmount} has been processed for you. Thank you.`;
-            const smsResult = await sendSms(profile.phone, message);
+        if (profile.phone && profile.phone.trim() !== '' && smsMessage) {
+            const smsResult = await sendSms(profile.phone, smsMessage);
             if (!smsResult.success) {
                  return {
                     paymentRecorded: true,
@@ -159,7 +158,7 @@ export async function payCommission(
              return {
                 paymentRecorded: true,
                 smsSent: false,
-                error: 'No phone number available for this profile.',
+                error: 'No phone number or message available for this profile.',
             };
         }
     } catch (e: any) {
