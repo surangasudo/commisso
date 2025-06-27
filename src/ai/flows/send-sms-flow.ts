@@ -28,6 +28,11 @@ const sendSmsFlow = ai.defineFlow(
   },
   async (input) => {
     const result = await sendSms(input.to, input.message);
-    return { success: result.success };
+    
+    if (!result.success) {
+      throw new Error(`Failed to send SMS: ${result.error || 'An unknown error occurred.'}`);
+    }
+    
+    return { success: true };
   }
 );

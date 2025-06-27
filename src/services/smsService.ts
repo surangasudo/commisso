@@ -5,13 +5,14 @@
  * This service makes a real API call to the Text.lk service.
  */
 
-export async function sendSms(to: string, message: string): Promise<{ success: boolean, messageId?: string }> {
+export async function sendSms(to: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   const apiKey = process.env.TEXTLK_API_KEY;
   const senderId = process.env.TEXTLK_SENDER_ID;
 
   if (!apiKey || !senderId) {
-    console.error('ERROR: TEXTLK_API_KEY or TEXTLK_SENDER_ID is not set in the .env file.');
-    return { success: false };
+    const errorMsg = 'ERROR: TEXTLK_API_KEY or TEXTLK_SENDER_ID is not set in the .env file.';
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
   }
   
   // The API expects recipients as an array of strings.
@@ -31,22 +32,22 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
       }),
     });
 
+    const responseBody = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Failed to send SMS via Text.lk. Status:', response.status, 'Response:', errorData);
-      return { success: false };
+      const errorMessage = responseBody.message || `API Error: ${response.statusText}`;
+      console.error('Failed to send SMS via Text.lk. Status:', response.status, 'Response:', responseBody);
+      return { success: false, error: errorMessage };
     }
 
-    const data = await response.json();
-    console.log('SMS sent successfully via Text.lk:', data);
+    console.log('SMS sent successfully via Text.lk:', responseBody);
     
-    // Assuming the API response has a structure like { data: { request_id: '...' } }
-    const messageId = data?.data?.request_id || `textlk_${Date.now()}`;
+    const messageId = responseBody?.data?.request_id || `textlk_${Date.now()}`;
 
     return { success: true, messageId: messageId };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error occurred while sending SMS:', error);
-    return { success: false };
+    return { success: false, error: error.message || 'Network error during SMS sending' };
   }
 }
