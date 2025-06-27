@@ -116,7 +116,15 @@ export default function ViewCommissionProfilePage() {
                 if (!product) continue;
                 
                 const saleValue = item.unitPrice * item.quantity;
-                const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
+                const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
+                let rate = 0;
+
+                if (hasCategoryRates) {
+                    rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
+                } else {
+                    rate = profile.commission.overall;
+                }
+                
                 commissionForThisSale += saleValue * (rate / 100);
             }
             calculatedTotalCommission += commissionForThisSale;
@@ -323,8 +331,15 @@ export default function ViewCommissionProfilePage() {
 
                                                                 const itemSubtotal = item.unitPrice * item.quantity;
                                                                 const category = product.category;
-                                                                const categoryRateData = profile.commission.categories?.find(c => c.category === category);
-                                                                const commissionRate = categoryRateData ? categoryRateData.rate : profile.commission.overall;
+                                                                const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
+                                                                let commissionRate = 0;
+                                                                
+                                                                if (hasCategoryRates) {
+                                                                    commissionRate = profile.commission.categories?.find(c => c.category === category)?.rate || 0;
+                                                                } else {
+                                                                    commissionRate = profile.commission.overall;
+                                                                }
+
                                                                 const commissionEarnedForItem = itemSubtotal * (commissionRate / 100);
                                                                 
                                                                 const tooltipText = `Calculation: ${formatCurrency(itemSubtotal)} x ${commissionRate}%`;

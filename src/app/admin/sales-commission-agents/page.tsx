@@ -93,8 +93,16 @@ const CommissionPayoutDialog = ({
                         if (!product) continue;
                         
                         const saleValue = item.unitPrice * item.quantity;
-                        const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
                         
+                        const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
+                        let rate = 0;
+
+                        if (hasCategoryRates) {
+                            rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
+                        } else {
+                            rate = profile.commission.overall;
+                        }
+
                         commissionForThisSale += saleValue * (rate / 100);
                     }
 
@@ -179,7 +187,15 @@ const CommissionPayoutDialog = ({
                     }
                     
                     const saleValue = item.unitPrice * item.quantity;
-                    const rate = profile.commission.categories?.find(c => c.category === product.category)?.rate ?? profile.commission.overall;
+
+                    const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
+                    let rate = 0;
+                    if (hasCategoryRates) {
+                        rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
+                    } else {
+                        rate = profile.commission.overall;
+                    }
+
                     const commissionValue = saleValue * (rate / 100);
 
                     categoryBreakdown[product.category].totalSale += saleValue;
