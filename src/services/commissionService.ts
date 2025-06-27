@@ -144,7 +144,7 @@ export async function payCommission(
         });
 
         // After the transaction is successful, send the SMS
-        if (profile.phone) {
+        if (profile.phone && profile.phone.trim() !== '') {
             const message = `Hi ${profile.name}, a commission payment of ${formattedAmount} has been processed for you. Thank you.`;
             const smsResult = await sendSms(profile.phone, message);
             if (!smsResult.success) {
