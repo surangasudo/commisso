@@ -1611,6 +1611,66 @@ const RewardPointSettingsForm = ({ settings: initialSettingsData, updateSettings
 };
 
 
+const ModulesSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['modules'], updateSettings: (newValues: Partial<AllSettings['modules']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleCheckboxChange = (id: keyof AllSettings['modules'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Modules Updated',
+            description: 'Module settings have been saved successfully.',
+        });
+    };
+
+    const moduleToggles = [
+        { id: 'serviceStaff', label: 'Service Staff' },
+        { id: 'bookings', label: 'Bookings' },
+        { id: 'kitchen', label: 'Kitchen' },
+        { id: 'subscription', label: 'Subscription' },
+        { id: 'typesOfService', label: 'Types of Service' },
+        { id: 'tables', label: 'Tables' },
+        { id: 'modifiers', label: 'Modifiers' },
+        { id: 'account', label: 'Account' },
+        { id: 'advancedCommission', label: 'Advanced Commission' },
+    ] as const;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Modules</CardTitle>
+                <CardDescription>Enable or disable different modules for your business.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {moduleToggles.map(toggle => (
+                        <div key={toggle.id} className="flex items-center space-x-2 p-4 border rounded-lg">
+                            <Checkbox 
+                                id={toggle.id} 
+                                checked={settings[toggle.id]} 
+                                onCheckedChange={(checked) => handleCheckboxChange(toggle.id, checked)} 
+                            />
+                            <Label htmlFor={toggle.id} className="font-normal text-base">{toggle.label}</Label>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
@@ -1635,11 +1695,9 @@ export default function BusinessSettingsPage() {
     }
     
     const handleBusinessUpdate = (newBusinessSettings: AllSettings['business']) => {
-        if (settings.business.businessName !== newBusinessSettings.businessName) {
-            // Only update fromName if it hasn't been manually changed
-            if (settings.email.fromName === settings.business.businessName) {
-                updateSection('email', { fromName: newBusinessSettings.businessName });
-            }
+        // Only update fromName if it hasn't been manually changed from the business name
+        if (settings.email.fromName === settings.business.businessName) {
+            updateSection('email', { fromName: newBusinessSettings.businessName });
         }
         updateSection('business', newBusinessSettings);
     };
@@ -1724,7 +1782,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="reward_point_settings">
                             <RewardPointSettingsForm settings={settings.rewardPoint} updateSettings={(newValues) => updateSection('rewardPoint', newValues)} />
                         </TabsContent>
-                        <TabsContent value="modules"><UnimplementedForm title="Modules Settings" /></TabsContent>
+                         <TabsContent value="modules">
+                            <ModulesSettingsForm settings={settings.modules} updateSettings={(newValues) => updateSection('modules', newValues)} />
+                        </TabsContent>
                         <TabsContent value="custom_labels"><UnimplementedForm title="Custom Labels Settings" /></TabsContent>
                     </div>
                 </Tabs>
