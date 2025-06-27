@@ -41,10 +41,6 @@ type PendingSale = {
     commissionEarned: number;
 };
 
-type CommissionProfileWithStatus = CommissionProfile & {
-    lastSmsStatus?: 'success' | 'failed' | 'not_attempted';
-};
-
 const CommissionPayoutDialog = ({ 
     profile, 
     open, 
@@ -257,7 +253,21 @@ const CommissionPayoutDialog = ({
     );
 };
 
-const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatCurrency }: { profiles: CommissionProfileWithStatus[], handlePayClick: (profile: CommissionProfile) => void, handleView: (id: string) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
+const PayoutsTable = ({ 
+    profiles, 
+    smsStatuses,
+    handlePayClick, 
+    handleView, 
+    isLoading, 
+    formatCurrency 
+}: { 
+    profiles: CommissionProfile[], 
+    smsStatuses: Record<string, 'success' | 'failed'>,
+    handlePayClick: (profile: CommissionProfile) => void, 
+    handleView: (id: string) => void, 
+    isLoading: boolean, 
+    formatCurrency: (val: number) => string 
+}) => {
     return (
         <div className="border rounded-md">
             <Table>
@@ -283,6 +293,8 @@ const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatC
                         ))
                     ) : profiles.length > 0 ? profiles.map(profile => {
                         const pendingAmount = (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+                        const lastSmsStatus = smsStatuses[profile.id];
+
                         return (
                             <TableRow key={profile.id}>
                                 <TableCell className="font-medium">{profile.name}</TableCell>
@@ -307,17 +319,17 @@ const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatC
                                         >
                                             <Wallet className="w-4 h-4"/> Pay
                                         </Button>
-                                         {profile.lastSmsStatus && profile.lastSmsStatus !== 'not_attempted' && (
+                                        {lastSmsStatus && (
                                             <Tooltip>
                                                 <TooltipTrigger>
-                                                    {profile.lastSmsStatus === 'success' ? (
+                                                    {lastSmsStatus === 'success' ? (
                                                         <CheckCircle className="w-5 h-5 text-green-500" />
                                                     ) : (
                                                         <AlertCircle className="w-5 h-5 text-red-500" />
                                                     )}
                                                 </TooltipTrigger>
                                                 <TooltipContent>
-                                                    <p>Last payment attempt SMS: {profile.lastSmsStatus}</p>
+                                                    <p>Last payment attempt SMS: {lastSmsStatus}</p>
                                                 </TooltipContent>
                                             </Tooltip>
                                         )}
@@ -342,7 +354,7 @@ export default function SalesCommissionAgentsPage() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const settings = useBusinessSettings();
-  const [profiles, setProfiles] = useState<CommissionProfileWithStatus[]>([]);
+  const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -353,6 +365,9 @@ export default function SalesCommissionAgentsPage() {
 
   const [profileFilter, setProfileFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [smsStatuses, setSmsStatuses] = useState<Record<string, 'success' | 'failed'>>({});
+
 
   useEffect(() => {
     setIsLoading(true);
@@ -380,8 +395,7 @@ export default function SalesCommissionAgentsPage() {
                 },
                 totalCommissionEarned: docData.totalCommissionEarned || 0,
                 totalCommissionPaid: docData.totalCommissionPaid || 0,
-                lastSmsStatus: 'not_attempted',
-            } as CommissionProfileWithStatus;
+            } as CommissionProfile;
         });
         setProfiles(data);
         setIsLoading(false);
@@ -441,13 +455,10 @@ export default function SalesCommissionAgentsPage() {
   };
   
   const handlePaymentComplete = (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string }) => {
-    setProfiles(prevProfiles =>
-        prevProfiles.map(p =>
-            p.id === profileId
-                ? { ...p, lastSmsStatus: result.smsSent ? 'success' : 'failed' }
-                : p
-        )
-    );
+    setSmsStatuses(prev => ({
+        ...prev,
+        [profileId]: result.smsSent ? 'success' : 'failed'
+    }));
 
     if (result.smsSent) {
         toast({ title: 'Success', description: 'Payment recorded and SMS sent.' });
@@ -603,6 +614,7 @@ export default function SalesCommissionAgentsPage() {
                 <CardContent>
                     <PayoutsTable 
                         profiles={filteredProfiles} 
+                        smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick}
                         handleView={handleView}
                         isLoading={isLoading}
@@ -620,6 +632,7 @@ export default function SalesCommissionAgentsPage() {
                 <CardContent>
                     <PayoutsTable 
                         profiles={salespersons} 
+                        smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick}
                         handleView={handleView}
                         isLoading={isLoading}
@@ -637,6 +650,7 @@ export default function SalesCommissionAgentsPage() {
                 <CardContent>
                     <PayoutsTable 
                         profiles={agents} 
+                        smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
                         isLoading={isLoading}
@@ -654,6 +668,7 @@ export default function SalesCommissionAgentsPage() {
                 <CardContent>
                     <PayoutsTable 
                         profiles={subAgents} 
+                        smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
                         isLoading={isLoading}
@@ -671,6 +686,7 @@ export default function SalesCommissionAgentsPage() {
                 <CardContent>
                     <PayoutsTable 
                         profiles={companies}
+                        smsStatuses={smsStatuses}
                         handlePayClick={handlePayClick} 
                         handleView={handleView}
                         isLoading={isLoading}
