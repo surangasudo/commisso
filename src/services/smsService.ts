@@ -13,26 +13,22 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(number: string): string {
-  // 1. Remove all non-digit characters
+  if (!number || typeof number !== 'string' || number.trim() === '') {
+    throw new Error('Phone number is missing or invalid.');
+  }
+
   let cleaned = number.replace(/\D/g, '');
 
-  // 2. Handle numbers that already have the country code
   if (cleaned.startsWith('94') && cleaned.length === 11) {
     return cleaned;
   }
-
-  // 3. Handle numbers with a leading 0 (e.g., 0712345678)
   if (cleaned.startsWith('0') && cleaned.length === 10) {
-    // Remove leading '0' and add country code
     return '94' + cleaned.slice(1);
   }
-  
-  // 4. Handle numbers without a leading 0 (e.g., 712345678)
   if (cleaned.length === 9) {
     return '94' + cleaned;
   }
-
-  // 5. If we reach here, the format is invalid.
+  
   throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
 }
 
