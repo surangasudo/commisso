@@ -96,7 +96,7 @@ const CommissionPayoutDialog = ({
                         let rate = 0;
 
                         if (hasCategoryRates) {
-                            rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
+                            rate = profile.commission.categories?.find(c => c.category?.toLowerCase() === product.category?.toLowerCase())?.rate || 0;
                         } else {
                             rate = profile.commission.overall;
                         }

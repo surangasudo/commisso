@@ -120,7 +120,7 @@ export default function ViewCommissionProfilePage() {
                 let rate = 0;
 
                 if (hasCategoryRates) {
-                    rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
+                    rate = profile.commission.categories?.find(c => c.category?.toLowerCase() === product.category?.toLowerCase())?.rate || 0;
                 } else {
                     rate = profile.commission.overall;
                 }
@@ -221,6 +221,7 @@ export default function ViewCommissionProfilePage() {
                                 <DetailItem icon={Phone} label="Phone Number" value={profile.phone} />
                                 <DetailItem icon={Mail} label="Email" value={profile.email || 'N/A'} />
                                 <DetailItem icon={Banknote} label="Bank Details" value={profile.bankDetails || 'N/A'} />
+                                <DetailItem icon={Percent} label="Overall Commission Rate" value={`${profile.commission.overall}%`} />
                                 {profile.commission.categories && profile.commission.categories.length > 0 && (
                                     <DetailItem icon={Tag} label="Category-Specific Rates">
                                         <div className="flex flex-col gap-1 mt-1">
@@ -334,7 +335,7 @@ export default function ViewCommissionProfilePage() {
                                                                 let commissionRate = 0;
                                                                 
                                                                 if (hasCategoryRates) {
-                                                                    commissionRate = profile.commission.categories?.find(c => c.category === category)?.rate || 0;
+                                                                    commissionRate = profile.commission.categories?.find(c => c.category?.toLowerCase() === category?.toLowerCase())?.rate || 0;
                                                                 } else {
                                                                     commissionRate = profile.commission.overall;
                                                                 }

@@ -99,7 +99,7 @@ export async function addSale(
 
           if (hasCategoryRates) {
             const categoryRateData = categories.find(
-              (c: any) => c.category === productData.category
+              (c: any) => c.category?.toLowerCase() === productData.category?.toLowerCase()
             );
             rate = categoryRateData ? categoryRateData.rate : 0;
           } else {
