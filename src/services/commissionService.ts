@@ -6,6 +6,7 @@ import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, Documen
 import { type CommissionProfile, type Sale, type DetailedProduct, type Expense } from '@/lib/data';
 import { sendSms } from '@/services/smsService';
 import { processDoc } from '@/lib/firestore-utils';
+import { type AllSettings } from '@/hooks/use-settings';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
@@ -198,6 +199,7 @@ export async function payCommission(
     paymentMethod: string,
     paymentNote: string,
     smsMessage: string,
+    smsConfig: AllSettings['sms']
 ): Promise<{ paymentRecorded: boolean; smsSent: boolean; error?: string }> {
     const profileDocRef = doc(db, 'commissionProfiles', profile.id);
     const expensesCollectionRef = collection(db, 'expenses');
@@ -255,7 +257,7 @@ export async function payCommission(
 
         // After the transaction is successful, send the SMS
         if (profile.phone && profile.phone.trim() !== '' && smsMessage) {
-            const smsResult = await sendSms(profile.phone, smsMessage);
+            const smsResult = await sendSms(profile.phone, smsMessage, smsConfig);
             if (!smsResult.success) {
                  return {
                     paymentRecorded: true,

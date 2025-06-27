@@ -113,7 +113,7 @@ const CommissionPayoutDialog = ({
         try {
             const smsMessage = `You have received a commission payment of ${formatCurrency(totalToPay)} from ${settings.business.businessName}. Thank you.`;
 
-            const result = await payCommission(profile, totalToPay, method, note, smsMessage);
+            const result = await payCommission(profile, totalToPay, method, note, smsMessage, settings.sms);
             onPaymentComplete(profile.id, result);
         } catch (error: any) {
             toast({

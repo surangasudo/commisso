@@ -1,20 +1,40 @@
 'use server';
 
+import { type AllSettings } from '@/hooks/use-settings';
+
 /**
- * @fileOverview Integrates with Text.lk to send SMS messages.
- * This service makes a real API call to the Text.lk service.
+ * @fileOverview Integrates with SMS providers to send messages.
+ * This service makes real API calls.
  */
 
-export async function sendSms(recipient: string, message: string): Promise<{ success: boolean; error?: string; data?: any }> {
-  const apiKey = process.env.TEXTLK_API_KEY;
-  const senderId = process.env.TEXTLK_SENDER_ID;
+export async function sendSms(
+  recipient: string,
+  message: string,
+  config: AllSettings['sms']
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  
+  if (config.smsService === 'textlk') {
+    return sendWithTextlk(recipient, message, config);
+  }
 
-  if (!apiKey || !senderId || apiKey === 'YOUR_TEXTLK_API_KEY' || senderId === 'YOUR_TEXTLK_SENDER_ID') {
-    const errorMsg = 'ERROR: TEXTLK_API_KEY or TEXTLK_SENDER_ID is not set in the .env file.';
+  // TODO: Add other providers like Twilio, Nexmo here if needed.
+  
+  console.error(`SMS service "${config.smsService}" is not configured or supported.`);
+  return { success: false, error: `SMS service "${config.smsService}" is not configured or supported.` };
+}
+
+async function sendWithTextlk(
+  recipient: string,
+  message: string,
+  config: AllSettings['sms']
+): Promise<{ success: boolean; error?: string; data?: any }> {
+  const apiKey = config.textlkApiKey;
+  const senderId = config.textlkSenderId;
+
+  if (!apiKey || !senderId) {
+    const errorMsg = 'ERROR: Text.lk API Key or Sender ID is not configured in the settings.';
     console.error(errorMsg);
-    // In a real app, you might want to avoid exposing this detailed error.
-    // For this project, it's helpful for the developer.
-    return { success: false, error: 'SMS service is not configured.' };
+    return { success: false, error: 'SMS service (Text.lk) is not configured.' };
   }
 
   const url = 'https://app.text.lk/api/v3/sms/send';
@@ -41,14 +61,14 @@ export async function sendSms(recipient: string, message: string): Promise<{ suc
     const data = await response.json();
 
     if (response.ok && data.status === 'success') {
-      console.log('SMS sent successfully:', data.data);
+      console.log('SMS sent successfully via Text.lk:', data.data);
       return { success: true, data: data.data };
     } else {
-      console.error('Failed to send SMS:', data.message);
+      console.error('Failed to send SMS via Text.lk:', data.message);
       return { success: false, error: data.message || 'API error' };
     }
   } catch (error: any) {
-    console.error('Error sending SMS:', error);
+    console.error('Error sending SMS via Text.lk:', error);
     return { success: false, error: error.message || 'Unknown network error' };
   }
 }
