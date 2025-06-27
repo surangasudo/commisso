@@ -316,7 +316,7 @@ export default function SalesCommissionAgentsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
-  const { settings } = useBusinessSettings();
+  const settings = useBusinessSettings();
   const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
