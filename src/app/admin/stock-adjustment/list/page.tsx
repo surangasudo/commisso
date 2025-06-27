@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -45,7 +45,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { stockAdjustments, type StockAdjustment } from '@/lib/data';
+import { type StockAdjustment } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,11 +57,35 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppFooter } from '@/components/app-footer';
+import { getStockAdjustments, deleteStockAdjustment } from '@/services/stockAdjustmentService';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/hooks/use-currency';
+
 
 export default function ListStockAdjustmentsPage() {
-  const [adjustments, setAdjustments] = useState<StockAdjustment[]>(stockAdjustments);
+  const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
+  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [adjustmentToDelete, setAdjustmentToDelete] = useState<StockAdjustment | null>(null);
+
+  useEffect(() => {
+      const fetchAdjustments = async () => {
+          setIsLoading(true);
+          try {
+              const data = await getStockAdjustments();
+              setAdjustments(data);
+          } catch (error) {
+              console.error("Failed to fetch stock adjustments:", error);
+              toast({ title: "Error", description: "Could not load stock adjustments.", variant: "destructive" });
+          } finally {
+              setIsLoading(false);
+          }
+      };
+      fetchAdjustments();
+  }, [toast]);
 
   const totalAmount = adjustments.reduce((acc, adjustment) => acc + adjustment.totalAmount, 0);
 
@@ -70,11 +94,18 @@ export default function ListStockAdjustmentsPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (adjustmentToDelete) {
-      setAdjustments(adjustments.filter(p => p.id !== adjustmentToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setAdjustmentToDelete(null);
+      try {
+        await deleteStockAdjustment(adjustmentToDelete.id);
+        setAdjustments(adjustments.filter(p => p.id !== adjustmentToDelete.id));
+        toast({ title: "Success", description: "Stock adjustment deleted." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete adjustment.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setAdjustmentToDelete(null);
+      }
     }
   };
 
@@ -148,7 +179,21 @@ export default function ListStockAdjustmentsPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {adjustments.map((adjustment) => (
+                            {isLoading ? (
+                                Array.from({length: 5}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-8 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20"/></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : adjustments.map((adjustment) => (
                                 <TableRow key={adjustment.id}>
                                 <TableCell>
                                     <DropdownMenu>
@@ -161,12 +206,12 @@ export default function ListStockAdjustmentsPage() {
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
-                                <TableCell>{adjustment.date}</TableCell>
+                                <TableCell>{new Date(adjustment.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{adjustment.referenceNo}</TableCell>
                                 <TableCell>{adjustment.location}</TableCell>
                                 <TableCell><Badge variant="outline" className="capitalize">{adjustment.adjustmentType}</Badge></TableCell>
-                                <TableCell>${adjustment.totalAmount.toFixed(2)}</TableCell>
-                                <TableCell>${adjustment.totalAmountRecovered.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(adjustment.totalAmount)}</TableCell>
+                                <TableCell>{formatCurrency(adjustment.totalAmountRecovered)}</TableCell>
                                 <TableCell>{adjustment.reason}</TableCell>
                                 <TableCell>{adjustment.addedBy}</TableCell>
                                 </TableRow>
@@ -175,7 +220,7 @@ export default function ListStockAdjustmentsPage() {
                              <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalAmount.toFixed(2)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
                                     <TableCell colSpan={3}></TableCell>
                                 </TableRow>
                             </TableFooter>
@@ -198,7 +243,7 @@ export default function ListStockAdjustmentsPage() {
           <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone. This will permanently delete the stock adjustment
-            with reference "{adjustmentToDelete?.referenceNo}".
+            with reference "{adjustmentToDelete?.referenceNo}". Note: This does not revert the stock count changes.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
