@@ -100,8 +100,6 @@ export default function EditSalesCommissionAgentPage() {
     };
 
     const handleUpdateProfile = async () => {
-        const validCategoryCommissions = categoryCommissions.filter(c => c.category && c.rate);
-        
         if (settings.modules.advancedCommission && !entityType) {
             toast({
                 title: "Error: Missing Field",
@@ -126,15 +124,9 @@ export default function EditSalesCommissionAgentPage() {
             });
             return;
         }
-        if (!overallCommission.trim() && validCategoryCommissions.length === 0) {
-            toast({
-                title: "Error: Missing Field",
-                description: "Please enter an Overall Commission Rate or define at least one complete category-specific rate.",
-                variant: "destructive",
-            });
-            return;
-        }
-
+        
+        const validCategoryCommissions = categoryCommissions.filter(c => c.category && c.rate);
+        
         const updatedProfileData = {
             name: agentName,
             entityType: entityType as any,
