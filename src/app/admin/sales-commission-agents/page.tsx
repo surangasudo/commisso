@@ -111,11 +111,7 @@ const CommissionPayoutDialog = ({
         setIsPaying(true);
 
         try {
-            const businessName = settings.business.businessName;
-            const businessPhone = "555-123-4567"; // Placeholder
-
-            // Simplified universal SMS message to ensure payment process completes
-            const smsMessage = `You have received a commission payment of ${formatCurrency(totalToPay)} from ${businessName}. Thank you. For inquiries, call: ${businessPhone}`;
+            const smsMessage = `You have received a commission payment of ${formatCurrency(totalToPay)} from ${settings.business.businessName}. Thank you.`;
 
             const result = await payCommission(profile, totalToPay, method, note, smsMessage);
             onPaymentComplete(profile.id, result);
@@ -320,7 +316,7 @@ export default function SalesCommissionAgentsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
-  const settings = useBusinessSettings();
+  const { settings } = useBusinessSettings();
   const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
