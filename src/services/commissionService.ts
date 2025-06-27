@@ -148,7 +148,7 @@ export async function payCommission(
             const message = `Hi ${profile.name}, a commission payment of ${formattedAmount} has been processed for you. Thank you.`;
             const smsResult = await sendSms(profile.phone, message);
             if (!smsResult.success) {
-                console.error("SMS notification failed to send:", smsResult.error);
+                 throw new Error(`Payment recorded, but SMS notification failed: ${smsResult.error}`);
             }
         }
     } catch (e) {

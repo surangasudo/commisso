@@ -150,10 +150,24 @@ const CommissionPayoutDialog = ({
         try {
             const formattedAmount = formatCurrency(totalToPay);
             await payCommission(profile, totalToPay, formattedAmount, method, note);
-            toast({ title: 'Success', description: `Payment of ${formattedAmount} for ${profile.name} has been recorded.` });
+            toast({ title: 'Success', description: `Payment of ${formattedAmount} for ${profile.name} has been recorded. SMS sent.` });
             onPaymentSuccess();
-        } catch (error) {
-            toast({ title: 'Error', description: 'Failed to record payment.', variant: 'destructive' });
+        } catch (error: any) {
+            if (error.message && error.message.startsWith('Payment recorded')) {
+                toast({
+                    title: 'Payment Recorded, SMS Failed',
+                    description: error.message,
+                    variant: 'destructive',
+                    duration: 9000,
+                });
+                onPaymentSuccess();
+            } else {
+                toast({
+                    title: 'Payment Failed',
+                    description: error.message || 'Failed to record payment.',
+                    variant: 'destructive'
+                });
+            }
             console.error(error);
         } finally {
             setIsPaying(false);
