@@ -95,7 +95,6 @@ const CommissionPayoutDialog = ({
                         if (!product) continue;
                         
                         const saleValue = item.unitPrice * item.quantity;
-                        
                         const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
                         let rate = 0;
 
@@ -111,7 +110,7 @@ const CommissionPayoutDialog = ({
                     const roundedCommissionForThisSale = round(commissionForThisSale);
 
                     if (paidAmountRemaining >= roundedCommissionForThisSale) {
-                        paidAmountRemaining -= roundedCommissionForThisSale;
+                        paidAmountRemaining = round(paidAmountRemaining - roundedCommissionForThisSale);
                     } else {
                         pending.push({
                             id: sale.id,
