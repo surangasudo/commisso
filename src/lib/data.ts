@@ -338,6 +338,17 @@ export const initialTaxRates: TaxRate[] = [
   { id: 'tax-2', name: 'GST@5%', rate: 5 },
 ];
 
+export type PaymentAccount = {
+  id: string;
+  name: string;
+  accountNumber?: string;
+  accountType: 'Savings' | 'Checking' | 'Credit Card' | 'Cash';
+  openingBalance: number;
+  balance: number;
+  note?: string;
+  isDefault?: boolean;
+};
+
 export type PaymentOption = {
   method: string;
   enabled: boolean;
@@ -486,3 +497,4 @@ export const subAgentProfitData: SubAgentProfit[] = [];
 export const companyProfitData: CompanyProfit[] = [];
 export const registerLogs: RegisterLog[] = [];
 export const activityLogs: ActivityLog[] = [];
+export const paymentAccounts: PaymentAccount[] = [];
