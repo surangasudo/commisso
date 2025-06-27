@@ -10,7 +10,7 @@ import { ai } from '@/ai/genkit';
 import { sendSms } from '@/services/smsService';
 import { z } from 'genkit';
 
-export const SendSmsInputSchema = z.object({
+const SendSmsInputSchema = z.object({
   to: z.string().describe("The recipient's phone number."),
   message: z.string().describe('The content of the SMS message.'),
 });
