@@ -154,7 +154,18 @@ const allSidebarNav = [
             { href: "/admin/expenses/categories", label: "Expense Categories", roles: ['Admin'] },
         ]
     },
-    { href: "#", icon: Landmark, label: "Payment Accounts", roles: ['Admin'] },
+    { 
+        label: "Payment Accounts", 
+        icon: Landmark, 
+        roles: ['Admin'],
+        children: [
+            { href: "/admin/payment-accounts/list", label: "List Accounts" },
+            { href: "/admin/payment-accounts/balance-sheet", label: "Balance Sheet" },
+            { href: "/admin/payment-accounts/trial-balance", label: "Trial Balance" },
+            { href: "/admin/payment-accounts/cash-flow", label: "Cash Flow" },
+            { href: "/admin/payment-accounts/payment-account-report", label: "Payment Account Report" }
+        ]
+    },
     { 
         label: "Reports", 
         icon: FileText,
