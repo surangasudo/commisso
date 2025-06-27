@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getSales, type Sale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 type PendingSale = {
     id: string;
@@ -318,6 +319,7 @@ export default function SalesCommissionAgentsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
+  const settings = useBusinessSettings();
   const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -441,11 +443,17 @@ export default function SalesCommissionAgentsPage() {
       <Tabs defaultValue="profiles" className="space-y-4">
         <div className="printable-area">
             <TabsList className="print-hidden">
-            <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
-            <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
-            <TabsTrigger value="agents">Agents</TabsTrigger>
-            <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
-            <TabsTrigger value="companies">Companies</TabsTrigger>
+                <TabsTrigger value="profiles">Commission Profiles</TabsTrigger>
+                {settings.modules.advancedCommission ? (
+                    <>
+                        <TabsTrigger value="salespersons">Salespersons</TabsTrigger>
+                        <TabsTrigger value="agents">Agents</TabsTrigger>
+                        <TabsTrigger value="sub_agents">Sub-Agents</TabsTrigger>
+                        <TabsTrigger value="companies">Companies</TabsTrigger>
+                    </>
+                ) : (
+                    <TabsTrigger value="payouts">Commission Payouts</TabsTrigger>
+                )}
             </TabsList>
             <TabsContent value="profiles">
             <Card>
@@ -546,6 +554,23 @@ export default function SalesCommissionAgentsPage() {
                     </div>
                 </CardFooter>
             </Card>
+            </TabsContent>
+             <TabsContent value="payouts">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Commission Payouts</CardTitle>
+                    <p className="text-sm text-muted-foreground">View and manage all pending commission payouts.</p>
+                </CardHeader>
+                <CardContent>
+                    <PayoutsTable 
+                        profiles={filteredProfiles} 
+                        handlePayClick={handlePayClick}
+                        handleView={handleView}
+                        isLoading={isLoading}
+                        formatCurrency={formatCurrency}
+                    />
+                </CardContent>
+                </Card>
             </TabsContent>
             <TabsContent value="salespersons">
                 <Card>

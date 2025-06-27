@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,10 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const settings = useBusinessSettings();
 
     const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
     const [agentName, setAgentName] = useState('');
@@ -61,7 +64,7 @@ export default function AddSalesCommissionAgentPage() {
     };
 
     const handleSaveProfile = async () => {
-        if (!entityType) {
+        if (settings.modules.advancedCommission && !entityType) {
             toast({
                 title: "Error: Missing Field",
                 description: "Please select an Entity Type.",
@@ -96,7 +99,7 @@ export default function AddSalesCommissionAgentPage() {
 
         const newProfile: Omit<CommissionProfile, 'id'> = {
             name: agentName,
-            entityType: entityType,
+            entityType: entityType || 'Salesperson',
             phone: phoneNumber,
             email: email,
             bankDetails: bankDetails,
@@ -148,20 +151,22 @@ export default function AddSalesCommissionAgentPage() {
                         </CardHeader>
                         <CardContent className="space-y-6 pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="entity-type">Entity Type *</Label>
-                                    <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
-                                        <SelectTrigger id="entity-type">
-                                            <SelectValue placeholder="Select an entity type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Agent">Agent</SelectItem>
-                                            <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
-                                            <SelectItem value="Company">Company</SelectItem>
-                                            <SelectItem value="Salesperson">Salesperson</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {settings.modules.advancedCommission && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="entity-type">Entity Type *</Label>
+                                        <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
+                                            <SelectTrigger id="entity-type">
+                                                <SelectValue placeholder="Select an entity type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Agent">Agent</SelectItem>
+                                                <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
+                                                <SelectItem value="Company">Company</SelectItem>
+                                                <SelectItem value="Salesperson">Salesperson</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                                 <div className="space-y-2">
                                     <Label htmlFor="agent-name">Name *</Label>
                                     <Input id="agent-name" placeholder="Enter entity's full name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />

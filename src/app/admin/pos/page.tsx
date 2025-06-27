@@ -531,7 +531,7 @@ export default function PosPage() {
   const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
-  const { sale: saleSettings, pos: posSettings } = useBusinessSettings();
+  const settings = useBusinessSettings();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -803,7 +803,7 @@ export default function PosPage() {
       }
       
       if (
-        saleSettings.isCommissionAgentPhoneCompulsory &&
+        settings.sale.isCommissionAgentPhoneCompulsory &&
         !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson
       ) {
           toast({
@@ -814,7 +814,7 @@ export default function PosPage() {
           return;
       }
       
-      if (posSettings.isServiceStaffRequired && !selectedSalesperson) {
+      if (settings.pos.isServiceStaffRequired && !selectedSalesperson) {
           toast({
               title: "Service Staff Required",
               description: "Please select a service staff member (Salesperson) for this sale.",
@@ -911,7 +911,7 @@ export default function PosPage() {
       }
       toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
       
-      if (posSettings.printInvoiceOnSuspend) {
+      if (settings.pos.printInvoiceOnSuspend) {
         const tempSaleForPrint = createSaleObject('Suspended', 'Due', 0);
         setSaleToPrint(tempSaleForPrint);
       }
@@ -1014,7 +1014,7 @@ export default function PosPage() {
                 <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
                     <div className="flex items-center gap-2">
                         <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">Awesome Shop</span></h2>
-                        {posSettings.enableTransactionDate && (
+                        {settings.pos.enableTransactionDate && (
                             <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />
                                 <span>{time}</span>
@@ -1022,7 +1022,7 @@ export default function PosPage() {
                         )}
                     </div>
                     <div className="flex items-center gap-1">
-                        {!posSettings.dontShowRecentTransactions && (
+                        {!settings.pos.dontShowRecentTransactions && (
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
                         )}
                         <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={() => clearCart()}><X /></Button>
@@ -1091,13 +1091,13 @@ export default function PosPage() {
                                         </DialogContent>
                                     </Dialog>
                                 </div>
-                                {posSettings.showInvoiceScheme && (
+                                {settings.pos.showInvoiceScheme && (
                                     <div className="space-y-2">
                                     <Label>Invoice Scheme</Label>
                                     <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
                                     </div>
                                 )}
-                                {posSettings.showInvoiceLayoutDropdown && (
+                                {settings.pos.showInvoiceLayoutDropdown && (
                                     <div className="space-y-2">
                                     <Label>Invoice Layout</Label>
                                     <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
@@ -1105,67 +1105,48 @@ export default function PosPage() {
                                 )}
                             </div>
 
-                            {saleSettings.enableCommissionAgent && (
+                            {settings.sale.enableCommissionAgent && (
                                 <>
                                     <Separator className="my-4" />
-                                    <div className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                             <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                <CommissionSelector
-                                                        entityType="Agent"
-                                                        label="Agent"
-                                                        profiles={commissionProfiles}
-                                                        selectedProfile={selectedAgent}
-                                                        onSelect={setSelectedAgent}
-                                                        onRemove={() => setSelectedAgent(null)}
-                                                    />
+                                    {settings.modules.advancedCommission ? (
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1">
+                                                        <CommissionSelector entityType="Agent" label="Agent" profiles={commissionProfiles} selectedProfile={selectedAgent} onSelect={setSelectedAgent} onRemove={() => setSelectedAgent(null)} />
+                                                    </div>
+                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
                                                 </div>
-                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1">
+                                                        <CommissionSelector entityType="Salesperson" label="Salesperson" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                                    </div>
+                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1">
+                                                        <CommissionSelector entityType="Sub-Agent" label="Sub" profiles={commissionProfiles} selectedProfile={selectedSubAgent} onSelect={setSelectedSubAgent} onRemove={() => setSelectedSubAgent(null)} />
+                                                    </div>
+                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1">
+                                                        <CommissionSelector entityType="Company" label="Com" profiles={commissionProfiles} selectedProfile={selectedCompany} onSelect={setSelectedCompany} onRemove={() => setSelectedCompany(null)} />
+                                                    </div>
+                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <CommissionSelector
-                                                        entityType="Salesperson"
-                                                        label="Salesperson"
-                                                        profiles={commissionProfiles}
-                                                        selectedProfile={selectedSalesperson}
-                                                        onSelect={setSelectedSalesperson}
-                                                        onRemove={() => setSelectedSalesperson(null)}
-                                                    />
-                                                </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <CommissionSelector entityType="Salesperson" label="Commission Agent" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                            </div>
                                             <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <CommissionSelector
-                                                        entityType="Sub-Agent"
-                                                        label="Sub"
-                                                        profiles={commissionProfiles}
-                                                        selectedProfile={selectedSubAgent}
-                                                        onSelect={setSelectedSubAgent}
-                                                        onRemove={() => setSelectedSubAgent(null)}
-                                                    />
-                                                </div>
-                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <CommissionSelector
-                                                        entityType="Company"
-                                                        label="Com"
-                                                        profiles={commissionProfiles}
-                                                        selectedProfile={selectedCompany}
-                                                        onSelect={setSelectedCompany}
-                                                        onRemove={() => setSelectedCompany(null)}
-                                                    />
-                                                </div>
-                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
-                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </>
                             )}
                             
@@ -1180,7 +1161,7 @@ export default function PosPage() {
                                 />
                                 <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
                             </div>
-                            {!posSettings.dontShowProductSuggestion && searchTerm && searchResults.length > 0 && (
+                            {!settings.pos.dontShowProductSuggestion && searchTerm && searchResults.length > 0 && (
                                 <div className="relative">
                                 <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg -mt-1 top-full">
                                     {searchResults.map((product) => (
@@ -1203,9 +1184,9 @@ export default function PosPage() {
                         <Card className="flex-1 flex flex-col bg-card">
                             <div className="p-4 flex-grow flex flex-col">
                             <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-muted-foreground">
-                                <div className={cn("col-span-4 flex items-center", posSettings.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
-                                {posSettings.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
-                                <div className={cn("col-span-2", posSettings.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
+                                <div className={cn("col-span-4 flex items-center", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
+                                {settings.pos.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
+                                <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
                                 <div className="col-span-2">Price</div>
                                 <div className="col-span-2">Subtotal</div>
                                 <div className="col-span-1 text-center"><X className="w-4 h-4 mx-auto"/></div>
@@ -1215,8 +1196,8 @@ export default function PosPage() {
                                 {cart.length > 0 ? (
                                     cart.map((item) => (
                                     <div key={item.product.id} className="grid grid-cols-12 gap-2 items-center text-sm mb-2">
-                                            <div className={cn("col-span-4 font-medium truncate", posSettings.enableServiceStaffInProductLine && "col-span-3")}>{item.product.name}</div>
-                                            {posSettings.enableServiceStaffInProductLine && (
+                                            <div className={cn("col-span-4 font-medium truncate", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>{item.product.name}</div>
+                                            {settings.pos.enableServiceStaffInProductLine && (
                                                 <div className="col-span-2">
                                                     <Select>
                                                         <SelectTrigger className="h-8 text-xs">
@@ -1229,7 +1210,7 @@ export default function PosPage() {
                                                     </Select>
                                                 </div>
                                             )}
-                                            <div className={cn("col-span-2", posSettings.enableServiceStaffInProductLine && "col-span-1")}>
+                                            <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
                                                 <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
                                             </div>
                                             <div className="col-span-2">{formatCurrency(item.product.sellingPrice)}</div>
@@ -1252,22 +1233,22 @@ export default function PosPage() {
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Discount (-): 
-                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>}
-                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>}
+                                        {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>}
+                                        {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>}
                                     </span> 
                                     <span className="text-foreground">{formatCurrency(discount)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Order Tax (+):
-                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>}
-                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>}
+                                        {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>}
+                                        {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>}
                                     </span> 
                                     <span className="text-foreground">{formatCurrency(orderTax)}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-muted-foreground">
                                     <span className="flex items-center gap-1">Shipping (+):
-                                        {posSettings.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>}
-                                        {!posSettings.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>}
+                                        {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>}
+                                        {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>}
                                     </span>
                                     <span className="text-foreground">{formatCurrency(shipping)}</span>
                                 </div>
@@ -1328,14 +1309,14 @@ export default function PosPage() {
                 {/* Footer */}
                 <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
-                        {!posSettings.disableDraft && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>}
+                        {!settings.pos.disableDraft && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>}
                         <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
-                        {!posSettings.disableSuspendSale && <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>}
-                        {!posSettings.disableCreditSaleButton && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>}
+                        {!settings.pos.disableSuspendSale && <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>}
+                        {!settings.pos.disableCreditSaleButton && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>}
                         <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
                     </div>
                     <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
-                        {!posSettings.disableMultiplePay && (
+                        {!settings.pos.disableMultiplePay && (
                             <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
                                 <DialogTrigger asChild>
                                     <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-2 sm:px-4"><WalletCards className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Multiple Pay</span></Button>
@@ -1403,7 +1384,7 @@ export default function PosPage() {
                             </DialogContent>
                         </Dialog>
                         
-                        {!posSettings.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>}
+                        {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>}
                         <Button variant="destructive" className="text-xs sm:text-sm" onClick={() => clearCart()}>Cancel</Button>
                     </div>
                     <div className="text-center md:text-right w-full md:w-auto">

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -13,11 +14,13 @@ import { getCommissionProfile, updateCommissionProfile } from '@/services/commis
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseError } from 'firebase/app';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 export default function EditSalesCommissionAgentPage() {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
+    const settings = useBusinessSettings();
     const { id } = params;
     
     const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
@@ -97,7 +100,7 @@ export default function EditSalesCommissionAgentPage() {
     };
 
     const handleUpdateProfile = async () => {
-        if (!entityType) {
+        if (settings.modules.advancedCommission && !entityType) {
             toast({
                 title: "Error: Missing Field",
                 description: "Please select an Entity Type.",
@@ -201,6 +204,7 @@ export default function EditSalesCommissionAgentPage() {
                         </CardHeader>
                         <CardContent className="space-y-6 pt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {settings.modules.advancedCommission && (
                                 <div className="space-y-2">
                                     <Label htmlFor="entity-type">Entity Type *</Label>
                                     <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
@@ -215,6 +219,7 @@ export default function EditSalesCommissionAgentPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                )}
                                 <div className="space-y-2">
                                     <Label htmlFor="agent-name">Name *</Label>
                                     <Input id="agent-name" placeholder="Enter entity's full name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />
