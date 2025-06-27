@@ -4,7 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
 import { type CommissionProfile, type Expense } from '@/lib/data';
-import { sendSmsNotification } from '@/ai/flows/send-sms-flow';
+import { sendSms } from '@/services/smsService';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 
@@ -146,7 +146,10 @@ export async function payCommission(
         // After the transaction is successful, send the SMS
         if (profile.phone) {
             const message = `Hi ${profile.name}, a commission payment of ${formattedAmount} has been processed for you. Thank you.`;
-            await sendSmsNotification({ to: profile.phone, message });
+            const smsResult = await sendSms(profile.phone, message);
+            if (!smsResult.success) {
+                console.error("SMS notification failed to send:", smsResult.error);
+            }
         }
     } catch (e) {
         console.error("Commission payment transaction failed: ", e);
