@@ -1187,6 +1187,75 @@ const SystemSettingsForm = ({ settings: initialSettingsData, updateSettings }: {
     );
 };
 
+const PrefixesSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['prefixes'], updateSettings: (newValues: Partial<AllSettings['prefixes']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Prefixes Updated',
+            description: 'Your transaction prefixes have been saved successfully.',
+        });
+    };
+
+    const prefixFields = [
+        { id: 'purchase', label: 'Purchase Prefix' },
+        { id: 'purchaseReturn', label: 'Purchase Return Prefix' },
+        { id: 'purchaseRequisition', label: 'Purchase Requisition Prefix' },
+        { id: 'purchaseOrder', label: 'Purchase Order Prefix' },
+        { id: 'stockTransfer', label: 'Stock Transfer Prefix' },
+        { id: 'stockAdjustment', label: 'Stock Adjustment Prefix' },
+        { id: 'sellReturn', label: 'Sell Return Prefix' },
+        { id: 'expenses', label: 'Expenses Prefix' },
+        { id: 'contacts', label: 'Contacts Prefix' },
+        { id: 'purchasePayment', label: 'Purchase Payment Prefix' },
+        { id: 'sellPayment', label: 'Sell Payment Prefix' },
+        { id: 'expensePayment', label: 'Expense Payment Prefix' },
+        { id: 'businessLocation', label: 'Business Location Prefix' },
+        { id: 'username', label: 'Username Prefix' },
+        { id: 'subscriptionNo', label: 'Subscription No. Prefix' },
+        { id: 'draft', label: 'Draft Prefix' },
+        { id: 'salesOrder', label: 'Sales Order Prefix' },
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Prefixes</CardTitle>
+                <CardDescription>Set prefixes for invoice numbers and other transaction references.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {prefixFields.map(field => (
+                        <div key={field.id} className="space-y-2">
+                            <Label htmlFor={field.id}>{field.label}:</Label>
+                            <Input 
+                                id={field.id}
+                                value={settings[field.id as keyof typeof settings] || ''}
+                                onChange={handleInputChange}
+                                placeholder="Enter Prefix"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
@@ -1262,7 +1331,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="system">
                             <SystemSettingsForm settings={settings.system} updateSettings={(newValues) => updateSection('system', newValues)} />
                         </TabsContent>
-                        <TabsContent value="prefixes"><UnimplementedForm title="Prefixes Settings" /></TabsContent>
+                        <TabsContent value="prefixes">
+                            <PrefixesSettingsForm settings={settings.prefixes} updateSettings={(newValues) => updateSection('prefixes', newValues)} />
+                        </TabsContent>
                         <TabsContent value="email_settings"><UnimplementedForm title="Email Settings" /></TabsContent>
                         <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
                         <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
