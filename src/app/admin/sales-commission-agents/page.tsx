@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { type CommissionProfile, type DetailedProduct } from '@/lib/data';
+import { type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { deleteCommissionProfile, payCommission, getCommissionProfiles } from '@/services/commissionService';
+import { deleteCommissionProfile, payCommission, getCommissionProfiles, getPendingCommissions, type PendingSale } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -25,19 +25,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getSales, type Sale } from '@/services/saleService';
-import { getProducts } from '@/services/productService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from "@/lib/utils";
 
-type PendingSale = {
-    id: string;
-    date: string;
-    invoiceNo: string;
-    totalAmount: number;
-    commissionEarned: number;
-};
 
 const CommissionPayoutDialog = ({ 
     profile, 
@@ -54,9 +45,6 @@ const CommissionPayoutDialog = ({
     const { formatCurrency } = useCurrency();
     const settings = useBusinessSettings();
     
-    const [allSales, setAllSales] = useState<Sale[]>([]);
-    const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
-    const [allProfiles, setAllProfiles] = useState<CommissionProfile[]>([]);
     const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
     const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
@@ -68,73 +56,22 @@ const CommissionPayoutDialog = ({
     const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
     useEffect(() => {
-        const calculatePendingCommissions = async () => {
+        const fetchPending = async () => {
             if (!profile) return;
             setIsLoading(true);
-
             try {
-                const [salesData, productsData, profilesData] = await Promise.all([getSales(), getProducts(), getCommissionProfiles()]);
-                setAllSales(salesData);
-                setAllProducts(productsData);
-                setAllProfiles(profilesData);
-
-                const productMap = new Map(productsData.map(p => [p.id, p]));
-                const agentSales = salesData.filter(s => s.commissionAgentIds?.includes(profile.id));
-                const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                let paidAmountCounter = round(profile.totalCommissionPaid || 0);
-                const salesResult: PendingSale[] = [];
-                
-                for (const sale of sortedSales) {
-                    let commissionForThisSale = 0;
-                    for (const item of sale.items) {
-                        const product = productMap.get(item.productId);
-                        if (!product) continue;
-                        
-                        const saleValue = item.unitPrice * item.quantity;
-                        const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
-                        let rate = 0;
-
-                        if (hasCategoryRates) {
-                            rate = profile.commission.categories?.find(c => c.category?.toLowerCase() === product.category?.toLowerCase())?.rate || 0;
-                        } else {
-                            rate = profile.commission.overall;
-                        }
-
-                        commissionForThisSale += saleValue * (rate / 100);
-                    }
-                    
-                    const roundedCommission = round(commissionForThisSale);
-
-                    if (roundedCommission > 0) {
-                        if (paidAmountCounter >= roundedCommission) {
-                            // This commission is fully paid
-                            paidAmountCounter = round(paidAmountCounter - roundedCommission);
-                        } else {
-                            // This commission is pending (or partially paid, but we treat it as fully pending for simplicity in selection)
-                            salesResult.push({
-                                id: sale.id,
-                                date: new Date(sale.date).toLocaleDateString(),
-                                invoiceNo: sale.invoiceNo,
-                                totalAmount: sale.totalAmount,
-                                commissionEarned: roundedCommission
-                            });
-                        }
-                    }
-                }
-                
-                setPendingSales(salesResult.reverse()); // Show newest pending first
-
+                const pendingData = await getPendingCommissions(profile.id);
+                setPendingSales(pendingData);
             } catch (e) {
-                console.error("Failed to calculate pending commissions", e);
+                console.error("Failed to fetch pending commissions", e);
                 toast({ title: 'Error', description: 'Could not load pending commissions.', variant: 'destructive'});
             } finally {
                 setIsLoading(false);
             }
         };
-
+        
         if (open && profile) {
-            calculatePendingCommissions();
+            fetchPending();
             setSelectedSaleIds(new Set());
             setMethod(profile.entityType === 'Company' ? 'cheque' : 'cash');
             setNote('');

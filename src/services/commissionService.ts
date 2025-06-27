@@ -2,11 +2,20 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
-import { type CommissionProfile, type Expense } from '@/lib/data';
+import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction, query, where } from 'firebase/firestore';
+import { type CommissionProfile, type Sale, type DetailedProduct, type Expense } from '@/lib/data';
 import { sendSms } from '@/services/smsService';
+import { processDoc } from '@/lib/firestore-utils';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
+
+export type PendingSale = {
+    id: string;
+    date: string;
+    invoiceNo: string;
+    totalAmount: number;
+    commissionEarned: number;
+};
 
 export async function getCommissionProfiles(): Promise<CommissionProfile[]> {
   const snapshot = await getDocs(commissionProfilesCollection);
@@ -68,18 +77,114 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     }
 }
 
+export async function getPendingCommissions(profileId: string): Promise<PendingSale[]> {
+    const profile = await getCommissionProfile(profileId);
+    if (!profile) return [];
+
+    const salesCollectionRef = collection(db, 'sales');
+    const q = query(salesCollectionRef, where("commissionAgentIds", "array-contains", profileId));
+    const salesSnapshot = await getDocs(q);
+    const agentSales = salesSnapshot.docs.map(doc => processDoc<Sale>(doc));
+
+    const allProductIds = agentSales.flatMap(s => s.items.map(i => i.productId));
+    if (allProductIds.length === 0) return [];
+
+    const uniqueProductIds = [...new Set(allProductIds)];
+    
+    // Firestore 'in' query has a limit of 30 values. Handle chunking if necessary.
+    const productChunks = [];
+    for (let i = 0; i < uniqueProductIds.length; i += 30) {
+        productChunks.push(uniqueProductIds.slice(i, i + 30));
+    }
+
+    const productMap = new Map<string, DetailedProduct>();
+    for (const chunk of productChunks) {
+        if (chunk.length === 0) continue;
+        const productsCollectionRef = collection(db, 'products');
+        const productsQuery = query(productsCollectionRef, where("__name__", "in", chunk));
+        const productsSnapshot = await getDocs(productsQuery);
+        productsSnapshot.docs.forEach(doc => {
+            productMap.set(doc.id, processDoc<DetailedProduct>(doc));
+        });
+    }
+    
+    const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    const round = (num: number) => Math.round(num * 100) / 100;
+    let paidAmountCounter = round(profile.totalCommissionPaid || 0);
+    const salesResult: PendingSale[] = [];
+
+    for (const sale of sortedSales) {
+        let commissionForThisSale = 0;
+        for (const item of sale.items) {
+            const product = productMap.get(item.productId);
+            if (!product) continue;
+            
+            const saleValue = item.unitPrice * item.quantity;
+            const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
+            let rate = 0;
+
+            if (hasCategoryRates) {
+                rate = profile.commission.categories?.find(c => c.category?.toLowerCase() === product.category?.toLowerCase())?.rate || 0;
+            } else {
+                rate = profile.commission.overall || 0;
+            }
+
+            commissionForThisSale += saleValue * (rate / 100);
+        }
+        
+        const roundedCommission = round(commissionForThisSale);
+
+        if (roundedCommission > 0) {
+            if (paidAmountCounter >= roundedCommission) {
+                paidAmountCounter = round(paidAmountCounter - roundedCommission);
+            } else {
+                salesResult.push({
+                    id: sale.id,
+                    date: new Date(sale.date).toLocaleDateString(),
+                    invoiceNo: sale.invoiceNo,
+                    totalAmount: sale.totalAmount,
+                    commissionEarned: roundedCommission
+                });
+            }
+        }
+    }
+    
+    return salesResult.reverse(); // Newest first
+}
+
+
 export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
     const profileWithDefaults = {
       ...profile,
       totalCommissionEarned: 0,
       totalCommissionPaid: 0,
+      commission: {
+          ...profile.commission,
+          overall: Number(profile.commission.overall) || 0,
+          categories: profile.commission.categories?.map(c => ({
+              ...c,
+              rate: Number(c.rate) || 0,
+          })) || [],
+      }
     };
     return await addDoc(commissionProfilesCollection, profileWithDefaults);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
     const docRef = doc(db, 'commissionProfiles', id);
-    await updateDoc(docRef, profile);
+    const profileToUpdate = {
+        ...profile,
+        commission: {
+            ...profile.commission,
+            overall: Number(profile.commission?.overall) || 0,
+            categories: profile.commission?.categories?.map(c => ({
+                ...c,
+                rate: Number(c.rate) || 0,
+            })) || [],
+        }
+    };
+    await updateDoc(docRef, profileToUpdate);
 }
 
 export async function deleteCommissionProfile(id: string): Promise<void> {
