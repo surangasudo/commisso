@@ -4,38 +4,13 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData, runTransaction, updateDoc } from 'firebase/firestore';
 import { type Sale, type DetailedProduct, type CommissionProfile } from '@/lib/data';
+import { processDoc } from '@/lib/firestore-utils';
 
 const salesCollection = collection(db, 'sales');
 
 export async function getSales(): Promise<Sale[]> {
   const snapshot = await getDocs(salesCollection);
-  const data = snapshot.docs.map(doc => {
-      const docData = doc.data();
-      return {
-          id: doc.id,
-          date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
-          invoiceNo: docData.invoiceNo || '',
-          customerName: docData.customerName || '',
-          contactNumber: docData.contactNumber || '',
-          location: docData.location || '',
-          paymentStatus: docData.paymentStatus || 'Due',
-          paymentMethod: docData.paymentMethod || '',
-          totalAmount: docData.totalAmount || 0,
-          totalPaid: docData.totalPaid || 0,
-          sellDue: docData.sellDue || 0,
-          sellReturnDue: docData.sellReturnDue || 0,
-          shippingStatus: docData.shippingStatus || null,
-          totalItems: docData.totalItems || 0,
-          addedBy: docData.addedBy || '',
-          sellNote: docData.sellNote || null,
-          staffNote: docData.staffNote || null,
-          shippingDetails: docData.shippingDetails || null,
-          taxAmount: docData.taxAmount || 0,
-          items: docData.items || [],
-          commissionAgentIds: docData.commissionAgentIds || null,
-      } as Sale;
-  });
-  return data;
+  return snapshot.docs.map(doc => processDoc<Sale>(doc));
 }
 
 export async function getSale(id: string): Promise<Sale | null> {
@@ -43,30 +18,7 @@ export async function getSale(id: string): Promise<Sale | null> {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const docData = docSnap.data();
-        return {
-            id: docSnap.id,
-            date: docData.date?.toDate ? docData.date.toDate().toISOString() : docData.date,
-            invoiceNo: docData.invoiceNo || '',
-            customerName: docData.customerName || '',
-            contactNumber: docData.contactNumber || '',
-            location: docData.location || '',
-            paymentStatus: docData.paymentStatus || 'Due',
-            paymentMethod: docData.paymentMethod || '',
-            totalAmount: docData.totalAmount || 0,
-            totalPaid: docData.totalPaid || 0,
-            sellDue: docData.sellDue || 0,
-            sellReturnDue: docData.sellReturnDue || 0,
-            shippingStatus: docData.shippingStatus || null,
-            totalItems: docData.totalItems || 0,
-            addedBy: docData.addedBy || '',
-            sellNote: docData.sellNote || null,
-            staffNote: docData.staffNote || null,
-            shippingDetails: docData.shippingDetails || null,
-            taxAmount: docData.taxAmount || 0,
-            items: docData.items || [],
-            commissionAgentIds: docData.commissionAgentIds || null,
-        } as Sale;
+        return processDoc<Sale>(docSnap);
     } else {
         return null;
     }
@@ -76,6 +28,11 @@ export async function addSale(
   sale: Omit<Sale, 'id'>,
   commissionCalculationType: 'invoice_value' | 'payment_received'
 ) {
+  const saleDataForDb = {
+    ...sale,
+    date: new Date(sale.date),
+  };
+
   await runTransaction(db, async (transaction) => {
     // --- READ PHASE ---
 
@@ -190,7 +147,7 @@ export async function addSale(
 
     // 3. Create the new sale document
     const newSaleRef = doc(collection(db, 'sales'));
-    transaction.set(newSaleRef, sale);
+    transaction.set(newSaleRef, saleDataForDb);
   });
 }
 

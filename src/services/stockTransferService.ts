@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
 import { type StockTransfer } from '@/lib/data';
+import { processDoc } from '@/lib/firestore-utils';
 
 type StockTransferItem = {
     productId: string;
@@ -20,27 +21,14 @@ const stockTransfersCollection = collection(db, 'stockTransfers');
 
 export async function getStockTransfers(): Promise<StockTransfer[]> {
     const snapshot = await getDocs(stockTransfersCollection);
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            date: data.date?.toDate ? data.date.toDate().toISOString() : data.date,
-            referenceNo: data.referenceNo,
-            locationFrom: data.locationFrom,
-            locationTo: data.locationTo,
-            status: data.status,
-            shippingCharges: data.shippingCharges || 0,
-            totalAmount: data.totalAmount,
-            addedBy: data.addedBy,
-        } as StockTransfer;
-    });
+    return snapshot.docs.map(doc => processDoc<StockTransfer>(doc));
 }
 
 export async function addStockTransfer(transfer: StockTransferInput): Promise<DocumentData> {
     const totalAmount = transfer.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) + (transfer.shippingCharges || 0);
     
     const newTransferData = {
-        date: transfer.date.toISOString(),
+        date: new Date(transfer.date),
         referenceNo: transfer.referenceNo || `ST-${Date.now()}`,
         locationFrom: transfer.locationFrom,
         locationTo: transfer.locationTo,
