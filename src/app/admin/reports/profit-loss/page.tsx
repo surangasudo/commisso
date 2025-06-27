@@ -40,7 +40,10 @@ import { getSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getExpenses } from '@/services/expenseService';
 import { getProducts } from '@/services/productService';
-import { type Sale, type Purchase, type Expense, type DetailedProduct, type CustomerProfit, type AgentProfit, type BrandProfit, type CategoryProfit, type CompanyProfit, type DateProfit, type DayProfit, type InvoiceProfit, type LocationProfit, type ProductProfit, type ServiceStaffProfit, type SubAgentProfit } from '@/lib/data';
+import { getCustomers } from '@/services/customerService';
+import { getUsers } from '@/services/userService';
+import { getCommissionProfiles } from '@/services/commissionService';
+import { type Sale, type Purchase, type Expense, type DetailedProduct, type Customer, type User, type CommissionProfile, type ProductProfit, type CategoryProfit, type BrandProfit, type LocationProfit, type InvoiceProfit, type DateProfit, type CustomerProfit, type DayProfit, type ServiceStaffProfit, type AgentProfit, type SubAgentProfit, type CompanyProfit } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -158,6 +161,7 @@ export default function ProfitLossReportPage() {
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { formatCurrency } = useCurrency();
 
@@ -165,16 +169,18 @@ export default function ProfitLossReportPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [salesData, purchasesData, expensesData, productsData] = await Promise.all([
+                const [salesData, purchasesData, expensesData, productsData, commissionProfilesData] = await Promise.all([
                     getSales(),
                     getPurchases(),
                     getExpenses(),
                     getProducts(),
+                    getCommissionProfiles(),
                 ]);
                 setSales(salesData);
                 setPurchases(purchasesData);
                 setExpenses(expensesData);
                 setProducts(productsData);
+                setCommissionProfiles(commissionProfilesData);
             } catch (error) {
                 console.error("Failed to fetch report data:", error);
             } finally {
@@ -197,48 +203,97 @@ export default function ProfitLossReportPage() {
         const filteredExpenses = expenses.filter(dateFilter);
 
         const productsById = new Map(products.map(p => [p.id, p]));
+        const commissionProfilesById = new Map(commissionProfiles.map(p => [p.id, p]));
 
         const totalSales = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
         const totalPurchases = filteredPurchases.reduce((sum, p) => sum + p.grandTotal, 0);
         const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.totalAmount, 0);
 
         let costOfGoodsSold = 0;
+        
+        const productProfitMap = new Map<string, number>();
+        const categoryProfitMap = new Map<string, number>();
+        const brandProfitMap = new Map<string, number>();
+        const locationProfitMap = new Map<string, number>();
+        const invoiceProfitMap = new Map<string, { customer: string; profit: number }>();
+        const dateProfitMap = new Map<string, number>();
+        const customerProfitMap = new Map<string, number>();
+        const dayProfitMap = new Map<string, number>();
+        const serviceStaffProfitMap = new Map<string, number>();
+        const agentProfitMap = new Map<string, { name: string; profit: number; type: string }>();
+
         filteredSales.forEach(sale => {
+            let saleProfit = 0;
+            const saleDate = new Date(sale.date);
+            const saleDateString = saleDate.toLocaleDateString();
+            const dayOfWeek = format(saleDate, 'EEEE');
+
             (sale.items || []).forEach(item => {
                 const product = productsById.get(item.productId);
                 if (product) {
-                    costOfGoodsSold += item.quantity * product.unitPurchasePrice;
+                    const itemCost = item.quantity * product.unitPurchasePrice;
+                    const itemRevenue = item.quantity * item.unitPrice;
+                    const itemProfit = itemRevenue - itemCost;
+                    
+                    costOfGoodsSold += itemCost;
+                    saleProfit += itemProfit;
+                    
+                    productProfitMap.set(product.name, (productProfitMap.get(product.name) || 0) + itemProfit);
+                    if (product.category) categoryProfitMap.set(product.category, (categoryProfitMap.get(product.category) || 0) + itemProfit);
+                    if (product.brand) brandProfitMap.set(product.brand, (brandProfitMap.get(product.brand) || 0) + itemProfit);
                 }
             });
+            
+            locationProfitMap.set(sale.location, (locationProfitMap.get(sale.location) || 0) + saleProfit);
+            invoiceProfitMap.set(sale.invoiceNo, { customer: sale.customerName, profit: saleProfit });
+            dateProfitMap.set(saleDateString, (dateProfitMap.get(saleDateString) || 0) + saleProfit);
+            customerProfitMap.set(sale.customerName, (customerProfitMap.get(sale.customerName) || 0) + saleProfit);
+            dayProfitMap.set(dayOfWeek, (dayProfitMap.get(dayOfWeek) || 0) + saleProfit);
+            serviceStaffProfitMap.set(sale.addedBy, (serviceStaffProfitMap.get(sale.addedBy) || 0) + saleProfit);
+            
+            if (sale.commissionAgentIds) {
+                sale.commissionAgentIds.forEach(agentId => {
+                    const agentProfile = commissionProfilesById.get(agentId);
+                    if (agentProfile) {
+                        const current = agentProfitMap.get(agentId) || { name: agentProfile.name, profit: 0, type: agentProfile.entityType };
+                        current.profit += saleProfit;
+                        agentProfitMap.set(agentId, current);
+                    }
+                });
+            }
         });
-
+        
         const grossProfit = totalSales - costOfGoodsSold;
         const netProfit = grossProfit - totalExpenses;
 
-        const productProfitMap = new Map<string, number>();
-        filteredSales.forEach(sale => {
-            (sale.items || []).forEach(item => {
-                const product = productsById.get(item.productId);
-                if (product) {
-                    const profit = (item.unitPrice - product.unitPurchasePrice) * item.quantity;
-                    const currentProfit = productProfitMap.get(product.name) || 0;
-                    productProfitMap.set(product.name, currentProfit + profit);
-                }
-            });
-        });
         const productProfitData: ProductProfit[] = Array.from(productProfitMap, ([product, profit]) => ({ product, profit }));
+        const categoryProfitData: CategoryProfit[] = Array.from(categoryProfitMap, ([category, profit]) => ({ category, profit }));
+        const brandProfitData: BrandProfit[] = Array.from(brandProfitMap, ([brand, profit]) => ({ brand, profit }));
+        const locationProfitData: LocationProfit[] = Array.from(locationProfitMap, ([location, profit]) => ({ location, profit }));
+        const invoiceProfitData: InvoiceProfit[] = Array.from(invoiceProfitMap, ([invoiceNo, data]) => ({ invoiceNo, customer: data.customer, profit: data.profit }));
+        const dateProfitData: DateProfit[] = Array.from(dateProfitMap, ([date, profit]) => ({ date, profit }));
+        const customerProfitData: CustomerProfit[] = Array.from(customerProfitMap, ([customer, profit]) => ({ customer, profit }));
+        const dayProfitData: DayProfit[] = Array.from(dayProfitMap, ([day, profit]) => ({ day, profit }));
+        const serviceStaffProfitData: ServiceStaffProfit[] = Array.from(serviceStaffProfitMap, ([staffName, profit]) => ({ staffName, profit }));
 
+        const agentProfitData: AgentProfit[] = [];
+        const subAgentProfitData: SubAgentProfit[] = [];
+        const companyProfitData: CompanyProfit[] = [];
+        
+        agentProfitMap.forEach((data) => {
+            if (data.type === 'Agent') agentProfitData.push({ agentName: data.name, profit: data.profit });
+            else if (data.type === 'Sub-Agent') subAgentProfitData.push({ subAgentName: data.name, profit: data.profit });
+            else if (data.type === 'Company') companyProfitData.push({ company: data.name, profit: data.profit });
+        });
 
         return {
-            totalSales,
-            totalPurchases,
-            totalExpenses,
-            grossProfit,
-            netProfit,
-            productProfitData
+            totalSales, totalPurchases, totalExpenses, grossProfit, netProfit, costOfGoodsSold,
+            productProfitData, categoryProfitData, brandProfitData, locationProfitData,
+            invoiceProfitData, dateProfitData, customerProfitData, dayProfitData,
+            serviceStaffProfitData, agentProfitData, subAgentProfitData, companyProfitData
         };
 
-    }, [isLoading, sales, purchases, expenses, products, activeDate]);
+    }, [isLoading, sales, purchases, expenses, products, activeDate, commissionProfiles]);
 
     const handlePresetSelect = (preset: string) => {
         const today = new Date();
@@ -291,7 +346,7 @@ export default function ProfitLossReportPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between print-hidden">
+            <div className="flex items-center justify-between print:hidden">
                  <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                     <FileText className="w-8 h-8" />
                     Profit / Loss Report
@@ -376,8 +431,8 @@ export default function ProfitLossReportPage() {
                             </>
                         ) : (
                             <>
-                                <h3 className="font-bold text-lg">COGS: <span className="font-mono">{formatCurrency(reportData?.totalPurchases || 0)}</span></h3>
-                                <p className="text-xs text-muted-foreground">Cost of Goods Sold (simplified as Total Purchases)</p>
+                                <h3 className="font-bold text-lg">COGS: <span className="font-mono">{formatCurrency(reportData?.costOfGoodsSold || 0)}</span></h3>
+                                <p className="text-xs text-muted-foreground">Cost of Goods Sold (Total Purchase Price of Items Sold)</p>
                                 <h3 className="font-bold text-lg mt-4">Gross Profit: <span className="font-mono">{formatCurrency(reportData?.grossProfit || 0)}</span></h3>
                                 <p className="text-xs text-muted-foreground">(Total Sales - COGS)</p>
                                 <h3 className="font-bold text-lg mt-4">Net Profit: <span className="font-mono">{formatCurrency(reportData?.netProfit || 0)}</span></h3>
@@ -405,105 +460,116 @@ export default function ProfitLossReportPage() {
                                 <TabsTrigger value="company">Profit by Company</TabsTrigger>
                             </TabsList>
                             <TabsContent value="products" className="mt-4">
-                            <ReportTable<ProductProfit> 
+                                <ReportTable<ProductProfit> 
                                     title="Profit by Products"
                                     data={reportData?.productProfitData || []}
                                     columns={[{key: 'product', header: 'Product'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.product, formatCurrency(item.profit)])}
                                     isLoading={isLoading}
-                            />
+                                />
                             </TabsContent>
-                            <TabsContent value="categories" className="mt-4">
+                             <TabsContent value="categories" className="mt-4">
                                 <ReportTable<CategoryProfit> 
                                     title="Profit by Categories"
-                                    data={[]}
+                                    data={reportData?.categoryProfitData || []}
                                     columns={[{key: 'category', header: 'Category'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.category, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="brands" className="mt-4">
                                 <ReportTable<BrandProfit> 
                                     title="Profit by Brands"
-                                    data={[]}
+                                    data={reportData?.brandProfitData || []}
                                     columns={[{key: 'brand', header: 'Brand'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.brand, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="locations" className="mt-4">
                                 <ReportTable<LocationProfit> 
                                     title="Profit by Locations"
-                                    data={[]}
+                                    data={reportData?.locationProfitData || []}
                                     columns={[{key: 'location', header: 'Location'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.location, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="invoice" className="mt-4">
                                 <ReportTable<InvoiceProfit> 
                                     title="Profit by Invoice"
-                                    data={[]}
+                                    data={reportData?.invoiceProfitData || []}
                                     columns={[
                                         {key: 'invoiceNo', header: 'Invoice No.'}, 
                                         {key: 'customer', header: 'Customer'}, 
                                         {key: 'profit', header: 'Gross Profit', isNumeric: true}
                                     ]}
                                     getPdfData={(d) => d.map(item => [item.invoiceNo, item.customer, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="date" className="mt-4">
                                 <ReportTable<DateProfit> 
                                     title="Profit by Date"
-                                    data={[]}
+                                    data={reportData?.dateProfitData || []}
                                     columns={[{key: 'date', header: 'Date'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.date, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="customer" className="mt-4">
                                 <ReportTable<CustomerProfit> 
                                     title="Profit by Customer"
-                                    data={[]}
+                                    data={reportData?.customerProfitData || []}
                                     columns={[{key: 'customer', header: 'Customer'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.customer, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="day" className="mt-4">
                                 <ReportTable<DayProfit> 
                                     title="Profit by Day"
-                                    data={[]}
+                                    data={reportData?.dayProfitData || []}
                                     columns={[{key: 'day', header: 'Day of the week'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.day, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="service-staff" className="mt-4">
                                 <ReportTable<ServiceStaffProfit> 
                                     title="Profit by Service Staff"
-                                    data={[]}
+                                    data={reportData?.serviceStaffProfitData || []}
                                     columns={[{key: 'staffName', header: 'Service Staff'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.staffName, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="agent" className="mt-4">
                                 <ReportTable<AgentProfit> 
                                     title="Profit by Agent"
-                                    data={[]}
+                                    data={reportData?.agentProfitData || []}
                                     columns={[{key: 'agentName', header: 'Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.agentName, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="sub-agent" className="mt-4">
                                 <ReportTable<SubAgentProfit> 
                                     title="Profit by Sub-Agent"
-                                    data={[]}
+                                    data={reportData?.subAgentProfitData || []}
                                     columns={[{key: 'subAgentName', header: 'Sub-Agent'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.subAgentName, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                             <TabsContent value="company" className="mt-4">
                                 <ReportTable<CompanyProfit> 
                                     title="Profit by Company"
-                                    data={[]}
+                                    data={reportData?.companyProfitData || []}
                                     columns={[{key: 'company', header: 'Company'}, {key: 'profit', header: 'Gross Profit', isNumeric: true}]}
                                     getPdfData={(d) => d.map(item => [item.company, formatCurrency(item.profit)])}
-                            />
+                                    isLoading={isLoading}
+                                />
                             </TabsContent>
                         </Tabs>
                     </CardContent>
