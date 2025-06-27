@@ -102,7 +102,7 @@ export default function AddSalesCommissionAgentPage() {
                     .filter(c => c.category && c.rate)
                     .map(c => ({
                         category: c.category,
-                        rate: parseFloat(c.rate)
+                        rate: parseFloat(c.rate) || 0
                     })),
             }
         };
@@ -142,7 +142,7 @@ export default function AddSalesCommissionAgentPage() {
                         <CardHeader>
                             <CardTitle>Profile Details</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6 pt-6">
+                        <CardContent className="pt-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {settings.modules.advancedCommission && (
                                     <div className="space-y-2">
