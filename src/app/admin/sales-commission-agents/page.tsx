@@ -67,7 +67,7 @@ const CommissionPayoutDialog = ({
     const [note, setNote] = useState('');
     const [isPaying, setIsPaying] = useState(false);
 
-    const round = (num: number) => Math.round(num * 100) / 100;
+    const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
     useEffect(() => {
         const calculatePendingCommissions = async () => {
@@ -81,14 +81,21 @@ const CommissionPayoutDialog = ({
                 setAllProfiles(profilesData);
 
                 const productMap = new Map(productsData.map(p => [p.id, p]));
-
                 const agentSales = salesData.filter(s => s.commissionAgentIds?.includes(profile.id));
-                const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                const sortedSales = [...agentSales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
 
-                let paidAmountRemaining = round(profile.totalCommissionPaid || 0);
-                const pending: PendingSale[] = [];
+                let pendingAmountToAccountFor = round((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0));
+                const pendingSalesResult: PendingSale[] = [];
+                
+                if (pendingAmountToAccountFor <= 0) {
+                    setPendingSales([]);
+                    setIsLoading(false);
+                    return;
+                }
 
                 for (const sale of sortedSales) {
+                    if (pendingAmountToAccountFor <= 0) break;
+
                     let commissionForThisSale = 0;
                     for (const item of sale.items) {
                         const product = productMap.get(item.productId);
@@ -107,21 +114,22 @@ const CommissionPayoutDialog = ({
                         commissionForThisSale += saleValue * (rate / 100);
                     }
                     
-                    const roundedCommissionForThisSale = round(commissionForThisSale);
+                    const roundedCommission = round(commissionForThisSale);
 
-                    if (paidAmountRemaining >= roundedCommissionForThisSale) {
-                        paidAmountRemaining = round(paidAmountRemaining - roundedCommissionForThisSale);
-                    } else {
-                        pending.push({
+                    if (roundedCommission > 0) {
+                        pendingSalesResult.push({
                             id: sale.id,
                             date: new Date(sale.date).toLocaleDateString(),
                             invoiceNo: sale.invoiceNo,
                             totalAmount: sale.totalAmount,
-                            commissionEarned: roundedCommissionForThisSale
+                            commissionEarned: roundedCommission
                         });
+                        pendingAmountToAccountFor = round(pendingAmountToAccountFor - roundedCommission);
                     }
                 }
-                setPendingSales(pending);
+                
+                setPendingSales(pendingSalesResult.reverse());
+
             } catch (e) {
                 console.error("Failed to calculate pending commissions", e);
                 toast({ title: 'Error', description: 'Could not load pending commissions.', variant: 'destructive'});
@@ -171,9 +179,7 @@ const CommissionPayoutDialog = ({
         setIsPaying(true);
 
         try {
-            // --- Build detailed SMS message ---
             const businessName = settings.business.businessName;
-            // Placeholder phone number as it's not in the settings data model
             const businessPhone = "555-123-4567"; 
 
             const productMap = new Map(allProducts.map(p => [p.id, p]));
@@ -213,7 +219,7 @@ const CommissionPayoutDialog = ({
                     .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}`)
                     .join(', ');
                 
-                let agentName = 'an agent'; // Default fallback
+                let agentName = 'an agent';
                 const firstSelectedSaleId = Array.from(selectedSaleIds)[0];
                 const firstSale = allSales.find(s => s.id === firstSelectedSaleId);
                 
@@ -239,7 +245,6 @@ const CommissionPayoutDialog = ({
                 
                 smsMessage = `Thank you for visiting ${businessName}. Your total sale ${breakdownString}. Total earnings: ${formatCurrency(totalToPay)}. Inquiry: ${businessPhone}`;
             }
-            // --- End of message building ---
 
             const result = await payCommission(profile, totalToPay, method, note, smsMessage);
             onPaymentComplete(profile.id, result);
