@@ -45,7 +45,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
   const apiKey = process.env.TEXTLK_API_KEY;
   const senderId = process.env.TEXTLK_SENDER_ID;
 
-  if (!apiKey || !senderId) {
+  if (!apiKey || !senderId || apiKey === 'YOUR_TEXTLK_API_KEY' || senderId === 'YOUR_TEXTLK_SENDER_ID') {
     const errorMsg = 'ERROR: TEXTLK_API_KEY or TEXTLK_SENDER_ID is not set in the .env file.';
     console.error(errorMsg);
     return { success: false, error: errorMsg };
@@ -72,7 +72,11 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
     const responseBody = await response.json();
 
     if (!response.ok) {
-      const errorMessage = responseBody.message || `API Error: ${response.statusText}`;
+      let errorMessage = responseBody.message || `API Error: ${response.statusText}`;
+      // Check for specific authentication error status or message
+      if (response.status === 401 || (responseBody.message && responseBody.message.toLowerCase().includes('unauthenticated'))) {
+          errorMessage = "The Text.lk API Key is invalid or missing. Please check your .env file.";
+      }
       console.error('Failed to send SMS via Text.lk. Status:', response.status, 'Response:', responseBody);
       return { success: false, error: errorMessage };
     }
