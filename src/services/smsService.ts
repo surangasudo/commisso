@@ -1,9 +1,41 @@
+
 'use server';
 
 /**
  * @fileOverview Integrates with Text.lk to send SMS messages.
  * This service makes a real API call to the Text.lk service.
  */
+
+/**
+ * Formats a Sri Lankan phone number to the E.164 format required by Text.lk.
+ * @param number The phone number string.
+ * @returns The formatted phone number string.
+ */
+function formatSriLankanNumber(number: string): string {
+  // Remove spaces, hyphens, and parentheses
+  let cleaned = number.replace(/[\s-()]/g, '');
+
+  // If it starts with '+94', remove the '+'
+  if (cleaned.startsWith('+94')) {
+    return cleaned.substring(1);
+  }
+  // If it starts with a '0', remove it and prepend '94'
+  if (cleaned.startsWith('0')) {
+    return '94' + cleaned.substring(1);
+  }
+  // If it's a 9-digit number starting with 7, prepend '94'
+  if (cleaned.length === 9 && cleaned.startsWith('7')) {
+    return '94' + cleaned;
+  }
+  // If it already starts with '94', assume it's correct
+  if (cleaned.startsWith('94')) {
+    return cleaned;
+  }
+  
+  // As a fallback, return the cleaned number, but it might fail
+  console.warn(`Could not automatically format phone number: ${number}. Sending as is.`);
+  return cleaned;
+}
 
 export async function sendSms(to: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   const apiKey = process.env.TEXTLK_API_KEY;
@@ -15,8 +47,9 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
     return { success: false, error: errorMsg };
   }
   
-  // The API expects recipients as an array of strings.
-  const recipients = [to];
+  // Format the number before sending
+  const formattedNumber = formatSriLankanNumber(to);
+  const recipients = [formattedNumber];
 
   try {
     const response = await fetch('https://app.text.lk/api/v2/sms/send', {
