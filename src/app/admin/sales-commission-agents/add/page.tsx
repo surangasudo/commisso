@@ -15,6 +15,7 @@ import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { Separator } from '@/components/ui/separator';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
