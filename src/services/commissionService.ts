@@ -93,7 +93,7 @@ export async function payCommission(
     formattedAmount: string,
     paymentMethod: string,
     paymentNote: string
-): Promise<void> {
+): Promise<{ paymentRecorded: boolean; smsSent: boolean; error?: string }> {
     const profileDocRef = doc(db, 'commissionProfiles', profile.id);
     const expensesCollectionRef = collection(db, 'expenses');
 
@@ -148,11 +148,22 @@ export async function payCommission(
             const message = `Hi ${profile.name}, a commission payment of ${formattedAmount} has been processed for you. Thank you.`;
             const smsResult = await sendSms(profile.phone, message);
             if (!smsResult.success) {
-                 throw new Error(`Payment recorded, but SMS notification failed: ${smsResult.error}`);
+                 return {
+                    paymentRecorded: true,
+                    smsSent: false,
+                    error: `Payment recorded, but SMS notification failed: ${smsResult.error}`,
+                };
             }
+             return { paymentRecorded: true, smsSent: true };
+        } else {
+             return {
+                paymentRecorded: true,
+                smsSent: false,
+                error: 'No phone number available for this profile.',
+            };
         }
-    } catch (e) {
+    } catch (e: any) {
         console.error("Commission payment transaction failed: ", e);
-        throw e;
+        throw e; // Re-throw transaction errors
     }
 }

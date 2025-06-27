@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet } from 'lucide-react';
+import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
 import { onSnapshot, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -30,6 +30,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getSales, type Sale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 type PendingSale = {
     id: string;
@@ -39,16 +41,20 @@ type PendingSale = {
     commissionEarned: number;
 };
 
+type CommissionProfileWithStatus = CommissionProfile & {
+    lastSmsStatus?: 'success' | 'failed' | 'not_attempted';
+};
+
 const CommissionPayoutDialog = ({ 
     profile, 
     open, 
     onOpenChange, 
-    onPaymentSuccess 
+    onPaymentComplete
 }: { 
     profile: CommissionProfile | null, 
     open: boolean, 
     onOpenChange: (open: boolean) => void,
-    onPaymentSuccess: () => void,
+    onPaymentComplete: (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string; }) => void
 }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
@@ -148,26 +154,14 @@ const CommissionPayoutDialog = ({
         }
         setIsPaying(true);
         try {
-            const formattedAmount = formatCurrency(totalToPay);
-            await payCommission(profile, totalToPay, formattedAmount, method, note);
-            toast({ title: 'Success', description: `Payment of ${formattedAmount} for ${profile.name} has been recorded. SMS sent.` });
-            onPaymentSuccess();
+            const result = await payCommission(profile, totalToPay, formatCurrency(totalToPay), method, note);
+            onPaymentComplete(profile.id, result);
         } catch (error: any) {
-            if (error.message && error.message.startsWith('Payment recorded')) {
-                toast({
-                    title: 'Payment Recorded, SMS Failed',
-                    description: error.message,
-                    variant: 'destructive',
-                    duration: 9000,
-                });
-                onPaymentSuccess();
-            } else {
-                toast({
-                    title: 'Payment Failed',
-                    description: error.message || 'Failed to record payment.',
-                    variant: 'destructive'
-                });
-            }
+            toast({
+                title: 'Payment Failed',
+                description: `The payment transaction failed: ${error.message}`,
+                variant: 'destructive'
+            });
             console.error(error);
         } finally {
             setIsPaying(false);
@@ -263,7 +257,7 @@ const CommissionPayoutDialog = ({
     );
 };
 
-const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatCurrency }: { profiles: CommissionProfile[], handlePayClick: (profile: CommissionProfile) => void, handleView: (id: string) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
+const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatCurrency }: { profiles: CommissionProfileWithStatus[], handlePayClick: (profile: CommissionProfile) => void, handleView: (id: string) => void, isLoading: boolean, formatCurrency: (val: number) => string }) => {
     return (
         <div className="border rounded-md">
             <Table>
@@ -296,7 +290,7 @@ const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatC
                                 <TableCell className="text-right font-semibold text-red-600">{formatCurrency(pendingAmount)}</TableCell>
                                 <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
                                 <TableCell className="text-center">
-                                    <div className="flex justify-center gap-2">
+                                    <div className="flex justify-center items-center gap-2">
                                         <Button 
                                           size="sm" 
                                           variant="outline"
@@ -313,6 +307,20 @@ const PayoutsTable = ({ profiles, handlePayClick, handleView, isLoading, formatC
                                         >
                                             <Wallet className="w-4 h-4"/> Pay
                                         </Button>
+                                         {profile.lastSmsStatus && profile.lastSmsStatus !== 'not_attempted' && (
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    {profile.lastSmsStatus === 'success' ? (
+                                                        <CheckCircle className="w-5 h-5 text-green-500" />
+                                                    ) : (
+                                                        <AlertCircle className="w-5 h-5 text-red-500" />
+                                                    )}
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Last payment attempt SMS: {profile.lastSmsStatus}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -334,7 +342,7 @@ export default function SalesCommissionAgentsPage() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const settings = useBusinessSettings();
-  const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
+  const [profiles, setProfiles] = useState<CommissionProfileWithStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -372,7 +380,8 @@ export default function SalesCommissionAgentsPage() {
                 },
                 totalCommissionEarned: docData.totalCommissionEarned || 0,
                 totalCommissionPaid: docData.totalCommissionPaid || 0,
-            } as CommissionProfile;
+                lastSmsStatus: 'not_attempted',
+            } as CommissionProfileWithStatus;
         });
         setProfiles(data);
         setIsLoading(false);
@@ -382,10 +391,8 @@ export default function SalesCommissionAgentsPage() {
         setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
   
   const filteredProfiles = useMemo(() => {
     return profiles.filter(p => {
@@ -417,7 +424,6 @@ export default function SalesCommissionAgentsPage() {
     if (profileToDelete) {
       try {
         await deleteCommissionProfile(profileToDelete.id);
-        // State will update via the listener, no need to manually filter
         toast({ title: 'Success', description: `Profile for ${profileToDelete.name} deleted.` });
       } catch (error) {
         toast({ title: 'Error', description: 'Failed to delete profile.', variant: 'destructive' });
@@ -434,11 +440,29 @@ export default function SalesCommissionAgentsPage() {
     setIsPayDialogOpen(true);
   };
   
-  const handlePaymentSuccess = () => {
-      setIsPayDialogOpen(false);
-      setProfileToPay(null);
-      // The listener will handle updating the state automatically.
-  }
+  const handlePaymentComplete = (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string }) => {
+    setProfiles(prevProfiles =>
+        prevProfiles.map(p =>
+            p.id === profileId
+                ? { ...p, lastSmsStatus: result.smsSent ? 'success' : 'failed' }
+                : p
+        )
+    );
+
+    if (result.smsSent) {
+        toast({ title: 'Success', description: 'Payment recorded and SMS sent.' });
+    } else {
+        toast({
+            title: 'Payment Recorded, SMS Failed',
+            description: result.error || 'An unknown error occurred sending the SMS.',
+            variant: 'destructive',
+            duration: 9000,
+        });
+    }
+
+    setIsPayDialogOpen(false);
+    setProfileToPay(null);
+  };
 
   const getExportData = () => filteredProfiles.map(p => ({
     name: p.name,
@@ -454,6 +478,7 @@ export default function SalesCommissionAgentsPage() {
 
   return (
     <>
+    <TooltipProvider>
       <Tabs defaultValue="profiles" className="space-y-4">
         <div className="printable-area">
             <TabsList className="print-hidden">
@@ -656,7 +681,7 @@ export default function SalesCommissionAgentsPage() {
             </TabsContent>
         </div>
       </Tabs>
-      
+      </TooltipProvider>
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -678,7 +703,7 @@ export default function SalesCommissionAgentsPage() {
         profile={profileToPay}
         open={isPayDialogOpen}
         onOpenChange={setIsPayDialogOpen}
-        onPaymentSuccess={handlePaymentSuccess}
+        onPaymentComplete={handlePaymentComplete}
       />
     </>
   );
