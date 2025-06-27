@@ -581,6 +581,10 @@ export default function PosPage() {
 
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
+  // Determine the correct label for the single selector
+  const salespersonLabel = settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff";
+
+
   useEffect(() => {
     if (saleToPrint) {
         // A small delay to ensure the state has rendered the component for printing
@@ -1142,7 +1146,7 @@ export default function PosPage() {
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1">
-                                                <CommissionSelector entityType="Salesperson" label="Commission Agent" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                                <CommissionSelector entityType="Salesperson" label={salespersonLabel} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
                                             </div>
                                             <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
                                         </div>
