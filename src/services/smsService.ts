@@ -7,39 +7,49 @@
  */
 
 /**
- * Formats a Sri Lankan phone number to the E.164 format required by Text.lk.
+ * Formats a Sri Lankan phone number to the E.164 format (without +) required by Text.lk.
  * @param number The phone number string.
- * @returns The formatted phone number string.
+ * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(number: string): string {
-  // Remove common special characters like spaces, hyphens, and parentheses
-  let cleaned = number.replace(/[\s-()]/g, '');
+  // 1. Remove all non-digit characters except for a potential leading '+'
+  let cleaned = number.replace(/[^\d+]/g, '');
 
-  // If the number starts with a '+', remove it for further processing.
-  if (cleaned.startsWith('+')) {
+  // 2. Handle international format like +94...
+  if (cleaned.startsWith('+94')) {
+    // Remove '+' and return if length is correct for '94...' format
     cleaned = cleaned.substring(1);
+    if (cleaned.length === 11) {
+      return cleaned;
+    }
   }
 
-  // Now, 'cleaned' is guaranteed not to have a '+' prefix.
-  // The rest of the logic can assume a string of digits.
-
-  // If it starts with '94' (country code), it's likely already in the correct format.
+  // 3. Handle national format starting with 94...
   if (cleaned.startsWith('94')) {
-    return cleaned;
+    if (cleaned.length === 11) {
+      return cleaned; // Already in the correct format
+    } else {
+      // It starts with 94 but has wrong length, which is ambiguous.
+      console.warn(`Phone number ${number} starts with 94 but has incorrect length. Sending as is.`);
+      return cleaned;
+    }
   }
-  // If it starts with a '0', it's a local format. Replace '0' with '94'.
+
+  // 4. Handle local format with leading '0' (e.g., 0712345678)
   if (cleaned.startsWith('0')) {
-    return '94' + cleaned.substring(1);
+    cleaned = cleaned.substring(1); // remove leading 0
   }
-  // If it's a 9-digit number (local format without leading 0), prepend '94'.
+
+  // 5. After cleaning, if we have a 9-digit number, it's a valid local number.
   if (cleaned.length === 9) {
     return '94' + cleaned;
   }
-  
-  // As a fallback, return the number after basic cleaning, but warn the user.
-  console.warn(`Could not automatically format phone number: ${number}. Attempting to send as ${cleaned}.`);
-  return cleaned;
+
+  // 6. If we reach here, the format is unknown. Warn and return the original digits.
+  console.warn(`Could not automatically format Sri Lankan phone number: ${number}. The format is unusual. Sending only the digits.`);
+  return number.replace(/[^\d]/g, '');
 }
+
 
 export async function sendSms(to: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   const apiKey = process.env.TEXTLK_API_KEY;
@@ -67,6 +77,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
         message: message,
         recipients: recipients,
       }),
+      cache: 'no-store',
     });
 
     const responseBody = await response.json();
@@ -92,3 +103,4 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
     return { success: false, error: error.message || 'Network error during SMS sending' };
   }
 }
+    
