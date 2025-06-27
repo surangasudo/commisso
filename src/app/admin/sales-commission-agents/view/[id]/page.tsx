@@ -221,7 +221,6 @@ export default function ViewCommissionProfilePage() {
                                 <DetailItem icon={Phone} label="Phone Number" value={profile.phone} />
                                 <DetailItem icon={Mail} label="Email" value={profile.email || 'N/A'} />
                                 <DetailItem icon={Banknote} label="Bank Details" value={profile.bankDetails || 'N/A'} />
-                                <DetailItem icon={Percent} label="Overall Commission Rate" value={`${profile.commission.overall}%`} />
                                 {profile.commission.categories && profile.commission.categories.length > 0 && (
                                     <DetailItem icon={Tag} label="Category-Specific Rates">
                                         <div className="flex flex-col gap-1 mt-1">

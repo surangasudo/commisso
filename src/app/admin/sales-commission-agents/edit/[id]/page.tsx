@@ -28,7 +28,6 @@ export default function EditSalesCommissionAgentPage() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
-    const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +51,6 @@ export default function EditSalesCommissionAgentPage() {
                     setPhoneNumber(profileToEdit.phone);
                     setEmail(profileToEdit.email || '');
                     setBankDetails(profileToEdit.bankDetails || '');
-                    setOverallCommission(String(profileToEdit.commission.overall));
                     setCategoryCommissions(
                         profileToEdit.commission.categories?.map((c, index) => ({
                             id: Date.now() + index,
@@ -134,7 +132,7 @@ export default function EditSalesCommissionAgentPage() {
             email: email,
             bankDetails: bankDetails,
             commission: {
-                overall: parseFloat(overallCommission) || 0,
+                overall: 0,
                 categories: validCategoryCommissions
                     .map(c => ({
                         category: c.category,
@@ -232,16 +230,6 @@ export default function EditSalesCommissionAgentPage() {
                                 <Label htmlFor="bank-details">Bank Details</Label>
                                 <Textarea id="bank-details" placeholder="Enter bank account details" value={bankDetails} onChange={(e) => setBankDetails(e.target.value)} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="overall-commission">Overall Commission Rate (%) *</Label>
-                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} disabled={categoryCommissions.length > 0} />
-                                <p className="text-xs text-muted-foreground">
-                                    {categoryCommissions.length > 0 
-                                        ? "Disabled because category-specific rates are being used."
-                                        : "This is the default commission rate if no category-specific rate applies."
-                                    }
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -249,7 +237,7 @@ export default function EditSalesCommissionAgentPage() {
                         <CardHeader>
                             <CardTitle>Category-Specific Commission Rates</CardTitle>
                             <CardDescription>
-                                Add specific commission rates for different product categories. These will override the overall rate.
+                                Add specific commission rates for different product categories.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

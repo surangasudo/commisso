@@ -26,7 +26,6 @@ export default function AddSalesCommissionAgentPage() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
-    const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     
@@ -99,7 +98,7 @@ export default function AddSalesCommissionAgentPage() {
             email: email,
             bankDetails: bankDetails,
             commission: {
-                overall: parseFloat(overallCommission) || 0,
+                overall: 0,
                 categories: validCategoryCommissions
                     .map(c => ({
                         category: c.category,
@@ -180,16 +179,6 @@ export default function AddSalesCommissionAgentPage() {
                                 <Label htmlFor="bank-details">Bank Details</Label>
                                 <Textarea id="bank-details" placeholder="Enter bank account details" value={bankDetails} onChange={(e) => setBankDetails(e.target.value)} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="overall-commission">Overall Commission Rate (%) *</Label>
-                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} disabled={categoryCommissions.length > 0} />
-                                <p className="text-xs text-muted-foreground">
-                                    {categoryCommissions.length > 0 
-                                        ? "Disabled because category-specific rates are being used."
-                                        : "This is the default commission rate if no category-specific rate applies."
-                                    }
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
 
@@ -246,8 +235,8 @@ export default function AddSalesCommissionAgentPage() {
                         <CardContent className="pt-6 text-sm text-muted-foreground space-y-4">
                              <p>Create commission profiles for different entities like Agents, Companies, or Salespersons.</p>
                             <p>Fill in the profile details and their commission structure.</p>
-                            <p>The <span className="font-bold text-foreground">Overall Commission Rate</span> is the default percentage applied to all sales unless a more specific rate is defined for a product's category.</p>
-                            <p><span className="font-bold text-foreground">Category-Specific Rates</span> allow you to set different commissions for items from different categories, offering more granular control.</p>
+                            <p><span className="font-bold text-foreground">Category-Specific Rates</span> allow you to set different commissions for items from different categories.</p>
+                             <p>If no category-specific rate is defined for a product, no commission will be earned for its sale by this agent.</p>
                         </CardContent>
                     </Card>
                 </div>
