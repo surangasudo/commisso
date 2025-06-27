@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -99,6 +100,8 @@ export default function EditSalesCommissionAgentPage() {
     };
 
     const handleUpdateProfile = async () => {
+        const validCategoryCommissions = categoryCommissions.filter(c => c.category && c.rate);
+        
         if (settings.modules.advancedCommission && !entityType) {
             toast({
                 title: "Error: Missing Field",
@@ -123,10 +126,10 @@ export default function EditSalesCommissionAgentPage() {
             });
             return;
         }
-        if (!overallCommission.trim() && categoryCommissions.length === 0) {
+        if (!overallCommission.trim() && validCategoryCommissions.length === 0) {
             toast({
                 title: "Error: Missing Field",
-                description: "Please enter an Overall Commission Rate or define at least one category-specific rate.",
+                description: "Please enter an Overall Commission Rate or define at least one complete category-specific rate.",
                 variant: "destructive",
             });
             return;
@@ -140,8 +143,7 @@ export default function EditSalesCommissionAgentPage() {
             bankDetails: bankDetails,
             commission: {
                 overall: parseFloat(overallCommission) || 0,
-                categories: categoryCommissions
-                    .filter(c => c.category && c.rate)
+                categories: validCategoryCommissions
                     .map(c => ({
                         category: c.category,
                         rate: parseFloat(c.rate)
