@@ -1658,7 +1658,19 @@ const ModulesSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
                                 checked={settings[toggle.id]} 
                                 onCheckedChange={(checked) => handleCheckboxChange(toggle.id, checked)} 
                             />
-                            <Label htmlFor={toggle.id} className="font-normal text-base">{toggle.label}</Label>
+                            <div className="flex items-center gap-1.5">
+                                <Label htmlFor={toggle.id} className="font-normal text-base">{toggle.label}</Label>
+                                {toggle.id === 'advancedCommission' && (
+                                     <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p className="max-w-xs">Enables setting different commission rates for entity types like Agent, Sub-Agent, or Company.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>
