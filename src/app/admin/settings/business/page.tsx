@@ -1341,6 +1341,158 @@ const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { 
     );
 };
 
+const SmsSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['sms'], updateSettings: (newValues: Partial<AllSettings['sms']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof AllSettings['sms'], value: string) => {
+        setSettings(s => ({...s, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'SMS Settings Updated',
+            description: 'Your SMS settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2">
+                <CardHeader>
+                    <CardTitle>SMS Settings</CardTitle>
+                    <CardDescription>Configure your preferred SMS gateway.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="space-y-2 max-w-sm">
+                        <Label htmlFor="smsService">SMS Service</Label>
+                        <Select value={settings.smsService} onValueChange={(value) => handleSelectChange('smsService', value)}>
+                            <SelectTrigger id="smsService"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="twilio">Twilio</SelectItem>
+                                <SelectItem value="nexmo">Nexmo</SelectItem>
+                                <SelectItem value="textlk">Text.lk</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    
+                    {settings.smsService === 'twilio' && (
+                        <div className="pt-6 border-t space-y-4">
+                            <h4 className="font-semibold">Twilio Configuration</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="twilioSid">Twilio SID</Label>
+                                    <Input id="twilioSid" value={settings.twilioSid} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="twilioToken">Twilio Token</Label>
+                                    <Input id="twilioToken" type="password" value={settings.twilioToken} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="twilioFrom">From Number</Label>
+                                    <Input id="twilioFrom" value={settings.twilioFrom} onChange={handleInputChange} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {settings.smsService === 'nexmo' && (
+                        <div className="pt-6 border-t space-y-4">
+                            <h4 className="font-semibold">Nexmo/Vonage Configuration</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="nexmoKey">API Key</Label>
+                                    <Input id="nexmoKey" value={settings.nexmoKey} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nexmoSecret">API Secret</Label>
+                                    <Input id="nexmoSecret" type="password" value={settings.nexmoSecret} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="nexmoFrom">From</Label>
+                                    <Input id="nexmoFrom" value={settings.nexmoFrom} onChange={handleInputChange} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {settings.smsService === 'textlk' && (
+                        <div className="pt-6 border-t space-y-4">
+                            <h4 className="font-semibold">Text.lk Configuration</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="textlkApiKey">API Key</Label>
+                                    <Input id="textlkApiKey" value={settings.textlkApiKey} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="textlkSenderId">Sender ID</Label>
+                                    <Input id="textlkSenderId" value={settings.textlkSenderId} onChange={handleInputChange} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {settings.smsService === 'other' && (
+                        <div className="pt-6 border-t space-y-4">
+                            <h4 className="font-semibold">Other Service Configuration</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-2 lg:col-span-3">
+                                    <Label htmlFor="otherUrl">URL</Label>
+                                    <Input id="otherUrl" value={settings.otherUrl} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="sendToParam">Send to parameter name</Label>
+                                    <Input id="sendToParam" value={settings.sendToParam} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="msgParam">Message parameter name</Label>
+                                    <Input id="msgParam" value={settings.msgParam} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="requestMethod">Request Method</Label>
+                                    <Select value={settings.requestMethod} onValueChange={(value) => handleSelectChange('requestMethod', value)}>
+                                        <SelectTrigger id="requestMethod"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="get">GET</SelectItem>
+                                            <SelectItem value="post">POST</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+                <CardFooter>
+                    <Button onClick={handleUpdateSettings}>Update Settings</Button>
+                </CardFooter>
+            </Card>
+             <div className="lg:col-span-1">
+                <Card>
+                    <CardHeader><CardTitle>Instructions</CardTitle></CardHeader>
+                    <CardContent className="space-y-4 text-sm text-muted-foreground">
+                        <p>Configure your SMS service to send notifications directly from the application.</p>
+                        <p><span className="font-semibold text-foreground">Text.lk:</span> The only implemented service currently. Find your API Key and Sender ID on your Text.lk dashboard.</p>
+                        <p>Fill in the required credentials for your chosen service and click "Update Settings" to save.</p>
+                        <p>You can find your Text.lk credentials at <a href="https://app.text.lk/developers" target="_blank" rel="noopener noreferrer" className="text-primary underline">app.text.lk/developers</a>.</p>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+};
+
+
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
@@ -1448,7 +1600,9 @@ export default function BusinessSettingsPage() {
                                 </div>
                             </div>
                         </TabsContent>
-                        <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
+                        <TabsContent value="sms_settings">
+                             <SmsSettingsForm settings={settings.sms} updateSettings={(newValues) => updateSection('sms', newValues)} />
+                        </TabsContent>
                         <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
                         <TabsContent value="modules"><UnimplementedForm title="Modules Settings" /></TabsContent>
                         <TabsContent value="custom_labels"><UnimplementedForm title="Custom Labels Settings" /></TabsContent>
