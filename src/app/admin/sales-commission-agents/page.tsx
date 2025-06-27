@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { type CommissionProfile, type DetailedProduct } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { deleteCommissionProfile, payCommission } from '@/services/commissionService';
+import { deleteCommissionProfile, payCommission, getCommissionProfiles } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +58,7 @@ const CommissionPayoutDialog = ({
     
     const [allSales, setAllSales] = useState<Sale[]>([]);
     const [allProducts, setAllProducts] = useState<DetailedProduct[]>([]);
+    const [allProfiles, setAllProfiles] = useState<CommissionProfile[]>([]);
     const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
     const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
@@ -72,9 +73,10 @@ const CommissionPayoutDialog = ({
             setIsLoading(true);
 
             try {
-                const [salesData, productsData] = await Promise.all([getSales(), getProducts()]);
+                const [salesData, productsData, profilesData] = await Promise.all([getSales(), getProducts(), getCommissionProfiles()]);
                 setAllSales(salesData);
                 setAllProducts(productsData);
+                setAllProfiles(profilesData);
 
                 const productMap = new Map(productsData.map(p => [p.id, p]));
 
@@ -191,7 +193,25 @@ const CommissionPayoutDialog = ({
                     .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}`)
                     .join(', ');
                 
-                smsMessage = `Thank you for your sales, ${profile.name}. Your total sales: ${salesBreakdownString}. Your total earnings: ${formatCurrency(totalToPay)}. For inquiries, call: ${businessPhone}`;
+                let agentName = 'an agent'; // Default fallback
+                const firstSelectedSaleId = Array.from(selectedSaleIds)[0];
+                const firstSale = allSales.find(s => s.id === firstSelectedSaleId);
+                
+                if (firstSale && firstSale.commissionAgentIds) {
+                    const agentId = firstSale.commissionAgentIds.find(id => {
+                        const agentProfile = allProfiles.find(p => p.id === id);
+                        return agentProfile?.entityType === 'Agent';
+                    });
+                    if (agentId) {
+                        const agentProfile = allProfiles.find(p => p.id === agentId);
+                        if (agentProfile) {
+                            agentName = agentProfile.name;
+                        }
+                    }
+                }
+                
+                smsMessage = `Thank you for sending ${agentName}. Your total sales: ${salesBreakdownString}. Your total earnings: ${formatCurrency(totalToPay)}. For inquiries, call: ${businessPhone}`;
+
             } else {
                 const breakdownString = Object.entries(categoryBreakdown)
                     .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}, com:${formatCurrency(data.commission)}`)
