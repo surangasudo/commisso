@@ -12,32 +12,38 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(phoneNumber: string): string {
-    // 1. Clean the input: remove all non-digit characters.
+    // This is a pre-condition check. The function should not be called with falsy values.
+    if (!phoneNumber || typeof phoneNumber !== 'string') {
+        throw new Error('Invalid input: Phone number must be a non-empty string.');
+    }
+    
+    // Remove all non-digit characters.
     const cleaned = phoneNumber.replace(/\D/g, '');
 
-    // 2. Check for the most common valid formats and convert to the required 94... format.
-    // Format: 07... (10 digits) -> 947...
-    if (cleaned.startsWith('0') && cleaned.length === 10) {
-        return '94' + cleaned.substring(1);
-    }
-    // Format: 7... (9 digits) -> 947...
-    if (cleaned.length === 9 && (cleaned.startsWith('7') || cleaned.startsWith('1'))) {
-         return '94' + cleaned;
-    }
-    // Format: 94... (11 digits) -> already correct
+    // Case 1: Number starts with '94' and is 11 digits long (e.g., 94712345678)
     if (cleaned.startsWith('94') && cleaned.length === 11) {
         return cleaned;
     }
+    
+    // Case 2: Number starts with '0' and is 10 digits long (e.g., 0712345678)
+    if (cleaned.startsWith('0') && cleaned.length === 10) {
+        return '94' + cleaned.substring(1);
+    }
+    
+    // Case 3: Number is 9 digits long (e.g., 712345678)
+    if (cleaned.length === 9) {
+        return '94' + cleaned;
+    }
 
-    // 3. If none of the above formats match, the number is invalid.
+    // If none of the valid formats match, throw an error.
     throw new Error(`Invalid Sri Lankan phone number format provided: "${phoneNumber}"`);
 }
 
 
 export async function sendSms(to: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
-  // Add a check for the 'to' parameter at the beginning of the function
+  // Add a very strict check for the 'to' parameter at the beginning of the function
   if (!to || typeof to !== 'string' || to.trim() === '') {
-      const errorMsg = 'Recipient phone number is missing or empty.';
+      const errorMsg = 'Recipient phone number is missing, empty, or not a string.';
       console.error(errorMsg);
       return { success: false, error: errorMsg };
   }
