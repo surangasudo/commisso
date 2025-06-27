@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData, runTransaction, updateDoc } from 'firebase/firestore';
 import { type Sale, type DetailedProduct, type CommissionProfile } from '@/lib/data';
 
 const salesCollection = collection(db, 'sales');
@@ -160,6 +160,46 @@ export async function addSale(sale: Omit<Sale, 'id'>) {
         // 3. Create the new sale document
         const newSaleRef = doc(collection(db, 'sales'));
         transaction.set(newSaleRef, sale);
+    });
+}
+
+export async function updateSale(saleId: string, updatedSaleData: Omit<Sale, 'id'>, originalSaleData: Sale): Promise<void> {
+    await runTransaction(db, async (transaction) => {
+        // --- PREPARE DATA ---
+        const originalItems = new Map(originalSaleData.items.map(item => [item.productId, item.quantity]));
+        const updatedItems = new Map(updatedSaleData.items.map(item => [item.productId, item.quantity]));
+        const allProductIds = new Set([...originalItems.keys(), ...updatedItems.keys()]);
+
+        // --- READ PHASE ---
+        const productRefsAndDocs = await Promise.all(
+            Array.from(allProductIds).map(async (productId) => {
+                const ref = doc(db, 'products', productId);
+                const pDoc = await transaction.get(ref);
+                if (!pDoc.exists()) {
+                    throw new Error(`Product with ID ${productId} not found.`);
+                }
+                return { ref, doc: pDoc };
+            })
+        );
+        
+        // --- WRITE PHASE ---
+        
+        // Update product stock based on quantity differences
+        for (const { ref, doc: productDoc } of productRefsAndDocs) {
+            const productId = productDoc.id;
+            const originalQty = originalItems.get(productId) || 0;
+            const updatedQty = updatedItems.get(productId) || 0;
+            const quantityChange = originalQty - updatedQty; // +ve means stock should increase, -ve means decrease
+
+            if (quantityChange !== 0) {
+                const currentStock = productDoc.data().currentStock || 0;
+                transaction.update(ref, { currentStock: currentStock + quantityChange });
+            }
+        }
+
+        // Update the sale document itself
+        const saleRef = doc(db, 'sales', saleId);
+        transaction.update(saleRef, updatedSaleData);
     });
 }
 
