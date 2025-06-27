@@ -926,7 +926,7 @@ const PaymentSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="cashDenominations">Cash Denominations</Label>
-                        <Textarea id="cashDenominations" placeholder="10, 20, 50, 100..." value={settings.cashDenominations} onChange={handleInputChange} />
+                        <Textarea id="cashDenominations" placeholder="10, 20, 50, 100, 200, 500, 2000" value={settings.cashDenominations} onChange={handleInputChange} />
                         <p className="text-xs text-muted-foreground">Comma separated values.</p>
                     </div>
                      <div className="space-y-2">
@@ -1018,6 +1018,54 @@ const PaymentSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
     )
 };
 
+const DashboardSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['dashboard'], updateSettings: (newValues: Partial<AllSettings['dashboard']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleCheckboxChange = (id: keyof AllSettings['dashboard'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Dashboard Settings Updated',
+            description: 'Your dashboard settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Dashboard Settings</CardTitle>
+                <CardDescription>Customize what appears on your main dashboard.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+                 <div className="flex items-center space-x-2">
+                    <Checkbox id="enableStockExpiryAlert" checked={settings.enableStockExpiryAlert} onCheckedChange={(checked) => handleCheckboxChange('enableStockExpiryAlert', checked)} />
+                    <Label htmlFor="enableStockExpiryAlert" className="font-normal">Enable Stock Expiry Alert</Label>
+                </div>
+                 <div className="space-y-2 max-w-sm">
+                    <Label htmlFor="viewStockExpiryAlert" className="flex items-center gap-1">View Stock Expiry Alert For: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                    <Input id="viewStockExpiryAlert" type="number" value={settings.viewStockExpiryAlert} onChange={handleInputChange} />
+                    <p className="text-xs text-muted-foreground">Show alert for products expiring in the next 'n' days.</p>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
 
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
@@ -1088,7 +1136,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="payment">
                             <PaymentSettingsForm settings={settings.payment} updateSettings={(newValues) => updateSection('payment', newValues)} />
                         </TabsContent>
-                        <TabsContent value="dashboard"><UnimplementedForm title="Dashboard Settings" /></TabsContent>
+                        <TabsContent value="dashboard">
+                            <DashboardSettingsForm settings={settings.dashboard} updateSettings={(newValues) => updateSection('dashboard', newValues)} />
+                        </TabsContent>
                         <TabsContent value="system"><UnimplementedForm title="System Settings" /></TabsContent>
                         <TabsContent value="prefixes"><UnimplementedForm title="Prefixes Settings" /></TabsContent>
                         <TabsContent value="email_settings"><UnimplementedForm title="Email Settings" /></TabsContent>
