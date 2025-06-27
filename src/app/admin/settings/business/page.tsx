@@ -1256,6 +1256,91 @@ const PrefixesSettingsForm = ({ settings: initialSettingsData, updateSettings }:
     );
 };
 
+const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['email'], updateSettings: (newValues: Partial<AllSettings['email']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof AllSettings['email'], value: string) => {
+        setSettings(s => ({...s, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Email Settings Updated',
+            description: 'Your email settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Email Settings</CardTitle>
+                <CardDescription>Configure your email service for sending notifications.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2 max-w-sm">
+                    <Label htmlFor="mailDriver">Mail Driver</Label>
+                    <Select value={settings.mailDriver} onValueChange={(value) => handleSelectChange('mailDriver', value)}>
+                        <SelectTrigger id="mailDriver"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="smtp">SMTP</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="host">Host</Label>
+                        <Input id="host" value={settings.host} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="port">Port</Label>
+                        <Input id="port" value={settings.port} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="username">Username</Label>
+                        <Input id="username" value={settings.username} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="password">Password</Label>
+                        <Input id="password" type="password" value={settings.password} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="encryption">Encryption</Label>
+                        <Select value={settings.encryption} onValueChange={(value) => handleSelectChange('encryption', value)}>
+                            <SelectTrigger id="encryption"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="tls">TLS</SelectItem>
+                                <SelectItem value="ssl">SSL</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fromAddress">From Address</Label>
+                        <Input id="fromAddress" type="email" value={settings.fromAddress} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="fromName">From Name</Label>
+                        <Input id="fromName" value={settings.fromName} onChange={handleInputChange} />
+                    </div>
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
@@ -1334,7 +1419,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="prefixes">
                             <PrefixesSettingsForm settings={settings.prefixes} updateSettings={(newValues) => updateSection('prefixes', newValues)} />
                         </TabsContent>
-                        <TabsContent value="email_settings"><UnimplementedForm title="Email Settings" /></TabsContent>
+                        <TabsContent value="email_settings">
+                             <EmailSettingsForm settings={settings.email} updateSettings={(newValues) => updateSection('email', newValues)} />
+                        </TabsContent>
                         <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
                         <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
                         <TabsContent value="modules"><UnimplementedForm title="Modules Settings" /></TabsContent>
