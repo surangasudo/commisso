@@ -67,6 +67,8 @@ const CommissionPayoutDialog = ({
     const [note, setNote] = useState('');
     const [isPaying, setIsPaying] = useState(false);
 
+    const round = (num: number) => Math.round(num * 100) / 100;
+
     useEffect(() => {
         const calculatePendingCommissions = async () => {
             if (!profile) return;
@@ -83,7 +85,7 @@ const CommissionPayoutDialog = ({
                 const agentSales = salesData.filter(s => s.commissionAgentIds?.includes(profile.id));
                 const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                let paidAmountRemaining = profile.totalCommissionPaid || 0;
+                let paidAmountRemaining = round(profile.totalCommissionPaid || 0);
                 const pending: PendingSale[] = [];
 
                 for (const sale of sortedSales) {
@@ -105,16 +107,18 @@ const CommissionPayoutDialog = ({
 
                         commissionForThisSale += saleValue * (rate / 100);
                     }
+                    
+                    const roundedCommissionForThisSale = round(commissionForThisSale);
 
-                    if (paidAmountRemaining >= commissionForThisSale) {
-                        paidAmountRemaining -= commissionForThisSale;
+                    if (paidAmountRemaining >= roundedCommissionForThisSale) {
+                        paidAmountRemaining -= roundedCommissionForThisSale;
                     } else {
                         pending.push({
                             id: sale.id,
                             date: new Date(sale.date).toLocaleDateString(),
                             invoiceNo: sale.invoiceNo,
                             totalAmount: sale.totalAmount,
-                            commissionEarned: commissionForThisSale
+                            commissionEarned: roundedCommissionForThisSale
                         });
                     }
                 }
@@ -136,9 +140,10 @@ const CommissionPayoutDialog = ({
     }, [open, profile, toast]);
 
     const totalToPay = useMemo(() => {
-        return pendingSales
+        const total = pendingSales
             .filter(sale => selectedSaleIds.has(sale.id))
             .reduce((sum, sale) => sum + sale.commissionEarned, 0);
+        return round(total);
     }, [selectedSaleIds, pendingSales]);
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
@@ -253,7 +258,7 @@ const CommissionPayoutDialog = ({
     
     if (!profile) return null;
 
-    const pendingAmount = (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+    const pendingAmount = round((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0));
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -97,6 +97,8 @@ export async function payCommission(
     const profileDocRef = doc(db, 'commissionProfiles', profile.id);
     const expensesCollectionRef = collection(db, 'expenses');
 
+    const round = (num: number) => Math.round(num * 100) / 100;
+
     try {
         await runTransaction(db, async (transaction) => {
             const profileDoc = await transaction.get(profileDocRef);
@@ -107,19 +109,22 @@ export async function payCommission(
             const currentData = profileDoc.data();
             const currentPaid = currentData.totalCommissionPaid || 0;
             const currentEarned = currentData.totalCommissionEarned || 0;
-            const pending = currentEarned - currentPaid;
+            
+            const pending = round(currentEarned - currentPaid);
+            const roundedAmountToPay = round(amountToPay);
 
-            if (amountToPay > pending) {
-                console.warn(`Attempt to pay ${amountToPay} which is more than pending ${pending}. Capping payment.`);
-                amountToPay = pending;
+            let finalAmountToPay = roundedAmountToPay;
+            if (finalAmountToPay > pending) {
+                console.warn(`Attempt to pay ${finalAmountToPay} which is more than pending ${pending}. Capping payment.`);
+                finalAmountToPay = pending;
             }
 
-            if (amountToPay <= 0) {
+            if (finalAmountToPay <= 0) {
                 console.warn("Payment amount is zero or less. No transaction will occur.");
                 return;
             }
 
-            const newPaid = currentPaid + amountToPay;
+            const newPaid = round(currentPaid + finalAmountToPay);
             transaction.update(profileDocRef, { totalCommissionPaid: newPaid });
 
             // Create a corresponding expense record
@@ -131,7 +136,7 @@ export async function payCommission(
                 subCategory: null,
                 paymentStatus: 'Paid',
                 tax: 0,
-                totalAmount: amountToPay,
+                totalAmount: finalAmountToPay,
                 paymentDue: 0,
                 expenseFor: null,
                 contact: profile.name, // Link the expense to the agent
