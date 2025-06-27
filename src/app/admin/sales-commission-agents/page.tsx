@@ -175,71 +175,10 @@ const CommissionPayoutDialog = ({
 
         try {
             const businessName = settings.business.businessName;
-            const businessPhone = "555-123-4567"; 
+            const businessPhone = "555-123-4567"; // Placeholder
 
-            const productMap = new Map(allProducts.map(p => [p.id, p]));
-            const categoryBreakdown: Record<string, { totalSale: number; commission: number }> = {};
-
-            const selectedSales = allSales.filter(s => selectedSaleIds.has(s.id));
-
-            for (const sale of selectedSales) {
-                for (const item of sale.items) {
-                    const product = productMap.get(item.productId);
-                    if (!product || !product.category) continue;
-                    
-                    if (!categoryBreakdown[product.category]) {
-                        categoryBreakdown[product.category] = { totalSale: 0, commission: 0 };
-                    }
-                    
-                    const saleValue = item.unitPrice * item.quantity;
-
-                    const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
-                    let rate = 0;
-                    if (hasCategoryRates) {
-                        rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
-                    } else {
-                        rate = profile.commission.overall;
-                    }
-
-                    const commissionValue = saleValue * (rate / 100);
-
-                    categoryBreakdown[product.category].totalSale += saleValue;
-                    categoryBreakdown[product.category].commission += commissionValue;
-                }
-            }
-            
-            let smsMessage = '';
-            if (profile.entityType === 'Sub-Agent') {
-                const salesBreakdownString = Object.entries(categoryBreakdown)
-                    .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}`)
-                    .join(', ');
-                
-                let agentName = 'an agent';
-                const firstSelectedSaleId = Array.from(selectedSaleIds)[0];
-                const firstSale = allSales.find(s => s.id === firstSelectedSaleId);
-                
-                if (firstSale && firstSale.commissionAgentIds) {
-                    const agentId = firstSale.commissionAgentIds.find(id => {
-                        const agentProfile = allProfiles.find(p => p.id === id);
-                        return agentProfile?.entityType === 'Agent';
-                    });
-                    if (agentId) {
-                        const agentProfile = allProfiles.find(p => p.id === agentId);
-                        if (agentProfile) {
-                            agentName = agentProfile.name;
-                        }
-                    }
-                }
-                
-                smsMessage = `Thank you for sending ${agentName}. Your total sales: ${salesBreakdownString}. Your total earnings: ${formatCurrency(totalToPay)}. For inquiries, call: ${businessPhone}`;
-
-            } else {
-                const breakdownString = Object.entries(categoryBreakdown)
-                    .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}, com:${formatCurrency(data.commission)}`)
-                    .join(', ');
-                
-                smsMessage = `Thank you for visiting ${businessName}. Your total sale ${breakdownString}. Total earnings: ${formatCurrency(totalToPay)}. Inquiry: ${businessPhone}`;
-            }
+            // Simplified universal SMS message to ensure payment process completes
+            const smsMessage = `You have received a commission payment of ${formatCurrency(totalToPay)} from ${businessName}. Thank you. For inquiries, call: ${businessPhone}`;
 
             const result = await payCommission(profile, totalToPay, method, note, smsMessage);
             onPaymentComplete(profile.id, result);
