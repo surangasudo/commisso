@@ -4,8 +4,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Download, Printer, Search, Pencil, Trash2, Eye, Plus, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
-import { onSnapshot, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -31,7 +29,7 @@ import { getSales, type Sale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 type PendingSale = {
     id: string;
@@ -82,20 +80,12 @@ const CommissionPayoutDialog = ({
 
                 const productMap = new Map(productsData.map(p => [p.id, p]));
                 const agentSales = salesData.filter(s => s.commissionAgentIds?.includes(profile.id));
-                const sortedSales = [...agentSales].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
+                const sortedSales = [...agentSales].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                let pendingAmountToAccountFor = round((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0));
-                const pendingSalesResult: PendingSale[] = [];
+                let paidAmountCounter = round(profile.totalCommissionPaid || 0);
+                const salesResult: PendingSale[] = [];
                 
-                if (pendingAmountToAccountFor <= 0) {
-                    setPendingSales([]);
-                    setIsLoading(false);
-                    return;
-                }
-
                 for (const sale of sortedSales) {
-                    if (pendingAmountToAccountFor <= 0) break;
-
                     let commissionForThisSale = 0;
                     for (const item of sale.items) {
                         const product = productMap.get(item.productId);
@@ -117,18 +107,23 @@ const CommissionPayoutDialog = ({
                     const roundedCommission = round(commissionForThisSale);
 
                     if (roundedCommission > 0) {
-                        pendingSalesResult.push({
-                            id: sale.id,
-                            date: new Date(sale.date).toLocaleDateString(),
-                            invoiceNo: sale.invoiceNo,
-                            totalAmount: sale.totalAmount,
-                            commissionEarned: roundedCommission
-                        });
-                        pendingAmountToAccountFor = round(pendingAmountToAccountFor - roundedCommission);
+                        if (paidAmountCounter >= roundedCommission) {
+                            // This commission is fully paid
+                            paidAmountCounter = round(paidAmountCounter - roundedCommission);
+                        } else {
+                            // This commission is pending (or partially paid, but we treat it as fully pending for simplicity in selection)
+                            salesResult.push({
+                                id: sale.id,
+                                date: new Date(sale.date).toLocaleDateString(),
+                                invoiceNo: sale.invoiceNo,
+                                totalAmount: sale.totalAmount,
+                                commissionEarned: roundedCommission
+                            });
+                        }
                     }
                 }
                 
-                setPendingSales(pendingSalesResult.reverse());
+                setPendingSales(salesResult.reverse()); // Show newest pending first
 
             } catch (e) {
                 console.error("Failed to calculate pending commissions", e);
@@ -471,42 +466,19 @@ export default function SalesCommissionAgentsPage() {
 
 
   useEffect(() => {
-    setIsLoading(true);
-    const commissionProfilesCollectionRef = collection(db, 'commissionProfiles');
-
-    const unsubscribe = onSnapshot(commissionProfilesCollectionRef, (snapshot) => {
-        const data = snapshot.docs.map(doc => {
-            const docData = doc.data();
-            const commissionData = docData.commission || {};
-            const categoriesData = commissionData.categories || [];
-
-            return {
-                id: doc.id,
-                name: docData.name || '',
-                entityType: docData.entityType || '',
-                phone: docData.phone || '',
-                email: docData.email || '',
-                bankDetails: docData.bankDetails || '',
-                commission: {
-                    overall: commissionData.overall || 0,
-                    categories: Array.isArray(categoriesData) ? categoriesData.map(c => ({
-                        category: c.category || '',
-                        rate: c.rate || 0,
-                    })) : [],
-                },
-                totalCommissionEarned: docData.totalCommissionEarned || 0,
-                totalCommissionPaid: docData.totalCommissionPaid || 0,
-            } as CommissionProfile;
-        });
-        setProfiles(data);
-        setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching commission profiles in real-time:", error);
-        toast({ title: 'Error', description: 'Could not load commission profiles in real-time.', variant: 'destructive' });
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const profilesData = await getCommissionProfiles();
+            setProfiles(profilesData);
+        } catch (error) {
+            console.error("Error fetching commission profiles:", error);
+            toast({ title: 'Error', description: 'Could not load commission profiles.', variant: 'destructive' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchData();
   }, [toast]);
   
   const filteredProfiles = useMemo(() => {

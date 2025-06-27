@@ -15,6 +15,7 @@ import { getProductCategories, type ProductCategory } from '@/services/productCa
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseError } from 'firebase/app';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { Separator } from '@/components/ui/separator';
 
 export default function EditSalesCommissionAgentPage() {
     const router = useRouter();
@@ -28,6 +29,7 @@ export default function EditSalesCommissionAgentPage() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
+    const [overallCommission, setOverallCommission] = useState('');
     const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -51,6 +53,7 @@ export default function EditSalesCommissionAgentPage() {
                     setPhoneNumber(profileToEdit.phone);
                     setEmail(profileToEdit.email || '');
                     setBankDetails(profileToEdit.bankDetails || '');
+                    setOverallCommission(String(profileToEdit.commission.overall || ''));
                     setCategoryCommissions(
                         profileToEdit.commission.categories?.map((c, index) => ({
                             id: Date.now() + index,
@@ -123,8 +126,6 @@ export default function EditSalesCommissionAgentPage() {
             return;
         }
         
-        const validCategoryCommissions = categoryCommissions.filter(c => c.category && c.rate);
-        
         const updatedProfileData = {
             name: agentName,
             entityType: entityType as any,
@@ -132,8 +133,9 @@ export default function EditSalesCommissionAgentPage() {
             email: email,
             bankDetails: bankDetails,
             commission: {
-                overall: 0,
-                categories: validCategoryCommissions
+                overall: parseFloat(overallCommission) || 0,
+                categories: categoryCommissions
+                    .filter(c => c.category && c.rate)
                     .map(c => ({
                         category: c.category,
                         rate: parseFloat(c.rate)
@@ -234,44 +236,53 @@ export default function EditSalesCommissionAgentPage() {
                     </Card>
 
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Category-Specific Commission Rates</CardTitle>
-                            <CardDescription>
-                                Add specific commission rates for different product categories.
-                            </CardDescription>
+                         <CardHeader>
+                            <CardTitle>Commission Rates</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {categoryCommissions.map((comm, index) => (
-                                    <div key={comm.id} className="flex items-end gap-4 p-4 border rounded-md relative">
-                                        <div className="grid grid-cols-2 gap-4 flex-1">
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`category-${index}`}>Product Category</Label>
-                                                <Select value={comm.category} onValueChange={(value) => handleCategoryCommissionChange(comm.id, 'category', value)}>
-                                                    <SelectTrigger id={`category-${index}`}>
-                                                        <SelectValue placeholder="Select a category" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {productCategories.map(cat => (
-                                                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor={`rate-${index}`}>Commission Rate (%)</Label>
-                                                <Input id={`rate-${index}`} type="number" placeholder="e.g. 10" value={comm.rate} onChange={(e) => handleCategoryCommissionChange(comm.id, 'rate', e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => removeCategoryCommission(comm.id)}>
-                                            <X className="w-5 h-5" />
-                                        </Button>
-                                    </div>
-                                ))}
+                        <CardContent className="space-y-6">
+                             <div className="space-y-2 max-w-sm">
+                                <Label htmlFor="overall-commission">Overall Commission Rate (%)</Label>
+                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} />
+                                <p className="text-xs text-muted-foreground">Used if no category-specific rate applies. Ignored if any category rates are set.</p>
                             </div>
-                            <Button variant="outline" className="mt-4" onClick={addCategoryCommission}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Category Commission
-                            </Button>
+                            <Separator />
+                            <div>
+                                <h4 className="font-semibold mb-2">Category-Specific Rates</h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Add specific commission rates for different product categories. If any are set, the overall rate will be ignored.
+                                </p>
+                                <div className="space-y-4">
+                                    {categoryCommissions.map((comm, index) => (
+                                        <div key={comm.id} className="flex items-end gap-4 p-4 border rounded-md relative">
+                                            <div className="grid grid-cols-2 gap-4 flex-1">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`category-${index}`}>Product Category</Label>
+                                                    <Select value={comm.category} onValueChange={(value) => handleCategoryCommissionChange(comm.id, 'category', value)}>
+                                                        <SelectTrigger id={`category-${index}`}>
+                                                            <SelectValue placeholder="Select a category" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {productCategories.map(cat => (
+                                                                <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor={`rate-${index}`}>Commission Rate (%)</Label>
+                                                    <Input id={`rate-${index}`} type="number" placeholder="e.g. 10" value={comm.rate} onChange={(e) => handleCategoryCommissionChange(comm.id, 'rate', e.target.value)} />
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-50" onClick={() => removeCategoryCommission(comm.id)}>
+                                                <X className="w-5 h-5" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Button variant="outline" className="mt-4" onClick={addCategoryCommission}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Category Commission
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                     <div className="flex justify-end">
@@ -285,8 +296,8 @@ export default function EditSalesCommissionAgentPage() {
                         </CardHeader>
                         <CardContent className="pt-6 text-sm text-muted-foreground space-y-4">
                              <p>Update the commission profile details for the selected entity.</p>
-                            <p>Adjust the profile details and commission structure as needed.</p>
-                             <p>Click "Update Profile" to save your changes.</p>
+                            <p>You can set an <span className="font-bold text-foreground">Overall Commission Rate</span> that applies to all sales for this profile.</p>
+                            <p>Alternatively, you can set <span className="font-bold text-foreground">Category-Specific Rates</span>. If you set even one category rate, the overall rate will be ignored, and commission will only be calculated for products in the specified categories.</p>
                         </CardContent>
                     </Card>
                 </div>

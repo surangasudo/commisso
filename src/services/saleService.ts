@@ -101,13 +101,11 @@ export async function addSale(
             const categoryRateData = categories.find(
               (c: any) => c.category === productData.category
             );
-            // If a rate is found, use it. Otherwise, it's 0 because we're in category-specific mode.
             rate = categoryRateData ? categoryRateData.rate : 0;
           } else {
-            // Only if there are NO category rates, use the overall rate.
-            rate = commission.overall;
+            rate = commission.overall || 0;
           }
-
+          
           agentCommissionTotals[agentId] += saleValue * (rate / 100);
         }
       }
