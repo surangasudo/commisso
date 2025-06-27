@@ -19,12 +19,16 @@ const defaultCategories: Omit<ProductCategory, 'id'>[] = [
     { name: 'Groceries', code: 'GROC' },
     { name: 'Books', code: 'BOOK' },
     { name: 'Sports', code: 'SPORT' },
+    { name: 'Shoes', code: 'SHOE' },
 ];
 
 async function seedDefaultCategories(): Promise<void> {
+    const batch = db.batch();
     for (const category of defaultCategories) {
-        await addDoc(productCategoriesCollection, category);
+        const docRef = doc(productCategoriesCollection);
+        batch.set(docRef, category);
     }
+    await batch.commit();
 }
 
 export async function getProductCategories(): Promise<ProductCategory[]> {

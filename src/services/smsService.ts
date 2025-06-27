@@ -12,7 +12,9 @@ export async function sendSms(recipient: string, message: string): Promise<{ suc
   if (!apiKey || !senderId || apiKey === 'YOUR_TEXTLK_API_KEY' || senderId === 'YOUR_TEXTLK_SENDER_ID') {
     const errorMsg = 'ERROR: TEXTLK_API_KEY or TEXTLK_SENDER_ID is not set in the .env file.';
     console.error(errorMsg);
-    return { success: false, error: errorMsg };
+    // In a real app, you might want to avoid exposing this detailed error.
+    // For this project, it's helpful for the developer.
+    return { success: false, error: 'SMS service is not configured.' };
   }
 
   const url = 'https://app.text.lk/api/v3/sms/send';
@@ -43,10 +45,10 @@ export async function sendSms(recipient: string, message: string): Promise<{ suc
       return { success: true, data: data.data };
     } else {
       console.error('Failed to send SMS:', data.message);
-      return { success: false, error: data.message };
+      return { success: false, error: data.message || 'API error' };
     }
   } catch (error: any) {
     console.error('Error sending SMS:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+    return { success: false, error: error.message || 'Unknown network error' };
   }
 }

@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,7 +14,6 @@ import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
 import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
-import { Separator } from '@/components/ui/separator';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
@@ -186,18 +184,14 @@ export default function AddSalesCommissionAgentPage() {
                         <CardHeader>
                             <CardTitle>Commission Rates</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2 max-w-sm">
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
                                 <Label htmlFor="overall-commission">Overall Commission Rate (%)</Label>
                                 <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} />
-                                <p className="text-xs text-muted-foreground">Used if no category-specific rate applies. Ignored if any category rates are set.</p>
+                                <p className="text-xs text-muted-foreground">Used if no category-specific rate applies.</p>
                             </div>
-                            <Separator />
                             <div>
                                 <h4 className="font-semibold mb-2">Category-Specific Rates</h4>
-                                <p className="text-sm text-muted-foreground mb-4">
-                                    Add specific commission rates for different product categories. If any are set, the overall rate will be ignored.
-                                </p>
                                 <div className="space-y-4">
                                     {categoryCommissions.map((comm, index) => (
                                         <div key={comm.id} className="flex items-end gap-4 p-4 border rounded-md relative">
