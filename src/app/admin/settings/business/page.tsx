@@ -1,5 +1,4 @@
 
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -762,7 +761,7 @@ const SaleSettingsForm = ({ settings: initialSettingsData, updateSettings }: { s
                                 <div className="space-y-2">
                                     <Label htmlFor="commissionCalculationType">Commission Calculation Type:</Label>
                                      <Select value={settings.commissionCalculationType} onValueChange={(value) => setSettings(s => ({...s, commissionCalculationType: value as any}))}>
-                                        <SelectTrigger><SelectValue/></SelectTrigger>
+                                        <SelectTrigger id="commissionCalculationType"><SelectValue/></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="invoice_value">On Invoice Value</SelectItem>
                                             <SelectItem value="payment_received">On Payment Received</SelectItem>
@@ -1778,7 +1777,7 @@ export default function BusinessSettingsPage() {
                                     <Card>
                                         <CardHeader><CardTitle>Instructions</CardTitle></CardHeader>
                                         <CardContent className="space-y-4 text-sm text-muted-foreground">
-                                            <p>To send emails, you need to configure an SMTP service. The settings on this page allow the application to connect to your email provider.</p>
+                                            <p>Configure your email service to send notifications directly from the application.</p>
                                             <p><span className="font-semibold text-foreground">Host:</span> Your mail server address (e.g., smtp.gmail.com).</p>
                                             <p><span className="font-semibold text-foreground">Port:</span> The port number for your mail server (e.g., 587 for TLS, 465 for SSL).</p>
                                             <p><span className="font-semibold text-foreground">Username/Password:</span> Your credentials for the email account you're sending from.</p>
