@@ -13,25 +13,39 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(number: string): string {
-  // Remove all non-digit characters
-  const cleaned = number.replace(/\D/g, '');
+  // 1. Remove all non-digit characters except for a potential leading '+'
+  let cleaned = number.replace(/[^\d+]/g, '');
 
-  // Case 1: Already in 94... format (e.g., from +94)
-  if (cleaned.startsWith('94') && cleaned.length === 11) {
-    return cleaned;
+  // 2. Handle international format like +94...
+  if (cleaned.startsWith('+94')) {
+    // Remove '+' and return if length is correct for '94...' format
+    cleaned = cleaned.substring(1);
+    if (cleaned.length === 11) {
+      return cleaned;
+    }
   }
 
-  // Case 2: Starts with 0 (e.g., 0712345678)
-  if (cleaned.startsWith('0') && cleaned.length === 10) {
-    return '94' + cleaned.slice(1);
+  // 3. Handle national format starting with 94...
+  if (cleaned.startsWith('94')) {
+    if (cleaned.length === 11) {
+      return cleaned; // Already in the correct format
+    } else {
+      // It starts with 94 but has wrong length, which is ambiguous.
+      throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
+    }
   }
 
-  // Case 3: Just the 9 digits (e.g., 712345678)
+  // 4. Handle local format with leading '0' (e.g., 0712345678)
+  if (cleaned.startsWith('0')) {
+    cleaned = cleaned.substring(1); // remove leading 0
+  }
+
+  // 5. After cleaning, if we have a 9-digit number, it's a valid local number.
   if (cleaned.length === 9) {
     return '94' + cleaned;
   }
-  
-  // If none of the above, the number is invalid.
+
+  // 6. If we reach here, the format is invalid.
   throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
 }
 
