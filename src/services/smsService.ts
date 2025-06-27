@@ -13,42 +13,28 @@
  * @returns The formatted phone number string, e.g., 94712345678.
  */
 function formatSriLankanNumber(number: string): string {
-  // 1. Remove all non-digit characters except for a potential leading '+'
-  let cleaned = number.replace(/[^\d+]/g, '');
+  // 1. Remove all non-digit characters
+  let cleaned = number.replace(/\D/g, '');
 
-  // 2. Handle international format like +94...
-  if (cleaned.startsWith('+94')) {
-    // Remove '+' and return if length is correct for '94...' format
-    cleaned = cleaned.substring(1);
-    if (cleaned.length === 11) {
-      return cleaned;
-    }
+  // 2. Handle numbers that already have the country code
+  if (cleaned.startsWith('94') && cleaned.length === 11) {
+    return cleaned;
   }
 
-  // 3. Handle national format starting with 94...
-  if (cleaned.startsWith('94')) {
-    if (cleaned.length === 11) {
-      return cleaned; // Already in the correct format
-    } else {
-      // It starts with 94 but has wrong length, which is ambiguous.
-      throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
-    }
+  // 3. Handle numbers with a leading 0 (e.g., 0712345678)
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
+    // Remove leading '0' and add country code
+    return '94' + cleaned.slice(1);
   }
-
-  // 4. Handle local format with leading '0' (e.g., 0712345678)
-  if (cleaned.startsWith('0')) {
-    cleaned = cleaned.substring(1); // remove leading 0
-  }
-
-  // 5. After cleaning, if we have a 9-digit number, it's a valid local number.
+  
+  // 4. Handle numbers without a leading 0 (e.g., 712345678)
   if (cleaned.length === 9) {
     return '94' + cleaned;
   }
 
-  // 6. If we reach here, the format is invalid.
+  // 5. If we reach here, the format is invalid.
   throw new Error(`Invalid Sri Lankan phone number format: ${number}`);
 }
-
 
 export async function sendSms(to: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> {
   const apiKey = process.env.TEXTLK_API_KEY;
@@ -64,6 +50,15 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
     // Format the number before sending. This may throw an error.
     const formattedNumber = formatSriLankanNumber(to);
     const recipients = [formattedNumber];
+    
+    const requestBody = {
+      sender_id: senderId,
+      message: message,
+      recipients: recipients,
+    };
+    
+    // Diagnostic log to show exactly what is being sent.
+    console.log('Sending SMS request to Text.lk with body:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch('https://app.text.lk/api/v3/sms/send', {
       method: 'POST',
@@ -71,11 +66,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        sender_id: senderId,
-        message: message,
-        recipients: recipients,
-      }),
+      body: JSON.stringify(requestBody),
       cache: 'no-store',
     });
 
@@ -87,7 +78,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
       if (response.status === 401 || (responseBody.message && (responseBody.message.toLowerCase().includes('unauthenticated') || responseBody.message.toLowerCase().includes('user not found')))) {
           errorMessage = "The Text.lk API Key is invalid or missing. Please check your .env file.";
       }
-      console.error('Failed to send SMS via Text.lk. Status:', response.status, 'Response:', responseBody);
+      console.error('Failed to send SMS via Text.lk. Status:', response.status, 'Full Response:', JSON.stringify(responseBody, null, 2));
       return { success: false, error: errorMessage };
     }
 
@@ -98,8 +89,7 @@ export async function sendSms(to: string, message: string): Promise<{ success: b
     return { success: true, messageId: messageId };
 
   } catch (error: any) {
-    console.error('Error occurred while sending SMS:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred during SMS sending' };
+    console.error('An exception occurred while trying to send SMS. This might be a network issue or a problem with the phone number format.', error);
+    return { success: false, error: error.message || 'A network or unexpected error occurred during SMS sending.' };
   }
 }
-    
