@@ -245,7 +245,7 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
                                 <SelectItem value="Asia/Colombo">Asia/Colombo</SelectItem>
                             </SelectGroup>
                             <SelectGroup>
-                                <Label className="px-2 text-xs">Australia & Pacific</Label>
+                                <Label className="px-2 text-xs">Oceania</Label>
                                 <SelectItem value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</SelectItem>
                                 <SelectItem value="Australia/Perth">Australia/Perth (AWST)</SelectItem>
                                 <SelectItem value="Australia/Adelaide">Australia/Adelaide</SelectItem>
@@ -1286,6 +1286,7 @@ const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { 
         <>
             <CardHeader>
                 <CardTitle>Email Settings</CardTitle>
+                <CardDescription>Configure your email service for sending notifications.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-2 max-w-sm">
