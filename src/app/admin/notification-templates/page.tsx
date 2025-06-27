@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -43,52 +44,66 @@ const availableTags = {
   ],
 };
 
-const TemplateEditor = ({ tags, subject, emailBody, smsBody, whatsappText }: {
+
+const TemplateForm = ({ tags, emailSubject, emailBody, smsBody, whatsappText }: {
   tags: string[],
-  subject?: string,
-  emailBody: string,
-  smsBody: string,
-  whatsappText: string
-}) => (
-  <div className="space-y-4">
-    <div>
-      <Label>Available Tags:</Label>
-      <div className="flex flex-wrap gap-1 mt-1">
-        {tags.map(tag => <Badge key={tag} variant="outline" className="font-mono">{tag}</Badge>)}
-      </div>
-    </div>
-    {subject !== undefined && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-                <Label htmlFor="subject">Email Subject:</Label>
-                <Input id="subject" defaultValue={subject} />
+  emailSubject?: string,
+  emailBody?: string,
+  smsBody?: string,
+  whatsappText?: string
+}) => {
+    return (
+        <div className="space-y-4">
+            <div>
+                <Label>Available Tags:</Label>
+                <div className="flex flex-wrap gap-1 mt-1">
+                    {tags.map(tag => <Badge key={tag} variant="outline" className="font-mono">{tag}</Badge>)}
+                </div>
             </div>
+            <Tabs defaultValue="email" className="w-full">
+                <TabsList>
+                    <TabsTrigger value="email">Email</TabsTrigger>
+                    <TabsTrigger value="sms">SMS</TabsTrigger>
+                    <TabsTrigger value="whatsapp">Whatsapp</TabsTrigger>
+                </TabsList>
+                <TabsContent value="email" className="pt-4 space-y-4">
+                    {emailSubject !== undefined && (
+                        <div className="space-y-2">
+                            <Label htmlFor="subject">Email Subject:</Label>
+                            <Input id="subject" defaultValue={emailSubject} />
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="cc">CC:</Label>
+                            <Input id="cc" placeholder="Comma separated emails"/>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bcc">BCC:</Label>
+                            <Input id="bcc" placeholder="Comma separated emails"/>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Email Body:</Label>
+                        <Textarea defaultValue={emailBody} rows={8} />
+                    </div>
+                </TabsContent>
+                <TabsContent value="sms" className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label>SMS Body:</Label>
+                        <Textarea defaultValue={smsBody} rows={4} />
+                    </div>
+                </TabsContent>
+                <TabsContent value="whatsapp" className="pt-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label>Whatsapp Text:</Label>
+                        <Textarea defaultValue={whatsappText} rows={4} />
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
-    )}
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-            <Label htmlFor="cc">CC:</Label>
-            <Input id="cc" />
-        </div>
-        <div className="space-y-2">
-            <Label htmlFor="bcc">BCC:</Label>
-            <Input id="bcc" />
-        </div>
-    </div>
-    <div className="space-y-2">
-      <Label>Email Body:</Label>
-      <Textarea defaultValue={emailBody} rows={8} />
-    </div>
-    <div className="space-y-2">
-      <Label>SMS Body:</Label>
-      <Textarea defaultValue={smsBody} rows={4} />
-    </div>
-    <div className="space-y-2">
-      <Label>Whatsapp Text:</Label>
-      <Textarea defaultValue={whatsappText} rows={4} />
-    </div>
-  </div>
-);
+    )
+}
 
 export default function NotificationTemplatesPage() {
   return (
@@ -109,9 +124,9 @@ export default function NotificationTemplatesPage() {
               <TabsTrigger value="send-ledger">Send Ledger</TabsTrigger>
             </TabsList>
             <TabsContent value="send-ledger" className="pt-4">
-              <TemplateEditor
+              <TemplateForm
                 tags={availableTags.sendLedger}
-                subject="Ledger from {business_name}"
+                emailSubject="Ledger from {business_name}"
                 emailBody=""
                 smsBody=""
                 whatsappText=""
@@ -136,25 +151,25 @@ export default function NotificationTemplatesPage() {
               <TabsTrigger value="new-quotation">New Quotation</TabsTrigger>
             </TabsList>
             <TabsContent value="new-sale" className="pt-4">
-              <TemplateEditor
+              <TemplateForm
                 tags={availableTags.customer}
-                subject="Thank you from {business_name}"
+                emailSubject="Thank you from {business_name}"
                 emailBody={`Dear {contact_name},\n\nYour invoice number is {invoice_number}\nTotal amount: {total_amount}\nPaid amount: {received_amount}\n\nThank you for shopping with us.\n\n{business_logo}`}
                 smsBody="Dear {contact_name}, Thank you for shopping at {business_name}."
-                whatsappText="Whatsapp Text"
+                whatsappText="Dear {contact_name}, Thank you for shopping at {business_name}."
               />
             </TabsContent>
              <TabsContent value="payment-received" className="pt-4">
-                <TemplateEditor tags={availableTags.customer} emailBody="" smsBody="" whatsappText="" subject="Payment Received" />
+                <TemplateForm tags={availableTags.customer} emailSubject="Payment Received" emailBody="Dear {contact_name}, We have received a payment of {paid_amount} against invoice {invoice_number}. Thank you." smsBody="" whatsappText=""/>
             </TabsContent>
             <TabsContent value="payment-reminder" className="pt-4">
-                <TemplateEditor tags={availableTags.customer} emailBody="" smsBody="" whatsappText="" subject="Payment Reminder" />
+                <TemplateForm tags={availableTags.customer} emailSubject="Payment Reminder" emailBody="Dear {contact_name}, This is a reminder for your due payment of {due_amount} for invoice {invoice_number}." smsBody="" whatsappText=""/>
             </TabsContent>
              <TabsContent value="new-booking" className="pt-4">
-                <TemplateEditor tags={availableTags.customer} emailBody="" smsBody="" whatsappText="" subject="New Booking Confirmation" />
+                <TemplateForm tags={availableTags.customer} emailSubject="New Booking Confirmation" emailBody="Dear {contact_name}, Your booking for invoice {invoice_number} is confirmed." smsBody="" whatsappText=""/>
             </TabsContent>
              <TabsContent value="new-quotation" className="pt-4">
-                <TemplateEditor tags={availableTags.customer} emailBody="" smsBody="" whatsappText="" subject="New Quotation" />
+                <TemplateForm tags={availableTags.customer} emailSubject="New Quotation" emailBody="Dear {contact_name}, Here is your quotation for invoice {invoice_number}." smsBody="" whatsappText=""/>
             </TabsContent>
           </Tabs>
            <div className="mt-4 flex items-center space-x-4">
@@ -190,25 +205,25 @@ export default function NotificationTemplatesPage() {
               <TabsTrigger value="purchase-order">Purchase Order</TabsTrigger>
             </TabsList>
             <TabsContent value="new-order" className="pt-4">
-                <TemplateEditor
+                <TemplateForm
                     tags={availableTags.supplier}
-                    subject="New Order from {business_name}"
+                    emailSubject="New Order from {business_name}"
                     emailBody={`Dear {contact_name},\n\nWe have a new order with reference number {order_ref_number}. Kindly process the products as soon as possible.\n\n{business_name}\n{business_logo}`}
                     smsBody="Dear {contact_name}, We have a new order with reference number {order_ref_number}. Kindly process the products as soon as possible. {business_name}"
-                    whatsappText="Whatsapp Text"
+                    whatsappText="Dear {contact_name}, We have a new order with reference number {order_ref_number}. Kindly process the products as soon as possible. {business_name}"
                 />
             </TabsContent>
              <TabsContent value="payment-paid" className="pt-4">
-                <TemplateEditor tags={availableTags.supplier} emailBody="" smsBody="" whatsappText="" subject="Payment Paid" />
+                <TemplateForm tags={availableTags.supplier} emailSubject="Payment Paid" emailBody="" smsBody="" whatsappText=""/>
             </TabsContent>
              <TabsContent value="items-received" className="pt-4">
-                <TemplateEditor tags={availableTags.supplier} emailBody="" smsBody="" whatsappText="" subject="Items Received" />
+                <TemplateForm tags={availableTags.supplier} emailSubject="Items Received" emailBody="" smsBody="" whatsappText=""/>
             </TabsContent>
              <TabsContent value="items-pending" className="pt-4">
-                <TemplateEditor tags={availableTags.supplier} emailBody="" smsBody="" whatsappText="" subject="Items Pending" />
+                <TemplateForm tags={availableTags.supplier} emailSubject="Items Pending" emailBody="" smsBody="" whatsappText=""/>
             </TabsContent>
              <TabsContent value="purchase-order" className="pt-4">
-                <TemplateEditor tags={availableTags.supplier} emailBody="" smsBody="" whatsappText="" subject="Purchase Order" />
+                <TemplateForm tags={availableTags.supplier} emailSubject="Purchase Order" emailBody="" smsBody="" whatsappText=""/>
             </TabsContent>
           </Tabs>
            <div className="mt-4 flex items-center space-x-4">
@@ -241,30 +256,30 @@ export default function NotificationTemplatesPage() {
               <TabsTrigger value="company-commission">Company Commission</TabsTrigger>
             </TabsList>
             <TabsContent value="agent-commission" className="pt-4">
-              <TemplateEditor
+              <TemplateForm
                 tags={availableTags.salesRepresentative}
-                subject="Your Commission Statement from {business_name}"
-                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
-                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
-                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                emailSubject="Your Agent Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour commission as an Agent of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your Agent commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your Agent commission of {commission_amount} has been calculated. Thanks, {business_name}."
               />
             </TabsContent>
             <TabsContent value="subagent-commission" className="pt-4">
-               <TemplateEditor
+               <TemplateForm
                 tags={availableTags.salesRepresentative}
-                subject="Your Commission Statement from {business_name}"
-                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
-                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
-                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                emailSubject="Your Sub-Agent Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour commission as a Sub-Agent of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your Sub-Agent commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your Sub-Agent commission of {commission_amount} has been calculated. Thanks, {business_name}."
               />
             </TabsContent>
             <TabsContent value="company-commission" className="pt-4">
-               <TemplateEditor
+               <TemplateForm
                 tags={availableTags.salesRepresentative}
-                subject="Your Commission Statement from {business_name}"
-                emailBody={`Dear {representative_name},\n\nYour commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
-                smsBody="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
-                whatsappText="Dear {representative_name}, your commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                emailSubject="Your Company Commission Statement from {business_name}"
+                emailBody={`Dear {representative_name},\n\nYour Company commission of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
+                smsBody="Dear {representative_name}, your Company commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                whatsappText="Dear {representative_name}, your Company commission of {commission_amount} has been calculated. Thanks, {business_name}."
               />
             </TabsContent>
           </Tabs>
