@@ -83,11 +83,12 @@ export default function CustomerGroupsReportPage() {
             const customersInGroup = allCustomers.filter(c => c.customerGroup === group);
             const customerNamesInGroup = customersInGroup.map(c => c.name);
 
-            const totalSaleDue = customersInGroup.reduce((acc, c) => acc + c.totalSaleDue, 0);
+            const salesForGroup = filteredSales.filter(s => customerNamesInGroup.includes(s.customerName));
             
-            const totalSale = filteredSales
-                .filter(s => customerNamesInGroup.includes(s.customerName))
-                .reduce((acc, s) => acc + s.totalAmount, 0);
+            const totalSale = salesForGroup.reduce((acc, s) => acc + s.totalAmount, 0);
+            
+            // Recalculate total sale due based on filtered sales for accuracy
+            const totalSaleDue = salesForGroup.reduce((acc, sale) => acc + sale.sellDue, 0);
 
             return {
                 groupName: group,
@@ -96,7 +97,9 @@ export default function CustomerGroupsReportPage() {
             };
         });
 
-        return data;
+        // Only return groups that have sales data for the filtered period.
+        return data.filter(d => d.totalSale > 0 || d.totalSaleDue > 0);
+
     }, [activeDate, activeLocation, allCustomers, allSales]);
 
     const filteredData = useMemo(() => {
@@ -240,13 +243,17 @@ export default function CustomerGroupsReportPage() {
                                                 <TableCell><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
                                             </TableRow>
                                         ))
-                                    ) : filteredData.map((item) => (
+                                    ) : filteredData.length > 0 ? filteredData.map((item) => (
                                         <TableRow key={item.groupName}>
                                             <TableCell className="font-medium">{item.groupName}</TableCell>
                                             <TableCell className="text-right">{formatCurrency(item.totalSale)}</TableCell>
                                             <TableCell className="text-right">{formatCurrency(item.totalSaleDue)}</TableCell>
                                         </TableRow>
-                                    ))}
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="text-center h-24">No data to display for the selected filters.</TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                                 <TableFooter>
                                     <TableRow>

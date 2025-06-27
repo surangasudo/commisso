@@ -90,6 +90,7 @@ export default function PurchaseSaleReportPage() {
       from: startOfYear(new Date()),
       to: endOfYear(new Date()),
     });
+    const [location, setLocation] = useState('all');
     
     const [allSales, setAllSales] = useState<Sale[]>([]);
     const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
@@ -117,16 +118,20 @@ export default function PurchaseSaleReportPage() {
     const filteredSales = useMemo(() => {
         return allSales.filter(s => {
             const saleDate = new Date(s.date);
-            return date?.from && date?.to ? (saleDate >= date.from && saleDate <= date.to) : true;
+            const dateMatch = date?.from && date?.to ? (saleDate >= date.from && saleDate <= date.to) : true;
+            const locationMatch = location === 'all' || s.location === location;
+            return dateMatch && locationMatch;
         });
-    }, [allSales, date]);
+    }, [allSales, date, location]);
 
     const filteredPurchases = useMemo(() => {
         return allPurchases.filter(p => {
             const purchaseDate = new Date(p.date);
-            return date?.from && date?.to ? (purchaseDate >= date.from && purchaseDate <= date.to) : true;
+            const dateMatch = date?.from && date?.to ? (purchaseDate >= date.from && purchaseDate <= date.to) : true;
+            const locationMatch = location === 'all' || p.location === location;
+            return dateMatch && locationMatch;
         });
-    }, [allPurchases, date]);
+    }, [allPurchases, date, location]);
     
     // Calculations
     const totalPurchase = filteredPurchases.reduce((acc, p) => acc + p.grandTotal, 0);
@@ -193,12 +198,13 @@ export default function PurchaseSaleReportPage() {
                 Purchase & Sale Report
             </h1>
              <div className="flex items-center gap-4">
-                <Select defaultValue="all">
+                <Select value={location} onValueChange={setLocation}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="All locations" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All locations</SelectItem>
+                        <SelectItem value="Awesome Shop">Awesome Shop</SelectItem>
                     </SelectContent>
                 </Select>
                 <Popover>
