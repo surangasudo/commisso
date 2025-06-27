@@ -184,12 +184,21 @@ const CommissionPayoutDialog = ({
                     categoryBreakdown[product.category].commission += commissionValue;
                 }
             }
-
-            const breakdownString = Object.entries(categoryBreakdown)
-                .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}, com:${formatCurrency(data.commission)}`)
-                .join(', ');
             
-            const smsMessage = `Thank you for visiting ${businessName}. Your total sale ${breakdownString}. Total earnings: ${formatCurrency(totalToPay)}. Inquiry: ${businessPhone}`;
+            let smsMessage = '';
+            if (profile.entityType === 'Sub-Agent') {
+                const salesBreakdownString = Object.entries(categoryBreakdown)
+                    .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}`)
+                    .join(', ');
+                
+                smsMessage = `Thank you for your sales, ${profile.name}. Your total sales: ${salesBreakdownString}. Your total earnings: ${formatCurrency(totalToPay)}. For inquiries, call: ${businessPhone}`;
+            } else {
+                const breakdownString = Object.entries(categoryBreakdown)
+                    .map(([category, data]) => `${category} ${formatCurrency(data.totalSale)}, com:${formatCurrency(data.commission)}`)
+                    .join(', ');
+                
+                smsMessage = `Thank you for visiting ${businessName}. Your total sale ${breakdownString}. Total earnings: ${formatCurrency(totalToPay)}. Inquiry: ${businessPhone}`;
+            }
             // --- End of message building ---
 
             const result = await payCommission(profile, totalToPay, method, note, smsMessage);
