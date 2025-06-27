@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { getSale, updateSale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/hooks/use-currency';
 
 type SaleItemWithProduct = {
   product: DetailedProduct;
@@ -30,6 +31,7 @@ export default function EditSalePage() {
     const params = useParams();
     const id = params.id as string;
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
 
     const [originalSale, setOriginalSale] = useState<Sale | null>(null);
     const [sale, setSale] = useState<Sale | null>(null);
@@ -124,13 +126,23 @@ export default function EditSalePage() {
         ));
     };
 
-    const subtotal = useMemo(() => {
-        return saleItems.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-    }, [saleItems]);
-    
     const totalItems = useMemo(() => {
-        return saleItems.reduce((acc, item) => acc + item.quantity, 0);
+        return saleItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0);
     }, [saleItems]);
+
+    const { subtotal, totalPayable } = useMemo(() => {
+        const currentSubtotal = saleItems.reduce((acc, item) => acc + ((Number(item.quantity) || 0) * item.unitPrice), 0);
+        
+        if (originalSale) {
+            const originalSubtotal = originalSale.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+            const otherCosts = originalSale.totalAmount - originalSubtotal;
+            const currentTotalPayable = currentSubtotal + otherCosts;
+            return { subtotal: currentSubtotal, totalPayable: currentTotalPayable };
+        }
+
+        return { subtotal: currentSubtotal, totalPayable: currentSubtotal };
+    }, [saleItems, originalSale]);
+
 
     const handleSaveCustomer = () => {
         // This is a placeholder as customer service is not fully implemented
@@ -147,13 +159,18 @@ export default function EditSalePage() {
             return;
         }
 
-        const newTotalAmount = subtotal; // Simplified for now
+        // Recalculate total amount preserving original diff from subtotal (discounts, taxes, shipping)
+        const originalSubtotal = originalSale.items.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+        const otherCosts = originalSale.totalAmount - originalSubtotal;
+
+        const newSubtotal = saleItems.reduce((acc, item) => acc + ((Number(item.quantity) || 0) * item.unitPrice), 0);
+        const newTotalAmount = newSubtotal + otherCosts;
         
         const updatedSaleData: Omit<Sale, 'id'> = {
             ...originalSale,
             items: saleItems.map(item => ({
                 productId: item.product.id,
-                quantity: item.quantity,
+                quantity: Number(item.quantity) || 0,
                 unitPrice: item.unitPrice,
                 tax: item.tax,
             })),
@@ -269,8 +286,8 @@ export default function EditSalePage() {
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell>{item.product.name}</TableCell>
                                         <TableCell><Input type="number" value={item.quantity} onChange={(e) => handleItemChange(item.product.id, 'quantity', parseInt(e.target.value))} className="w-24 h-9" /></TableCell>
-                                        <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell>${(item.quantity * item.unitPrice).toFixed(2)}</TableCell>
+                                        <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                                        <TableCell>{formatCurrency((Number(item.quantity) || 0) * item.unitPrice)}</TableCell>
                                         <TableCell className="text-center">
                                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(item.product.id)}>
                                                 <Trash2 className="w-4 h-4" />
@@ -285,8 +302,12 @@ export default function EditSalePage() {
                             </TableBody>
                         </Table>
                     </div>
-                     <div className="flex justify-end mt-2 text-sm font-medium">
-                        Items: {totalItems.toFixed(2)} | Total: ${subtotal.toFixed(2)}
+                     <div className="flex justify-end mt-4 text-sm font-medium">
+                        <div className="space-x-4">
+                           <span>Items: <b>{totalItems}</b></span>
+                           <span>Subtotal: <b>{formatCurrency(subtotal)}</b></span>
+                           <span>Total Payable: <b>{formatCurrency(totalPayable)}</b></span>
+                        </div>
                     </div>
                     <hr className="my-4"/>
                      <div className="space-y-2 mt-4">
