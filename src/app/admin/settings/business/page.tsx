@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -1282,7 +1283,7 @@ const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { 
     };
 
     return (
-        <Card>
+        <>
             <CardHeader>
                 <CardTitle>Email Settings</CardTitle>
                 <CardDescription>Configure your email service for sending notifications.</CardDescription>
@@ -1337,7 +1338,7 @@ const EmailSettingsForm = ({ settings: initialSettingsData, updateSettings }: { 
             <CardFooter>
                 <Button onClick={handleUpdateSettings}>Update Settings</Button>
             </CardFooter>
-        </Card>
+        </>
     );
 };
 
@@ -1420,7 +1421,23 @@ export default function BusinessSettingsPage() {
                             <PrefixesSettingsForm settings={settings.prefixes} updateSettings={(newValues) => updateSection('prefixes', newValues)} />
                         </TabsContent>
                         <TabsContent value="email_settings">
-                             <EmailSettingsForm settings={settings.email} updateSettings={(newValues) => updateSection('email', newValues)} />
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <Card className="lg:col-span-2">
+                                     <EmailSettingsForm settings={settings.email} updateSettings={(newValues) => updateSection('email', newValues)} />
+                                </Card>
+                                <div className="lg:col-span-1">
+                                    <Card>
+                                        <CardHeader><CardTitle>Instructions</CardTitle></CardHeader>
+                                        <CardContent className="space-y-4 text-sm text-muted-foreground">
+                                            <p>To send emails, you need to configure an SMTP service. The settings on this page allow the application to connect to your email provider.</p>
+                                            <p><span className="font-semibold text-foreground">Host:</span> Your mail server address (e.g., smtp.gmail.com).</p>
+                                            <p><span className="font-semibold text-foreground">Port:</span> The port number for your mail server (e.g., 587 for TLS, 465 for SSL).</p>
+                                            <p><span className="font-semibold text-foreground">Username/Password:</span> Your credentials for the email account you're sending from.</p>
+                                            <p>These settings are crucial for features like sending invoices and password resets to your users.</p>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </div>
                         </TabsContent>
                         <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
                         <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
