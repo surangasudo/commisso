@@ -1493,6 +1493,123 @@ const SmsSettingsForm = ({ settings: initialSettingsData, updateSettings }: { se
     );
 };
 
+const RewardPointSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['rewardPoint'], updateSettings: (newValues: Partial<AllSettings['rewardPoint']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof AllSettings['rewardPoint'], value: string) => {
+        setSettings(s => ({...s, [id]: value as any }));
+    };
+    
+    const handleCheckboxChange = (id: keyof AllSettings['rewardPoint'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Reward Point Settings Updated',
+            description: 'Your reward point settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Reward Point Settings</CardTitle>
+                <CardDescription>Manage your customer loyalty program.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="enableRewardPoint" checked={settings.enableRewardPoint} onCheckedChange={(checked) => handleCheckboxChange('enableRewardPoint', checked)} />
+                    <Label htmlFor="enableRewardPoint" className="font-normal">Enable Reward Point System</Label>
+                </div>
+                {settings.enableRewardPoint && (
+                    <div className="space-y-6 pl-6 border-l">
+                         <div className="space-y-2">
+                            <Label htmlFor="rewardPointDisplayName">Reward Point Display Name</Label>
+                            <Input id="rewardPointDisplayName" value={settings.rewardPointDisplayName} onChange={handleInputChange} />
+                        </div>
+                        <Separator />
+                        <div>
+                            <h4 className="font-medium mb-4">Earning Settings</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="amountForOnePoint" className="flex items-center gap-1">Amount for 1 point <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                                    <Input id="amountForOnePoint" type="number" value={settings.amountForOnePoint} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="minOrderTotalToEarn">Min. order total to earn reward <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                                    <Input id="minOrderTotalToEarn" type="number" value={settings.minOrderTotalToEarn} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="maxPointsPerOrder">Max. points per order</Label>
+                                    <Input id="maxPointsPerOrder" type="number" value={settings.maxPointsPerOrder} onChange={handleInputChange} />
+                                </div>
+                            </div>
+                        </div>
+                         <Separator />
+                        <div>
+                            <h4 className="font-medium mb-4">Redemption Settings</h4>
+                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="redeemAmountPerPoint" className="flex items-center gap-1">Redeem amount per point <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                                    <Input id="redeemAmountPerPoint" type="number" value={settings.redeemAmountPerPoint} onChange={handleInputChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="minOrderTotalToRedeem">Min. order total to redeem</Label>
+                                    <Input id="minOrderTotalToRedeem" type="number" value={settings.minOrderTotalToRedeem} onChange={handleInputChange} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="minRedeemPointPerOrder">Min. redeem point per order</Label>
+                                    <Input id="minRedeemPointPerOrder" type="number" value={settings.minRedeemPointPerOrder} onChange={handleInputChange} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="maxRedeemPointPerOrder">Max. redeem point per order</Label>
+                                    <Input id="maxRedeemPointPerOrder" type="number" value={settings.maxRedeemPointPerOrder} onChange={handleInputChange} />
+                                </div>
+                            </div>
+                        </div>
+                         <Separator />
+                        <div>
+                            <h4 className="font-medium mb-4">Expiry Settings</h4>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="expiryPeriod">Reward Point Expiry Period</Label>
+                                    <Input id="expiryPeriod" type="number" value={settings.expiryPeriod} onChange={handleInputChange} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="expiryPeriodType">Period Type</Label>
+                                    <Select value={settings.expiryPeriodType} onValueChange={(value) => handleSelectChange('expiryPeriodType', value)}>
+                                        <SelectTrigger id="expiryPeriodType"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="days">Days</SelectItem>
+                                            <SelectItem value="months">Months</SelectItem>
+                                            <SelectItem value="years">Years</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    )
+};
+
 
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
@@ -1604,7 +1721,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="sms_settings">
                              <SmsSettingsForm settings={settings.sms} updateSettings={(newValues) => updateSection('sms', newValues)} />
                         </TabsContent>
-                        <TabsContent value="reward_point_settings"><UnimplementedForm title="Reward Point Settings" /></TabsContent>
+                        <TabsContent value="reward_point_settings">
+                            <RewardPointSettingsForm settings={settings.rewardPoint} updateSettings={(newValues) => updateSection('rewardPoint', newValues)} />
+                        </TabsContent>
                         <TabsContent value="modules"><UnimplementedForm title="Modules Settings" /></TabsContent>
                         <TabsContent value="custom_labels"><UnimplementedForm title="Custom Labels Settings" /></TabsContent>
                     </div>
