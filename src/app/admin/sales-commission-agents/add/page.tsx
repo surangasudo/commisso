@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -88,10 +87,10 @@ export default function AddSalesCommissionAgentPage() {
             });
             return;
         }
-        if (!overallCommission.trim()) {
+        if (!overallCommission.trim() && categoryCommissions.length === 0) {
             toast({
                 title: "Error: Missing Field",
-                description: "Please enter an Overall Commission Rate.",
+                description: "Please enter an Overall Commission Rate or define at least one category-specific rate.",
                 variant: "destructive",
             });
             return;
@@ -104,7 +103,7 @@ export default function AddSalesCommissionAgentPage() {
             email: email,
             bankDetails: bankDetails,
             commission: {
-                overall: parseFloat(overallCommission),
+                overall: parseFloat(overallCommission) || 0,
                 categories: categoryCommissions
                     .filter(c => c.category && c.rate)
                     .map(c => ({
@@ -188,8 +187,13 @@ export default function AddSalesCommissionAgentPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="overall-commission">Overall Commission Rate (%) *</Label>
-                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} />
-                                <p className="text-xs text-muted-foreground">This is the default commission rate if no category-specific rate applies.</p>
+                                <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} disabled={categoryCommissions.length > 0} />
+                                <p className="text-xs text-muted-foreground">
+                                    {categoryCommissions.length > 0 
+                                        ? "Disabled because category-specific rates are being used."
+                                        : "This is the default commission rate if no category-specific rate applies."
+                                    }
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
