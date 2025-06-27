@@ -21,7 +21,8 @@ import { getBrands, type Brand } from '@/services/brandService';
 
 
 export default function EditProductPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id as string;
   const router = useRouter();
   const { toast } = useToast();
   const [product, setProduct] = useState<DetailedProduct | null>(null);

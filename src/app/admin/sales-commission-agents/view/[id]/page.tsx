@@ -45,7 +45,8 @@ type CommissionableSale = {
 
 export default function ViewCommissionProfilePage() {
     const router = useRouter();
-    const { id } = useParams();
+    const params = useParams();
+    const id = params.id as string;
     const { formatCurrency } = useCurrency();
     const { toast } = useToast();
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -23,7 +24,8 @@ const DetailItem = ({ icon, label, value }: { icon: React.ElementType, label: st
 
 export default function ViewUserPage() {
     const router = useRouter();
-    const { id } = useParams();
+    const params = useParams();
+    const id = params.id;
     const { toast } = useToast();
     const [user, setUser] = useState<User | null>(null);
 

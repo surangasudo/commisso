@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,8 @@ import { Pencil } from "lucide-react";
 import { useParams } from 'next/navigation';
 
 export default function EditPurchaseReturnPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id;
 
   return (
     <div className="flex flex-col gap-6">

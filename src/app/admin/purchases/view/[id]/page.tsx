@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download } from "lucide-react";
@@ -5,7 +6,7 @@ import { useParams } from 'next/navigation';
 
 export default function ViewPurchasePage() {
   const params = useParams();
-  const { id } = params;
+  const id = params.id;
 
   return (
     <div className="flex flex-col gap-6">

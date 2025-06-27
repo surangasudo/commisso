@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,8 @@ type PermissionsState = Record<string, Record<string, boolean | string>>;
 export default function EditRolePage() {
     const { toast } = useToast();
     const router = useRouter();
-    const { id } = useParams();
+    const params = useParams();
+    const id = params.id;
 
     const [roleName, setRoleName] = useState('');
     const [permissions, setPermissions] = useState<PermissionsState>({});

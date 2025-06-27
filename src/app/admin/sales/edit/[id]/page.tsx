@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -63,7 +64,8 @@ const getSaleItems = (saleId: string): SaleItem[] => {
 
 export default function EditSalePage() {
     const router = useRouter();
-    const { id } = useParams();
+    const params = useParams();
+    const id = params.id;
     const { toast } = useToast();
 
     const [sale, setSale] = useState<Sale | null>(null);

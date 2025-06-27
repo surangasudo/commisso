@@ -57,7 +57,8 @@ type SaleItemWithDetails = {
 
 export default function ViewSalePage() {
   const router = useRouter();
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id as string;
   const { formatCurrency } = useCurrency();
 
   const [sale, setSale] = useState<Sale | null>(null);
