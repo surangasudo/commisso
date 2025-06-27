@@ -1067,6 +1067,126 @@ const DashboardSettingsForm = ({ settings: initialSettingsData, updateSettings }
     );
 };
 
+const SystemSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['system'], updateSettings: (newValues: Partial<AllSettings['system']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+    
+    const handleCheckboxChange = (id: keyof AllSettings['system'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+
+    const handleSelectChange = (id: keyof AllSettings['system'], value: string) => {
+        setSettings(s => ({...s, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'System Settings Updated',
+            description: 'Your system settings have been saved successfully.',
+        });
+    };
+
+    const themeColors = [
+        { value: 'blue', label: 'Blue' },
+        { value: 'green', label: 'Green' },
+        { value: 'red', label: 'Red' },
+        { value: 'purple', label: 'Purple' },
+        { value: 'yellow', label: 'Yellow' },
+        { value: 'black', label: 'Black' },
+        { value: 'blue-light', label: 'Light Blue' },
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+                <CardDescription>Manage general system settings, theme, and external integrations.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="appName">App Name *</Label>
+                        <Input id="appName" value={settings.appName} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="helpLink">Help Link:</Label>
+                        <Input id="helpLink" value={settings.helpLink} onChange={handleInputChange} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="themeColor">Theme Color:</Label>
+                        <Select value={settings.themeColor} onValueChange={(value) => handleSelectChange('themeColor', value)}>
+                            <SelectTrigger id="themeColor"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {themeColors.map(theme => (
+                                    <SelectItem key={theme.value} value={theme.value}>{theme.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="defaultDatatableEntries">Default datatable entries per page:</Label>
+                        <Select value={settings.defaultDatatableEntries} onValueChange={(value) => handleSelectChange('defaultDatatableEntries', value)}>
+                            <SelectTrigger id="defaultDatatableEntries"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="25">25</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                 <Separator className="my-6" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                     <div className="flex items-center space-x-2">
+                        <Checkbox id="enableRepairModule" checked={settings.enableRepairModule} onCheckedChange={(checked) => handleCheckboxChange('enableRepairModule', checked)} />
+                        <Label htmlFor="enableRepairModule" className="font-normal">Enable Repair Module</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="showHelpText" checked={settings.showHelpText} onCheckedChange={(checked) => handleCheckboxChange('showHelpText', checked)} />
+                        <Label htmlFor="showHelpText" className="font-normal">Show help text</Label>
+                    </div>
+                </div>
+                 <Separator className="my-6" />
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="google-api">
+                        <AccordionTrigger className="text-base font-semibold">Google API Settings</AccordionTrigger>
+                        <AccordionContent className="pt-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="googleApiKey">Google API Key:</Label>
+                                <Input id="googleApiKey" value={settings.googleApiKey} onChange={handleInputChange} />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="isGoogleDriveEnabled" checked={settings.isGoogleDriveEnabled} onCheckedChange={(checked) => handleCheckboxChange('isGoogleDriveEnabled', checked)} />
+                                <Label htmlFor="isGoogleDriveEnabled" className="font-normal">Enable Google Drive</Label>
+                            </div>
+                             {settings.isGoogleDriveEnabled && (
+                                <div className="space-y-2 pl-6">
+                                    <Label htmlFor="googleDriveAppId">Google Drive App ID:</Label>
+                                    <Input id="googleDriveAppId" value={settings.googleDriveAppId} onChange={handleInputChange} />
+                                </div>
+                             )}
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    );
+};
+
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
         <CardHeader>
@@ -1139,7 +1259,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="dashboard">
                             <DashboardSettingsForm settings={settings.dashboard} updateSettings={(newValues) => updateSection('dashboard', newValues)} />
                         </TabsContent>
-                        <TabsContent value="system"><UnimplementedForm title="System Settings" /></TabsContent>
+                        <TabsContent value="system">
+                            <SystemSettingsForm settings={settings.system} updateSettings={(newValues) => updateSection('system', newValues)} />
+                        </TabsContent>
                         <TabsContent value="prefixes"><UnimplementedForm title="Prefixes Settings" /></TabsContent>
                         <TabsContent value="email_settings"><UnimplementedForm title="Email Settings" /></TabsContent>
                         <TabsContent value="sms_settings"><UnimplementedForm title="SMS Settings" /></TabsContent>
