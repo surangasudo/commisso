@@ -887,6 +887,137 @@ const PosSettingsForm = ({ settings: initialSettingsData, updateSettings }: { se
     );
 };
 
+const PaymentSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['payment'], updateSettings: (newValues: Partial<AllSettings['payment']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+
+    const handleCheckboxChange = (id: keyof AllSettings['payment'], checked: boolean | 'indeterminate') => {
+        setSettings(s => ({...s, [id]: checked === true}));
+    };
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleSelectChange = (id: keyof AllSettings['payment'], value: string) => {
+        setSettings(s => ({...s, [id]: value as any }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Payment Settings Updated',
+            description: 'Your payment settings have been saved successfully.',
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Payment Settings</CardTitle>
+                <CardDescription>Configure payment gateways and cash denominations.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="cashDenominations">Cash Denominations</Label>
+                        <Textarea id="cashDenominations" placeholder="10, 20, 50, 100..." value={settings.cashDenominations} onChange={handleInputChange} />
+                        <p className="text-xs text-muted-foreground">Comma separated values.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="enableOn">Enable Cash Denomination screen on</Label>
+                        <Select value={settings.enableOn} onValueChange={(value) => handleSelectChange('enableOn', value)}>
+                            <SelectTrigger id="enableOn"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all_screens">All Screens</SelectItem>
+                                <SelectItem value="pos_screen">POS screen only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="enableForMethods">Enable cash denomination for following payment methods</Label>
+                        <Textarea id="enableForMethods" placeholder="cash, card,..." value={settings.enableForMethods} onChange={handleInputChange} />
+                    </div>
+                     <div className="flex items-center space-x-2 pt-6">
+                        <Checkbox id="strictCheck" checked={settings.strictCheck} onCheckedChange={(checked) => handleCheckboxChange('strictCheck', checked)} />
+                        <Label htmlFor="strictCheck" className="font-normal flex items-center gap-1">Strict Check 
+                            <Tooltip>
+                                <TooltipTrigger asChild><Info className="w-3 h-3 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent><p>If checked, user must enter the exact cash received from customer.</p></TooltipContent>
+                            </Tooltip>
+                        </Label>
+                    </div>
+                </div>
+                <Separator/>
+                 <Accordion type="multiple" className="w-full">
+                    <AccordionItem value="stripe">
+                        <AccordionTrigger className="text-base font-semibold">Stripe</AccordionTrigger>
+                        <AccordionContent className="pt-4 space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="enableStripe" checked={settings.enableStripe} onCheckedChange={(checked) => handleCheckboxChange('enableStripe', checked)} />
+                                <Label htmlFor="enableStripe" className="font-normal">Enable Stripe</Label>
+                            </div>
+                            {settings.enableStripe && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripePublicKey">Stripe Public Key</Label>
+                                        <Input id="stripePublicKey" value={settings.stripePublicKey} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="stripeSecretKey">Stripe Secret Key</Label>
+                                        <Input id="stripeSecretKey" type="password" value={settings.stripeSecretKey} onChange={handleInputChange} />
+                                    </div>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="paypal">
+                        <AccordionTrigger className="text-base font-semibold">PayPal</AccordionTrigger>
+                        <AccordionContent className="pt-4 space-y-4">
+                             <div className="flex items-center space-x-2">
+                                <Checkbox id="enablePaypal" checked={settings.enablePaypal} onCheckedChange={(checked) => handleCheckboxChange('enablePaypal', checked)} />
+                                <Label htmlFor="enablePaypal" className="font-normal">Enable PayPal</Label>
+                            </div>
+                            {settings.enablePaypal && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="paypalMode">PayPal Mode</Label>
+                                        <Select value={settings.paypalMode} onValueChange={(value) => handleSelectChange('paypalMode', value)}>
+                                            <SelectTrigger id="paypalMode"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="sandbox">Sandbox</SelectItem>
+                                                <SelectItem value="live">Live</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paypalClientId">PayPal Client ID</Label>
+                                        <Input id="paypalClientId" value={settings.paypalClientId} onChange={handleInputChange} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paypalClientSecret">PayPal Client Secret</Label>
+                                        <Input id="paypalClientSecret" type="password" value={settings.paypalClientSecret} onChange={handleInputChange} />
+                                    </div>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                 </Accordion>
+
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    )
+};
+
 
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
@@ -954,7 +1085,9 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="purchases">
                              <PurchaseSettingsForm settings={settings.purchase} updateSettings={(newValues) => updateSection('purchase', newValues)} />
                         </TabsContent>
-                        <TabsContent value="payment"><UnimplementedForm title="Payment Settings" /></TabsContent>
+                        <TabsContent value="payment">
+                            <PaymentSettingsForm settings={settings.payment} updateSettings={(newValues) => updateSection('payment', newValues)} />
+                        </TabsContent>
                         <TabsContent value="dashboard"><UnimplementedForm title="Dashboard Settings" /></TabsContent>
                         <TabsContent value="system"><UnimplementedForm title="System Settings" /></TabsContent>
                         <TabsContent value="prefixes"><UnimplementedForm title="Prefixes Settings" /></TabsContent>
