@@ -1,5 +1,6 @@
+
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Download,
@@ -46,7 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { stockTransfers, type StockTransfer } from '@/lib/data';
+import { type StockTransfer } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AppFooter } from '@/components/app-footer';
+import { getStockTransfers, deleteStockTransfer } from '@/services/stockTransferService';
+import { useToast } from '@/hooks/use-toast';
+import { useCurrency } from '@/hooks/use-currency';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -73,9 +78,28 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function ListStockTransfersPage() {
-  const [transfers, setTransfers] = useState<StockTransfer[]>(stockTransfers);
+  const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
+  const [transfers, setTransfers] = useState<StockTransfer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [transferToDelete, setTransferToDelete] = useState<StockTransfer | null>(null);
+
+  useEffect(() => {
+    const fetchTransfers = async () => {
+        setIsLoading(true);
+        try {
+            const data = await getStockTransfers();
+            setTransfers(data);
+        } catch (error) {
+            console.error("Failed to fetch stock transfers", error);
+            toast({ title: "Error", description: "Could not load stock transfers.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchTransfers();
+  }, [toast]);
 
   const totalAmount = transfers.reduce((acc, transfer) => acc + transfer.totalAmount, 0);
 
@@ -84,11 +108,18 @@ export default function ListStockTransfersPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (transferToDelete) {
-      setTransfers(transfers.filter(p => p.id !== transferToDelete.id));
-      setIsDeleteDialogOpen(false);
-      setTransferToDelete(null);
+      try {
+        await deleteStockTransfer(transferToDelete.id);
+        setTransfers(transfers.filter(p => p.id !== transferToDelete.id));
+        toast({ title: "Success", description: "Stock transfer deleted." });
+      } catch (error) {
+        toast({ title: "Error", description: "Failed to delete transfer.", variant: "destructive" });
+      } finally {
+        setIsDeleteDialogOpen(false);
+        setTransferToDelete(null);
+      }
     }
   };
 
@@ -162,7 +193,21 @@ export default function ListStockTransfersPage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {transfers.map((transfer) => (
+                            {isLoading ? (
+                                Array.from({length: 5}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-8 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-28"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : transfers.map((transfer) => (
                                 <TableRow key={transfer.id}>
                                 <TableCell>
                                     <DropdownMenu>
@@ -176,13 +221,13 @@ export default function ListStockTransfersPage() {
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </TableCell>
-                                <TableCell>{transfer.date}</TableCell>
+                                <TableCell>{new Date(transfer.date).toLocaleDateString()}</TableCell>
                                 <TableCell>{transfer.referenceNo}</TableCell>
                                 <TableCell>{transfer.locationFrom}</TableCell>
                                 <TableCell>{transfer.locationTo}</TableCell>
                                 <TableCell><Badge variant="outline" className={cn("capitalize", getStatusBadge(transfer.status))}>{transfer.status}</Badge></TableCell>
-                                <TableCell>${transfer.shippingCharges.toFixed(2)}</TableCell>
-                                <TableCell>${transfer.totalAmount.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(transfer.shippingCharges)}</TableCell>
+                                <TableCell>{formatCurrency(transfer.totalAmount)}</TableCell>
                                 <TableCell>{transfer.addedBy}</TableCell>
                                 </TableRow>
                             ))}
@@ -190,7 +235,7 @@ export default function ListStockTransfersPage() {
                             <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={7} className="text-right font-bold">Total:</TableCell>
-                                    <TableCell className="font-bold">${totalAmount.toFixed(2)}</TableCell>
+                                    <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
                                     <TableCell></TableCell>
                                 </TableRow>
                             </TableFooter>
