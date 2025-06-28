@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -17,6 +18,7 @@ import { getSale, updateSale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/use-currency';
+import { useSettings } from '@/hooks/use-settings';
 
 type SaleItemWithProduct = {
   product: DetailedProduct;
@@ -32,6 +34,7 @@ export default function EditSalePage() {
     const id = params.id as string;
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
+    const { settings } = useSettings();
 
     const [originalSale, setOriginalSale] = useState<Sale | null>(null);
     const [sale, setSale] = useState<Sale | null>(null);
@@ -182,7 +185,7 @@ export default function EditSalePage() {
         };
 
         try {
-            await updateSale(id, updatedSaleData, originalSale);
+            await updateSale(id, updatedSaleData, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
             toast({
                 title: "Success!",
                 description: `Sale ${sale.invoiceNo} has been updated.`,
