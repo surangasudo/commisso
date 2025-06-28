@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -92,8 +93,8 @@ export default function AddSalesCommissionAgentPage() {
             name: agentName,
             entityType: entityType || 'Salesperson',
             phone: phoneNumber,
-            email: email,
-            bankDetails: bankDetails,
+            email: email || undefined,
+            bankDetails: bankDetails || undefined,
             commission: {
                 overall: parseFloat(overallCommission) || 0,
                 categories: categoryCommissions
