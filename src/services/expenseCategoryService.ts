@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type ExpenseCategory } from '@/lib/data';
 import { unstable_noStore as noStore } from 'next/cache';
+import { processDoc } from '@/lib/firestore-utils';
 
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
@@ -37,15 +38,7 @@ export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
       snapshot = await getDocs(expenseCategoriesCollection);
   }
   
-  const data = snapshot.docs.map(doc => {
-      const docData = doc.data();
-      return {
-          id: doc.id,
-          name: docData.name || '',
-          code: docData.code || '',
-          parentId: docData.parentId || null
-      } as ExpenseCategory;
-  });
+  const data = snapshot.docs.map(doc => processDoc<ExpenseCategory>(doc));
   return data;
 }
 

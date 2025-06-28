@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { unstable_noStore as noStore } from 'next/cache';
+import { processDoc } from '@/lib/firestore-utils';
 
 export type Brand = {
   id: string;
@@ -37,10 +38,7 @@ export async function getBrands(): Promise<Brand[]> {
     snapshot = await getDocs(brandsCollection);
   }
 
-  const data = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  } as Brand));
+  const data = snapshot.docs.map(doc => processDoc<Brand>(doc));
   return data;
 }
 
