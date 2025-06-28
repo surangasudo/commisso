@@ -99,6 +99,22 @@ type CartItem = {
   quantity: number;
 };
 
+// This component's only purpose is to trigger the print dialog when it mounts.
+const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
+    useEffect(() => {
+        // A small delay ensures the content is fully rendered before printing.
+        const timer = setTimeout(() => {
+            onPrint();
+        }, 100);
+
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // We only want this to run once on mount.
+
+    return null;
+};
+
+
 const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const [display, setDisplay] = useState('0');
 
@@ -592,19 +608,6 @@ export default function PosPage() {
       content: () => receiptRef.current,
       onAfterPrint: onAfterPrint,
   });
-
-  useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        // Use a timeout to ensure the component has rendered before printing
-        const timer = setTimeout(() => handlePrint(), 100);
-        return () => clearTimeout(timer);
-    }
-  }, [saleToPrint, handlePrint]);
-
-
-  // Determine the correct label for the single selector
-  const salespersonLabel = settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff";
-
 
   const fetchAndCalculateStock = useCallback(async () => {
       // Set loading to true only if it's the initial fetch.
@@ -1156,7 +1159,7 @@ export default function PosPage() {
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1">
-                                                <CommissionSelector entityType="Salesperson" label={salespersonLabel} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                                <CommissionSelector entityType="Salesperson" label={settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff"} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
                                             </div>
                                             <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
                                         </div>
@@ -1448,11 +1451,10 @@ export default function PosPage() {
                 <AppFooter />
             </div>
         </TooltipProvider>
-        <div style={{ visibility: 'hidden', position: 'absolute', left: '-9999px' }}>
+        {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
+        <div style={{ visibility: 'hidden', position: 'fixed', left: '-9999px', top: '0' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
   );
 }
-
-    
