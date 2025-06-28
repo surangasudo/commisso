@@ -132,16 +132,15 @@ export async function getPendingCommissions(profileId: string): Promise<PendingC
 }
 
 
-export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
+export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<void> {
     const dataToSave = {
         ...profile,
         commission: {
             overall: profile.commission.overall,
-            // Ensure categories are saved without the temporary UI id
             categories: profile.commission.categories?.map(({ category, rate }) => ({ category, rate })) || []
         }
     };
-    return await addDoc(commissionProfilesCollection, dataToSave);
+    await addDoc(commissionProfilesCollection, dataToSave);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
@@ -150,7 +149,6 @@ export async function updateCommissionProfile(id: string, profile: Partial<Omit<
         ...profile,
         commission: {
             overall: profile.commission?.overall,
-            // Ensure categories are saved without the temporary UI id
             categories: profile.commission?.categories?.map(({ category, rate }) => ({ category, rate })) || []
         }
     };
@@ -163,7 +161,7 @@ export async function deleteCommissionProfile(id: string): Promise<void> {
 }
 
 export async function payCommission(
-    profileId: string,
+    profile: CommissionProfile,
     commissionIds: string[],
     paymentMethod: string,
     paymentNote: string,
@@ -172,7 +170,7 @@ export async function payCommission(
     
     try {
         await runTransaction(db, async (transaction) => {
-            const profileRef = doc(db, 'commissionProfiles', profileId);
+            const profileRef = doc(db, 'commissionProfiles', profile.id);
             const profileDoc = await transaction.get(profileRef);
             if (!profileDoc.exists()) throw new Error("Profile not found");
 
