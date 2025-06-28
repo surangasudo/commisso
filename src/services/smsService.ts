@@ -1,16 +1,47 @@
-'use server';
 
-import { type AllSettings } from '@/hooks/use-settings';
+'use server';
 
 /**
  * @fileOverview Integrates with SMS providers to send messages.
  * This service makes real API calls.
  */
 
+ type SmsConfig = {
+    smsService: 'twilio' | 'nexmo' | 'textlk' | 'other';
+    twilioSid?: string;
+    twilioToken?: string;
+    twilioFrom?: string;
+    nexmoKey?: string;
+    nexmoSecret?: string;
+    nexmoFrom?: string;
+    textlkApiKey?: string;
+    textlkSenderId?: string;
+    otherUrl?: string;
+    sendToParam?: string;
+    msgParam?: string;
+    requestMethod?: 'get' | 'post';
+    header1Key?: string; header1Val?: string;
+    header2Key?: string; header2Val?: string;
+    header3Key?: string; header3Val?: string;
+    param1Key?: string; param1Val?: string;
+    param2Key?: string; param2Val?: string;
+    param3Key?: string; param3Val?: string;
+    param4Key?: string; param4Val?: string;
+    param5Key?: string; param5Val?: string;
+    param6Key?: string; param6Val?: string;
+    param7Key?: string; param7Val?: string;
+    param8Key?: string; param8Val?: string;
+    param9Key?: string; param9Val?: string;
+    param10Key?: string; param10Val?: string;
+    // Extra fields needed by the service but not part of the form
+    businessName?: string;
+    currency?: string;
+};
+
 export async function sendSms(
   recipient: string,
   message: string,
-  config: AllSettings['sms']
+  config: SmsConfig
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   
   if (config.smsService === 'textlk') {
@@ -26,7 +57,7 @@ export async function sendSms(
 async function sendWithTextlk(
   recipient: string,
   message: string,
-  config: AllSettings['sms']
+  config: SmsConfig
 ): Promise<{ success: boolean; error?: string; data?: any }> {
   const apiKey = config.textlkApiKey;
   const senderId = config.textlkSenderId;

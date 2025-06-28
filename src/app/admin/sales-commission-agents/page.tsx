@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { type CommissionProfile } from '@/lib/data';
+import { type CommissionProfileWithSummary, type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { deleteCommissionProfile, payCommission, getCommissionProfiles, getPendingCommissions, type PendingSale } from '@/services/commissionService';
+import { deleteCommissionProfile, payCommission, getCommissionProfiles, getPendingCommissions, type PendingCommission } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -45,15 +45,13 @@ const CommissionPayoutDialog = ({
     const { formatCurrency } = useCurrency();
     const settings = useBusinessSettings();
     
-    const [pendingSales, setPendingSales] = useState<PendingSale[]>([]);
-    const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
+    const [pendingCommissions, setPendingCommissions] = useState<PendingCommission[]>([]);
+    const [selectedCommissionIds, setSelectedCommissionIds] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
     
     const [method, setMethod] = useState('');
     const [note, setNote] = useState('');
     const [isPaying, setIsPaying] = useState(false);
-
-    const round = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
     useEffect(() => {
         const fetchPending = async () => {
@@ -61,7 +59,7 @@ const CommissionPayoutDialog = ({
             setIsLoading(true);
             try {
                 const pendingData = await getPendingCommissions(profile.id);
-                setPendingSales(pendingData);
+                setPendingCommissions(pendingData);
             } catch (e) {
                 console.error("Failed to fetch pending commissions", e);
                 toast({ title: 'Error', description: 'Could not load pending commissions.', variant: 'destructive'});
@@ -72,48 +70,51 @@ const CommissionPayoutDialog = ({
         
         if (open && profile) {
             fetchPending();
-            setSelectedSaleIds(new Set());
+            setSelectedCommissionIds(new Set());
             setMethod(profile.entityType === 'Company' ? 'cheque' : 'cash');
             setNote('');
         }
     }, [open, profile, toast]);
 
     const totalToPay = useMemo(() => {
-        const total = pendingSales
-            .filter(sale => selectedSaleIds.has(sale.id))
-            .reduce((sum, sale) => sum + sale.commissionEarned, 0);
-        return round(total);
-    }, [selectedSaleIds, pendingSales]);
+        const total = pendingCommissions
+            .filter(commission => selectedCommissionIds.has(commission.id))
+            .reduce((sum, commission) => sum + commission.commissionEarned, 0);
+        return Math.round(total * 100) / 100;
+    }, [selectedCommissionIds, pendingCommissions]);
 
     const handleSelectAll = (checked: boolean | 'indeterminate') => {
         if (checked === true) {
-            setSelectedSaleIds(new Set(pendingSales.map(s => s.id)));
+            setSelectedCommissionIds(new Set(pendingCommissions.map(c => c.id)));
         } else {
-            setSelectedSaleIds(new Set());
+            setSelectedCommissionIds(new Set());
         }
     }
 
-    const handleSelectOne = (saleId: string, checked: boolean) => {
-        const newSet = new Set(selectedSaleIds);
+    const handleSelectOne = (commissionId: string, checked: boolean) => {
+        const newSet = new Set(selectedCommissionIds);
         if (checked) {
-            newSet.add(saleId);
+            newSet.add(commissionId);
         } else {
-            newSet.delete(saleId);
+            newSet.delete(commissionId);
         }
-        setSelectedSaleIds(newSet);
+        setSelectedCommissionIds(newSet);
     }
 
     const handleConfirmPayment = async () => {
-        if (!profile || totalToPay <= 0) {
+        if (!profile || selectedCommissionIds.size === 0) {
              toast({ title: 'Error', description: 'No commissions selected for payment.', variant: 'destructive' });
              return;
         }
         setIsPaying(true);
 
         try {
-            const smsMessage = `You have received a commission payment of ${formatCurrency(totalToPay)} from ${settings.business.businessName}. Thank you.`;
-
-            const result = await payCommission(profile, totalToPay, method, note, smsMessage, settings.sms);
+            const smsConfigPayload = {
+              businessName: settings.system.appName,
+              currency: settings.business.currency,
+              ...settings.sms
+            }
+            const result = await payCommission(profile, Array.from(selectedCommissionIds), method, note, smsConfigPayload);
             onPaymentComplete(profile.id, result);
         } catch (error: any) {
             toast({
@@ -129,20 +130,15 @@ const CommissionPayoutDialog = ({
     
     if (!profile) return null;
 
-    const pendingAmount = round((profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0));
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Pay Commission to {profile.name}</DialogTitle>
-                    <DialogDescription>
-                        Select invoices to pay. Total pending: <span className="font-bold">{formatCurrency(pendingAmount)}</span>
-                    </DialogDescription>
                 </DialogHeader>
                 {isLoading ? (
                     <div className="flex items-center justify-center h-64"><p>Loading pending commissions...</p></div>
-                ) : pendingSales.length > 0 ? (
+                ) : pendingCommissions.length > 0 ? (
                     <div className="space-y-4 py-4">
                         <ScrollArea className="h-64 border rounded-md">
                             <Table>
@@ -150,7 +146,7 @@ const CommissionPayoutDialog = ({
                                     <TableRow>
                                         <TableHead className="w-12">
                                             <Checkbox
-                                                checked={selectedSaleIds.size > 0 && selectedSaleIds.size === pendingSales.length}
+                                                checked={selectedCommissionIds.size > 0 && selectedCommissionIds.size === pendingCommissions.length}
                                                 onCheckedChange={handleSelectAll}
                                                 aria-label="Select all"
                                             />
@@ -161,18 +157,18 @@ const CommissionPayoutDialog = ({
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {pendingSales.map(sale => (
-                                        <TableRow key={sale.id}>
+                                    {pendingCommissions.map(commission => (
+                                        <TableRow key={commission.id}>
                                             <TableCell>
                                                 <Checkbox
-                                                    checked={selectedSaleIds.has(sale.id)}
-                                                    onCheckedChange={(checked) => handleSelectOne(sale.id, !!checked)}
-                                                    aria-label={`Select invoice ${sale.invoiceNo}`}
+                                                    checked={selectedCommissionIds.has(commission.id)}
+                                                    onCheckedChange={(checked) => handleSelectOne(commission.id, !!checked)}
+                                                    aria-label={`Select invoice ${commission.invoiceNo}`}
                                                 />
                                             </TableCell>
-                                            <TableCell>{sale.date}</TableCell>
-                                            <TableCell>{sale.invoiceNo}</TableCell>
-                                            <TableCell className="text-right">{formatCurrency(sale.commissionEarned)}</TableCell>
+                                            <TableCell>{commission.date}</TableCell>
+                                            <TableCell>{commission.invoiceNo}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(commission.commissionEarned)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -207,8 +203,8 @@ const CommissionPayoutDialog = ({
                 )}
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleConfirmPayment} disabled={isPaying || totalToPay <= 0}>
-                        {isPaying ? 'Processing...' : `Pay Selected (${selectedSaleIds.size})`}
+                    <Button onClick={handleConfirmPayment} disabled={isPaying || selectedCommissionIds.size === 0}>
+                        {isPaying ? 'Processing...' : `Pay Selected (${selectedCommissionIds.size})`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -224,9 +220,9 @@ const PayoutsTable = ({
     isLoading, 
     formatCurrency 
 }: { 
-    profiles: CommissionProfile[], 
+    profiles: CommissionProfileWithSummary[], 
     smsStatuses: Record<string, 'success' | 'failed'>,
-    handlePayClick: (profile: CommissionProfile) => void, 
+    handlePayClick: (profile: CommissionProfileWithSummary) => void, 
     handleView: (id: string) => void, 
     isLoading: boolean, 
     formatCurrency: (val: number) => string 
@@ -277,7 +273,7 @@ const PayoutsTable = ({
                                         <Button 
                                           size="sm" 
                                           className="h-8 gap-1.5"
-                                          disabled={pendingAmount <= 0}
+                                          disabled={pendingAmount <= 0.009} // Use a small epsilon for float comparison
                                           onClick={() => handlePayClick(profile)}
                                         >
                                             <Wallet className="w-4 h-4"/> Pay
@@ -317,14 +313,14 @@ export default function SalesCommissionAgentsPage() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const settings = useBusinessSettings();
-  const [profiles, setProfiles] = useState<CommissionProfile[]>([]);
+  const [profiles, setProfiles] = useState<CommissionProfileWithSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<CommissionProfile | null>(null);
 
   const [isPayDialogOpen, setIsPayDialogOpen] = useState(false);
-  const [profileToPay, setProfileToPay] = useState<CommissionProfile | null>(null);
+  const [profileToPay, setProfileToPay] = useState<CommissionProfileWithSummary | null>(null);
 
   const [profileFilter, setProfileFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -428,7 +424,7 @@ export default function SalesCommissionAgentsPage() {
     }
   };
 
-  const handlePayClick = (profile: CommissionProfile) => {
+  const handlePayClick = (profile: CommissionProfileWithSummary) => {
     setProfileToPay(profile);
     setIsPayDialogOpen(true);
   };
