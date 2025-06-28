@@ -1452,9 +1452,7 @@ export default function PosPage() {
             </div>
         </TooltipProvider>
         {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
-        <div style={{ visibility: 'hidden', position: 'fixed', left: '-9999px', top: '0' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
-        </div>
+        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
     </>
   );
 }
