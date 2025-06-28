@@ -37,7 +37,9 @@ export async function getCommissionProfiles(): Promise<CommissionProfileWithSumm
         const amount = commission.commission_amount || 0;
         
         // Net earned is the sum of all commission events (positive for earnings, negative for reversals).
-        summary.totalCommissionEarned += amount;
+        if(commission.status !== 'Paid') { // Only add to earned if not already paid
+             summary.totalCommissionEarned += amount;
+        }
 
         // Paid total is only the sum of commissions explicitly marked as 'Paid'.
         if (commission.status === 'Paid') {
@@ -75,8 +77,10 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         for (const commission of allCommissions) {
             const amount = commission.commission_amount || 0;
             
-            // Net earned is the sum of all commission events.
-            totalCommissionEarned += amount;
+             // Net earned is the sum of all commission events.
+            if(commission.status !== 'Paid') { // Only add to earned if not already paid
+                totalCommissionEarned += amount;
+            }
 
             // Paid total is only from 'Paid' commissions.
             if (commission.status === 'Paid') {
@@ -138,34 +142,12 @@ export async function getPendingCommissions(profileId: string): Promise<PendingC
 
 
 export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
-    const profileWithDefaults = {
-      ...profile,
-      commission: {
-          ...profile.commission,
-          overall: Number(profile.commission.overall) || 0,
-          categories: profile.commission.categories?.map(c => ({
-              category: c.category,
-              rate: Number(c.rate) || 0,
-          })) || [],
-      }
-    };
-    return await addDoc(commissionProfilesCollection, profileWithDefaults);
+    return await addDoc(commissionProfilesCollection, profile);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
     const docRef = doc(db, 'commissionProfiles', id);
-    const profileToUpdate = {
-        ...profile,
-        commission: {
-            ...profile.commission,
-            overall: Number(profile.commission?.overall) || 0,
-            categories: profile.commission?.categories?.map(c => ({
-                category: c.category,
-                rate: Number(c.rate) || 0,
-            })) || [],
-        }
-    };
-    await updateDoc(docRef, profileToUpdate);
+    await updateDoc(docRef, profile);
 }
 
 export async function deleteCommissionProfile(id: string): Promise<void> {
