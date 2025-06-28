@@ -251,7 +251,7 @@ const PayoutsTable = ({
                             </TableRow>
                         ))
                     ) : profiles.length > 0 ? profiles.map(profile => {
-                        const pendingAmount = (profile.totalCommissionEarned || 0) - (profile.totalCommissionPaid || 0);
+                        const pendingAmount = profile.totalCommissionEarned - profile.totalCommissionPaid;
                         const lastSmsStatus = smsStatuses[profile.id];
 
                         return (
@@ -259,7 +259,7 @@ const PayoutsTable = ({
                                 <TableCell className="font-medium">{profile.name}</TableCell>
                                 <TableCell><Badge variant="outline">{profile.entityType}</Badge></TableCell>
                                 <TableCell className="text-right font-semibold text-red-600">{formatCurrency(pendingAmount)}</TableCell>
-                                <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid || 0)}</TableCell>
+                                <TableCell className="text-right font-semibold text-green-600">{formatCurrency(profile.totalCommissionPaid)}</TableCell>
                                 <TableCell className="text-center">
                                     <div className="flex justify-center items-center gap-2">
                                         <Button 
@@ -583,7 +583,7 @@ export default function SalesCommissionAgentsPage() {
                 </CardFooter>
             </Card>
             </TabsContent>
-             <TabsContent value="payouts">
+            <TabsContent value="payouts">
                 <Card>
                 <CardHeader>
                     <CardTitle>Commission Payouts</CardTitle>
@@ -742,3 +742,5 @@ export default function SalesCommissionAgentsPage() {
     </>
   );
 }
+
+    
