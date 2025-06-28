@@ -74,25 +74,9 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { useCurrency } from '@/hooks/use-currency';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AppFooter } from '@/components/app-footer';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings } from '@/hooks/use-settings';
 import { useReactToPrint } from 'react-to-print';
-
-const productHints: { [key: string]: string } = {
-  'prod-001': 'laptop computer',
-  'prod-002': 'laptop computer',
-  'prod-003': 'fuji apple',
-  'prod-004': 'white smartphone',
-  'prod-005': 'gray smartphone',
-  'prod-006': 'silver laptop',
-  'prod-007': 'banana bunch',
-  'prod-008': 'pasta box',
-  'prod-009': 'butter cookies',
-  'prod-010': 'crew socks',
-  'prod-011': 'book cover',
-  'prod-012': 'book cover',
-};
 
 type CartItem = {
   product: DetailedProduct;
@@ -1204,7 +1188,7 @@ export default function PosPage() {
                                 <div className={cn("col-span-4 flex items-center", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
                                 {settings.pos.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
                                 <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
-                                <div className="col-span-2">Price</div>
+                                <div className="col-span-2">Price inc. tax</div>
                                 <div className="col-span-2">Subtotal</div>
                                 <div className="col-span-1 text-center"><X className="w-4 h-4 mx-auto"/></div>
                             </div>
@@ -1305,7 +1289,7 @@ export default function PosPage() {
                                                 alt={product.name}
                                                 fill
                                                 className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                                                data-ai-hint={productHints[product.id] || 'product item'}
+                                                data-ai-hint={product.name.split(' ').slice(0, 2).join(' ')}
                                             />
                                         </div>
                                         <div className="p-2 text-center">
@@ -1320,6 +1304,18 @@ export default function PosPage() {
                             </div>
                         </ScrollArea>
                     </Card>
+                    </div>
+                </div>
+                
+                 <div className="relative p-4 pt-0 print-hidden">
+                     <div className="text-center text-xs text-slate-400 p-1">
+                        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+                    </div>
+                     <div className="absolute bottom-2 right-4">
+                        <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
+                            <History className="mr-2 h-4 w-4" />
+                            Recent Transactions
+                        </Button>
                     </div>
                 </div>
 
@@ -1448,11 +1444,12 @@ export default function PosPage() {
                     profileType={profileTypeToAdd}
                     onProfileAdded={fetchAndCalculateStock}
                 />
-                <AppFooter />
             </div>
         </TooltipProvider>
         {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
-        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        <div style={{ position: 'absolute', left: '-9999px' }}>
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        </div>
     </>
   );
 }
