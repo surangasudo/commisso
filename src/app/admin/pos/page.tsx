@@ -98,22 +98,6 @@ type CartItem = {
   quantity: number;
 };
 
-// This component's only purpose is to trigger the print dialog when it mounts.
-const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
-    useEffect(() => {
-        // A small delay ensures the content is fully rendered before printing.
-        const timer = setTimeout(() => {
-            onPrint();
-        }, 100);
-
-        return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // We only want this to run once on mount.
-
-    return null;
-};
-
-
 const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const [display, setDisplay] = useState('0');
 
@@ -568,6 +552,21 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
             </DialogContent>
         </Dialog>
     );
+};
+
+// This component's only purpose is to trigger the print dialog when it mounts.
+const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
+    useEffect(() => {
+        // A small delay ensures the content is fully rendered before printing.
+        const timer = setTimeout(() => {
+            onPrint();
+        }, 100);
+
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // We only want this to run once on mount.
+
+    return null;
 };
 
 
