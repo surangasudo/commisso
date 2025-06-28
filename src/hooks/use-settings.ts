@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
@@ -69,6 +70,7 @@ const initialSettings = {
         razorpayKeyId: '',
         razorpayKeySecret: '',
         allowOverselling: false,
+        commissionCategoryRule: 'fallback' as 'strict' | 'fallback',
     },
     pos: {
         expressCheckout: 'shift+e',

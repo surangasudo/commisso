@@ -40,9 +40,31 @@ export type CommissionProfile = {
     overall: number;
     categories?: { category: string; rate: number }[];
   };
-  totalCommissionEarned?: number;
-  totalCommissionPaid?: number;
 };
+
+export type Commission = {
+    id: string;
+    transaction_id: string;
+    recipient_profile_id: string;
+    recipient_entity_type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
+    calculation_base_amount: number;
+    calculated_rate: number;
+    commission_amount: number;
+    status: 'Pending Approval' | 'Approved' | 'Paid' | 'Reversed';
+    calculation_date: string; // ISO string
+    approval_date?: string;
+    payment_date?: string;
+    payment_details?: string;
+    approved_by_user_id?: string;
+    paid_by_user_id?: string;
+};
+
+// A helper type for UI display that includes calculated summaries.
+export type CommissionProfileWithSummary = CommissionProfile & {
+    totalCommissionEarned: number;
+    totalCommissionPaid: number;
+};
+
 
 export type Supplier = {
   id: string;

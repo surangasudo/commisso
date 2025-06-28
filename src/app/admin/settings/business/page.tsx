@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -767,6 +768,17 @@ const SaleSettingsForm = ({ settings: initialSettingsData, updateSettings }: { s
                                             <SelectItem value="payment_received">On Payment Received</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <Label htmlFor="commissionCategoryRule">Category Rate Logic:</Label>
+                                    <Select value={settings.commissionCategoryRule} onValueChange={(value) => setSettings(s => ({...s, commissionCategoryRule: value as any}))}>
+                                        <SelectTrigger id="commissionCategoryRule"><SelectValue/></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="fallback">Fallback to Overall Rate (Recommended)</SelectItem>
+                                            <SelectItem value="strict">Strict Category Match Only</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground">"Strict" means commission is zero if an item's category is not listed. "Fallback" uses the overall rate instead.</p>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-2">

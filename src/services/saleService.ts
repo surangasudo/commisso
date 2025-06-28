@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -26,7 +27,8 @@ export async function getSale(id: string): Promise<Sale | null> {
 
 export async function addSale(
   sale: Omit<Sale, 'id'>,
-  commissionCalculationType: 'invoice_value' | 'payment_received'
+  commissionCalculationType: 'invoice_value' | 'payment_received',
+  commissionCategoryRule: 'strict' | 'fallback'
 ) {
   const saleDataForDb = {
     ...sale,
@@ -34,17 +36,11 @@ export async function addSale(
   };
 
   await runTransaction(db, async (transaction) => {
-    // --- READ PHASE ---
-
     // 1. Fetch all agent profiles for this sale
     const agentProfiles = new Map<string, DocumentData>();
     if (sale.commissionAgentIds && sale.commissionAgentIds.length > 0) {
-      const agentRefs = sale.commissionAgentIds.map((id) =>
-        doc(db, 'commissionProfiles', id)
-      );
-      const agentDocs = await Promise.all(
-        agentRefs.map((ref) => transaction.get(ref))
-      );
+      const agentRefs = sale.commissionAgentIds.map((id) => doc(db, 'commissionProfiles', id));
+      const agentDocs = await Promise.all(agentRefs.map((ref) => transaction.get(ref)));
       agentDocs.forEach((agentDoc) => {
         if (agentDoc.exists()) {
           agentProfiles.set(agentDoc.id, agentDoc.data());
@@ -55,61 +51,21 @@ export async function addSale(
     // 2. Fetch all product documents for this sale
     const productDataMap = new Map<string, DocumentData>();
     if (sale.items && sale.items.length > 0) {
-      const productRefs = sale.items.map((item) =>
-        doc(db, 'products', item.productId)
-      );
-      const productDocs = await Promise.all(
-        productRefs.map((ref) => transaction.get(ref))
-      );
+      const productRefs = sale.items.map((item) => doc(db, 'products', item.productId));
+      const productDocs = await Promise.all(productRefs.map((ref) => transaction.get(ref)));
       productDocs.forEach((productDoc) => {
         if (productDoc.exists()) {
           productDataMap.set(productDoc.id, productDoc.data());
         } else {
-          // If any product doesn't exist, fail the transaction.
           throw new Error(`Product with ID ${productDoc.id} not found.`);
         }
       });
     }
 
-    // --- CALCULATION PHASE ---
-
-    const agentCommissionTotals: Record<string, number> = {};
-
-    // Process all sale items and calculate commissions
-    for (const item of sale.items) {
-      const productData = productDataMap.get(item.productId);
-      if (!productData) continue;
-
-      // Calculate commission for this item based on sale value
-      const saleValue = item.unitPrice * item.quantity;
-
-      if (sale.commissionAgentIds && saleValue > 0) {
-        for (const agentId of sale.commissionAgentIds) {
-          const agentProfile = agentProfiles.get(agentId);
-          if (!agentProfile) continue;
-
-          if (!agentCommissionTotals[agentId]) {
-            agentCommissionTotals[agentId] = 0;
-          }
-
-          const commission = agentProfile.commission || {};
-          const categories = commission.categories || [];
-          const hasCategoryRates = categories.length > 0;
-          let rate = 0;
-
-          if (hasCategoryRates) {
-            const categoryRateData = categories.find(
-              (c: any) => c.category?.toLowerCase() === productData.category?.toLowerCase()
-            );
-            rate = categoryRateData ? categoryRateData.rate : 0;
-          } else {
-            rate = commission.overall || 0;
-          }
-          
-          agentCommissionTotals[agentId] += saleValue * (rate / 100);
-        }
-      }
-    }
+    // 3. Create the new sale document
+    const newSaleRef = doc(collection(db, 'sales'));
+    transaction.set(newSaleRef, saleDataForDb);
+    const saleId = newSaleRef.id;
 
     // --- WRITE PHASE ---
 
@@ -125,29 +81,58 @@ export async function addSale(
       }
     }
 
-    // 2. Update agent profiles with total commission from this sale
-    if (
-      commissionCalculationType === 'invoice_value' ||
-      (commissionCalculationType === 'payment_received' &&
-        (sale.paymentStatus === 'Paid' || sale.paymentStatus === 'Partial'))
-    ) {
-      for (const agentId in agentCommissionTotals) {
-        const agentRef = doc(db, 'commissionProfiles', agentId);
-        const agentProfile = agentProfiles.get(agentId);
-        if (!agentProfile) continue;
+    // 2. Create individual commission records
+    const commissionsCollectionRef = collection(db, 'commissions');
+    for (const item of sale.items) {
+      const productData = productDataMap.get(item.productId);
+      if (!productData) continue;
 
-        const currentEarned = agentProfile.totalCommissionEarned || 0;
-        transaction.update(agentRef, {
-          totalCommissionEarned: currentEarned + agentCommissionTotals[agentId],
-        });
+      const saleValue = item.unitPrice * item.quantity;
+      if (sale.commissionAgentIds && saleValue > 0) {
+        for (const agentId of sale.commissionAgentIds) {
+          const agentProfile = agentProfiles.get(agentId);
+          if (!agentProfile) continue;
+
+          const commission = agentProfile.commission || {};
+          const categories = commission.categories || [];
+          const hasCategoryRates = categories.length > 0;
+          let calculatedRate = 0;
+
+          if (hasCategoryRates) {
+            const categoryRateData = categories.find(
+              (c: any) => c.category?.toLowerCase() === productData.category?.toLowerCase()
+            );
+            if (categoryRateData) {
+              calculatedRate = categoryRateData.rate;
+            } else if (commissionCategoryRule === 'fallback') {
+              calculatedRate = commission.overall || 0;
+            }
+          } else {
+            calculatedRate = commission.overall || 0;
+          }
+          
+          const commissionAmount = saleValue * (calculatedRate / 100);
+
+          if (commissionAmount > 0) {
+              const newCommission = {
+                  transaction_id: saleId,
+                  recipient_profile_id: agentId,
+                  recipient_entity_type: agentProfile.entityType,
+                  calculation_base_amount: saleValue,
+                  calculated_rate: calculatedRate,
+                  commission_amount: commissionAmount,
+                  status: 'Pending Approval', // New Logic
+                  calculation_date: new Date().toISOString(),
+              };
+              const newCommissionRef = doc(commissionsCollectionRef);
+              transaction.set(newCommissionRef, newCommission);
+          }
+        }
       }
     }
-
-    // 3. Create the new sale document
-    const newSaleRef = doc(collection(db, 'sales'));
-    transaction.set(newSaleRef, saleDataForDb);
   });
 }
+
 
 export async function updateSale(saleId: string, updatedSaleData: Omit<Sale, 'id'>, originalSaleData: Sale): Promise<void> {
     await runTransaction(db, async (transaction) => {

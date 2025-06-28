@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
@@ -70,7 +71,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrency } from '@/hooks/use-currency';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -828,7 +829,7 @@ export default function PosPage() {
       }
 
       try {
-          await addSale(sale, settings.sale.commissionCalculationType);
+          await addSale(sale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
           toast({
               title: 'Sale Finalized',
               description: `Payment of ${formatCurrency(sale.totalPaid)} received.`,
