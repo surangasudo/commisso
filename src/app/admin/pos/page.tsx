@@ -614,8 +614,11 @@ export default function PosPage() {
 
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
-
+  
+  // Refs for timer management and printing
   const receiptRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef<boolean>(true);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const onAfterPrint = useCallback(() => {
@@ -624,18 +627,60 @@ export default function PosPage() {
 
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
+      documentTitle: `Receipt-${saleToPrint?.invoiceNo || 'Unknown'}`,
       onAfterPrint: onAfterPrint,
+      onPrintError: (error) => {
+        console.error('Print error:', error);
+      }
   });
-
+  
+  // FIXED: Proper useEffect with timer cleanup
   useEffect(() => {
-    if (saleToPrint) {
-      // This ensures React has finished rendering the receipt component before we try to print it.
-      const timer = setTimeout(() => {
-        handlePrint();
-      }, 0);
-      return () => clearTimeout(timer);
+    // Clear any existing timer first
+    if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
     }
+
+    // Only proceed if we have something to print and component is mounted
+    if (!saleToPrint || !receiptRef.current || !isMountedRef.current) {
+        return;
+    }
+
+    // Set new timer with proper reference storage
+    timerRef.current = setTimeout(() => {
+        // Double-check component is still mounted and refs exist
+        if (isMountedRef.current && receiptRef.current && saleToPrint) {
+            try {
+                handlePrint();
+            } catch (error) {
+                console.error('Print operation failed:', error);
+            }
+        }
+    }, 100);
+
+    // CRITICAL: Cleanup function to prevent memory leaks
+    return () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    };
   }, [saleToPrint, handlePrint]);
+  
+  // Component mount/unmount tracking
+  useEffect(() => {
+      isMountedRef.current = true;
+      
+      return () => {
+          isMountedRef.current = false;
+          // Clear any pending timers on unmount
+          if (timerRef.current) {
+              clearTimeout(timerRef.current);
+              timerRef.current = null;
+          }
+      };
+  }, []);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1541,7 +1586,7 @@ export default function PosPage() {
         </TooltipProvider>
         {/* This div is used for printing and is positioned off-screen */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} onReadyToPrint={handlePrint} />
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
   );
