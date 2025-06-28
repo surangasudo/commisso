@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -12,7 +13,7 @@ type PrintableReceiptProps = {
     products: DetailedProduct[];
 };
 
-export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
+export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
 
@@ -28,7 +29,7 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
     const changeDue = sale.paymentStatus === 'Paid' ? sale.totalPaid - sale.totalAmount : 0;
 
     return (
-        <div className="receipt-printable-area hidden print:block font-mono text-xs w-[300px] mx-auto">
+        <div ref={ref} className="font-mono text-xs w-[300px] mx-auto p-2 bg-white text-black">
             <div className="text-center p-4">
                 <Logo className="mx-auto h-12 w-12 mb-2" />
                 <h1 className="text-lg font-bold">{settings.system.appName}</h1>
@@ -37,14 +38,14 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
                 <p>Tel: 555-123-4567</p>
                 <p className="mt-2 text-sm">Sale Invoice</p>
             </div>
-            <div className="p-2 border-t border-dashed">
+            <div className="p-2 border-t border-dashed border-black">
                 <p><strong>Invoice:</strong> {sale.invoiceNo}</p>
                 <p><strong>Date:</strong> {sale.date}</p>
                 <p><strong>Customer:</strong> {sale.customerName}</p>
             </div>
             <table className="w-full text-[10px]">
                 <thead>
-                    <tr className="border-t border-b border-dashed">
+                    <tr className="border-t border-b border-dashed border-black">
                         <th className="text-left py-1">Item</th>
                         <th className="text-center py-1">Qty</th>
                         <th className="text-right py-1">Price</th>
@@ -62,7 +63,7 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
                     ))}
                 </tbody>
             </table>
-            <div className="p-2 border-t border-dashed space-y-1 text-xs">
+            <div className="p-2 border-t border-dashed border-black space-y-1 text-xs">
                  <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
@@ -84,9 +85,11 @@ export const PrintableReceipt = ({ sale, products }: PrintableReceiptProps) => {
                     <span>{formatCurrency(changeDue)}</span>
                 </div>
             </div>
-             <div className="text-center p-4 border-t border-dashed">
+             <div className="text-center p-4 border-t border-dashed border-black">
                 <p>Thank you for your business!</p>
             </div>
         </div>
     );
-};
+});
+
+PrintableReceipt.displayName = 'PrintableReceipt';

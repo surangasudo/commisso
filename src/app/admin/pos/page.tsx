@@ -78,6 +78,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AppFooter } from '@/components/app-footer';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings } from '@/hooks/use-settings';
+import { useReactToPrint } from 'react-to-print';
 
 const productHints: { [key: string]: string } = {
   'prod-001': 'laptop computer',
@@ -580,22 +581,23 @@ export default function PosPage() {
   const [selectedCompany, setSelectedCompany] = useState<CommissionProfile | null>(null);
   const [selectedSalesperson, setSelectedSalesperson] = useState<CommissionProfile | null>(null);
 
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-
-  // Determine the correct label for the single selector
-  const salespersonLabel = settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff";
-
+  
+  const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null),
+  });
 
   useEffect(() => {
     if (saleToPrint) {
-        // A small delay to ensure the state has rendered the component for printing
-        const timer = setTimeout(() => {
-            window.print();
-            setSaleToPrint(null); // Reset after printing to avoid re-triggering
-        }, 100); 
-        return () => clearTimeout(timer);
+        handlePrint();
     }
-  }, [saleToPrint]);
+  }, [saleToPrint, handlePrint]);
+
+
+  // Determine the correct label for the single selector
+  const salespersonLabel = settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff";
 
 
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1439,8 +1441,10 @@ export default function PosPage() {
                 <AppFooter />
             </div>
         </TooltipProvider>
-        <div className="receipt-printable-area">
-            <PrintableReceipt sale={saleToPrint} products={products} />
+        <div style={{ display: 'none' }}>
+            <div ref={receiptRef}>
+                <PrintableReceipt sale={saleToPrint} products={products} />
+            </div>
         </div>
     </>
   );
