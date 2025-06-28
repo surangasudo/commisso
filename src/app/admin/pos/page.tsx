@@ -628,13 +628,11 @@ export default function PosPage() {
   });
 
   useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-      // Use a timeout to ensure the DOM has updated with the new sale content
-      // This is a common workaround for race conditions with react-to-print
+    if (saleToPrint) {
+      // This ensures React has finished rendering the receipt component before we try to print it.
       const timer = setTimeout(() => {
-          handlePrint();
-      }, 0); // A zero-delay timeout pushes it to the end of the event queue
-      
+        handlePrint();
+      }, 0);
       return () => clearTimeout(timer);
     }
   }, [saleToPrint, handlePrint]);
@@ -956,7 +954,10 @@ export default function PosPage() {
       toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
       
       if (settings.pos.printInvoiceOnSuspend) {
-        const tempSaleForPrint = createSaleObject('Suspended', 'Due', 0);
+        const tempSaleForPrint: Sale = {
+          id: 'temp-print-id',
+          ...createSaleObject('Suspended', 'Due', 0)
+        };
         setSaleToPrint(tempSaleForPrint);
       }
       clearCart(false);
@@ -1538,9 +1539,9 @@ export default function PosPage() {
                 </AlertDialog>
             </div>
         </TooltipProvider>
-        {/* This div is used for printing and is hidden from the screen */}
+        {/* This div is used for printing and is positioned off-screen */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} onReadyToPrint={handlePrint} />
         </div>
     </>
   );
