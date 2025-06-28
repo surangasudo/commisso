@@ -93,17 +93,6 @@ import { useSettings } from '@/hooks/use-settings';
 import { useReactToPrint } from 'react-to-print';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// This helper component triggers the print dialog after a render cycle.
-const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
-  useEffect(() => {
-    // This useEffect only runs *after* this component
-    // and the PrintableReceipt have been mounted to the DOM.
-    onPrint();
-  }, [onPrint]); // onPrint is stable, so this runs once on mount.
-
-  return null;
-};
-
 type CartItem = {
   product: DetailedProduct;
   quantity: number;
@@ -628,7 +617,7 @@ export default function PosPage() {
 
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  
+
   const onAfterPrint = useCallback(() => {
     setSaleToPrint(null);
   }, []);
@@ -637,6 +626,18 @@ export default function PosPage() {
       content: () => receiptRef.current,
       onAfterPrint: onAfterPrint,
   });
+
+  useEffect(() => {
+    if (saleToPrint && receiptRef.current) {
+      // Use a timeout to ensure the DOM has updated with the new sale content
+      // This is a common workaround for race conditions with react-to-print
+      const timer = setTimeout(() => {
+          handlePrint();
+      }, 0); // A zero-delay timeout pushes it to the end of the event queue
+      
+      return () => clearTimeout(timer);
+    }
+  }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1537,8 +1538,8 @@ export default function PosPage() {
                 </AlertDialog>
             </div>
         </TooltipProvider>
-        {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
-        <div className="hidden">
+        {/* This div is used for printing and is hidden from the screen */}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
