@@ -554,6 +554,23 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
     );
 };
 
+// This helper component triggers the print dialog after a render cycle.
+const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
+  const hasPrinted = useRef(false);
+
+  useEffect(() => {
+    // This effect runs after the component has mounted.
+    // Because this component is only rendered when saleToPrint is not null,
+    // we can be sure that the PrintableReceipt has also been rendered with the correct data.
+    if (!hasPrinted.current) {
+      hasPrinted.current = true;
+      onPrint();
+    }
+  }, [onPrint]);
+
+  return null; // This component doesn't render anything visible
+};
+
 
 export default function PosPage() {
   const router = useRouter();
@@ -626,18 +643,6 @@ export default function PosPage() {
       content: () => receiptRef.current,
       onAfterPrint: onAfterPrint,
   });
-
-  // Effect to trigger print when saleToPrint is set
-  useEffect(() => {
-    if (saleToPrint) {
-      // Use a zero-delay timeout to wait for the next browser tick.
-      // This ensures React has finished rendering the receipt component before we try to print it.
-      const timer = setTimeout(() => {
-        handlePrint();
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1538,7 +1543,8 @@ export default function PosPage() {
                 </AlertDialog>
             </div>
         </TooltipProvider>
-        <div style={{ position: 'absolute', left: '-9999px' }}>
+        {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
+        <div style={{ position: 'fixed', left: '-9999px', top: '0' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
