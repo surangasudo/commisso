@@ -43,7 +43,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { sales as recentSalesData, type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
+import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
 import { addSale, getSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
@@ -196,7 +196,7 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
 };
 
 
-const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+const RecentTransactionsDialog = ({ open, onOpenChange, recentSales }: { open: boolean, onOpenChange: (open: boolean) => void, recentSales: Sale[] }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
     const handleReturn = (saleId: string) => {
@@ -223,7 +223,7 @@ const RecentTransactionsDialog = ({ open, onOpenChange }: { open: boolean, onOpe
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {recentSalesData.map(sale => (
+                        {recentSales.map(sale => (
                             <TableRow key={sale.id}>
                                 <TableCell>{sale.invoiceNo}</TableCell>
                                 <TableCell>{sale.customerName}</TableCell>
@@ -537,6 +537,7 @@ export default function PosPage() {
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -591,7 +592,9 @@ export default function PosPage() {
 
   useEffect(() => {
     if (saleToPrint) {
-        handlePrint();
+        // Use a timeout to ensure the component has rendered before printing
+        const timer = setTimeout(() => handlePrint(), 100);
+        return () => clearTimeout(timer);
     }
   }, [saleToPrint, handlePrint]);
 
@@ -617,6 +620,7 @@ export default function PosPage() {
         ]);
 
         setCustomers(customersData);
+        setRecentSales(salesData.slice(0, 10)); // Get last 10 for recents dialog
 
         const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
           acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
@@ -1401,7 +1405,7 @@ export default function PosPage() {
                 </footer>
                 <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
                 <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
-                <RecentTransactionsDialog open={isRecentTransactionsOpen} onOpenChange={setIsRecentTransactionsOpen} />
+                <RecentTransactionsDialog open={isRecentTransactionsOpen} onOpenChange={setIsRecentTransactionsOpen} recentSales={recentSales} />
                 <EditValueDialog
                     open={isDiscountModalOpen}
                     onOpenChange={setIsDiscountModalOpen}
