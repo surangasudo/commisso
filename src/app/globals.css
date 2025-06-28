@@ -136,17 +136,8 @@ body {
     box-shadow: none !important;
   }
 
-  .receipt-printable-area, .receipt-printable-area * {
-    visibility: visible !important;
-  }
   .receipt-printable-area {
     display: block !important;
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: auto;
-    margin: 0;
-    padding: 0;
   }
   
   [data-state="inactive"] {
@@ -157,4 +148,11 @@ body {
     size: auto;
     margin: 0;
   }
+}
+
+/* Screen-only styles */
+@media screen {
+    .print-only {
+        display: none;
+    }
 }

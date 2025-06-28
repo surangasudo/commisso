@@ -21,8 +21,9 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return products.find(p => p.id === productId)?.name || 'Unknown Product';
     }
 
+    // Always render the container div, but conditionally render the content
     return (
-        <div ref={ref} className="receipt-printable-area font-mono text-xs w-[300px] mx-auto p-2 bg-white text-black">
+        <div ref={ref} className="font-mono text-xs w-[300px] mx-auto p-2 bg-white text-black">
             {sale && (
                 <>
                     <div className="text-center p-4">

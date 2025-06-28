@@ -585,16 +585,18 @@ export default function PosPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   
+  const onAfterPrint = useCallback(() => {
+    setSaleToPrint(null);
+  }, []);
+
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
-      onAfterPrint: () => setSaleToPrint(null),
+      onAfterPrint: onAfterPrint,
   });
 
   useEffect(() => {
-    if (saleToPrint) {
-        // Use a timeout to ensure the component has rendered before printing
-        const timer = setTimeout(() => handlePrint(), 100);
-        return () => clearTimeout(timer);
+    if (saleToPrint && receiptRef.current) {
+        handlePrint();
     }
   }, [saleToPrint, handlePrint]);
 
@@ -1445,7 +1447,7 @@ export default function PosPage() {
                 <AppFooter />
             </div>
         </TooltipProvider>
-        <div style={{ display: 'none' }}>
+        <div style={{ visibility: 'hidden', position: 'absolute', left: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
