@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ReactToPrint from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -90,7 +91,6 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings } from '@/hooks/use-settings';
-import { useReactToPrint } from 'react-to-print';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type CartItem = {
@@ -615,72 +615,19 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Refs for timer management and printing
   const receiptRef = useRef<HTMLDivElement>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef<boolean>(true);
+  const printTriggerRef = useRef<HTMLButtonElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  const onAfterPrint = useCallback(() => {
-    setSaleToPrint(null);
-  }, []);
-
-  const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
-      documentTitle: `Receipt-${saleToPrint?.invoiceNo || 'Unknown'}`,
-      onAfterPrint: onAfterPrint,
-      onPrintError: (error) => {
-        console.error('Print error:', error);
-      }
-  });
-  
-  // FIXED: Proper useEffect with timer cleanup
   useEffect(() => {
-    // Clear any existing timer first
-    if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
+    if (saleToPrint) {
+      // A small timeout to ensure the component and its content are rendered
+      const timer = setTimeout(() => {
+        printTriggerRef.current?.click();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-
-    // Only proceed if we have something to print and component is mounted
-    if (!saleToPrint || !receiptRef.current || !isMountedRef.current) {
-        return;
-    }
-
-    // Set new timer with proper reference storage
-    timerRef.current = setTimeout(() => {
-        // Double-check component is still mounted and refs exist
-        if (isMountedRef.current && receiptRef.current && saleToPrint) {
-            try {
-                handlePrint();
-            } catch (error) {
-                console.error('Print operation failed:', error);
-            }
-        }
-    }, 100);
-
-    // CRITICAL: Cleanup function to prevent memory leaks
-    return () => {
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-    };
-  }, [saleToPrint, handlePrint]);
-  
-  // Component mount/unmount tracking
-  useEffect(() => {
-      isMountedRef.current = true;
-      
-      return () => {
-          isMountedRef.current = false;
-          // Clear any pending timers on unmount
-          if (timerRef.current) {
-              clearTimeout(timerRef.current);
-              timerRef.current = null;
-          }
-      };
-  }, []);
+  }, [saleToPrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1428,7 +1375,7 @@ export default function PosPage() {
                      <div className="text-center text-xs text-slate-400 p-1">
                         Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
                     </div>
-                     <div className="absolute bottom-2 right-4">
+                    <div className="absolute bottom-2 right-4">
                         <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
                             <History className="mr-2 h-4 w-4" />
                             Recent Transactions
@@ -1584,7 +1531,17 @@ export default function PosPage() {
                 </AlertDialog>
             </div>
         </TooltipProvider>
-        {/* This div is used for printing and is positioned off-screen */}
+
+        <ReactToPrint
+            trigger={() => (
+                <button ref={printTriggerRef} style={{ display: 'none' }}>Print</button>
+            )}
+            content={() => receiptRef.current}
+            onAfterPrint={() => setSaleToPrint(null)}
+            onPrintError={(error) => console.error('Print error:', error)}
+            documentTitle={`Receipt-${saleToPrint?.invoiceNo || 'Unknown'}`}
+        />
+
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
