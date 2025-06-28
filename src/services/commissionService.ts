@@ -144,7 +144,7 @@ export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'
           ...profile.commission,
           overall: Number(profile.commission.overall) || 0,
           categories: profile.commission.categories?.map(c => ({
-              ...c,
+              category: c.category,
               rate: Number(c.rate) || 0,
           })) || [],
       }
@@ -160,7 +160,7 @@ export async function updateCommissionProfile(id: string, profile: Partial<Omit<
             ...profile.commission,
             overall: Number(profile.commission?.overall) || 0,
             categories: profile.commission?.categories?.map(c => ({
-                ...c,
+                category: c.category,
                 rate: Number(c.rate) || 0,
             })) || [],
         }
