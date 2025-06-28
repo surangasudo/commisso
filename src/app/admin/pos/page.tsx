@@ -257,7 +257,7 @@ const RecentTransactionsDialog = ({
                                                         <Pencil className="mr-1 h-3 w-3" /> Edit
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
-                                                        <Printer className="mr-1 h-3 w-3" /> try to print
+                                                        <Printer className="mr-1 h-3 w-3" /> Print
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => onDelete(sale)}>
                                                         <Trash2 className="mr-1 h-3 w-3" /> Delete
