@@ -178,12 +178,9 @@ export async function payCommission(
     commissionIds: string[],
     paymentMethod: string,
     paymentNote: string,
-    smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string }
-): Promise<{ paymentRecorded: boolean; smsSent: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string }> {
     const expensesCollectionRef = collection(db, 'expenses');
     
-    let totalPaidAmount = 0;
-
     try {
         await runTransaction(db, async (transaction) => {
             const commissionRefs = commissionIds.map(id => doc(db, 'commissions', id));
@@ -198,7 +195,6 @@ export async function payCommission(
             }
 
             const roundedTotal = Math.round(calculatedTotal * 100) / 100;
-            totalPaidAmount = roundedTotal;
             
             if (roundedTotal <= 0) {
                  throw new Error("Payment amount must be greater than zero.");
@@ -235,27 +231,33 @@ export async function payCommission(
             transaction.set(newExpenseRef, newExpense);
         });
 
-        // After the transaction is successful, send the SMS
-        const smsMessage = `You have received a commission payment of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaidAmount)} from ${smsConfig.businessName}. Thank you.`;
-        if (profile.phone && profile.phone.trim() !== '' && smsMessage) {
-            const smsResult = await sendSms(profile.phone, smsMessage, smsConfig);
-            if (!smsResult.success) {
-                 return {
-                    paymentRecorded: true,
-                    smsSent: false,
-                    error: `Payment recorded, but SMS notification failed: ${smsResult.error}`,
-                };
-            }
-             return { paymentRecorded: true, smsSent: true };
-        } else {
-             return {
-                paymentRecorded: true,
-                smsSent: false,
-                error: 'No phone number or message available for this profile.',
-            };
-        }
+        return { success: true };
+
     } catch (e: any) {
         console.error("Commission payment transaction failed: ", e);
         throw e; // Re-throw transaction errors
+    }
+}
+
+export async function sendPayoutNotification(
+    profile: CommissionProfile,
+    amount: number,
+    smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string }
+): Promise<{ success: boolean; error?: string }> {
+     if (!profile.phone || profile.phone.trim() === '') {
+        return { success: false, error: "Profile does not have a phone number." };
+    }
+
+    const message = `You have received a commission payment of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(amount)} from ${smsConfig.businessName}. Thank you.`;
+    
+    try {
+        const smsResult = await sendSms(profile.phone, message, smsConfig);
+        if (!smsResult.success) {
+            return { success: false, error: smsResult.error || 'SMS sending failed for an unknown reason.' };
+        }
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error in sendPayoutNotification:", error);
+        return { success: false, error: error.message };
     }
 }

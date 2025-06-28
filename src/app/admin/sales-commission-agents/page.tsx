@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { type CommissionProfileWithSummary, type CommissionProfile } from '@/lib/data';
 import { exportToCsv } from '@/lib/export';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { deleteCommissionProfile, payCommission, getCommissionProfiles, getPendingCommissions, type PendingCommission } from '@/services/commissionService';
+import { deleteCommissionProfile, payCommission, getCommissionProfiles, getPendingCommissions, type PendingCommission, sendPayoutNotification } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -39,11 +39,10 @@ const CommissionPayoutDialog = ({
     profile: CommissionProfile | null, 
     open: boolean, 
     onOpenChange: (open: boolean) => void,
-    onPaymentComplete: (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string; }) => void
+    onPaymentComplete: (profileId: string, result: { success: boolean; amount: number; error?: string; }) => void
 }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
-    const settings = useBusinessSettings();
     
     const [pendingCommissions, setPendingCommissions] = useState<PendingCommission[]>([]);
     const [selectedCommissionIds, setSelectedCommissionIds] = useState<Set<string>>(new Set());
@@ -109,20 +108,10 @@ const CommissionPayoutDialog = ({
         setIsPaying(true);
 
         try {
-            const smsConfigPayload = {
-              businessName: settings.system.appName,
-              currency: settings.business.currency,
-              ...settings.sms
-            }
-            const result = await payCommission(profile, Array.from(selectedCommissionIds), method, note, smsConfigPayload);
-            onPaymentComplete(profile.id, result);
+            await payCommission(profile, Array.from(selectedCommissionIds), method, note);
+            onPaymentComplete(profile.id, { success: true, amount: totalToPay });
         } catch (error: any) {
-            toast({
-                title: 'Payment Failed',
-                description: `The payment transaction failed: ${error.message}`,
-                variant: 'destructive'
-            });
-            console.error(error);
+             onPaymentComplete(profile.id, { success: false, amount: totalToPay, error: error.message });
         } finally {
             setIsPaying(false);
         }
@@ -429,28 +418,44 @@ export default function SalesCommissionAgentsPage() {
     setIsPayDialogOpen(true);
   };
   
-  const handlePaymentComplete = async (profileId: string, result: { paymentRecorded: boolean; smsSent: boolean; error?: string }) => {
+  const handlePaymentComplete = async (profileId: string, result: { success: boolean; amount: number; error?: string }) => {
     setIsPayDialogOpen(false);
-    setProfileToPay(null);
-
-    setSmsStatuses(prev => ({
-        ...prev,
-        [profileId]: result.smsSent ? 'success' : 'failed'
-    }));
-
-    if (result.paymentRecorded) {
-        toast({ title: 'Success', description: result.smsSent ? 'Payment recorded and SMS sent.' : 'Payment recorded.' });
-        await fetchProfiles();
-    }
     
-    if (!result.smsSent && result.error) {
+    if (result.success) {
+        toast({ title: 'Success', description: `Payment of ${formatCurrency(result.amount)} recorded.` });
+        await fetchProfiles();
+
+        const paidProfile = profiles.find(p => p.id === profileId);
+        if (paidProfile) {
+            const smsConfigPayload = {
+              businessName: settings.system.appName,
+              currency: settings.business.currency,
+              ...settings.sms
+            }
+            const smsResult = await sendPayoutNotification(paidProfile, result.amount, smsConfigPayload);
+             setSmsStatuses(prev => ({
+                ...prev,
+                [profileId]: smsResult.success ? 'success' : 'failed'
+            }));
+            if (!smsResult.success) {
+                 toast({
+                    title: 'SMS Failed',
+                    description: smsResult.error,
+                    variant: 'destructive',
+                    duration: 9000,
+                });
+            }
+        }
+
+    } else {
         toast({
-            title: 'SMS Failed',
-            description: result.error,
-            variant: 'destructive',
-            duration: 9000,
+            title: 'Payment Failed',
+            description: result.error || 'The payment transaction could not be completed.',
+            variant: 'destructive'
         });
     }
+    
+    setProfileToPay(null);
   };
 
   const getExportData = () => filteredProfiles.map(p => ({
