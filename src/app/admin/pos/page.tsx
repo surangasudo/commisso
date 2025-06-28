@@ -93,6 +93,17 @@ import { useSettings } from '@/hooks/use-settings';
 import { useReactToPrint } from 'react-to-print';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+// This helper component triggers the print dialog after a render cycle.
+const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
+  useEffect(() => {
+    // This useEffect only runs *after* this component
+    // and the PrintableReceipt have been mounted to the DOM.
+    onPrint();
+  }, [onPrint]); // onPrint is stable, so this runs once on mount.
+
+  return null;
+};
+
 type CartItem = {
   product: DetailedProduct;
   quantity: number;
@@ -552,23 +563,6 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
             </DialogContent>
         </Dialog>
     );
-};
-
-// This helper component triggers the print dialog after a render cycle.
-const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
-  const hasPrinted = useRef(false);
-
-  useEffect(() => {
-    // This effect runs after the component has mounted.
-    // Because this component is only rendered when saleToPrint is not null,
-    // we can be sure that the PrintableReceipt has also been rendered with the correct data.
-    if (!hasPrinted.current) {
-      hasPrinted.current = true;
-      onPrint();
-    }
-  }, [onPrint]);
-
-  return null; // This component doesn't render anything visible
 };
 
 
@@ -1544,7 +1538,7 @@ export default function PosPage() {
             </div>
         </TooltipProvider>
         {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
-        <div style={{ position: 'fixed', left: '-9999px', top: '0' }}>
+        <div className="hidden">
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
