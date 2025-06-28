@@ -5,10 +5,12 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Expense } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const expensesCollection = collection(db, 'expenses');
 
 export async function getExpenses(): Promise<Expense[]> {
+  noStore();
   const snapshot = await getDocs(expensesCollection);
   return snapshot.docs.map(doc => processDoc<Expense>(doc));
 }

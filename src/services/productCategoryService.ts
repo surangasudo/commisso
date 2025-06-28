@@ -1,7 +1,9 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export type ProductCategory = {
   id: string;
@@ -32,6 +34,7 @@ async function seedDefaultCategories(): Promise<void> {
 }
 
 export async function getProductCategories(): Promise<ProductCategory[]> {
+  noStore();
   let snapshot = await getDocs(productCategoriesCollection);
 
   // If the collection is empty, seed it with default data and re-fetch

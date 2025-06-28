@@ -4,10 +4,12 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Customer } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const customersCollection = collection(db, 'customers');
 
 export async function getCustomers(): Promise<Customer[]> {
+  noStore();
   const snapshot = await getDocs(customersCollection);
   const data = snapshot.docs.map(doc => {
       const docData = doc.data();

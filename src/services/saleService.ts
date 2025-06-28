@@ -6,15 +6,18 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData, runTransaction, updateDoc } from 'firebase/firestore';
 import { type Sale, type DetailedProduct, type CommissionProfile } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const salesCollection = collection(db, 'sales');
 
 export async function getSales(): Promise<Sale[]> {
+  noStore();
   const snapshot = await getDocs(salesCollection);
   return snapshot.docs.map(doc => processDoc<Sale>(doc));
 }
 
 export async function getSale(id: string): Promise<Sale | null> {
+    noStore();
     const docRef = doc(db, 'sales', id);
     const docSnap = await getDoc(docRef);
 

@@ -1,8 +1,10 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, runTransaction, writeBatch, query, where } from 'firebase/firestore';
 import { type PaymentAccount } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const accountsCollection = collection(db, 'paymentAccounts');
 
@@ -24,6 +26,7 @@ async function seedDefaultAccounts() {
 }
 
 export async function getAccounts(): Promise<PaymentAccount[]> {
+    noStore();
     let snapshot = await getDocs(accountsCollection);
     
     if (snapshot.empty) {

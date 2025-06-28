@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
 import { type StockTransfer } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
+import { unstable_noStore as noStore } from 'next/cache';
 
 type StockTransferItem = {
     productId: string;
@@ -20,6 +21,7 @@ type StockTransferInput = Omit<StockTransfer, 'id' | 'totalAmount'> & {
 const stockTransfersCollection = collection(db, 'stockTransfers');
 
 export async function getStockTransfers(): Promise<StockTransfer[]> {
+    noStore();
     const snapshot = await getDocs(stockTransfersCollection);
     return snapshot.docs.map(doc => processDoc<StockTransfer>(doc));
 }

@@ -7,6 +7,7 @@ import { type Commission, type CommissionProfile, type CommissionProfileWithSumm
 import { sendSms } from '@/services/smsService';
 import { processDoc } from '@/lib/firestore-utils';
 import { type AllSettings } from '@/hooks/use-settings';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 const commissionsCollection = collection(db, 'commissions');
@@ -20,6 +21,7 @@ export type PendingCommission = {
 };
 
 export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
+    noStore();
     const [profilesSnapshot, commissionsSnapshot] = await Promise.all([
         getDocs(commissionProfilesCollection),
         getDocs(commissionsCollection)
@@ -58,6 +60,7 @@ export async function getCommissionProfiles(): Promise<CommissionProfileWithSumm
 }
 
 export async function getCommissionProfile(id: string): Promise<CommissionProfileWithSummary | null> {
+    noStore();
     const docRef = doc(db, 'commissionProfiles', id);
     const docSnap = await getDoc(docRef);
 
@@ -94,6 +97,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
 
 
 export async function getPendingCommissions(profileId: string): Promise<PendingCommission[]> {
+    noStore();
     const commissionsQuery = query(
         commissionsCollection,
         where("recipient_profile_id", "==", profileId),
@@ -174,7 +178,7 @@ export async function payCommission(
     commissionIds: string[],
     paymentMethod: string,
     paymentNote: string,
-    smsConfig: AllSettings['sms']
+    smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string }
 ): Promise<{ paymentRecorded: boolean; smsSent: boolean; error?: string }> {
     const expensesCollectionRef = collection(db, 'expenses');
     

@@ -4,10 +4,12 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { type User } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const usersCollection = collection(db, 'users');
 
 export async function getUsers(): Promise<User[]> {
+  noStore();
   // In a real app, this would be a Firestore call.
   // For this demo, we'll use a mock list.
   // This avoids having to populate a 'users' collection in Firestore for the demo.

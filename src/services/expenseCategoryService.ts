@@ -4,6 +4,7 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type ExpenseCategory } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
@@ -28,6 +29,7 @@ async function seedDefaultCategories(): Promise<void> {
 
 
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
+  noStore();
   let snapshot = await getDocs(expenseCategoriesCollection);
   
   if (snapshot.empty) {

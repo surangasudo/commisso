@@ -1,7 +1,9 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export type Brand = {
   id: string;
@@ -26,6 +28,7 @@ async function seedDefaultBrands(): Promise<void> {
 }
 
 export async function getBrands(): Promise<Brand[]> {
+  noStore();
   let snapshot = await getDocs(brandsCollection);
 
   // If the collection is empty, seed it with default data and re-fetch

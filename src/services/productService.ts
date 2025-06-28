@@ -4,10 +4,12 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
 import { type DetailedProduct } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const productsCollection = collection(db, 'products');
 
 export async function getProducts(): Promise<DetailedProduct[]> {
+    noStore();
     const snapshot = await getDocs(productsCollection);
     const data = snapshot.docs.map(doc => {
         const docData = doc.data();
@@ -34,6 +36,7 @@ export async function getProducts(): Promise<DetailedProduct[]> {
 }
 
 export async function getProduct(id: string): Promise<DetailedProduct | null> {
+    noStore();
     const docRef = doc(db, 'products', id);
     const docSnap = await getDoc(docRef);
 

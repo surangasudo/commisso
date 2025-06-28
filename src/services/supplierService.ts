@@ -4,10 +4,12 @@
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
 import { type Supplier } from '@/lib/data';
+import { unstable_noStore as noStore } from 'next/cache';
 
 const suppliersCollection = collection(db, 'suppliers');
 
 export async function getSuppliers(): Promise<Supplier[]> {
+  noStore();
   const snapshot = await getDocs(suppliersCollection);
   const data = snapshot.docs.map(doc => {
       const docData = doc.data();
