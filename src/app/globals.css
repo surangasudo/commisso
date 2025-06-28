@@ -131,13 +131,13 @@ body {
     border: none !important;
   }
 
-  .printable-area .card {
-    border: none !important;
-    box-shadow: none !important;
+  /* POS Receipt Printing Styles */
+  body.is-printing > *:not(.receipt-printable-area) {
+      display: none !important;
   }
-
-  .receipt-printable-area {
-    display: block !important;
+  
+  body.is-printing .receipt-printable-area {
+      display: block !important;
   }
   
   [data-state="inactive"] {
@@ -152,7 +152,7 @@ body {
 
 /* Screen-only styles */
 @media screen {
-    .print-only {
+    .receipt-printable-area {
         display: none;
     }
 }
