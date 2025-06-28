@@ -1442,9 +1442,7 @@ export default function PosPage() {
             </div>
         </TooltipProvider>
         <div style={{ display: 'none' }}>
-            <div ref={receiptRef}>
-                <PrintableReceipt sale={saleToPrint} products={products} />
-            </div>
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>
   );
