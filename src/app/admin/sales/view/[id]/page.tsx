@@ -129,7 +129,7 @@ export default function ViewSalePage() {
 
   return (
     <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4 print:hidden">
+        <div className="flex items-center justify-between gap-4 print-hidden">
             <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
                 <Eye className="w-8 h-8" />
                 Sale Details
@@ -260,7 +260,7 @@ export default function ViewSalePage() {
             </Card>
         </div>
 
-        <div className="text-center text-xs text-slate-400 p-1 print:hidden">
+        <div className="text-center text-xs text-slate-400 p-1 print-hidden">
             Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </div>

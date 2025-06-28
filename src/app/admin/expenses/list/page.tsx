@@ -140,125 +140,123 @@ export default function ListExpensesPage() {
                       <span>Filters</span>
                   </Button>
               </CardHeader>
-              <CardContent>
-                  <div className="printable-area">
-                    <Card>
-                        <CardHeader>
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <CardTitle>All Expenses</CardTitle>
-                                <div className="flex items-center gap-2 print-hidden">
-                                    <Link href="/admin/expenses/add">
-                                    <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
-                                        <PlusCircle className="h-4 w-4" />
-                                        <span>Add</span>
-                                    </Button>
-                                    </Link>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 print-hidden">
-                                <div className="flex items-center gap-2">
-                                    <Select defaultValue="25">
-                                        <SelectTrigger className="w-[100px] h-9">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="10">Show 10</SelectItem>
-                                            <SelectItem value="25">Show 25</SelectItem>
-                                            <SelectItem value="50">Show 50</SelectItem>
-                                            <SelectItem value="100">Show 100</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
-                                </div>
-                                <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
-                                    <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
-                                    <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
-                                </div>
-                                <div className="relative">
-                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input placeholder="Search..." className="pl-8 w-full sm:w-auto h-9" />
-                                </div>
-                            </div>
-                            <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead className="print-hidden">Action</TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Date <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Reference No <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Expense Category <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Payment Status <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Total Amount <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Payment due <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                    <TableHead>Expense Note</TableHead>
-                                    <TableHead><div className="flex items-center gap-1">Added By <ArrowUpDown className="h-3 w-3" /></div></TableHead>
-                                </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                {isLoading ? (
-                                    Array.from({length: 5}).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell className="print-hidden"><Skeleton className="h-8 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                            <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : expenses.map((expense) => (
-                                    <TableRow key={expense.id}>
-                                    <TableCell className="print-hidden">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onSelect={() => handleEdit(expense.id)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                                                <DropdownMenuItem onSelect={() => handleDelete(expense)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                    <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
-                                    <TableCell>{expense.referenceNo}</TableCell>
-                                    <TableCell>{expense.expenseCategory}</TableCell>
-                                    <TableCell>{expense.location}</TableCell>
-                                    <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(expense.paymentStatus))}>{expense.paymentStatus}</Badge></TableCell>
-                                    <TableCell>{formatCurrency(expense.totalAmount)}</TableCell>
-                                    <TableCell>{formatCurrency(expense.paymentDue)}</TableCell>
-                                    <TableCell>{expense.expenseNote || 'N/A'}</TableCell>
-                                    <TableCell>{expense.addedBy}</TableCell>
-                                    </TableRow>
-                                ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow>
-                                        <TableHead colSpan={6} className="text-right font-bold print-hidden">Total:</TableHead>
-                                        <TableHead colSpan={6} className="text-right font-bold hidden print:table-cell">Total:</TableHead>
-                                        <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
-                                        <TableCell className="font-bold">{formatCurrency(totalDue)}</TableCell>
-                                        <TableCell colSpan={2}></TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="py-4 print-hidden">
-                            <div className="text-xs text-muted-foreground">
-                                Showing <strong>1 to {expenses.length}</strong> of <strong>{expenses.length}</strong> entries
-                            </div>
-                        </CardFooter>
-                    </Card>
-                </div>
-              </CardContent>
           </Card>
+          <div className="printable-area">
+              <Card>
+                  <CardHeader>
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <CardTitle>All Expenses</CardTitle>
+                          <div className="flex items-center gap-2 print-hidden">
+                              <Link href="/admin/expenses/add">
+                              <Button size="sm" className="h-9 gap-1.5 w-full sm:w-auto">
+                                  <PlusCircle className="h-4 w-4" />
+                                  <span>Add</span>
+                              </Button>
+                              </Link>
+                          </div>
+                      </div>
+                  </CardHeader>
+                  <CardContent>
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 print-hidden">
+                          <div className="flex items-center gap-2">
+                              <Select defaultValue="25">
+                                  <SelectTrigger className="w-[100px] h-9">
+                                      <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="10">Show 10</SelectItem>
+                                      <SelectItem value="25">Show 25</SelectItem>
+                                      <SelectItem value="50">Show 50</SelectItem>
+                                      <SelectItem value="100">Show 100</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                              <span className="text-sm text-muted-foreground hidden lg:inline">entries</span>
+                          </div>
+                          <div className="flex-1 flex flex-wrap items-center justify-start sm:justify-center gap-2">
+                              <Button variant="outline" size="sm" className="h-9 gap-1"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Export CSV</span></Button>
+                              <Button onClick={() => window.print()} variant="outline" size="sm" className="h-9 gap-1"><Printer className="h-4 w-4" /> <span className="hidden sm:inline">Print</span></Button>
+                          </div>
+                          <div className="relative">
+                              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="Search..." className="pl-8 w-full sm:w-auto h-9" />
+                          </div>
+                      </div>
+                      <div className="border rounded-md">
+                      <Table>
+                          <TableHeader>
+                          <TableRow>
+                              <TableHead className="print-hidden">Action</TableHead>
+                              <TableHead><div className="flex items-center gap-1">Date <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead><div className="flex items-center gap-1">Reference No <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead><div className="flex items-center gap-1">Expense Category <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead>Location</TableHead>
+                              <TableHead><div className="flex items-center gap-1">Payment Status <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead><div className="flex items-center gap-1">Total Amount <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead><div className="flex items-center gap-1">Payment due <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                              <TableHead>Expense Note</TableHead>
+                              <TableHead><div className="flex items-center gap-1">Added By <ArrowUpDown className="h-3 w-3" /></div></TableHead>
+                          </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                          {isLoading ? (
+                              Array.from({length: 5}).map((_, i) => (
+                                  <TableRow key={i}>
+                                      <TableCell className="print-hidden"><Skeleton className="h-8 w-24" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                      <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                  </TableRow>
+                              ))
+                          ) : expenses.map((expense) => (
+                              <TableRow key={expense.id}>
+                              <TableCell className="print-hidden">
+                                  <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                          <Button variant="outline" size="sm" className="h-8">Actions <ChevronDown className="ml-2 h-3 w-3" /></Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                          <DropdownMenuItem onSelect={() => handleEdit(expense.id)}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                                          <DropdownMenuItem onSelect={() => handleDelete(expense)} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                  </DropdownMenu>
+                              </TableCell>
+                              <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
+                              <TableCell>{expense.referenceNo}</TableCell>
+                              <TableCell>{expense.expenseCategory}</TableCell>
+                              <TableCell>{expense.location}</TableCell>
+                              <TableCell><Badge variant="outline" className={cn("capitalize", getPaymentStatusBadge(expense.paymentStatus))}>{expense.paymentStatus}</Badge></TableCell>
+                              <TableCell>{formatCurrency(expense.totalAmount)}</TableCell>
+                              <TableCell>{formatCurrency(expense.paymentDue)}</TableCell>
+                              <TableCell>{expense.expenseNote || 'N/A'}</TableCell>
+                              <TableCell>{expense.addedBy}</TableCell>
+                              </TableRow>
+                          ))}
+                          </TableBody>
+                          <TableFooter>
+                              <TableRow>
+                                  <TableHead colSpan={6} className="text-right font-bold print-hidden">Total:</TableHead>
+                                  <TableHead colSpan={6} className="text-right font-bold hidden print:table-cell">Total:</TableHead>
+                                  <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                  <TableCell className="font-bold">{formatCurrency(totalDue)}</TableCell>
+                                  <TableCell colSpan={2}></TableCell>
+                              </TableRow>
+                          </TableFooter>
+                      </Table>
+                      </div>
+                  </CardContent>
+                  <CardFooter className="py-4 print-hidden">
+                      <div className="text-xs text-muted-foreground">
+                          Showing <strong>1 to {expenses.length}</strong> of <strong>{expenses.length}</strong> entries
+                      </div>
+                  </CardFooter>
+              </Card>
+          </div>
           <div className="print-hidden"><AppFooter /></div>
       </div>
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

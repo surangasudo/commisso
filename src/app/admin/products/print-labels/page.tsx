@@ -42,7 +42,7 @@ const LabelSheet = ({ products, options, packingDate }: {
   );
 
   return (
-    <div className="hidden print:block">
+    <div className="hidden print:block printable-area">
       <div className="grid grid-cols-4 gap-x-2 gap-y-1 p-4">
         {labels.map((label) => (
           <div key={label.key} className="border p-1 text-center text-[8px] break-words flex flex-col justify-center items-center h-20">
@@ -110,7 +110,7 @@ export default function PrintLabelsPage() {
 
   return (
     <>
-      <div className="print:hidden flex flex-col gap-6">
+      <div className="print-hidden flex flex-col gap-6">
         <div className="flex items-center gap-2">
           <Printer className="w-8 h-8" />
           <h1 className="font-headline text-3xl font-bold">Print Labels</h1>

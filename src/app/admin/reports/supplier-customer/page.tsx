@@ -50,7 +50,7 @@ const ContactReportTable = <T extends Record<string, any>>({ title, data, column
     
     return (
         <Card>
-            <CardHeader className="print:hidden">
+            <CardHeader className="print:hidden flex flex-row items-center justify-between">
                 <CardTitle>{title}</CardTitle>
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleExport('csv')}><Download className="mr-2 h-4 w-4" />CSV</Button>

@@ -9,23 +9,32 @@ body {
 
 @layer base {
   :root {
-    --background: 240 5% 96%;
+    --background: 220 89% 95%; /* Light Blue */
     --foreground: 224 71% 4%;
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
+    
+    --primary: 221 89% 61%; /* Saturated Blue */
+    --primary-foreground: 0 0% 100%;
+    
     --secondary: 216 34% 91%;
     --secondary-foreground: 224 71% 4%;
     --muted: 216 34% 91%;
     --muted-foreground: 223 44% 45%;
-    --accent: 221 83% 95%;
-    --accent-foreground: 221 83% 45%;
+    
+    --accent: 16 100% 57%; /* Orange */
+    --accent-foreground: 0 0% 100%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
+    --ring: 221 89% 61%; /* Saturated Blue */
     --radius: 0.5rem;
+    
+    /* Sidebar specific variables */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 71% 4%;
     --sidebar-primary: 221 83% 53%;
@@ -34,11 +43,15 @@ body {
     --sidebar-accent-foreground: 224 71% 4%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Chart specific variables */
+    --chart-1: 221 83% 53%;
     --chart-2: 142 76% 36%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
+
   .dark {
     --background: 224 71% 4%;
     --foreground: 210 40% 98%;
@@ -46,16 +59,24 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 215 28% 17%;
     --popover-foreground: 210 40% 98%;
+    
+    --primary: 221 89% 61%;
+    --primary-foreground: 0 0% 100%;
+    
     --secondary: 215 28% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 215 28% 17%;
     --muted-foreground: 218 24% 63%;
-    --accent: 215 28% 17%;
-    --accent-foreground: 210 40% 98%;
+    
+    --accent: 16 100% 57%;
+    --accent-foreground: 0 0% 100%;
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 215 28% 17%;
     --input: 215 28% 17%;
+    --ring: 221 89% 61%;
+
     --sidebar-background: 224 71% 4%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 221 83% 53%;
@@ -65,15 +86,6 @@ body {
     --sidebar-border: 215 28% 17%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-
-  /* Color Themes */
-  :root.theme-blue, .dark.theme-blue { --primary: 221 83% 53%; --primary-foreground: 0 0% 100%; --ring: 221 83% 53%; --chart-1: 221 83% 53%; }
-  :root.theme-green, .dark.theme-green { --primary: 142 76% 36%; --primary-foreground: 0 0% 100%; --ring: 142 76% 36%; --chart-1: 142 76% 36%; }
-  :root.theme-red, .dark.theme-red { --primary: 0 72% 51%; --primary-foreground: 0 0% 100%; --ring: 0 72% 51%; --chart-1: 0 72% 51%; }
-  :root.theme-purple, .dark.theme-purple { --primary: 262 83% 58%; --primary-foreground: 0 0% 100%; --ring: 262 83% 58%; --chart-1: 262 83% 58%; }
-  :root.theme-yellow, .dark.theme-yellow { --primary: 48 96% 50%; --primary-foreground: 30 50% 10%; --ring: 48 96% 50%; --chart-1: 48 96% 50%; }
-  :root.theme-black, .dark.theme-black { --primary: 240 6% 10%; --primary-foreground: 0 0% 100%; --ring: 240 6% 10%; --chart-1: 240 6% 10%; }
-  :root.theme-blue-light, .dark.theme-blue-light { --primary: 206 90% 54%; --primary-foreground: 0 0% 100%; --ring: 206 90% 54%; --chart-1: 206 90% 54%; }
 }
 
 @layer base {
@@ -93,13 +105,21 @@ body {
 
 /* Print styles */
 @media print {
-  body * {
-    visibility: hidden;
+  body {
+      background: white !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
   }
+
+  .print-hidden {
+      display: none !important;
+  }
+
   .printable-area, .printable-area * {
     visibility: visible;
   }
-  /* Style for full-page reports */
+  
   .printable-area {
     position: absolute;
     left: 0;
@@ -107,35 +127,32 @@ body {
     width: 100%;
     margin: 0;
     padding: 0.5in;
+    box-shadow: none !important;
+    border: none !important;
   }
-  /* Specific style for the small POS receipt */
-  .receipt-printable-area, .receipt-printable-area * {
-    visibility: visible;
-  }
-  .receipt-printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: auto; /* Let the content define the width */
-    margin: 0;
-    padding: 0;
-  }
-  .print-hidden {
-      display: none !important;
-  }
-  .card {
+
+  .printable-area .card {
     border: none !important;
     box-shadow: none !important;
   }
-  body {
-      background: white !important;
-      color: black !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+
+  .receipt-printable-area, .receipt-printable-area * {
+    visibility: visible !important;
   }
+  .receipt-printable-area {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: auto;
+    margin: 0;
+    padding: 0;
+  }
+  
   [data-state="inactive"] {
     display: none !important;
   }
+  
   @page {
     size: auto;
     margin: 0;
