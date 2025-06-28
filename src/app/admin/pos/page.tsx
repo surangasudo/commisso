@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Search,
   UserPlus,
@@ -31,6 +32,9 @@ import {
   Briefcase,
   Shrink,
   Lock,
+  Pencil,
+  Printer,
+  Trash2,
 } from 'lucide-react';
 import {
   Card,
@@ -43,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
 import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
-import { addSale, getSales } from '@/services/saleService';
+import { addSale, getSales, deleteSale } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
 import { getCustomers, addCustomer } from '@/services/customerService';
@@ -65,6 +69,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +91,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings } from '@/hooks/use-settings';
 import { useReactToPrint } from 'react-to-print';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type CartItem = {
   product: DetailedProduct;
@@ -195,50 +210,81 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
 };
 
 
-const RecentTransactionsDialog = ({ open, onOpenChange, recentSales }: { open: boolean, onOpenChange: (open: boolean) => void, recentSales: Sale[] }) => {
-    const { toast } = useToast();
+const RecentTransactionsDialog = ({
+    open,
+    onOpenChange,
+    recentSales,
+    onEdit,
+    onPrint,
+    onDelete,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    recentSales: Sale[];
+    onEdit: (saleId: string) => void;
+    onPrint: (sale: Sale) => void;
+    onDelete: (sale: Sale) => void;
+}) => {
     const { formatCurrency } = useCurrency();
-    const handleReturn = (saleId: string) => {
-        toast({
-            title: "Return Initiated",
-            description: `Sell return process started for sale ${saleId}. This is a demo.`,
-        });
-    };
+    const [activeTab, setActiveTab] = useState("final");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Recent Transactions</DialogTitle>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh]">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Invoice No.</TableHead>
-                            <TableHead>Customer</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Action</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {recentSales.map(sale => (
-                            <TableRow key={sale.id}>
-                                <TableCell>{sale.invoiceNo}</TableCell>
-                                <TableCell>{sale.customerName}</TableCell>
-                                <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
-                                <TableCell>
-                                    <Button size="sm" variant="outline" onClick={() => handleReturn(sale.invoiceNo)}>Return</Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                </ScrollArea>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList>
+                        <TabsTrigger value="final">Final</TabsTrigger>
+                        <TabsTrigger value="quotation">Quotation</TabsTrigger>
+                        <TabsTrigger value="draft">Draft</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="final" className="pt-4">
+                        <ScrollArea className="max-h-[60vh]">
+                            <Table>
+                                <TableBody>
+                                    {recentSales.map((sale, index) => (
+                                        <TableRow key={sale.id}>
+                                            <TableCell className="w-8">{index + 1}.</TableCell>
+                                            <TableCell className="font-medium">
+                                                {sale.invoiceNo} ({sale.customerName})
+                                            </TableCell>
+                                            <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex gap-2 justify-end">
+                                                    <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onEdit(sale.id)}>
+                                                        <Pencil className="mr-1 h-3 w-3" /> Edit
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
+                                                        <Printer className="mr-1 h-3 w-3" /> try to print
+                                                    </Button>
+                                                    <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => onDelete(sale)}>
+                                                        <Trash2 className="mr-1 h-3 w-3" /> Delete
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </ScrollArea>
+                    </TabsContent>
+                    <TabsContent value="quotation" className="pt-4">
+                        <div className="text-center py-10 text-muted-foreground">Quotations not yet implemented.</div>
+                    </TabsContent>
+                    <TabsContent value="draft" className="pt-4">
+                        <div className="text-center py-10 text-muted-foreground">Drafts not yet implemented.</div>
+                    </TabsContent>
+                </Tabs>
+                <DialogFooter>
+                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
-    )
+    );
 };
+
 
 const EditValueDialog = ({
     open,
@@ -526,6 +572,7 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
 
 
 export default function PosPage() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [time, setTime] = useState('');
@@ -581,6 +628,9 @@ export default function PosPage() {
   const [selectedCompany, setSelectedCompany] = useState<CommissionProfile | null>(null);
   const [selectedSalesperson, setSelectedSalesperson] = useState<CommissionProfile | null>(null);
 
+  const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+  const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
+
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   
@@ -594,8 +644,6 @@ export default function PosPage() {
   });
 
   const fetchAndCalculateStock = useCallback(async () => {
-      // Set loading to true only if it's the initial fetch.
-      // For re-fetches, we can update in the background.
       if (products.length === 0) {
         setIsLoading(true);
       }
@@ -610,7 +658,7 @@ export default function PosPage() {
         ]);
 
         setCustomers(customersData);
-        setRecentSales(salesData.slice(0, 10)); // Get last 10 for recents dialog
+        setRecentSales(salesData.slice(0, 10));
 
         const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
           acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
@@ -625,7 +673,6 @@ export default function PosPage() {
         const productsWithCalculatedStock = productsData.map(product => {
           const purchased = purchasesByProduct[product.id] || 0;
           const sold = salesByProduct[product.id] || 0;
-          // Opening stock + purchases - sales
           const calculatedStock = (product.currentStock || 0) + purchased - sold;
           return { ...product, currentStock: calculatedStock };
         });
@@ -1006,6 +1053,34 @@ export default function PosPage() {
     const handleOpenAddProfileDialog = (type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson') => {
         setProfileTypeToAdd(type);
         setIsAddProfileOpen(true);
+    };
+
+    const handleEditSale = (saleId: string) => {
+        router.push(`/admin/sales/edit/${saleId}`);
+    };
+    
+    const handleDeleteSaleClick = (sale: Sale) => {
+        setSaleToDelete(sale);
+        setIsDeleteSaleDialogOpen(true);
+    };
+    
+    const confirmDeleteSale = async () => {
+        if (!saleToDelete) return;
+        try {
+            await deleteSale(saleToDelete.id);
+            toast({ title: 'Success', description: 'Sale deleted successfully' });
+            await fetchAndCalculateStock(); // Refetch to update recent sales
+        } catch (error) {
+            console.error('Failed to delete sale:', error);
+            toast({ title: 'Error', description: 'Failed to delete sale', variant: 'destructive' });
+        } finally {
+            setIsDeleteSaleDialogOpen(false);
+            setSaleToDelete(null);
+        }
+    };
+    
+    const handlePrintFromDialog = (sale: Sale) => {
+        setSaleToPrint(sale);
     };
 
   return (
@@ -1407,7 +1482,14 @@ export default function PosPage() {
                 </footer>
                 <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
                 <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
-                <RecentTransactionsDialog open={isRecentTransactionsOpen} onOpenChange={setIsRecentTransactionsOpen} recentSales={recentSales} />
+                <RecentTransactionsDialog
+                    open={isRecentTransactionsOpen}
+                    onOpenChange={setIsRecentTransactionsOpen}
+                    recentSales={recentSales}
+                    onEdit={handleEditSale}
+                    onPrint={handlePrintFromDialog}
+                    onDelete={handleDeleteSaleClick}
+                />
                 <EditValueDialog
                     open={isDiscountModalOpen}
                     onOpenChange={setIsDiscountModalOpen}
@@ -1444,6 +1526,20 @@ export default function PosPage() {
                     profileType={profileTypeToAdd}
                     onProfileAdded={fetchAndCalculateStock}
                 />
+                 <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to delete this sale?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </TooltipProvider>
         {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
