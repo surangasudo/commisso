@@ -36,12 +36,8 @@ export async function getCommissionProfiles(): Promise<CommissionProfileWithSumm
         const summary = summaries.get(commission.recipient_profile_id) || { totalCommissionEarned: 0, totalCommissionPaid: 0 };
         const amount = commission.commission_amount || 0;
         
-        // Net earned is the sum of all commission events (positive for earnings, negative for reversals).
-        if(commission.status !== 'Paid') { // Only add to earned if not already paid
-             summary.totalCommissionEarned += amount;
-        }
-
-        // Paid total is only the sum of commissions explicitly marked as 'Paid'.
+        summary.totalCommissionEarned += amount;
+        
         if (commission.status === 'Paid') {
             summary.totalCommissionPaid += amount;
         }
@@ -77,12 +73,8 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         for (const commission of allCommissions) {
             const amount = commission.commission_amount || 0;
             
-             // Net earned is the sum of all commission events.
-            if(commission.status !== 'Paid') { // Only add to earned if not already paid
-                totalCommissionEarned += amount;
-            }
+            totalCommissionEarned += amount;
 
-            // Paid total is only from 'Paid' commissions.
             if (commission.status === 'Paid') {
                 totalCommissionPaid += amount;
             }
