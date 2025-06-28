@@ -1391,99 +1391,24 @@ const SmsSettingsForm = ({ settings: initialSettingsData, updateSettings }: { se
                         <Select value={settings.smsService} onValueChange={(value) => handleSelectChange('smsService', value)}>
                             <SelectTrigger id="smsService"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="twilio">Twilio</SelectItem>
-                                <SelectItem value="nexmo">Nexmo</SelectItem>
                                 <SelectItem value="textlk">Text.lk</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     
-                    {settings.smsService === 'twilio' && (
-                        <div className="pt-6 border-t space-y-4">
-                            <h4 className="font-semibold">Twilio Configuration</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="twilioSid">Twilio SID</Label>
-                                    <Input id="twilioSid" value={settings.twilioSid} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="twilioToken">Twilio Token</Label>
-                                    <Input id="twilioToken" type="password" value={settings.twilioToken} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="twilioFrom">From Number</Label>
-                                    <Input id="twilioFrom" value={settings.twilioFrom} onChange={handleInputChange} />
-                                </div>
+                    <div className="pt-6 border-t space-y-4">
+                        <h4 className="font-semibold">Text.lk Configuration</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="textlkApiKey">API Key</Label>
+                                <Input id="textlkApiKey" value={settings.textlkApiKey} onChange={handleInputChange} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="textlkSenderId">Sender ID</Label>
+                                <Input id="textlkSenderId" value={settings.textlkSenderId} onChange={handleInputChange} />
                             </div>
                         </div>
-                    )}
-                    
-                    {settings.smsService === 'nexmo' && (
-                        <div className="pt-6 border-t space-y-4">
-                            <h4 className="font-semibold">Nexmo/Vonage Configuration</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="nexmoKey">API Key</Label>
-                                    <Input id="nexmoKey" value={settings.nexmoKey} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nexmoSecret">API Secret</Label>
-                                    <Input id="nexmoSecret" type="password" value={settings.nexmoSecret} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="nexmoFrom">From</Label>
-                                    <Input id="nexmoFrom" value={settings.nexmoFrom} onChange={handleInputChange} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {settings.smsService === 'textlk' && (
-                        <div className="pt-6 border-t space-y-4">
-                            <h4 className="font-semibold">Text.lk Configuration</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="textlkApiKey">API Key</Label>
-                                    <Input id="textlkApiKey" value={settings.textlkApiKey} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="textlkSenderId">Sender ID</Label>
-                                    <Input id="textlkSenderId" value={settings.textlkSenderId} onChange={handleInputChange} />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {settings.smsService === 'other' && (
-                        <div className="pt-6 border-t space-y-4">
-                            <h4 className="font-semibold">Other Service Configuration</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div className="space-y-2 lg:col-span-3">
-                                    <Label htmlFor="otherUrl">URL</Label>
-                                    <Input id="otherUrl" value={settings.otherUrl} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="sendToParam">Send to parameter name</Label>
-                                    <Input id="sendToParam" value={settings.sendToParam} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="msgParam">Message parameter name</Label>
-                                    <Input id="msgParam" value={settings.msgParam} onChange={handleInputChange} />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="requestMethod">Request Method</Label>
-                                    <Select value={settings.requestMethod} onValueChange={(value) => handleSelectChange('requestMethod', value)}>
-                                        <SelectTrigger id="requestMethod"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="get">GET</SelectItem>
-                                            <SelectItem value="post">POST</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    </div>
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleUpdateSettings}>Update Settings</Button>
