@@ -554,21 +554,6 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
     );
 };
 
-// This component's only purpose is to trigger the print dialog when it mounts.
-const PrintTrigger = ({ onPrint }: { onPrint: () => void }) => {
-    useEffect(() => {
-        // A small delay ensures the content is fully rendered before printing.
-        const timer = setTimeout(() => {
-            onPrint();
-        }, 100);
-
-        return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // We only want this to run once on mount.
-
-    return null;
-};
-
 
 export default function PosPage() {
   const router = useRouter();
@@ -641,6 +626,18 @@ export default function PosPage() {
       content: () => receiptRef.current,
       onAfterPrint: onAfterPrint,
   });
+
+  // Effect to trigger print when saleToPrint is set
+  useEffect(() => {
+    if (saleToPrint) {
+      // Use a zero-delay timeout to wait for the next browser tick.
+      // This ensures React has finished rendering the receipt component before we try to print it.
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -881,7 +878,7 @@ export default function PosPage() {
             id: 'temp-print-id', // Temporary ID, not saved
             ...sale,
           };
-          setSaleToPrint(completeSaleForReceipt); // This triggers the print useEffect
+          setSaleToPrint(completeSaleForReceipt);
 
           clearCart(false);
           setIsMultiPayOpen(false);
@@ -1541,7 +1538,6 @@ export default function PosPage() {
                 </AlertDialog>
             </div>
         </TooltipProvider>
-        {saleToPrint && <PrintTrigger onPrint={handlePrint} />}
         <div style={{ position: 'absolute', left: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>

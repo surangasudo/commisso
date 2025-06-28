@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 
 export const metadata: Metadata = {
-  title: 'Customer Display - Ultimate ERP',
+  title: 'Customer Display - Crimson ERP',
   description: 'Customer facing display screen.',
 };
 
