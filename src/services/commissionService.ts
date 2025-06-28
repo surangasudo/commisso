@@ -32,18 +32,16 @@ export async function getCommissionProfiles(): Promise<CommissionProfileWithSumm
 
     for (const commission of allCommissions) {
         const summary = summaries.get(commission.recipient_profile_id) || { totalCommissionEarned: 0, totalCommissionPaid: 0 };
-        
         const amount = commission.commission_amount || 0;
+        
+        // Net earned is the sum of all commission events (positive for earnings, negative for reversals).
+        summary.totalCommissionEarned += amount;
 
-        // Reversed commissions are negative, so they correctly subtract from the earned total.
-        if (commission.status === 'Reversed') {
-            summary.totalCommissionEarned += amount;
-        } else if (commission.status === 'Paid') {
-            summary.totalCommissionEarned += amount;
+        // Paid total is only the sum of commissions explicitly marked as 'Paid'.
+        if (commission.status === 'Paid') {
             summary.totalCommissionPaid += amount;
-        } else { // Pending Approval, Approved
-            summary.totalCommissionEarned += amount;
         }
+        
         summaries.set(commission.recipient_profile_id, summary);
     }
     
@@ -72,14 +70,14 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         let totalCommissionPaid = 0;
 
         for (const commission of allCommissions) {
-             const amount = commission.commission_amount || 0;
-            if (commission.status === 'Reversed') {
-                totalCommissionEarned += amount;
-            } else if (commission.status === 'Paid') {
-                totalCommissionEarned += amount;
+            const amount = commission.commission_amount || 0;
+            
+            // Net earned is the sum of all commission events.
+            totalCommissionEarned += amount;
+
+            // Paid total is only from 'Paid' commissions.
+            if (commission.status === 'Paid') {
                 totalCommissionPaid += amount;
-            } else { // Pending Approval, Approved
-                totalCommissionEarned += amount;
             }
         }
         
