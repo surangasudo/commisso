@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, runTransaction, writeBatch, query, where } from 'firebase/firestore';
 import { type PaymentAccount } from '@/lib/data';
 import { unstable_noStore as noStore } from 'next/cache';
+import { processDoc } from '@/lib/firestore-utils';
 
 const accountsCollection = collection(db, 'paymentAccounts');
 
@@ -34,10 +35,7 @@ export async function getAccounts(): Promise<PaymentAccount[]> {
         snapshot = await getDocs(accountsCollection);
     }
     
-    const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-    } as PaymentAccount));
+    const data = snapshot.docs.map(doc => processDoc<PaymentAccount>(doc));
 
     return data;
 }

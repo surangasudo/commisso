@@ -125,7 +125,7 @@ export async function addSale(
                   calculated_rate: calculatedRate,
                   commission_amount: commissionAmount,
                   status: 'Pending Approval', // New Logic
-                  calculation_date: new Date().toISOString(),
+                  calculation_date: new Date(),
               };
               const newCommissionRef = doc(commissionsCollectionRef);
               transaction.set(newCommissionRef, newCommission);
@@ -239,7 +239,7 @@ export async function updateSale(
                             calculated_rate: calculatedRate,
                             commission_amount: commissionAmount,
                             status: 'Pending Approval',
-                            calculation_date: new Date().toISOString(),
+                            calculation_date: new Date(),
                         });
                     }
                 }

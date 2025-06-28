@@ -30,27 +30,27 @@ export async function getCommissionProfiles(): Promise<CommissionProfileWithSumm
     const profiles = profilesSnapshot.docs.map(doc => processDoc<CommissionProfile>(doc));
     const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
 
-    const summaries = new Map<string, { totalCommissionEarned: number; totalCommissionPaid: number }>();
+    const summaries = new Map<string, { netEarned: number; totalPaid: number }>();
 
     for (const commission of allCommissions) {
-        const summary = summaries.get(commission.recipient_profile_id) || { totalCommissionEarned: 0, totalCommissionPaid: 0 };
-        const amount = commission.commission_amount || 0;
+        const summary = summaries.get(commission.recipient_profile_id) || { netEarned: 0, totalPaid: 0 };
         
-        summary.totalCommissionEarned += amount;
+        // commission_amount can be negative for reversals
+        summary.netEarned += commission.commission_amount || 0;
         
         if (commission.status === 'Paid') {
-            summary.totalCommissionPaid += amount;
+            summary.totalPaid += commission.commission_amount || 0;
         }
         
         summaries.set(commission.recipient_profile_id, summary);
     }
     
     const profilesWithSummary: CommissionProfileWithSummary[] = profiles.map(profile => {
-        const summary = summaries.get(profile.id) || { totalCommissionEarned: 0, totalCommissionPaid: 0 };
+        const summary = summaries.get(profile.id) || { netEarned: 0, totalPaid: 0 };
         return { 
             ...profile,
-            totalCommissionEarned: Math.round(summary.totalCommissionEarned * 100) / 100,
-            totalCommissionPaid: Math.round(summary.totalCommissionPaid * 100) / 100,
+            totalCommissionEarned: Math.round(summary.netEarned * 100) / 100,
+            totalCommissionPaid: Math.round(summary.totalPaid * 100) / 100,
         };
     });
 
@@ -67,23 +67,22 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
         const commissionsSnapshot = await getDocs(query(commissionsCollection, where("recipient_profile_id", "==", id)));
         const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
         
-        let totalCommissionEarned = 0;
-        let totalCommissionPaid = 0;
+        let netEarned = 0;
+        let totalPaid = 0;
 
         for (const commission of allCommissions) {
             const amount = commission.commission_amount || 0;
-            
-            totalCommissionEarned += amount;
+            netEarned += amount;
 
             if (commission.status === 'Paid') {
-                totalCommissionPaid += amount;
+                totalPaid += amount;
             }
         }
         
         return {
             ...profile,
-            totalCommissionEarned: Math.round(totalCommissionEarned * 100) / 100,
-            totalCommissionPaid: Math.round(totalCommissionPaid * 100) / 100,
+            totalCommissionEarned: Math.round(netEarned * 100) / 100,
+            totalCommissionPaid: Math.round(totalPaid * 100) / 100,
         };
 
     } else {
@@ -134,12 +133,28 @@ export async function getPendingCommissions(profileId: string): Promise<PendingC
 
 
 export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<DocumentData> {
-    return await addDoc(commissionProfilesCollection, profile);
+    const dataToSave = {
+        ...profile,
+        commission: {
+            overall: profile.commission.overall,
+            // Ensure categories are saved without the temporary UI id
+            categories: profile.commission.categories?.map(({ category, rate }) => ({ category, rate })) || []
+        }
+    };
+    return await addDoc(commissionProfilesCollection, dataToSave);
 }
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
     const docRef = doc(db, 'commissionProfiles', id);
-    await updateDoc(docRef, profile);
+    const dataToSave = {
+        ...profile,
+        commission: {
+            overall: profile.commission?.overall,
+            // Ensure categories are saved without the temporary UI id
+            categories: profile.commission?.categories?.map(({ category, rate }) => ({ category, rate })) || []
+        }
+    };
+    await updateDoc(docRef, dataToSave);
 }
 
 export async function deleteCommissionProfile(id: string): Promise<void> {
@@ -148,7 +163,7 @@ export async function deleteCommissionProfile(id: string): Promise<void> {
 }
 
 export async function payCommission(
-    profile: CommissionProfile,
+    profileId: string,
     commissionIds: string[],
     paymentMethod: string,
     paymentNote: string,
@@ -157,6 +172,10 @@ export async function payCommission(
     
     try {
         await runTransaction(db, async (transaction) => {
+            const profileRef = doc(db, 'commissionProfiles', profileId);
+            const profileDoc = await transaction.get(profileRef);
+            if (!profileDoc.exists()) throw new Error("Profile not found");
+
             const commissionRefs = commissionIds.map(id => doc(db, 'commissions', id));
             const commissionDocs = await Promise.all(commissionRefs.map(ref => transaction.get(ref)));
             
@@ -178,7 +197,7 @@ export async function payCommission(
             for (const commissionDoc of commissionDocs) {
                 transaction.update(commissionDoc.ref, { 
                     status: 'Paid',
-                    payment_date: new Date().toISOString(),
+                    payment_date: new Date(),
                     payment_details: paymentNote,
                     payment_method: paymentMethod,
                  });
@@ -196,9 +215,9 @@ export async function payCommission(
                 totalAmount: roundedTotal,
                 paymentDue: 0,
                 expenseFor: null,
-                contact: profile.name,
+                contact: profileDoc.data().name,
                 addedBy: 'System',
-                expenseNote: `Commission payout to ${profile.name}. Method: ${paymentMethod}. Note: ${paymentNote}`.trim(),
+                expenseNote: `Commission payout to ${profileDoc.data().name}. Method: ${paymentMethod}. Note: ${paymentNote}`.trim(),
             };
             
             const newExpenseRef = doc(expensesCollectionRef);
@@ -209,7 +228,7 @@ export async function payCommission(
 
     } catch (e: any) {
         console.error("Commission payment transaction failed: ", e);
-        throw e; // Re-throw transaction errors
+        return { success: false, error: e.message }; // Return error message
     }
 }
 
