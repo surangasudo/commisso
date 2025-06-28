@@ -44,7 +44,17 @@ export async function getProductCategories(): Promise<ProductCategory[]> {
       snapshot = await getDocs(productCategoriesCollection);
   }
 
-  const data = snapshot.docs.map(doc => processDoc<ProductCategory>(doc));
+  // Manually construct plain objects to ensure they are serializable
+  const data: ProductCategory[] = snapshot.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      name: d.name,
+      code: d.code,
+      parentId: d.parentId || null,
+    };
+  });
+  
   return data;
 }
 
