@@ -96,6 +96,7 @@ import { AppFooter } from '@/components/app-footer';
 type CartItem = {
   product: DetailedProduct;
   quantity: number;
+  sellingPrice: number;
 };
 
 const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
@@ -694,6 +695,7 @@ export default function PosPage() {
   const [isAddProfileOpen, setIsAddProfileOpen] = useState(false);
   const [profileTypeToAdd, setProfileTypeToAdd] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
 
+  const [priceGroup, setPriceGroup] = useState('default');
 
   const [isMultiPayOpen, setIsMultiPayOpen] = useState(false);
   const [cashAmount, setCashAmount] = useState('');
@@ -824,7 +826,7 @@ export default function PosPage() {
   }, []);
 
   const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + item.product.sellingPrice * item.quantity, 0);
+    return cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
   }, [cart]);
 
   const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
@@ -859,6 +861,8 @@ export default function PosPage() {
   }, [searchTerm, products]);
 
   const addToCart = (product: DetailedProduct) => {
+    const price = priceGroup === 'wholesale' ? product.sellingPrice * 0.9 : product.sellingPrice;
+
     setCart((currentCart) => {
       const existingItem = currentCart.find(
         (item) => item.product.id === product.id
@@ -870,7 +874,7 @@ export default function PosPage() {
             : item
         );
       }
-      return [...currentCart, { product, quantity: 1 }];
+      return [...currentCart, { product, quantity: 1, sellingPrice: price }];
     });
   };
 
@@ -940,7 +944,7 @@ export default function PosPage() {
           items: cart.map(item => ({
               productId: item.product.id,
               quantity: item.quantity,
-              unitPrice: item.product.sellingPrice,
+              unitPrice: item.sellingPrice,
               tax: 0, // Simplified
           })),
           taxAmount: orderTax,
@@ -1291,6 +1295,18 @@ export default function PosPage() {
                                             </DialogContent>
                                         </Dialog>
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label>Selling Price Group</Label>
+                                        <Select value={priceGroup} onValueChange={setPriceGroup}>
+                                            <SelectTrigger className="h-10">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="default">Default Selling Price</SelectItem>
+                                                <SelectItem value="wholesale">Wholesale</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     {settings.pos.showInvoiceScheme && (
                                         <div className="space-y-2">
                                         <Label>Invoice Scheme</Label>
@@ -1413,8 +1429,8 @@ export default function PosPage() {
                                                 <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
                                                     <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
                                                 </div>
-                                                <div className="col-span-2">{formatCurrency(item.product.sellingPrice)}</div>
-                                                <div className="col-span-2 font-semibold">{formatCurrency(item.product.sellingPrice * item.quantity)}</div>
+                                                <div className="col-span-2">{formatCurrency(item.sellingPrice)}</div>
+                                                <div className="col-span-2 font-semibold">{formatCurrency(item.sellingPrice * item.quantity)}</div>
                                                 <div className="col-span-1 text-center">
                                                     <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.product.id)}><X className="w-4 h-4"/></Button>
                                                 </div>
