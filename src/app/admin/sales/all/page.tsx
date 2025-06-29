@@ -66,6 +66,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/hooks/use-currency';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -89,6 +91,9 @@ export default function AllSalesPage() {
     
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
+
+    const [selectedSales, setSelectedSales] = useState<Set<string>>(new Set());
+    const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
     useEffect(() => {
         const fetchSales = async () => {
@@ -137,6 +142,48 @@ export default function AllSalesPage() {
                 setIsDeleteDialogOpen(false);
                 setSaleToDelete(null);
             }
+        }
+    };
+    
+    const handleSelectAll = (checked: boolean | 'indeterminate') => {
+        if (checked === true) {
+            setSelectedSales(new Set(sales.map(s => s.id)));
+        } else {
+            setSelectedSales(new Set());
+        }
+    };
+
+    const handleSelectOne = (saleId: string, checked: boolean) => {
+        const newSet = new Set(selectedSales);
+        if (checked) {
+            newSet.add(saleId);
+        } else {
+            newSet.delete(saleId);
+        }
+        setSelectedSales(newSet);
+    };
+
+    const confirmDeleteSelected = async () => {
+        const idsToDelete = Array.from(selectedSales);
+        try {
+            await Promise.all(idsToDelete.map(id => deleteSale(id)));
+            
+            setSales(sales.filter(s => !selectedSales.has(s.id)));
+            setSelectedSales(new Set());
+            
+            toast({ 
+                title: "Success", 
+                description: `${idsToDelete.length} sale(s) deleted successfully.` 
+            });
+
+        } catch (error) {
+            toast({ 
+                title: "Error", 
+                description: "Failed to delete one or more sales.", 
+                variant: "destructive" 
+            });
+        } finally {
+            setIsBulkDeleteDialogOpen(false);
         }
     };
 
@@ -203,6 +250,13 @@ export default function AllSalesPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
+                            <TableHead className="w-12">
+                                <Checkbox
+                                    checked={sales.length > 0 && selectedSales.size === sales.length}
+                                    onCheckedChange={handleSelectAll}
+                                    aria-label="Select all rows"
+                                />
+                            </TableHead>
                             <TableHead className="print-hidden">Action</TableHead>
                             <TableHead><div className="flex items-center gap-1">Date <ArrowUpDown className="h-3 w-3" /></div></TableHead>
                             <TableHead><div className="flex items-center gap-1">Invoice No. <ArrowUpDown className="h-3 w-3" /></div></TableHead>
@@ -227,6 +281,7 @@ export default function AllSalesPage() {
                         {isLoading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-5"/></TableCell>
                                     <TableCell className="print-hidden"><Skeleton className="h-8 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -249,6 +304,13 @@ export default function AllSalesPage() {
                             ))
                         ) : sales.map((sale) => (
                             <TableRow key={sale.id}>
+                            <TableCell>
+                                <Checkbox
+                                    checked={selectedSales.has(sale.id)}
+                                    onCheckedChange={(checked) => handleSelectOne(sale.id, !!checked)}
+                                    aria-label={`Select row for invoice ${sale.invoiceNo}`}
+                                />
+                            </TableCell>
                             <TableCell className="print-hidden">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -283,8 +345,8 @@ export default function AllSalesPage() {
                         </TableBody>
                         <TableFooter>
                             <TableRow>
-                                <TableHead colSpan={8} className="text-right font-bold print-hidden">Total:</TableHead>
-                                <TableHead colSpan={8} className="text-right font-bold hidden print:table-cell">Total:</TableHead>
+                                <TableHead colSpan={9} className="text-right font-bold print-hidden">Total:</TableHead>
+                                <TableHead colSpan={9} className="text-right font-bold hidden print:table-cell">Total:</TableHead>
                                 <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
                                 <TableCell className="font-bold">{formatCurrency(totalPaid)}</TableCell>
                                 <TableCell className="font-bold">{formatCurrency(sellDue)}</TableCell>
@@ -296,13 +358,25 @@ export default function AllSalesPage() {
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 print-hidden">
-                    <div className="text-xs text-muted-foreground">
+                    <div className="flex-1">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={selectedSales.size === 0}
+                            onClick={() => setIsBulkDeleteDialogOpen(true)}
+                        >
+                            Delete Selected ({selectedSales.size})
+                        </Button>
+                    </div>
+                    <div className="flex-1 text-xs text-muted-foreground text-center">
                         Showing <strong>1 to {sales.length}</strong> of <strong>{sales.length}</strong> entries
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">Previous</Button>
-                        <Button variant="default" size="sm" className="h-9 w-9 p-0">1</Button>
-                        <Button variant="outline" size="sm">Next</Button>
+                    <div className="flex-1 flex justify-end">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm">Previous</Button>
+                            <Button variant="default" size="sm" className="h-9 w-9 p-0">1</Button>
+                            <Button variant="outline" size="sm">Next</Button>
+                        </div>
                     </div>
                 </CardFooter>
             </Card>
@@ -324,6 +398,22 @@ export default function AllSalesPage() {
             <AlertDialogCancel onClick={() => setSaleToDelete(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedSales.size} selected sale(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSelected} className="bg-red-600 hover:bg-red-700">
+              Delete Selected
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
