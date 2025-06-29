@@ -147,46 +147,210 @@ const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
     );
 };
 
-const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boolean, onOpenChange: (open: boolean) => void, totalPayable: number }) => {
+const CloseRegisterDialog = ({
+    open,
+    onOpenChange,
+    cart,
+    totalPayable,
+    discount,
+    user,
+    settings,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    cart: CartItem[];
+    totalPayable: number;
+    discount: number;
+    user: { name: string; email: string; role: string } | null;
+    settings: AllSettings;
+}) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
     const [closingCash, setClosingCash] = useState('');
-    const openingCash = 100.00; // Mock data
-    const totalCashSales = totalPayable; // Simplified for demo
-    const totalRefunds = 0; // Mock data
-    const totalExpenses = 0; // Mock data for expenses paid from till
+    const [cardSlips, setCardSlips] = useState('0');
+    const [totalCheques, setTotalCheques] = useState('0');
+    const [closingNote, setClosingNote] = useState('');
 
-    const expected = openingCash + totalCashSales - totalRefunds - totalExpenses;
-    const difference = parseFloat(closingCash) - expected || 0;
+    const [openTime, setOpenTime] = useState('');
+    const [closeTime, setCloseTime] = useState('');
+
+    useEffect(() => {
+        if (open) {
+            const now = new Date();
+            const start = new Date(now.getTime() - Math.random() * 8 * 60 * 60 * 1000); // random time in last 8 hours
+            setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
+            setCloseTime(format(now, 'dd MMM, yyyy hh:mm a'));
+        }
+    }, [open]);
+
+    const openingCash = 1000.00; // Mock data
+    const cashPayment = totalPayable; // Simplified for demo
+    const totalRefunds = 0.00; // Mock data
+    const totalExpenses = 0.00; // Mock data for expenses paid from till
+    const creditSales = 0.00; // Mock data
+    const totalSales = cashPayment; // Simplified
+    const totalPayment = openingCash + totalSales;
 
     const handleCloseRegister = () => {
         toast({
             title: "Register Closed",
-            description: `Register closed with a difference of ${formatCurrency(difference)}.`,
+            description: `Register closed successfully.`,
         });
         onOpenChange(false);
     };
+
+    const paymentMethods = [
+        { label: 'Cash in hand:', sell: openingCash, expense: null },
+        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00 },
+        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Card Payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00 },
+        { label: 'Advance payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Custom Payment 1:', sell: 0.00, expense: 0.00 },
+        { label: 'Custom Payment 2:', sell: 0.00, expense: 0.00 },
+        { label: 'Custom Payment 3:', sell: 0.00, expense: 0.00 },
+        { label: 'Other Payments:', sell: 0.00, expense: 0.00 },
+    ];
     
+    const summaryRows = [
+        { label: 'Total Sales:', value: totalSales, color: '' },
+        { label: 'Total Refund', value: totalRefunds, color: 'bg-red-100 dark:bg-red-900/20' },
+        { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
+        { label: 'Credit Sales:', value: creditSales, color: '' },
+        { label: 'Total Expense:', value: totalExpenses, color: 'bg-red-100 dark:bg-red-900/20' },
+    ];
+
+    const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
+
+    const salesByBrand = useMemo(() => {
+        const brands: { [key: string]: { quantity: number; total: number } } = {};
+        cart.forEach(item => {
+            const brandName = item.product.brand || 'Unbranded';
+            if (!brands[brandName]) {
+                brands[brandName] = { quantity: 0, total: 0 };
+            }
+            brands[brandName].quantity += item.quantity;
+            brands[brandName].total += item.quantity * item.sellingPrice;
+        });
+        return Object.entries(brands).map(([name, data]) => ({ name, ...data }));
+    }, [cart]);
+    
+    const totalBrandQuantity = useMemo(() => salesByBrand.reduce((acc, item) => acc + item.quantity, 0), [salesByBrand]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Close Register</DialogTitle>
+                    <DialogTitle>Current Register ( {openTime} - {closeTime} )</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="flex justify-between"><span>Opening Cash:</span><span>{formatCurrency(openingCash)}</span></div>
-                    <div className="flex justify-between"><span>Total Cash Sales:</span><span>{formatCurrency(totalCashSales)}</span></div>
-                    <div className="flex justify-between"><span>Total Cash Refunds:</span><span>- {formatCurrency(totalRefunds)}</span></div>
-                    <div className="flex justify-between"><span>Total Cash Expenses:</span><span>- {formatCurrency(totalExpenses)}</span></div>
-                    <Separator/>
-                    <div className="flex justify-between font-bold"><span>Expected In Register:</span><span>{formatCurrency(expected)}</span></div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="closing-cash" className="text-right">Closing Cash</Label>
-                        <Input id="closing-cash" type="number" className="col-span-3" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} />
+                <ScrollArea className="max-h-[70vh] pr-6">
+                    <div className="space-y-6 py-4 text-sm printable-area">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Payment Method</TableHead>
+                                    <TableHead className="text-right">Sell</TableHead>
+                                    <TableHead className="text-right">Expense</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paymentMethods.map(pm => (
+                                    <TableRow key={pm.label}>
+                                        <TableCell>{pm.label}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(pm.sell)}</TableCell>
+                                        <TableCell className="text-right">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        
+                        <div className="border rounded-md">
+                            {summaryRows.map(row => (
+                                <div key={row.label} className={cn("flex justify-between p-2 font-semibold border-b last:border-b-0", row.color)}>
+                                    <span>{row.label}</span>
+                                    <span>{formatCurrency(row.value)}</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="text-center font-semibold bg-muted p-2 rounded-md">
+                            Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefunds)} (Refund) - {formatCurrency(totalExpenses)} (Expense) = {formatCurrency(totalPayment)}
+                        </div>
+
+                        <h3 className="font-bold text-base pt-4">Details of products sold</h3>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow><TableHead>#</TableHead><TableHead>SKU</TableHead><TableHead>Product</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead className="text-right">Total amount</TableHead></TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {cart.map((item, index) => (
+                                        <TableRow key={item.product.id + index}>
+                                            <TableCell>{index + 1}</TableCell><TableCell>{item.product.sku}</TableCell><TableCell>{item.product.name}</TableCell><TableCell className="text-right">{item.quantity}</TableCell><TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
+                                        <TableCell colSpan={3}>#</TableCell>
+                                        <TableCell className="text-right">{totalQuantity}</TableCell>
+                                        <TableCell className="text-right">
+                                            <p>Discount: (-) {formatCurrency(discount)}</p>
+                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                                        </TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </div>
+
+                        <h3 className="font-bold text-base pt-4">Details of products sold (By Brand)</h3>
+                         <div className="border rounded-md">
+                            <Table>
+                                 <TableHeader>
+                                    <TableRow><TableHead>#</TableHead><TableHead>Brands</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead className="text-right">Total amount</TableHead></TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {salesByBrand.map((brand, index) => (
+                                        <TableRow key={brand.name}>
+                                            <TableCell>{index + 1}</TableCell><TableCell>{brand.name}</TableCell><TableCell className="text-right">{brand.quantity}</TableCell><TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                                 <TableFooter>
+                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
+                                        <TableCell colSpan={2}>#</TableCell>
+                                        <TableCell className="text-right">{totalBrandQuantity}</TableCell>
+                                        <TableCell className="text-right">
+                                            <p>Discount: (-) {formatCurrency(discount)}</p>
+                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                                        </TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </div>
+                        
+                        <div className="pt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2"><Label htmlFor="total-cash">Total Cash*</Label><Input id="total-cash" type="number" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder={formatCurrency(cashPayment)} /></div>
+                                <div className="space-y-2"><Label htmlFor="total-card-slips">Total Card Slips*</Label><Input id="total-card-slips" type="number" value={cardSlips} onChange={(e) => setCardSlips(e.target.value)} /></div>
+                                <div className="space-y-2"><Label htmlFor="total-cheques">Total cheques*</Label><Input id="total-cheques" type="number" value={totalCheques} onChange={(e) => setTotalCheques(e.target.value)} /></div>
+                            </div>
+                            <div className="mt-4">
+                                <h4 className="font-semibold">Cash Denominations</h4>
+                                <p className="text-xs text-muted-foreground">Add denominations in Settings -&gt; Business Settings -&gt; POS -&gt; Cash Denominations</p>
+                            </div>
+                            <div className="mt-4 space-y-2">
+                                <Label htmlFor="closing-note">Closing Note:</Label>
+                                <Textarea id="closing-note" value={closingNote} onChange={(e) => setClosingNote(e.target.value)} />
+                            </div>
+                            <div className="mt-6 border-t pt-4">
+                                <p><strong>User:</strong> {user?.name}</p>
+                                <p><strong>Email:</strong> {user?.email}</p>
+                                <p><strong>Business Location:</strong> {settings.business.businessName}</p>
+                            </div>
+                        </div>
                     </div>
-                     <div className="flex justify-between font-bold text-red-500"><span>Difference:</span><span>{formatCurrency(difference)}</span></div>
-                     <Textarea placeholder="Closing note..." />
-                </div>
+                </ScrollArea>
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleCloseRegister}>Close Register</Button>
@@ -330,7 +494,7 @@ const RegisterDetailsDialog = ({
                     <h3 className="font-bold text-lg mt-4">Details of products sold</h3>
                     <div className="border rounded-md">
                         <Table>
-                            <TableHeader className="sticky top-0 bg-background z-10">
+                            <TableHeader>
                                 <TableRow>
                                     <TableHead>#</TableHead>
                                     <TableHead>SKU</TableHead>
@@ -366,7 +530,7 @@ const RegisterDetailsDialog = ({
                     <h3 className="font-bold text-lg mt-6">Details of products sold (By Brand)</h3>
                     <div className="border rounded-md">
                         <Table>
-                             <TableHeader className="sticky top-0 bg-background z-10">
+                             <TableHeader>
                                 <TableRow>
                                     <TableHead>#</TableHead>
                                     <TableHead>Brands</TableHead>
@@ -1804,7 +1968,15 @@ export default function PosPage() {
 
         {/* Dialogs that are part of the main page state */}
         <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
-        <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
+        <CloseRegisterDialog
+            open={isCloseRegisterOpen}
+            onOpenChange={setIsCloseRegisterOpen}
+            cart={cart}
+            totalPayable={totalPayable}
+            discount={discount}
+            user={user}
+            settings={settings}
+        />
         <RecentTransactionsDialog
             open={isRecentTransactionsOpen}
             onOpenChange={setIsRecentTransactionsOpen}
