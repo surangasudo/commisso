@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData, Timestamp } from 'firebase/firestore';
 import { type Expense } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -18,7 +18,7 @@ export async function getExpenses(): Promise<Expense[]> {
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<void> {
     const dataToSave = {
         ...expense,
-        date: new Date(expense.date),
+        date: Timestamp.fromDate(new Date(expense.date)),
     };
     await addDoc(expensesCollection, dataToSave);
 }
