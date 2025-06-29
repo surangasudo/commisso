@@ -12,7 +12,7 @@ import {
   PlusCircle,
   Minus,
   Calendar,
-  Rewind,
+  Home,
   Save,
   Calculator,
   RefreshCw,
@@ -1226,9 +1226,11 @@ export default function PosPage() {
                             )}
                         </div>
                         <div className="flex items-center gap-1">
-                            {!settings.pos.dontShowRecentTransactions && (
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsRecentTransactionsOpen(true)}><Rewind /></Button>
-                            )}
+                            <Link href="/admin/dashboard">
+                                <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" title="Go to Dashboard">
+                                    <Home />
+                                </Button>
+                            </Link>
                             <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={() => clearCart()}><X /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
