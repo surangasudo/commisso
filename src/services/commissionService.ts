@@ -22,37 +22,34 @@ export type PendingCommission = {
 
 export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
     noStore();
-    const [profilesSnapshot, commissionsSnapshot] = await Promise.all([
-        getDocs(commissionProfilesCollection),
-        getDocs(commissionsCollection)
-    ]);
-    
+    const profilesSnapshot = await getDocs(commissionProfilesCollection);
     const profiles = profilesSnapshot.docs.map(doc => processDoc<CommissionProfile>(doc));
-    const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
 
-    const summaries = new Map<string, { netEarned: number; totalPaid: number }>();
+    const profilesWithSummary: CommissionProfileWithSummary[] = await Promise.all(
+        profiles.map(async (profile) => {
+            const commissionsQuery = query(commissionsCollection, where("recipient_profile_id", "==", profile.id));
+            const commissionsSnapshot = await getDocs(commissionsQuery);
+            const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
+            
+            let netEarned = 0;
+            let totalPaid = 0;
 
-    for (const commission of allCommissions) {
-        const summary = summaries.get(commission.recipient_profile_id) || { netEarned: 0, totalPaid: 0 };
-        
-        // commission_amount can be negative for reversals
-        summary.netEarned += commission.commission_amount || 0;
-        
-        if (commission.status === 'Paid') {
-            summary.totalPaid += commission.commission_amount || 0;
-        }
-        
-        summaries.set(commission.recipient_profile_id, summary);
-    }
-    
-    const profilesWithSummary: CommissionProfileWithSummary[] = profiles.map(profile => {
-        const summary = summaries.get(profile.id) || { netEarned: 0, totalPaid: 0 };
-        return { 
-            ...profile,
-            totalCommissionEarned: Math.round(summary.netEarned * 100) / 100,
-            totalCommissionPaid: Math.round(summary.totalPaid * 100) / 100,
-        };
-    });
+            for (const commission of allCommissions) {
+                const amount = commission.commission_amount || 0;
+                netEarned += amount;
+
+                if (commission.status === 'Paid') {
+                    totalPaid += amount;
+                }
+            }
+
+            return {
+                ...profile,
+                totalCommissionEarned: Math.round(netEarned * 100) / 100,
+                totalCommissionPaid: Math.round(totalPaid * 100) / 100,
+            };
+        })
+    );
 
     return profilesWithSummary;
 }
