@@ -43,19 +43,19 @@ export default function MoneyExchangeReportPage() {
         );
     }, [exchanges, searchTerm]);
 
-    const totalAmount = useMemo(() => filteredData.reduce((sum, item) => sum + item.amount, 0), [filteredData]);
-    const totalProfit = useMemo(() => filteredData.reduce((sum, item) => sum + item.profit, 0), [filteredData]);
+    const totalAmount = useMemo(() => filteredData.reduce((sum, item) => sum + (item.amount || 0), 0), [filteredData]);
+    const totalProfit = useMemo(() => filteredData.reduce((sum, item) => sum + (item.profit || 0), 0), [filteredData]);
 
     const handleExport = (format: 'csv' | 'xlsx' | 'pdf') => {
         const filename = 'money-exchange-report';
         const exportData = filteredData.map(item => ({
             "Date": new Date(item.date).toLocaleString(),
-            "From": `${item.amount.toFixed(2)} ${item.fromCurrency}`,
-            "To": `${item.convertedAmount.toFixed(2)} ${item.toCurrency}`,
-            "Base Rate": item.baseRate.toFixed(4),
-            "Offered Rate": item.offeredRate.toFixed(4),
-            "Markup": `${item.markupPercent}%`,
-            "Profit": `${item.profit.toFixed(2)} ${item.fromCurrency}`,
+            "From": `${(item.amount || 0).toFixed(2)} ${item.fromCurrency}`,
+            "To": `${(item.convertedAmount || 0).toFixed(2)} ${item.toCurrency}`,
+            "Base Rate": (item.baseRate || 0).toFixed(4),
+            "Offered Rate": (item.offeredRate || 0).toFixed(4),
+            "Markup": `${item.markupPercent || 0}%`,
+            "Profit": `${(item.profit || 0).toFixed(2)} ${item.fromCurrency}`,
             "Added By": item.addedBy,
         }));
         
@@ -122,10 +122,10 @@ export default function MoneyExchangeReportPage() {
                                 ) : filteredData.length > 0 ? filteredData.map((item) => (
                                     <TableRow key={item.id}>
                                         <TableCell>{new Date(item.date).toLocaleString()}</TableCell>
-                                        <TableCell>{item.amount.toFixed(2)} {item.fromCurrency}</TableCell>
-                                        <TableCell>{item.convertedAmount.toFixed(2)} {item.toCurrency}</TableCell>
-                                        <TableCell>1 {item.fromCurrency} = {item.offeredRate.toFixed(4)} {item.toCurrency}</TableCell>
-                                        <TableCell className="text-right font-medium text-green-600">{item.profit.toFixed(2)} {item.fromCurrency}</TableCell>
+                                        <TableCell>{(item.amount || 0).toFixed(2)} {item.fromCurrency}</TableCell>
+                                        <TableCell>{(item.convertedAmount || 0).toFixed(2)} {item.toCurrency}</TableCell>
+                                        <TableCell>1 {item.fromCurrency} = {(item.offeredRate || 0).toFixed(4)} {item.toCurrency}</TableCell>
+                                        <TableCell className="text-right font-medium text-green-600">{(item.profit || 0).toFixed(2)} {item.fromCurrency}</TableCell>
                                         <TableCell>{item.addedBy}</TableCell>
                                     </TableRow>
                                 )) : (
