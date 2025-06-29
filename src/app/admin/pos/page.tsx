@@ -1627,7 +1627,7 @@ export default function PosPage() {
       }
       
       if (
-        settings.sale.isCommissionAgentPhoneCompulsory &&
+        settings.sale.enableCommissionAgent &&
         !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson
       ) {
           toast({
@@ -2024,7 +2024,7 @@ export default function PosPage() {
                                                   </div>
                                               </div>
                                           </div>
-                                      ) : settings.sale.enableCommissionAgent && settings.sale.commissionAgent === 'select_from_commission_agent_list' ? (
+                                      ) : settings.sale.enableCommissionAgent ? (
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1">
                                                 <CommissionSelector
