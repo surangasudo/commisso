@@ -10,10 +10,8 @@ import {
   X,
   CreditCard,
   PlusCircle,
-  Minus,
   Calendar,
   Home,
-  Save,
   Calculator,
   RefreshCw,
   Expand,
@@ -25,8 +23,6 @@ import {
   Info,
   Edit2,
   LayoutGrid,
-  Copyright,
-  Undo2,
   WalletCards,
   Monitor,
   Shrink,
@@ -34,6 +30,10 @@ import {
   Pencil,
   Printer,
   Grid3x3,
+  FileEdit2,
+  Check,
+  Banknote,
+  DollarSign,
 } from 'lucide-react';
 import {
   Card,
@@ -523,10 +523,7 @@ const RegisterDetailsDialog = ({
                             <TableBody>
                                 {salesByBrand.map((brand, index) => (
                                     <TableRow key={brand.name}>
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell>{brand.name}</TableCell>
-                                        <TableCell className="text-right">{brand.quantity}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
+                                        <TableCell>{index + 1}</TableCell><TableCell>{brand.name}</TableCell><TableCell className="text-right">{brand.quantity}</TableCell><TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -595,6 +592,7 @@ const RecentTransactionsDialog = ({
                         <TabsTrigger value="final">Final</TabsTrigger>
                         <TabsTrigger value="quotation">Quotation</TabsTrigger>
                         <TabsTrigger value="draft">Draft</TabsTrigger>
+                        <TabsTrigger value="suspended">Suspended</TabsTrigger>
                     </TabsList>
                     <TabsContent value="final" className="pt-4">
                         <ScrollArea className="max-h-[60vh]">
@@ -631,6 +629,9 @@ const RecentTransactionsDialog = ({
                     </TabsContent>
                     <TabsContent value="draft" className="pt-4">
                         <div className="text-center py-10 text-muted-foreground">Drafts not yet implemented.</div>
+                    </TabsContent>
+                     <TabsContent value="suspended" className="pt-4">
+                        <div className="text-center py-10 text-muted-foreground">Suspended sales not yet implemented.</div>
                     </TabsContent>
                 </Tabs>
                 <DialogFooter>
@@ -1212,6 +1213,7 @@ export default function PosPage() {
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+  const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
 
   // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
@@ -2034,62 +2036,70 @@ export default function PosPage() {
                         </div>
                     </div>
                     
-                    <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
-                        <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
-                            {!settings.pos.disableDraft && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>}
-                            <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleQuotation}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Quotation</span></Button>
-                            {!settings.pos.disableSuspendSale && <Button variant="outline" className="text-red-500 border-red-500/50 hover:bg-destructive/10 hover:text-red-500 h-9 px-2 sm:px-4" onClick={handleSuspend}><Pause className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Suspend</span></Button>}
-                            {!settings.pos.disableCreditSaleButton && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCreditSale}><Undo2 className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Credit Sale</span></Button>}
-                            <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleCardPayment}><CreditCard className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Card</span></Button>
+                    <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex items-center justify-between z-10 gap-2">
+                        {/* Left Icon Buttons */}
+                        <div className="flex items-center gap-1">
+                            {!settings.pos.disableDraft && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleDraft}><FileEdit2 className="h-5 w-5 mb-1 text-blue-500" /><span>Draft</span></Button>}
+                            <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleQuotation}><FileText className="h-5 w-5 mb-1 text-yellow-500" /><span>Quotation</span></Button>
+                            {!settings.pos.disableSuspendSale && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleSuspend}><Pause className="h-5 w-5 mb-1 text-red-500" /><span>Suspend</span></Button>}
+                            {!settings.pos.disableCreditSaleButton && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCreditSale}><Check className="h-5 w-5 mb-1 text-purple-500" /><span>Credit Sale</span></Button>}
+                            <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCardPayment}><CreditCard className="h-5 w-5 mb-1 text-pink-500" /><span>Card</span></Button>
                         </div>
-                        <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center">
-                            {!settings.pos.disableMultiplePay && (
-                                <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
-                                    <DialogTrigger asChild>
-                                        <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-2 sm:px-4"><WalletCards className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Multiple Pay</span></Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                        <DialogHeader>
-                                            <DialogTitle>Finalize Payment</DialogTitle>
-                                            <DialogDescription>
-                                                Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <div className="grid gap-4 py-4">
-                                            <div className="grid grid-cols-4 items-center gap-4">
-                                                <Label htmlFor="cash-amount" className="text-right">Cash</Label>
-                                                <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+
+                        {/* Right side group */}
+                        <div className="flex items-center gap-4">
+                            {/* Payment Buttons */}
+                            <div className="flex items-center gap-2">
+                                {!settings.pos.disableMultiplePay && (
+                                    <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-4"><WalletCards className="h-4 w-4 mr-2"/>Multiple Pay</Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Finalize Payment</DialogTitle>
+                                                <DialogDescription>
+                                                    Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4 py-4">
+                                                <div className="grid grid-cols-4 items-center gap-4">
+                                                    <Label htmlFor="cash-amount" className="text-right">Cash</Label>
+                                                    <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
+                                                </div>
+                                                <div className="grid grid-cols-4 items-center gap-4">
+                                                    <Label htmlFor="card-amount" className="text-right">Card</Label>
+                                                    <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
+                                                </div>
+                                                <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
+                                                <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
                                             </div>
-                                            <div className="grid grid-cols-4 items-center gap-4">
-                                                <Label htmlFor="card-amount" className="text-right">Card</Label>
-                                                <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
-                                            </div>
-                                            <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
-                                            <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
-                                        </div>
-                                        <DialogFooter>
-                                            <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            )}
-                            
-                            {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>}
-                            <Button variant="destructive" className="text-xs sm:text-sm" onClick={() => clearCart()}>Cancel</Button>
-                        </div>
-                        <div className="text-center md:text-right w-full md:w-auto">
-                            <span className="text-xs sm:text-sm text-muted-foreground">Total Payable:</span>
-                            <h3 className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
+                                            <DialogFooter>
+                                                <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                )}
+                                
+                                {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-9 px-4" onClick={handleCashPayment}><Banknote className="h-4 w-4 mr-2"/>Cash</Button>}
+                                <Button variant="destructive" className="h-9 px-4" onClick={() => clearCart()}><X className="h-4 w-4 mr-2"/>Cancel</Button>
+                            </div>
+                            {/* Total Payable */}
+                            <div className="text-right">
+                                <span className="text-sm text-muted-foreground">Total Payable:</span>
+                                <h3 className="text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
+                            </div>
+                            {/* Recent Transactions */}
+                            <div>
+                                <Button variant="default" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
+                                    <History className="mr-2 h-4 w-4" />
+                                    Recent Transactions
+                                </Button>
+                            </div>
                         </div>
                     </footer>
                 </div>
             </TooltipProvider>
-            <div className="absolute bottom-4 right-4 print-hidden z-20">
-                <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
-                    <History className="mr-2 h-4 w-4" />
-                    Recent Transactions
-                </Button>
-            </div>
         </div>
         
         <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
@@ -2183,6 +2193,20 @@ export default function PosPage() {
             </AlertDialogContent>
         </AlertDialog>
         <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
+         <Dialog open={isSuspendedSalesOpen} onOpenChange={setIsSuspendedSalesOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Suspended Sales</DialogTitle>
+                    <DialogDescription>Select a suspended sale to resume.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <p className="text-center text-muted-foreground">No suspended sales found.</p>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => setIsSuspendedSalesOpen(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </>
   );
 }
