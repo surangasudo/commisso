@@ -254,10 +254,10 @@ const RegisterDetailsDialog = ({
     ];
     
     const summaryRows = [
+        { label: 'Credit Sales:', value: creditSales, color: '' },
         { label: 'Total Sales:', value: totalSales, color: '' },
         { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
         { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
-        { label: 'Credit Sales:', value: creditSales, color: '' },
         { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
     ];
 
@@ -289,6 +289,7 @@ const RegisterDetailsDialog = ({
                 <DialogHeader>
                     <DialogTitle>Register Details ({openTime} - {closeTime})</DialogTitle>
                 </DialogHeader>
+                <ScrollArea className="max-h-[70vh] pr-6">
                 <div className="space-y-4 py-4 text-sm printable-area">
                     {/* Payment breakdown table */}
                     <div className="border rounded-md">
@@ -327,7 +328,7 @@ const RegisterDetailsDialog = ({
                     </div>
                     
                     <h3 className="font-bold text-lg mt-4">Details of products sold</h3>
-                    <div className="border rounded-md max-h-[250px] overflow-y-auto">
+                    <div className="border rounded-md">
                         <Table>
                             <TableHeader className="sticky top-0 bg-background z-10">
                                 <TableRow>
@@ -363,7 +364,7 @@ const RegisterDetailsDialog = ({
                     </div>
                     
                     <h3 className="font-bold text-lg mt-6">Details of products sold (By Brand)</h3>
-                    <div className="border rounded-md max-h-[250px] overflow-y-auto">
+                    <div className="border rounded-md">
                         <Table>
                              <TableHeader className="sticky top-0 bg-background z-10">
                                 <TableRow>
@@ -402,6 +403,7 @@ const RegisterDetailsDialog = ({
                         <p><strong>Business Location:</strong> {settings.business.businessName}</p>
                     </div>
                 </div>
+                </ScrollArea>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => window.print()}>Print Mini</Button>
                     <Button variant="default" onClick={() => window.print()}>Print Detailed</Button>
