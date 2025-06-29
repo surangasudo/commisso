@@ -103,25 +103,16 @@ body {
     }
 }
 
-/* Print styles */
 @media print {
-  body {
-      background: white !important;
-      color: black !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+  body.is-printing .pos-page-container {
+      display: none;
+  }
+  
+  body:not(.is-printing) .printable-receipt-area {
+      display: none;
   }
 
-  .print-hidden {
-      display: none !important;
-  }
-  
-  [data-state="inactive"] {
-    display: none !important;
-  }
-  
-  @page {
-    size: auto;
-    margin: 0;
+  .printable-receipt-area {
+      display: block !important;
   }
 }

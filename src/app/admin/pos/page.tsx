@@ -211,12 +211,6 @@ const RecentTransactionsDialog = ({
     const { formatCurrency } = useCurrency();
     const [activeTab, setActiveTab] = useState("final");
 
-    const handlePrintFromDialog = (sale: Sale) => {
-        onPrint(sale);
-        onOpenChange(false); // Close the dialog
-    };
-
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
@@ -245,7 +239,7 @@ const RecentTransactionsDialog = ({
                                                     <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onEdit(sale.id)}>
                                                         <Pencil className="mr-1 h-3 w-3" /> Edit
                                                     </Button>
-                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => handlePrintFromDialog(sale)}>
+                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
                                                         <Printer className="mr-1 h-3 w-3" /> Print
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => onDelete(sale)}>
@@ -620,28 +614,30 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Refs and state for printing
+  // Ref for printing
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  // Browser-based printing logic
+  // Effect for browser-based printing
   useEffect(() => {
     if (saleToPrint) {
-        const handleAfterPrint = () => {
+        document.body.classList.add('is-printing');
+        window.print();
+
+        // Cleanup function to run after print dialog closes or is cancelled
+        const afterPrint = () => {
+            document.body.classList.remove('is-printing');
             setSaleToPrint(null);
-            window.removeEventListener('afterprint', handleAfterPrint);
+            window.removeEventListener('afterprint', afterPrint);
         };
-        window.addEventListener('afterprint', handleAfterPrint);
         
-        // Timeout ensures state updates are rendered before print dialog opens
-        const timer = setTimeout(() => {
-            window.print();
-        }, 100);
+        window.addEventListener('afterprint', afterPrint);
 
         return () => {
-            clearTimeout(timer);
-            window.removeEventListener('afterprint', handleAfterPrint);
-        };
+            // This is a failsafe in case component unmounts before print dialog closes
+            document.body.classList.remove('is-printing');
+            window.removeEventListener('afterprint', afterPrint);
+        }
     }
   }, [saleToPrint]);
   
@@ -1085,12 +1081,16 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setSaleToPrint(sale);
+        setIsRecentTransactionsOpen(false);
+        // Use a small timeout to allow the dialog to close before we trigger the print flow
+        setTimeout(() => {
+            setSaleToPrint(sale);
+        }, 150);
     };
 
   return (
     <>
-        <div className="print-hidden">
+        <div className="pos-page-container">
             <TooltipProvider>
                 <div className="flex flex-col h-screen bg-background text-foreground font-sans">
                     <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
@@ -1478,7 +1478,9 @@ export default function PosPage() {
         </div>
         
         {/* Hidden component for printing */}
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        </div>
 
         {/* Dialogs that are part of the main page state */}
         <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />

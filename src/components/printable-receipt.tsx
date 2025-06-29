@@ -21,11 +21,11 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }
 
     if (!sale) {
-        return <div ref={ref} />;
+        return <div ref={ref} className="printable-receipt-area" />;
     }
 
     return (
-        <div ref={ref} className="font-mono text-xs w-[300px] mx-auto p-2 bg-white text-black">
+        <div ref={ref} className="font-mono text-xs w-[300px] mx-auto p-2 bg-white text-black printable-receipt-area">
             <>
                 <div className="text-center p-4">
                     <Logo className="mx-auto h-12 w-12 mb-2" />
