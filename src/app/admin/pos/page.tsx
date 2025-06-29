@@ -33,7 +33,6 @@ import {
   Lock,
   Pencil,
   Printer,
-  Trash2,
   Grid3x3,
 } from 'lucide-react';
 import {
@@ -379,47 +378,34 @@ const RegisterDetailsDialog = ({
 }) => {
     const { formatCurrency } = useCurrency();
     const [openTime, setOpenTime] = useState('');
-    const [closeTime, setCloseTime] = useState('');
 
     useEffect(() => {
         if (open) {
             const now = new Date();
             const start = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // random time in last 2 hours
             setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
-            setCloseTime(format(now, 'dd MMM, yyyy hh:mm a'));
         }
     }, [open]);
 
-    // Mock data for the new layout
     const openingCash = 1000.00;
-    const cashPayment = totalPayable; // Assume all sales are cash for this mock
-    const chequePayment = 0.00;
-    const cardPayment = 0.00;
-    const bankTransfer = 0.00;
-    const advancePayment = 0.00;
-    const otherPayments = 0.00;
+    const cashPayment = totalPayable;
+    const totalSales = cashPayment;
     const totalRefund = 0.00;
     const totalExpense = 0.00;
-    const totalSales = cashPayment + chequePayment + cardPayment + bankTransfer + otherPayments;
     const totalPayment = openingCash + totalSales;
-    const creditSales = 0.00; // Not tracked, so mock
-    
+
     const paymentMethods = [
         { label: 'Cash in hand:', sell: openingCash, expense: null },
         { label: 'Cash Payment:', sell: cashPayment, expense: 0.00 },
-        { label: 'Cheque Payment:', sell: chequePayment, expense: 0.00 },
-        { label: 'Card Payment:', sell: cardPayment, expense: 0.00 },
-        { label: 'Bank Transfer:', sell: bankTransfer, expense: 0.00 },
-        { label: 'Advance payment:', sell: advancePayment, expense: 0.00 },
-        { label: 'Custom Payment 1:', sell: 0.00, expense: 0.00 },
-        { label: 'Custom Payment 2:', sell: 0.00, expense: 0.00 },
-        { label: 'Custom Payment 3:', sell: 0.00, expense: 0.00 },
-        { label: 'Other Payments:', sell: otherPayments, expense: 0.00 },
+        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Card Payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00 },
+        { label: 'Advance payment:', sell: 0.00, expense: 0.00 },
+        { label: 'Other Payments:', sell: 0.00, expense: 0.00 },
     ];
     
     const summaryRows = [
-        { label: 'Credit Sales:', value: creditSales, color: '' },
-        { label: 'Total Sales:', value: totalSales, color: '' },
+        { label: 'Total Sales:', value: totalSales },
         { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
         { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
         { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
@@ -429,7 +415,6 @@ const RegisterDetailsDialog = ({
 
     const salesByBrand = useMemo(() => {
         const brands: { [key: string]: { quantity: number; total: number } } = {};
-
         cart.forEach(item => {
             const brandName = item.product.brand || 'Unbranded';
             if (!brands[brandName]) {
@@ -438,11 +423,7 @@ const RegisterDetailsDialog = ({
             brands[brandName].quantity += item.quantity;
             brands[brandName].total += item.quantity * item.sellingPrice;
         });
-
-        return Object.entries(brands).map(([name, data]) => ({
-            name,
-            ...data,
-        }));
+        return Object.entries(brands).map(([name, data]) => ({ name, ...data }));
     }, [cart]);
     
     const totalBrandQuantity = useMemo(() => salesByBrand.reduce((acc, item) => acc + item.quantity, 0), [salesByBrand]);
@@ -451,11 +432,10 @@ const RegisterDetailsDialog = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Register Details ({openTime} - {closeTime})</DialogTitle>
+                    <DialogTitle>Register Details ({openTime} - Now)</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="max-h-[70vh] pr-6">
                 <div className="space-y-4 py-4 text-sm printable-area">
-                    {/* Payment breakdown table */}
                     <div className="border rounded-md">
                         <Table>
                             <TableHeader>
@@ -477,7 +457,6 @@ const RegisterDetailsDialog = ({
                         </Table>
                     </div>
 
-                    {/* Summary totals */}
                     <div className="border rounded-md">
                         {summaryRows.map(row => (
                             <div key={row.label} className={cn("flex justify-between p-2 font-semibold border-b last:border-b-0", row.color)}>
@@ -1216,6 +1195,22 @@ export default function PosPage() {
   }, [cart]);
 
   const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
+  
+  useEffect(() => {
+    const customerDisplayData = {
+        cart: cart.map(item => ({
+            product: { name: item.product.name },
+            quantity: item.quantity,
+            sellingPrice: item.sellingPrice
+        })),
+        subtotal,
+        discount,
+        orderTax,
+        shipping,
+        totalPayable,
+    };
+    localStorage.setItem('pos-customer-display-data', JSON.stringify(customerDisplayData));
+}, [cart, subtotal, discount, orderTax, shipping, totalPayable]);
 
 
   useEffect(() => {
@@ -1293,6 +1288,7 @@ export default function PosPage() {
     setSelectedSubAgent(null);
     setSelectedCompany(null);
     setSelectedSalesperson(null);
+    localStorage.removeItem('pos-customer-display-data');
     if (showToast) {
         toast({
             title: 'Cart Cleared',

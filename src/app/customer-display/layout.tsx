@@ -1,4 +1,8 @@
 import type {Metadata} from 'next';
+import '../globals.css';
+import { SettingsProvider } from '@/hooks/use-settings';
+import { ThemeProvider } from '@/components/theme-provider';
+
 
 export const metadata: Metadata = {
   title: 'Customer Display - Crimson POS',
@@ -12,7 +16,18 @@ export default function CustomerDisplayLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-        <body className="font-body antialiased">{children}</body>
+        <body className="font-body antialiased">
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              <SettingsProvider>
+                  {children}
+              </SettingsProvider>
+            </ThemeProvider>
+        </body>
     </html>
   );
 }
