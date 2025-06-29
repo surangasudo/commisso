@@ -35,6 +35,8 @@ import {
   Banknote,
   DollarSign,
   Copyright,
+  Trash2,
+  Wallet,
 } from 'lucide-react';
 import {
   Card,
