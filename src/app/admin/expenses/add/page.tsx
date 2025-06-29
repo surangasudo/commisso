@@ -146,14 +146,14 @@ export default function AddExpensePage() {
                 date: formData.paidOn.toISOString(),
                 referenceNo: formData.referenceNo || `EXP-${Date.now()}`,
                 location: formData.location,
-                expenseCategory: formData.expenseCategory === 'none' ? '' : formData.expenseCategory,
-                subCategory: formData.subCategory || null,
+                expenseCategory: formData.expenseCategory === 'none' ? '' : categories.find(c => c.id === formData.expenseCategory)?.name || '',
+                subCategory: formData.subCategory ? categories.find(c => c.id === formData.subCategory)?.name || null : null,
                 paymentStatus: paymentDue === 0 ? 'Paid' : (paymentDue >= totalAmount ? 'Due' : 'Partial'),
                 tax: taxAmount,
                 totalAmount: totalAmount,
                 paymentDue: paymentDue,
-                expenseFor: formData.expenseFor === 'none' ? null : formData.expenseFor || null,
-                contact: formData.contact === 'none' ? null : formData.contact || null,
+                expenseFor: formData.expenseFor === 'none' ? null : users.find(u => u.id === formData.expenseFor)?.name || null,
+                contact: formData.contact === 'none' ? null : allContacts.find(c => c.id === formData.contact)?.name || null,
                 addedBy: 'Admin', // Hardcoded for now
                 expenseNote: formData.expenseNote || null,
             };
@@ -221,7 +221,7 @@ export default function AddExpensePage() {
                                 <Label htmlFor="referenceNo">Reference No:</Label>
                                 <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="date">Date:*</Label>
                                 <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100 cursor-not-allowed">
                                     <CalendarIcon className="w-4 h-4 text-muted-foreground" />
@@ -233,6 +233,7 @@ export default function AddExpensePage() {
                                 <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
                                     <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
                                         {users.map(user => (
                                             <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
                                         ))}
@@ -244,6 +245,7 @@ export default function AddExpensePage() {
                                 <Select value={formData.contact} onValueChange={(value) => handleSelectChange('contact', value)}>
                                     <SelectTrigger id="contact"><SelectValue placeholder="Please Select" /></SelectTrigger>
                                      <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
                                         {allContacts.map(contact => (
                                             <SelectItem key={contact.id} value={contact.id}>{contact.name}</SelectItem>
                                         ))}
@@ -253,7 +255,7 @@ export default function AddExpensePage() {
                             <div className="space-y-2">
                                 <Label htmlFor="attachDocument">Attach Document:</Label>
                                 <Input id="attachDocument" type="file" />
-                                <p className="text-xs text-muted-foreground">Max File size: 5MB. Allowed File: .pdf, .csv, .zip, .doc, .docx, .jpeg, .jpg, .png</p>
+                                <p className="text-xs text-muted-foreground">Max File size: 5MB.</p>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
@@ -267,26 +269,28 @@ export default function AddExpensePage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="totalAmount">Total amount:*</Label>
                                 <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
                             </div>
-                            <div className="space-y-2 md:col-span-full">
+                            <div className="space-y-2 md:col-span-3">
                                 <Label htmlFor="expenseNote">Expense note:</Label>
                                 <Textarea id="expenseNote" value={formData.expenseNote} onChange={handleChange} />
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="isRefund" checked={formData.isRefund} onCheckedChange={(checked) => handleCheckboxChange('isRefund', !!checked)} />
-                                <Label htmlFor="isRefund" className="font-normal flex items-center gap-1">Is refund? <Info className="w-3 h-3"/></Label>
+                            <div className="md:col-span-3 flex items-center gap-6">
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="isRefund" checked={formData.isRefund} onCheckedChange={(checked) => handleCheckboxChange('isRefund', !!checked)} />
+                                    <Label htmlFor="isRefund" className="font-normal flex items-center gap-1">Is refund? <Info className="w-3 h-3"/></Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Checkbox id="isRecurring" checked={formData.isRecurring} onCheckedChange={(checked) => handleCheckboxChange('isRecurring', !!checked)} />
+                                    <Label htmlFor="isRecurring" className="font-normal flex items-center gap-1">Is Recurring? <Info className="w-3 h-3"/></Label>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="border-t pt-6">
-                            <div className="flex items-center space-x-2 mb-4">
-                                <Checkbox id="isRecurring" checked={formData.isRecurring} onCheckedChange={(checked) => handleCheckboxChange('isRecurring', !!checked)} />
-                                <Label htmlFor="isRecurring" className="font-normal flex items-center gap-1">Is Recurring? <Info className="w-3 h-3"/></Label>
-                            </div>
-                            {formData.isRecurring && (
+                        {formData.isRecurring && (
+                            <div className="border-t pt-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="recurringInterval">Recurring interval:*</Label>
@@ -308,8 +312,8 @@ export default function AddExpensePage() {
                                         <p className="text-xs text-muted-foreground">If blank expense will be generated infinite times</p>
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -365,15 +369,15 @@ export default function AddExpensePage() {
                                     <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-2 md:col-span-full">
+                            <div className="space-y-2 lg:col-span-2">
                                 <Label htmlFor="paymentNote">Payment note:</Label>
                                 <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
                             </div>
                         </div>
-                        <div className="text-right font-semibold mt-4">Payment due: {formatCurrency(paymentDue)}</div>
                     </CardContent>
                 </Card>
-                <div className="flex justify-end">
+                <div className="flex justify-between items-center">
+                    <p className="text-lg font-semibold">Payment due: {formatCurrency(paymentDue)}</p>
                     <Button size="lg" onClick={handleSave}>Save</Button>
                 </div>
             </div>
