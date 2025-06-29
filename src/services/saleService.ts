@@ -113,19 +113,23 @@ export async function addSale(
           const commission = agentProfile.commission || {};
           const categories = commission.categories || [];
           
-          let calculatedRate = 0;
-          const categoryRateData = categories.find((c: any) =>
-              c.category?.trim().toLowerCase() === productData.category?.trim().toLowerCase()
-          );
+          let finalRate = 0;
+          const categorySpecificRate = categories.find((c: any) =>
+              c.category?.trim().toLowerCase() === productData.category?.trim()?.toLowerCase()
+          )?.rate;
 
-          if (categoryRateData) {
-              calculatedRate = categoryRateData.rate || 0;
+          if (categorySpecificRate !== undefined) {
+              finalRate = categorySpecificRate;
           } else {
-              // Always fallback to the overall rate if a specific category rate is not found.
-              calculatedRate = commission.overall || 0;
+              const hasAnyCategoryRates = categories.length > 0;
+              if (hasAnyCategoryRates && commissionCategoryRule === 'strict') {
+                  finalRate = 0; 
+              } else {
+                  finalRate = commission.overall || 0;
+              }
           }
           
-          const commissionAmount = saleValue * (calculatedRate / 100);
+          const commissionAmount = saleValue * (finalRate / 100);
 
           if (commissionAmount > 0) {
               const newCommission = {
@@ -133,7 +137,7 @@ export async function addSale(
                   recipient_profile_id: agentId,
                   recipient_entity_type: agentProfile.entityType,
                   calculation_base_amount: saleValue,
-                  calculated_rate: calculatedRate,
+                  calculated_rate: finalRate,
                   commission_amount: commissionAmount,
                   status: 'Pending Approval',
                   calculation_date: new Date(),
