@@ -88,6 +88,7 @@ export type Supplier = {
 export type Customer = {
   id: string;
   contactId: string;
+  customerId?: string;
   name: string;
   email: string | null;
   taxNumber: string;
@@ -406,6 +407,15 @@ export type BusinessLocation = {
   paymentOptions?: PaymentOption[];
 };
 
+export type Currency = {
+  id: string;
+  name: string;
+  code: string;
+  symbol: string;
+  exchangeRate: number;
+  isBaseCurrency?: boolean;
+};
+
 const defaultPaymentOptions: PaymentOption[] = [
     { method: 'Cash', enabled: true },
     { method: 'Card', enabled: true },
@@ -471,7 +481,6 @@ export const businessLocations: BusinessLocation[] = [
 export const detailedProducts: DetailedProduct[] = [];
 export const products: Product[] = [];
 export const suppliers: Supplier[] = [];
-export const customers: Customer[] = [];
 export const commissionProfiles: CommissionProfile[] = [];
 export const purchases: Purchase[] = [];
 export const purchaseReturns: PurchaseReturn[] = [];
