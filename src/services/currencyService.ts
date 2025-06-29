@@ -9,7 +9,7 @@ import { type Currency } from '@/lib/data';
 
 const currencyCollection = collection(db, 'currencies');
 // It's recommended to store this key in an environment variable (e.g., in your .env file)
-const EXCHANGE_RATE_API_KEY = process.env.EXCHANGE_RATE_API_KEY || 'YOUR_API_KEY_HERE'; 
+const EXCHANGE_RATE_API_KEY = process.env.EXCHANGE_RATE_API_KEY; 
 
 export async function getCurrencies(): Promise<Currency[]> {
   noStore();
@@ -65,7 +65,7 @@ export async function setBaseCurrency(id: string): Promise<void> {
 }
 
 export async function updateAllExchangeRates(): Promise<{success: boolean, message: string}> {
-  if (EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
+  if (!EXCHANGE_RATE_API_KEY || EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
       const errorMsg = 'ExchangeRate-API key is not configured. Please add it to your .env file.';
       console.error(errorMsg);
       return { success: false, message: errorMsg };
