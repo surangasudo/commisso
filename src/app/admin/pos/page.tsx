@@ -34,6 +34,7 @@ import {
   Check,
   Banknote,
   DollarSign,
+  Copyright,
 } from 'lucide-react';
 import {
   Card,
@@ -90,7 +91,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings, type AllSettings } from '@/hooks/use-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AppFooter } from '@/components/app-footer';
 import { useAuth } from '@/hooks/use-auth';
 import { format } from 'date-fns';
 import { addExpense } from '@/services/expenseService';
@@ -408,7 +408,7 @@ const RegisterDetailsDialog = ({
     ];
     
     const summaryRows = [
-        { label: 'Total Sales:', value: totalSales },
+        { label: 'Total Sales:', value: totalSales, color: '' },
         { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
         { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
         { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
@@ -1725,335 +1725,332 @@ export default function PosPage() {
     };
 
   return (
-    <>
-        <div className="pos-page-container relative">
-            <TooltipProvider>
-                <div className="flex flex-col h-screen bg-background text-foreground font-sans">
-                    <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">{settings.business.businessName}</span></h2>
-                            {settings.pos.enableTransactionDate && (
-                                <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
-                                    <Calendar className="w-4 h-4" />
-                                    <span>{time}</span>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <Link href="/admin/dashboard">
-                                <Button variant="ghost" size="icon" className="text-muted-foreground" title="Go to Dashboard">
-                                    <Home />
-                                </Button>
-                            </Link>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 /></Button>
-                            <Button variant="ghost" size="icon" className="text-red-500" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleCustomerDisplay}><Monitor /></Button>
-                            <ThemeToggle className="text-muted-foreground" />
-                            <Button variant="ghost" size="icon" className="text-muted-foreground"><HelpCircle /></Button>
-                            <Button variant="destructive" className="h-9 px-3" onClick={() => setIsAddExpenseOpen(true)}>
-                                <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
-                            </Button>
-                        </div>
-                    </header>
+    <div className="pos-page-container">
+      <div className="relative">
+          <TooltipProvider>
+              <div className="flex flex-col h-screen bg-background text-foreground font-sans">
+                  <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
+                      <div className="flex items-center gap-2">
+                          <h2 className="text-sm font-semibold hidden md:block">Location: <span className="font-bold">{settings.business.businessName}</span></h2>
+                          {settings.pos.enableTransactionDate && (
+                              <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-md text-sm font-bold flex items-center gap-2">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>{time}</span>
+                              </div>
+                          )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                          <Link href="/admin/dashboard">
+                              <Button variant="ghost" size="icon" className="text-muted-foreground" title="Go to Dashboard">
+                                  <Home />
+                              </Button>
+                          </Link>
+                          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 /></Button>
+                          <Button variant="ghost" size="icon" className="text-red-500" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
+                          <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleCustomerDisplay}><Monitor /></Button>
+                          <ThemeToggle className="text-muted-foreground" />
+                          <Button variant="ghost" size="icon" className="text-muted-foreground"><HelpCircle /></Button>
+                          <Button variant="destructive" className="h-9 px-3" onClick={() => setIsAddExpenseOpen(true)}>
+                              <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
+                          </Button>
+                      </div>
+                  </header>
 
-                    {/* Main Content */}
-                    <div className="flex-1 grid grid-cols-1 lg:grid-cols-8 gap-4 p-4 overflow-hidden">
-                        
-                        {/* Left Side: Cart */}
-                        <div className="lg:col-span-3 flex flex-col gap-2">
-                            <Card className="p-3 bg-card">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <UserPlus className="text-muted-foreground flex-shrink-0"/>
-                                        <Select defaultValue="walk-in">
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select a customer" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="walk-in">Walk-In Customer</SelectItem>
-                                            {customers.map(customer => (
-                                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                        </Select>
-                                        <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-                                            <DialogTrigger asChild>
-                                                <Button size="icon" className="flex-shrink-0"><Plus/></Button>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle>Add New Customer</DialogTitle>
-                                                    <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
-                                                </DialogHeader>
-                                                <div className="space-y-4 py-4">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="name">Name *</Label>
-                                                        <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="mobile">Mobile *</Label>
-                                                        <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="email">Email</Label>
-                                                        <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
-                                                    </div>
-                                                </div>
-                                                <DialogFooter>
-                                                    <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-                                                    <Button onClick={handleSaveCustomer}>Save Customer</Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Selling Price Group</Label>
-                                        <Select value={priceGroup} onValueChange={setPriceGroup}>
-                                            <SelectTrigger className="h-10">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="default">Default Selling Price</SelectItem>
-                                                <SelectItem value="wholesale">Wholesale</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    {settings.pos.showInvoiceScheme && (
-                                        <div className="space-y-2">
-                                        <Label>Invoice Scheme</Label>
-                                        <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
-                                        </div>
-                                    )}
-                                    {settings.pos.showInvoiceLayoutDropdown && (
-                                        <div className="space-y-2">
-                                        <Label>Invoice Layout</Label>
-                                        <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
-                                        </div>
-                                    )}
-                                </div>
+                  {/* Main Content */}
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-8 gap-4 p-4 overflow-hidden">
+                      
+                      {/* Left Side: Cart */}
+                      <div className="lg:col-span-3 flex flex-col gap-2">
+                          <Card className="p-3 bg-card">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="flex items-center gap-2">
+                                      <UserPlus className="text-muted-foreground flex-shrink-0"/>
+                                      <Select defaultValue="walk-in">
+                                      <SelectTrigger className="w-full">
+                                          <SelectValue placeholder="Select a customer" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="walk-in">Walk-In Customer</SelectItem>
+                                          {customers.map(customer => (
+                                              <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                      </Select>
+                                      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                                          <DialogTrigger asChild>
+                                              <Button size="icon" className="flex-shrink-0"><Plus/></Button>
+                                          </DialogTrigger>
+                                          <DialogContent>
+                                              <DialogHeader>
+                                                  <DialogTitle>Add New Customer</DialogTitle>
+                                                  <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
+                                              </DialogHeader>
+                                              <div className="space-y-4 py-4">
+                                                  <div className="space-y-2">
+                                                      <Label htmlFor="name">Name *</Label>
+                                                      <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} placeholder="Customer Name" />
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                      <Label htmlFor="mobile">Mobile *</Label>
+                                                      <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({...p, mobile: e.target.value}))} placeholder="Mobile Number" />
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                      <Label htmlFor="email">Email</Label>
+                                                      <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} placeholder="Email Address" />
+                                                  </div>
+                                              </div>
+                                              <DialogFooter>
+                                                  <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                                                  <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                              </DialogFooter>
+                                          </DialogContent>
+                                      </Dialog>
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label>Selling Price Group</Label>
+                                      <Select value={priceGroup} onValueChange={setPriceGroup}>
+                                          <SelectTrigger className="h-10">
+                                              <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                              <SelectItem value="default">Default Selling Price</SelectItem>
+                                              <SelectItem value="wholesale">Wholesale</SelectItem>
+                                          </SelectContent>
+                                      </Select>
+                                  </div>
+                                  {settings.pos.showInvoiceScheme && (
+                                      <div className="space-y-2">
+                                      <Label>Invoice Scheme</Label>
+                                      <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
+                                      </div>
+                                  )}
+                                  {settings.pos.showInvoiceLayoutDropdown && (
+                                      <div className="space-y-2">
+                                      <Label>Invoice Layout</Label>
+                                      <Select><SelectTrigger className="h-10"><SelectValue placeholder="Default" /></SelectTrigger></Select>
+                                      </div>
+                                  )}
+                              </div>
 
-                                {settings.sale.enableCommissionAgent || settings.modules.serviceStaff ? (
-                                    <>
-                                        <Separator className="my-4" />
-                                        {settings.modules.advancedCommission ? (
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1">
-                                                            <CommissionSelector entityType="Agent" label="Agent" profiles={commissionProfiles} selectedProfile={selectedAgent} onSelect={setSelectedAgent} onRemove={() => setSelectedAgent(null)} />
-                                                        </div>
-                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1">
-                                                            <CommissionSelector entityType="Salesperson" label="Salesperson" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
-                                                        </div>
-                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1">
-                                                            <CommissionSelector entityType="Sub-Agent" label="Sub" profiles={commissionProfiles} selectedProfile={selectedSubAgent} onSelect={setSelectedSubAgent} onRemove={() => setSelectedSubAgent(null)} />
-                                                        </div>
-                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex-1">
-                                                            <CommissionSelector entityType="Company" label="Com" profiles={commissionProfiles} selectedProfile={selectedCompany} onSelect={setSelectedCompany} onRemove={() => setSelectedCompany(null)} />
-                                                        </div>
-                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex-1">
-                                                    <CommissionSelector entityType="Salesperson" label={settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff"} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
-                                                </div>
-                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
-                                            </div>
-                                        )}
-                                    </>
-                                ): null}
-                                
-                                <Separator className="my-4" />
-                                <div className="relative flex items-center">
-                                    <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Product name/SKU"
-                                        className="pl-10 w-full"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                    <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
-                                </div>
-                                {!settings.pos.dontShowProductSuggestion && searchTerm && searchResults.length > 0 && (
-                                    <div className="relative">
-                                    <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg -mt-1 top-full">
-                                        {searchResults.map((product) => (
-                                        <div
-                                            key={product.id}
-                                            className="p-2 hover:bg-accent cursor-pointer text-sm"
-                                            onClick={() => {
-                                                addToCart(product);
-                                                setSearchTerm('');
-                                            }}
-                                        >
-                                            {product.name} ({product.sku})
-                                        </div>
-                                        ))}
-                                    </div>
-                                    </div>
-                                )}
-                            </Card>
+                              {settings.sale.enableCommissionAgent || settings.modules.serviceStaff ? (
+                                  <>
+                                      <Separator className="my-4" />
+                                      {settings.modules.advancedCommission ? (
+                                          <div className="space-y-4">
+                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex-1">
+                                                          <CommissionSelector entityType="Agent" label="Agent" profiles={commissionProfiles} selectedProfile={selectedAgent} onSelect={setSelectedAgent} onRemove={() => setSelectedAgent(null)} />
+                                                      </div>
+                                                      <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus/></Button>
+                                                  </div>
+                                              </div>
+                                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex-1">
+                                                          <CommissionSelector entityType="Salesperson" label="Salesperson" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                                      </div>
+                                                      <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex-1">
+                                                          <CommissionSelector entityType="Sub-Agent" label="Sub" profiles={commissionProfiles} selectedProfile={selectedSubAgent} onSelect={setSelectedSubAgent} onRemove={() => setSelectedSubAgent(null)} />
+                                                      </div>
+                                                      <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus/></Button>
+                                                  </div>
+                                                  <div className="flex items-center gap-2">
+                                                      <div className="flex-1">
+                                                          <CommissionSelector entityType="Company" label="Com" profiles={commissionProfiles} selectedProfile={selectedCompany} onSelect={setSelectedCompany} onRemove={() => setSelectedCompany(null)} />
+                                                      </div>
+                                                      <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus/></Button>
+                                                  </div>
+                                              </div>
+                                          </div>
+                                      ) : (
+                                          <div className="flex items-center gap-2">
+                                              <div className="flex-1">
+                                                  <CommissionSelector entityType="Salesperson" label={settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff"} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
+                                              </div>
+                                              <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                          </div>
+                                      )}
+                                  </>
+                              ): null}
+                              
+                              <Separator className="my-4" />
+                              <div className="relative flex items-center">
+                                  <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
+                                  <Input
+                                      placeholder="Product name/SKU"
+                                      className="pl-10 w-full"
+                                      value={searchTerm}
+                                      onChange={(e) => setSearchTerm(e.target.value)}
+                                  />
+                                  <Button size="icon" className="ml-2 flex-shrink-0"><Plus/></Button>
+                              </div>
+                              {!settings.pos.dontShowProductSuggestion && searchTerm && searchResults.length > 0 && (
+                                  <div className="relative">
+                                  <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg -mt-1 top-full">
+                                      {searchResults.map((product) => (
+                                      <div
+                                          key={product.id}
+                                          className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                          onClick={() => {
+                                              addToCart(product);
+                                              setSearchTerm('');
+                                          }}
+                                      >
+                                          {product.name} ({product.sku})
+                                      </div>
+                                      ))}
+                                  </div>
+                                  </div>
+                              )}
+                          </Card>
 
-                            <Card className="flex-1 flex flex-col bg-card">
-                                <div className="p-4 flex-grow flex flex-col">
-                                <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-muted-foreground">
-                                    <div className={cn("col-span-4 flex items-center", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
-                                    {settings.pos.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
-                                    <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
-                                    <div className="col-span-2">Price inc. tax</div>
-                                    <div className="col-span-2">Subtotal</div>
-                                    <div className="col-span-1 text-center"><X className="w-4 h-4 mx-auto"/></div>
-                                </div>
-                                <ScrollArea className="flex-grow h-0">
-                                    <div className="py-2">
-                                    {cart.length > 0 ? (
-                                        cart.map((item) => (
-                                        <div key={item.product.id} className="grid grid-cols-12 gap-2 items-center text-sm mb-2">
-                                                <div className={cn("col-span-4 font-medium truncate", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>{item.product.name}</div>
-                                                {settings.pos.enableServiceStaffInProductLine && (
-                                                    <div className="col-span-2">
-                                                        <Select>
-                                                            <SelectTrigger className="h-8 text-xs">
-                                                            <SelectValue placeholder="Select Staff" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                            <SelectItem value="admin">Mr Admin</SelectItem>
-                                                            <SelectItem value="cashier">Mr Cashier</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    </div>
-                                                )}
-                                                <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
-                                                    <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
-                                                </div>
-                                                <div className="col-span-2">{formatCurrency(item.sellingPrice)}</div>
-                                                <div className="col-span-2 font-semibold">{formatCurrency(item.sellingPrice * item.quantity)}</div>
-                                                <div className="col-span-1 text-center">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.product.id)}><X className="w-4 h-4"/></Button>
-                                                </div>
-                                        </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-center py-20 text-muted-foreground">Cart is empty</div>
-                                    )}
-                                    </div>
-                                </ScrollArea>
-                                </div>
-                                <div className="border-t p-3 mt-auto text-sm space-y-2 bg-muted">
-                                    <div className="flex justify-between">
-                                        <span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> 
-                                        <span>Total: <span className="font-semibold">{formatCurrency(subtotal)}</span></span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-muted-foreground">
-                                        <span className="flex items-center gap-1">Discount (-): 
-                                            {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>}
-                                            {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>}
-                                        </span> 
-                                        <span className="text-foreground">{formatCurrency(discount)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-muted-foreground">
-                                        <span className="flex items-center gap-1">Order Tax (+):
-                                            {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>}
-                                            {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>}
-                                        </span> 
-                                        <span className="text-foreground">{formatCurrency(orderTax)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-muted-foreground">
-                                        <span className="flex items-center gap-1">Shipping (+):
-                                            {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>}
-                                            {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>}
-                                        </span>
-                                        <span className="text-foreground">{formatCurrency(shipping)}</span>
-                                    </div>
-                                </div>
-                            </Card>
-                        </div>
-                        
-                        {/* Right Side: Product Selection */}
-                        <div className="lg:col-span-5 flex flex-col gap-2">
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
-                            <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Copyright className="mr-2"/> Brands</Button>
-                        </div>
-                        <Card className="flex-1 bg-card p-2">
-                            <ScrollArea className="h-full">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
-                                    {isLoading ? (
-                                        Array.from({ length: 10 }).map((_, i) => (
-                                            <Card key={i}>
-                                                <div className="relative aspect-square bg-muted">
-                                                    <Skeleton className="h-full w-full" />
-                                                </div>
-                                                <div className="p-2 text-center">
-                                                    <Skeleton className="h-4 w-3/4 mx-auto mb-1" />
-                                                    <Skeleton className="h-3 w-1/2 mx-auto mb-1" />
-                                                    <Skeleton className="h-4 w-1/4 mx-auto mb-1" />
-                                                    <Skeleton className="h-3 w-1/3 mx-auto" />
-                                                </div>
-                                            </Card>
-                                        ))
-                                    ) : (
-                                    filteredProducts.map(product => (
-                                        <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
-                                            <div className="relative aspect-square bg-muted">
-                                                <Image
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    fill
-                                                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                                                    data-ai-hint={product.name.split(' ').slice(0, 2).join(' ')}
-                                                />
-                                            </div>
-                                            <div className="p-2 text-center">
-                                                <p className="text-xs font-semibold truncate">{product.name}</p>
-                                                <p className="text-xs text-muted-foreground">({product.sku})</p>
-                                                <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
-                                                <p className="text-xs text-green-600 dark:text-green-400 font-bold">{product.currentStock ?? 0} {product.unit} in stock</p>
-                                            </div>
-                                        </Card>
-                                    ))
-                                    )}
-                                </div>
-                            </ScrollArea>
-                        </Card>
-                        </div>
-                    </div>
-                    
-                    <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex items-center justify-between z-10 gap-2">
-                        {/* Left Icon Buttons */}
-                        <div className="flex items-center gap-1">
-                            {!settings.pos.disableDraft && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleDraft}><FileEdit2 className="h-5 w-5 mb-1 text-blue-500" /><span>Draft</span></Button>}
-                            <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleQuotation}><FileText className="h-5 w-5 mb-1 text-yellow-500" /><span>Quotation</span></Button>
-                            {!settings.pos.disableSuspendSale && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleSuspend}><Pause className="h-5 w-5 mb-1 text-red-500" /><span>Suspend</span></Button>}
-                            {!settings.pos.disableCreditSaleButton && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCreditSale}><Check className="h-5 w-5 mb-1 text-purple-500" /><span>Credit Sale</span></Button>}
-                            <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCardPayment}><CreditCard className="h-5 w-5 mb-1 text-pink-500" /><span>Card</span></Button>
-                        </div>
+                          <Card className="flex-1 flex flex-col bg-card">
+                              <div className="p-4 flex-grow flex flex-col">
+                              <div className="grid grid-cols-12 gap-2 font-bold border-b pb-2 text-sm text-muted-foreground">
+                                  <div className={cn("col-span-4 flex items-center", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>Product <Info className="w-3 h-3 ml-1"/></div>
+                                  {settings.pos.enableServiceStaffInProductLine && <div className="col-span-2">Staff</div>}
+                                  <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>Quantity</div>
+                                  <div className="col-span-2">Price inc. tax</div>
+                                  <div className="col-span-2">Subtotal</div>
+                                  <div className="col-span-1 text-center"><X className="w-4 h-4 mx-auto"/></div>
+                              </div>
+                              <ScrollArea className="flex-grow h-0">
+                                  <div className="py-2">
+                                  {cart.length > 0 ? (
+                                      cart.map((item) => (
+                                      <div key={item.product.id} className="grid grid-cols-12 gap-2 items-center text-sm mb-2">
+                                              <div className={cn("col-span-4 font-medium truncate", settings.pos.enableServiceStaffInProductLine && "col-span-3")}>{item.product.name}</div>
+                                              {settings.pos.enableServiceStaffInProductLine && (
+                                                  <div className="col-span-2">
+                                                      <Select>
+                                                          <SelectTrigger className="h-8 text-xs">
+                                                          <SelectValue placeholder="Select Staff" />
+                                                          </SelectTrigger>
+                                                          <SelectContent>
+                                                          <SelectItem value="admin">Mr Admin</SelectItem>
+                                                          <SelectItem value="cashier">Mr Cashier</SelectItem>
+                                                          </SelectContent>
+                                                      </Select>
+                                                  </div>
+                                              )}
+                                              <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
+                                                  <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
+                                              </div>
+                                              <div className="col-span-2">{formatCurrency(item.sellingPrice)}</div>
+                                              <div className="col-span-2 font-semibold">{formatCurrency(item.sellingPrice * item.quantity)}</div>
+                                              <div className="col-span-1 text-center">
+                                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500" onClick={() => removeFromCart(item.product.id)}><X className="w-4 h-4"/></Button>
+                                              </div>
+                                      </div>
+                                      ))
+                                  ) : (
+                                      <div className="text-center py-20 text-muted-foreground">Cart is empty</div>
+                                  )}
+                                  </div>
+                              </ScrollArea>
+                              </div>
+                              <div className="border-t p-3 mt-auto text-sm space-y-2 bg-muted">
+                                  <div className="flex justify-between">
+                                      <span>Items: <span className="font-semibold">{cart.length} ({cart.reduce((a, b) => a + b.quantity, 0)})</span></span> 
+                                      <span>Total: <span className="font-semibold">{formatCurrency(subtotal)}</span></span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-muted-foreground">
+                                      <span className="flex items-center gap-1">Discount (-): 
+                                          {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit discount</TooltipContent></Tooltip>}
+                                          {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsDiscountModalOpen(true)}/>}
+                                      </span> 
+                                      <span className="text-foreground">{formatCurrency(discount)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-muted-foreground">
+                                      <span className="flex items-center gap-1">Order Tax (+):
+                                          {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit order tax</TooltipContent></Tooltip>}
+                                          {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsTaxModalOpen(true)}/>}
+                                      </span> 
+                                      <span className="text-foreground">{formatCurrency(orderTax)}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-muted-foreground">
+                                      <span className="flex items-center gap-1">Shipping (+):
+                                          {settings.pos.showPricingTooltip && <Tooltip><TooltipTrigger asChild><Info className="w-3 h-3 inline cursor-help"/></TooltipTrigger><TooltipContent>Edit shipping charges</TooltipContent></Tooltip>}
+                                          {!settings.pos.disableDiscount && <Edit2 className="w-3 h-3 inline cursor-pointer hover:text-foreground" onClick={() => setIsShippingModalOpen(true)}/>}
+                                      </span>
+                                      <span className="text-foreground">{formatCurrency(shipping)}</span>
+                                  </div>
+                              </div>
+                          </Card>
+                      </div>
+                      
+                      {/* Right Side: Product Selection */}
+                      <div className="lg:col-span-5 flex flex-col gap-2">
+                      <div className="grid grid-cols-2 gap-2">
+                          <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
+                          <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Copyright className="mr-2"/> Brands</Button>
+                      </div>
+                      <Card className="flex-1 bg-card p-2">
+                          <ScrollArea className="h-full">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
+                                  {isLoading ? (
+                                      Array.from({ length: 10 }).map((_, i) => (
+                                          <Card key={i}>
+                                              <div className="relative aspect-square bg-muted">
+                                                  <Skeleton className="h-full w-full" />
+                                              </div>
+                                              <div className="p-2 text-center">
+                                                  <Skeleton className="h-4 w-3/4 mx-auto mb-1" />
+                                                  <Skeleton className="h-3 w-1/2 mx-auto mb-1" />
+                                                  <Skeleton className="h-4 w-1/4 mx-auto mb-1" />
+                                                  <Skeleton className="h-3 w-1/3 mx-auto" />
+                                              </div>
+                                          </Card>
+                                      ))
+                                  ) : (
+                                  filteredProducts.map(product => (
+                                      <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
+                                          <div className="relative aspect-square bg-muted">
+                                              <Image
+                                                  src={product.image}
+                                                  alt={product.name}
+                                                  fill
+                                                  className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                                                  data-ai-hint={product.name.split(' ').slice(0, 2).join(' ')}
+                                              />
+                                          </div>
+                                          <div className="p-2 text-center">
+                                              <p className="text-xs font-semibold truncate">{product.name}</p>
+                                              <p className="text-xs text-muted-foreground">({product.sku})</p>
+                                              <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
+                                              <p className="text-xs text-green-600 dark:text-green-400 font-bold">{product.currentStock ?? 0} {product.unit} in stock</p>
+                                          </div>
+                                      </Card>
+                                  ))
+                                  )}
+                              </div>
+                          </ScrollArea>
+                      </Card>
+                      </div>
+                  </div>
+                  
+                  <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 z-10">
+                      <div className="flex items-center justify-between gap-2">
+                           <div className="flex items-center gap-1">
+                              {!settings.pos.disableDraft && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleDraft}><FileEdit2 className="h-5 w-5 mb-1 text-blue-500" /><span>Draft</span></Button>}
+                              <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleQuotation}><FileText className="h-5 w-5 mb-1 text-yellow-500" /><span>Quotation</span></Button>
+                              {!settings.pos.disableSuspendSale && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleSuspend}><Pause className="h-5 w-5 mb-1 text-red-500" /><span>Suspend</span></Button>}
+                              {!settings.pos.disableCreditSaleButton && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCreditSale}><Check className="h-5 w-5 mb-1 text-purple-500" /><span>Credit Sale</span></Button>}
+                              <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCardPayment}><CreditCard className="h-5 w-5 mb-1 text-pink-500" /><span>Card</span></Button>
+                           </div>
 
-                        {/* Right side group */}
-                        <div className="flex items-center gap-4">
-                            {/* Payment Buttons */}
-                            <div className="flex items-center gap-2">
+                           <div className="flex-1 flex justify-center items-center gap-2">
                                 {!settings.pos.disableMultiplePay && (
                                     <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
                                         <DialogTrigger asChild>
-                                            <Button className="bg-blue-600 hover:bg-blue-700 h-9 px-4"><WalletCards className="h-4 w-4 mr-2"/>Multiple Pay</Button>
+                                            <Button className="bg-blue-600 hover:bg-blue-700 h-12 text-base px-6"><WalletCards className="h-5 w-5 mr-2"/>Multiple Pay</Button>
                                         </DialogTrigger>
                                         <DialogContent>
                                             <DialogHeader>
@@ -2080,133 +2077,131 @@ export default function PosPage() {
                                         </DialogContent>
                                     </Dialog>
                                 )}
-                                
-                                {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-9 px-4" onClick={handleCashPayment}><Banknote className="h-4 w-4 mr-2"/>Cash</Button>}
-                                <Button variant="destructive" className="h-9 px-4" onClick={() => clearCart()}><X className="h-4 w-4 mr-2"/>Cancel</Button>
-                            </div>
-                            {/* Total Payable */}
-                            <div className="text-right">
-                                <span className="text-sm text-muted-foreground">Total Payable:</span>
-                                <h3 className="text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
-                            </div>
-                            {/* Recent Transactions */}
-                            <div>
-                                <Button variant="default" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
-                                    <History className="mr-2 h-4 w-4" />
-                                    Recent Transactions
+                                {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-12 text-base px-6" onClick={handleCashPayment}><Banknote className="h-5 w-5 mr-2"/>Cash</Button>}
+                                <Button variant="destructive" className="h-12 text-base px-6" onClick={() => clearCart()}><X className="h-5 w-5 mr-2"/>Cancel</Button>
+                           </div>
+                           
+                           <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <span className="text-sm text-muted-foreground">Total Payable:</span>
+                                    <h3 className="text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
+                                </div>
+                                <Button variant="default" className="h-12 text-base" onClick={() => setIsRecentTransactionsOpen(true)}>
+                                  <History className="mr-2 h-5 w-5" />
+                                  Recent Transactions
                                 </Button>
-                            </div>
-                        </div>
-                    </footer>
-                </div>
-            </TooltipProvider>
-        </div>
-        
-        <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
-        </div>
+                           </div>
+                      </div>
+                  </footer>
+              </div>
+          </TooltipProvider>
+      </div>
+      
+      <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+      </div>
 
-        {/* Dialogs that are part of the main page state */}
-        <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
-        <CloseRegisterDialog
-            open={isCloseRegisterOpen}
-            onOpenChange={setIsCloseRegisterOpen}
-            cart={cart}
-            totalPayable={totalPayable}
-            discount={discount}
-            user={user}
-            settings={settings}
-        />
-        <RecentTransactionsDialog
-            open={isRecentTransactionsOpen}
-            onOpenChange={setIsRecentTransactionsOpen}
-            recentSales={recentSales}
-            onEdit={handleEditSale}
-            onPrint={handlePrintFromDialog}
-            onDelete={handleDeleteSaleClick}
-        />
-        <RegisterDetailsDialog
-            open={isRegisterDetailsOpen}
-            onOpenChange={setIsRegisterDetailsOpen}
-            cart={cart}
-            totalPayable={totalPayable}
-            discount={discount}
-            user={user}
-            settings={settings}
-        />
-        <EditValueDialog
-            open={isDiscountModalOpen}
-            onOpenChange={setIsDiscountModalOpen}
-            title="Edit Discount"
-            description="Enter the total discount amount for this order."
-            value={discount}
-            setValue={setDiscount}
-        />
-        <EditValueDialog
-            open={isTaxModalOpen}
-            onOpenChange={setIsTaxModalOpen}
-            title="Edit Order Tax"
-            description="Enter the total tax amount for this order."
-            value={orderTax}
-            setValue={setOrderTax}
-        />
-        <EditValueDialog
-            open={isShippingModalOpen}
-            onOpenChange={setIsShippingModalOpen}
-            title="Edit Shipping Charges"
-            description="Enter the shipping charges for this order."
-            value={shipping}
-            setValue={setShipping}
-        />
-        <CashPaymentDialog
-            open={isCashPaymentOpen}
-            onOpenChange={setIsCashPaymentOpen}
-            totalPayable={totalPayable}
-            onSave={handleSaveFromCashDialog}
-            onPrintAndClose={handlePrintAndCloseDialog}
-        />
-         <CardPaymentDialog
-            open={isCardPaymentOpen}
-            onOpenChange={setIsCardPaymentOpen}
-            totalPayable={totalPayable}
-            onSave={handleSaveFromCardDialog}
-            onPrintAndClose={handlePrintAndCloseDialog}
-        />
-        <AddCommissionProfileDialog
-            open={isAddProfileOpen}
-            onOpenChange={setIsAddProfileOpen}
-            profileType={profileTypeToAdd}
-            onProfileAdded={fetchAndCalculateStock}
-        />
-        <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <DialogTitle>Are you sure you want to delete this sale?</DialogTitle>
-                    <AlertDialogDescription>
-                        This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-        <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
-         <Dialog open={isSuspendedSalesOpen} onOpenChange={setIsSuspendedSalesOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Suspended Sales</DialogTitle>
-                    <DialogDescription>Select a suspended sale to resume.</DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                    <p className="text-center text-muted-foreground">No suspended sales found.</p>
-                </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => setIsSuspendedSalesOpen(false)}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    </>
+      {/* Dialogs that are part of the main page state */}
+      <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
+      <CloseRegisterDialog
+          open={isCloseRegisterOpen}
+          onOpenChange={setIsCloseRegisterOpen}
+          cart={cart}
+          totalPayable={totalPayable}
+          discount={discount}
+          user={user}
+          settings={settings}
+      />
+      <RecentTransactionsDialog
+          open={isRecentTransactionsOpen}
+          onOpenChange={setIsRecentTransactionsOpen}
+          recentSales={recentSales}
+          onEdit={handleEditSale}
+          onPrint={handlePrintFromDialog}
+          onDelete={handleDeleteSaleClick}
+      />
+      <RegisterDetailsDialog
+          open={isRegisterDetailsOpen}
+          onOpenChange={setIsRegisterDetailsOpen}
+          cart={cart}
+          totalPayable={totalPayable}
+          discount={discount}
+          user={user}
+          settings={settings}
+      />
+      <EditValueDialog
+          open={isDiscountModalOpen}
+          onOpenChange={setIsDiscountModalOpen}
+          title="Edit Discount"
+          description="Enter the total discount amount for this order."
+          value={discount}
+          setValue={setDiscount}
+      />
+      <EditValueDialog
+          open={isTaxModalOpen}
+          onOpenChange={setIsTaxModalOpen}
+          title="Edit Order Tax"
+          description="Enter the total tax amount for this order."
+          value={orderTax}
+          setValue={setOrderTax}
+      />
+      <EditValueDialog
+          open={isShippingModalOpen}
+          onOpenChange={setIsShippingModalOpen}
+          title="Edit Shipping Charges"
+          description="Enter the shipping charges for this order."
+          value={shipping}
+          setValue={setShipping}
+      />
+      <CashPaymentDialog
+          open={isCashPaymentOpen}
+          onOpenChange={setIsCashPaymentOpen}
+          totalPayable={totalPayable}
+          onSave={handleSaveFromCashDialog}
+          onPrintAndClose={handlePrintAndCloseDialog}
+      />
+       <CardPaymentDialog
+          open={isCardPaymentOpen}
+          onOpenChange={setIsCardPaymentOpen}
+          totalPayable={totalPayable}
+          onSave={handleSaveFromCardDialog}
+          onPrintAndClose={handlePrintAndCloseDialog}
+      />
+      <AddCommissionProfileDialog
+          open={isAddProfileOpen}
+          onOpenChange={setIsAddProfileOpen}
+          profileType={profileTypeToAdd}
+          onProfileAdded={fetchAndCalculateStock}
+      />
+      <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <DialogTitle>Are you sure you want to delete this sale?</DialogTitle>
+                  <AlertDialogDescription>
+                      This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+      <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
+       <Dialog open={isSuspendedSalesOpen} onOpenChange={setIsSuspendedSalesOpen}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Suspended Sales</DialogTitle>
+                  <DialogDescription>Select a suspended sale to resume.</DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                  <p className="text-center text-muted-foreground">No suspended sales found.</p>
+              </div>
+              <DialogFooter>
+                  <Button variant="secondary" onClick={() => setIsSuspendedSalesOpen(false)}>Close</Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+    </div>
   );
 }
