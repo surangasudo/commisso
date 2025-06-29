@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useReactToPrint } from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -620,33 +621,57 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // Refs and state for printing
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef<boolean>(false);
 
-  const handlePrint = useCallback(() => {
-    document.body.classList.add('is-printing');
-    window.print();
+  // Component mount/unmount tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Clear any pending timers on unmount
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, []);
 
+  const handlePrint = useReactToPrint({
+    content: () => receiptRef.current,
+    documentTitle: `Receipt-${saleToPrint?.invoiceNo || 'Sale'}`,
+    onAfterPrint: () => {
+        setSaleToPrint(null);
+    },
+    onPrintError: (error) => {
+        console.error('Print error:', error);
+        toast({ title: "Print Error", description: "Failed to print receipt.", variant: "destructive" });
+        setSaleToPrint(null);
+    },
+  });
+
+  // Effect to trigger printing when saleToPrint is set
   useEffect(() => {
-      const handleAfterPrint = () => {
-          document.body.classList.remove('is-printing');
-          setSaleToPrint(null);
-      };
+    if (timerRef.current) {
+        clearTimeout(timerRef.current);
+    }
+    
+    if (saleToPrint && receiptRef.current && isMountedRef.current) {
+        timerRef.current = setTimeout(() => {
+            if (isMountedRef.current) { // Double check before firing
+                handlePrint();
+            }
+        }, 100); // Small delay to ensure receipt content is rendered
+    }
 
-      if (saleToPrint) {
-          const timer = setTimeout(() => {
-              handlePrint();
-          }, 50);
-
-          window.addEventListener('afterprint', handleAfterPrint);
-          
-          return () => {
-              clearTimeout(timer);
-              window.removeEventListener('afterprint', handleAfterPrint);
-              document.body.classList.remove('is-printing');
-          };
-      }
+    return () => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+    };
   }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1553,8 +1578,9 @@ export default function PosPage() {
                 </div>
             </TooltipProvider>
         </div>
-
-        <div className="receipt-printable-area">
+        
+        {/* Hidden component for printing */}
+        <div style={{ display: 'none' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
     </>

@@ -115,30 +115,6 @@ body {
   .print-hidden {
       display: none !important;
   }
-
-  .printable-area, .printable-area * {
-    visibility: visible;
-  }
-  
-  .printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 0.5in;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  /* POS Receipt Printing Styles */
-  body.is-printing > *:not(.receipt-printable-area) {
-      display: none !important;
-  }
-  
-  body.is-printing .receipt-printable-area {
-      display: block !important;
-  }
   
   [data-state="inactive"] {
     display: none !important;
@@ -148,11 +124,4 @@ body {
     size: auto;
     margin: 0;
   }
-}
-
-/* Screen-only styles */
-@media screen {
-    .receipt-printable-area {
-        display: none;
-    }
 }
