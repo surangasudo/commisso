@@ -102,15 +102,23 @@ export async function addSale(
           let calculatedRate = 0;
 
           if (hasCategoryRates) {
-            const categoryRateData = categories.find(
-              (c: any) => c.category?.toLowerCase() === productData.category?.toLowerCase()
-            );
+            const categoryRateData = categories.find((c: any) => {
+                if (!c.category || !productData.category) {
+                    return false; // Don't match if either category is missing
+                }
+                return c.category.trim().toLowerCase() === productData.category.trim().toLowerCase();
+            });
+
             if (categoryRateData) {
+              // Found a specific rate, use it.
               calculatedRate = categoryRateData.rate;
             } else if (commissionCategoryRule === 'fallback') {
+              // No specific rate found, but we can fall back to the overall rate.
               calculatedRate = commission.overall || 0;
             }
+            // If no match and rule is 'strict', calculatedRate remains 0, which is correct.
           } else {
+            // No category-specific rates are defined at all, so just use the overall rate.
             calculatedRate = commission.overall || 0;
           }
           
@@ -219,13 +227,22 @@ export async function updateSale(
                     let calculatedRate = 0;
 
                     if (hasCategoryRates) {
-                        const categoryRateData = categories.find((c: any) => c.category?.toLowerCase() === productData.category?.toLowerCase());
+                        const categoryRateData = categories.find((c: any) => {
+                            if (!c.category || !productData.category) {
+                                return false; // Don't match if either category is missing
+                            }
+                            return c.category.trim().toLowerCase() === productData.category.trim().toLowerCase();
+                        });
+
                         if (categoryRateData) {
-                            calculatedRate = categoryRateData.rate;
+                          // Found a specific rate, use it.
+                          calculatedRate = categoryRateData.rate;
                         } else if (commissionCategoryRule === 'fallback') {
-                            calculatedRate = commission.overall || 0;
+                          // No specific rate found, but we can fall back to the overall rate.
+                          calculatedRate = commission.overall || 0;
                         }
                     } else {
+                        // No category-specific rates are defined at all, so just use the overall rate.
                         calculatedRate = commission.overall || 0;
                     }
                     
