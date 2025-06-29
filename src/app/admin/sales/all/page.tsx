@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -95,19 +95,22 @@ export default function AllSalesPage() {
     const [selectedSales, setSelectedSales] = useState<Set<string>>(new Set());
     const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
 
+    const fetchSalesData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const data = await getSales();
+            setSales(data);
+        } catch (error) {
+            console.error("Failed to fetch sales:", error);
+            toast({ title: "Error", description: "Could not load sales data.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+
     useEffect(() => {
-        const fetchSales = async () => {
-            try {
-                const data = await getSales();
-                setSales(data);
-            } catch (error) {
-                console.error("Failed to fetch sales:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchSales();
-    }, []);
+        fetchSalesData();
+    }, [fetchSalesData]);
 
     const totalAmount = sales.reduce((acc, sale) => acc + sale.totalAmount, 0);
     const totalPaid = sales.reduce((acc, sale) => acc + sale.totalPaid, 0);
@@ -170,26 +173,32 @@ export default function AllSalesPage() {
             return;
         }
 
-        const results = await Promise.allSettled(idsToDelete.map(id => deleteSale(id)));
+        let successfulDeletions = 0;
+        let failedDeletions = 0;
+
+        for (const id of idsToDelete) {
+            try {
+                await deleteSale(id);
+                successfulDeletions++;
+            } catch (error) {
+                console.error(`Failed to delete sale ${id}:`, error);
+                failedDeletions++;
+            }
+        }
         
-        const successfulDeletions = results
-            .map((result, index) => result.status === 'fulfilled' ? idsToDelete[index] : null)
-            .filter((id): id is string => id !== null);
+        await fetchSalesData();
 
-        const failedDeletionsCount = idsToDelete.length - successfulDeletions.length;
-
-        if (successfulDeletions.length > 0) {
-            setSales(currentSales => currentSales.filter(s => !successfulDeletions.includes(s.id)));
+        if (successfulDeletions > 0) {
             toast({
                 title: "Bulk Deletion Complete",
-                description: `${successfulDeletions.length} sale(s) deleted successfully.`,
+                description: `${successfulDeletions} sale(s) deleted successfully.`,
             });
         }
 
-        if (failedDeletionsCount > 0) {
+        if (failedDeletions > 0) {
             toast({
                 title: "Deletion Failed",
-                description: `${failedDeletionsCount} sale(s) could not be deleted. Please check the console for errors.`,
+                description: `${failedDeletions} sale(s) could not be deleted. Please check the console for errors.`,
                 variant: "destructive"
             });
         }

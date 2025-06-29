@@ -292,13 +292,13 @@ export async function deleteSale(id: string): Promise<void> {
     const saleRef = doc(db, 'sales', id);
     const commissionsQuery = query(collection(db, 'commissions'), where("transaction_id", "==", id));
     
-    // Read which commissions to delete outside the transaction.
     const commissionsSnapshot = await getDocs(commissionsQuery);
     
     await runTransaction(db, async (transaction) => {
         const saleDoc = await transaction.get(saleRef);
         if (!saleDoc.exists()) {
-            throw new Error("Sale not found.");
+            console.log(`Sale ${id} not found, it may have been already deleted.`);
+            return;
         }
         const saleData = saleDoc.data() as Sale;
 
@@ -322,16 +322,15 @@ export async function deleteSale(id: string): Promise<void> {
             const agentId = commissionData.recipient_profile_id;
             const amount = commissionData.commission_amount;
 
-            const agentRef = doc(db, 'commissionProfiles', agentId);
-            try {
-                // We need to read the agent inside the transaction to get the latest value
+            if (agentId) {
+                const agentRef = doc(db, 'commissionProfiles', agentId);
                 const agentDoc = await transaction.get(agentRef);
                 if (agentDoc.exists()) {
                     const currentEarned = agentDoc.data().totalCommissionEarned || 0;
                     transaction.update(agentRef, { totalCommissionEarned: currentEarned - amount });
+                } else {
+                    console.warn(`Could not find agent profile ${agentId} to revert commission.`);
                 }
-            } catch (e) {
-                console.warn(`Could not find agent profile ${agentId} to revert commission. Manual reconciliation may be needed.`);
             }
             transaction.delete(commissionDoc.ref);
         }
