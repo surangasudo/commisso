@@ -200,7 +200,7 @@ const initialSettings = {
         tables: false,
         modifiers: false,
         account: true,
-        advancedCommission: false,
+        advancedCommission: true,
     },
     customLabels: {
         contacts: { cf1: '', cf2: '', cf3: '', cf4: '', cf5: '', cf6: '', cf7: '', cf8: '', cf9: '', cf10: '' },
