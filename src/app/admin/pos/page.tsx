@@ -213,7 +213,7 @@ const RecentTransactionsDialog = ({
 
     const handlePrintClick = (sale: Sale) => {
         onOpenChange(false); // Close this dialog first
-        setTimeout(() => onPrint(sale), 150); // Then trigger print after a short delay
+        onPrint(sale); // Then trigger print after a short delay
     }
 
     return (
@@ -733,23 +733,16 @@ export default function PosPage() {
   // Effect for browser-based printing
   useEffect(() => {
     if (saleToPrint) {
-        document.body.classList.add('is-printing');
-        window.print();
-
-        // Cleanup function to run after print dialog closes or is cancelled
-        const afterPrint = () => {
+        // A small timeout ensures the class is applied and the DOM updates
+        // before the blocking print dialog appears.
+        const timer = setTimeout(() => {
+            document.body.classList.add('is-printing');
+            window.print();
             document.body.classList.remove('is-printing');
-            setSaleToPrint(null);
-            window.removeEventListener('afterprint', afterPrint);
-        };
-        
-        window.addEventListener('afterprint', afterPrint);
+            setSaleToPrint(null); // Reset after printing
+        }, 100); 
 
-        return () => {
-            // This is a failsafe in case component unmounts before print dialog closes
-            document.body.classList.remove('is-printing');
-            window.removeEventListener('afterprint', afterPrint);
-        }
+        return () => clearTimeout(timer);
     }
   }, [saleToPrint]);
   
@@ -1564,7 +1557,7 @@ export default function PosPage() {
             </TooltipProvider>
         </div>
         
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+        <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
 

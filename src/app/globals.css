@@ -105,11 +105,18 @@ body {
 
 @media print {
   body.is-printing .pos-page-container {
-      display: none;
+      display: none !important;
   }
   
-  body:not(.is-printing) .printable-receipt-area {
-      display: none;
+  body:not(.is-printing) .printable-receipt-area-wrapper {
+      display: none !important;
+  }
+
+  /* This is the key part for bringing the off-screen element into view */
+  body.is-printing .printable-receipt-area-wrapper {
+      position: static !important;
+      left: 0 !important;
+      top: 0 !important;
   }
 
   .printable-receipt-area {
