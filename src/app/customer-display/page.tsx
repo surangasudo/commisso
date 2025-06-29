@@ -41,7 +41,7 @@ export default function CustomerDisplayPage() {
             <div className="w-1/3 bg-white/10 flex flex-col items-center justify-center p-12">
                  <div className="flex items-center gap-4 text-white mb-8">
                     <Logo className="h-16 w-16" />
-                    <span className="font-headline text-4xl">Crimson ERP</span>
+                    <span className="font-headline text-4xl">Crimson POS</span>
                 </div>
                 <Card className="bg-white/90 text-blue-900 w-full">
                     <CardHeader>
@@ -51,7 +51,7 @@ export default function CustomerDisplayPage() {
                         <p className="text-center text-lg">Please see the cashier to complete your payment.</p>
                     </CardContent>
                 </Card>
-                 <p className="text-white/50 mt-auto text-sm">Powered by Crimson ERP</p>
+                 <p className="text-white/50 mt-auto text-sm">Powered by Crimson POS</p>
             </div>
         </div>
     );

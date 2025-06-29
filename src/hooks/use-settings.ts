@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 // Define comprehensive types for all settings
 const initialSettings = {
     business: {
-        businessName: 'Crimson ERP',
+        businessName: 'Crimson POS',
         startDate: '2018-01-01',
         profitPercent: '25.00',
         currency: 'usd',
@@ -132,7 +132,7 @@ const initialSettings = {
         enableStockExpiryAlert: true,
     },
     system: {
-        appName: 'Crimson ERP',
+        appName: 'Crimson POS',
         helpLink: 'https://ultimatepos.com/docs',
         googleApiKey: '',
         isGoogleDriveEnabled: false,

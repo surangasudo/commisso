@@ -1,6 +1,6 @@
 # Application Database Structure (Firestore)
 
-This document outlines the proposed database structure for the Ultimate POS & ERP system, built on Google Firestore. Each section describes a collection and its intended purpose.
+This document outlines the proposed database structure for the Crimson POS & ERP system, built on Google Firestore. Each section describes a collection and its intended purpose.
 
 *Note: For efficiency, line items (like `purchase_lines` or `sale_lines`) are often stored as an array of objects within the parent document (`purchases` or `sales`) rather than as separate collections. This is a common NoSQL pattern to reduce read operations.*
 
@@ -151,3 +151,4 @@ Stores records of business expenses and their categories.
 -   **`cash_registers`**: Manages cash register sessions, including opening/closing balances and reconciliation.
 -   **`hrm_payrolls`**: (If HRM module enabled) Stores payroll records, potentially including commission as a component.
 -   **`settings`**: A collection (often with a single document) for storing system-wide configuration.
+
