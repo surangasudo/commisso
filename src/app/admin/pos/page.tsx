@@ -2051,36 +2051,34 @@ export default function PosPage() {
                                 <Button className="bg-pink-600 hover:bg-pink-700 text-white h-12 text-base px-6" onClick={handleCardPayment}>
                                     <CreditCard className="h-5 w-5 mr-2"/>Card
                                 </Button>
-                                {!settings.pos.disableMultiplePay && (
-                                    <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button className="bg-blue-600 hover:bg-blue-700 h-12 text-base px-6"><WalletCards className="h-5 w-5 mr-2"/>Multiple Pay</Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Finalize Payment</DialogTitle>
-                                                <DialogDescription>
-                                                    Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="grid gap-4 py-4">
-                                                <div className="grid grid-cols-4 items-center gap-4">
-                                                    <Label htmlFor="cash-amount" className="text-right">Cash</Label>
-                                                    <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
-                                                </div>
-                                                <div className="grid grid-cols-4 items-center gap-4">
-                                                    <Label htmlFor="card-amount" className="text-right">Card</Label>
-                                                    <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
-                                                </div>
-                                                <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
-                                                <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
+                                <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button className="bg-blue-600 hover:bg-blue-700 h-12 text-base px-6"><WalletCards className="h-5 w-5 mr-2"/>Multiple Pay</Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Finalize Payment</DialogTitle>
+                                            <DialogDescription>
+                                                Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label htmlFor="cash-amount" className="text-right">Cash</Label>
+                                                <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
                                             </div>
-                                            <DialogFooter>
-                                                <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                )}
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label htmlFor="card-amount" className="text-right">Card</Label>
+                                                <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
+                                            </div>
+                                            <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
+                                            <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                                 {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-12 text-base px-6" onClick={handleCashPayment}><Banknote className="h-5 w-5 mr-2"/>Cash</Button>}
                                 <Button variant="destructive" className="h-12 text-base px-6" onClick={() => clearCart()}><X className="h-5 w-5 mr-2"/>Cancel</Button>
                            </div>
@@ -2180,7 +2178,7 @@ export default function PosPage() {
       <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <DialogTitle>Are you sure you want to delete this sale?</DialogTitle>
+                  <AlertDialogTitle>Are you sure you want to delete this sale?</AlertDialogTitle>
                   <AlertDialogDescription>
                       This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
                   </AlertDialogDescription>
