@@ -1,23 +1,23 @@
 
 'use client';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from 'react-day-picker';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { FileText, Printer, Calendar as CalendarIcon, Download, Search, Filter, Users as UsersIcon, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type CommissionProfile } from '@/lib/data';
+import { type CommissionProfile, type Commission } from '@/lib/data';
 import { exportToCsv, exportToXlsx, exportToPdf } from '@/lib/export';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCurrency } from '@/hooks/use-currency';
-import { getCommissionProfiles } from '@/services/commissionService';
+import { getCommissionProfiles, getCommissions } from '@/services/commissionService';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type ReportData = {
@@ -120,6 +120,7 @@ const ReportTable = ({ data, entityType, isLoading, formatCurrency }: { data: Re
 export default function SalesRepresentativeReportPage() {
     const { formatCurrency } = useCurrency();
     const [allProfiles, setAllProfiles] = useState<CommissionProfile[]>([]);
+    const [allCommissions, setAllCommissions] = useState<Commission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const defaultDateRange = {
@@ -137,10 +138,14 @@ export default function SalesRepresentativeReportPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const profilesData = await getCommissionProfiles();
+                const [profilesData, commissionsData] = await Promise.all([
+                    getCommissionProfiles(),
+                    getCommissions()
+                ]);
                 setAllProfiles(profilesData);
+                setAllCommissions(commissionsData);
             } catch (error) {
-                console.error("Failed to fetch commission profiles:", error);
+                console.error("Failed to fetch report data:", error);
             } finally {
                 setIsLoading(false);
             }
@@ -149,28 +154,36 @@ export default function SalesRepresentativeReportPage() {
     }, []);
 
     const reportData: ReportData[] = useMemo(() => {
-        // This is mock data generation for demonstration purposes.
-        // In a real application, this data would come from an API based on the dateFilter.
-        return allProfiles.map(p => {
-            const totalSales = Math.random() * 40000 + 5000;
-            const specialCategory = p.commission.categories?.[0];
-            let totalCommission = 0;
+        const commissionSummary = new Map<string, { totalSales: number; totalCommission: number }>();
 
-            if (specialCategory) {
-                const specialSales = totalSales * 0.3; // Assume 30% are special category sales
-                const regularSales = totalSales * 0.7;
-                totalCommission = (regularSales * (p.commission.overall / 100)) + (specialSales * (specialCategory.rate / 100));
-            } else {
-                totalCommission = totalSales * (p.commission.overall / 100);
+        allProfiles.forEach(p => {
+            commissionSummary.set(p.id, { totalSales: 0, totalCommission: 0 });
+        });
+
+        const filteredCommissions = allCommissions.filter(c => {
+            const commissionDate = new Date(c.calculation_date);
+            return dateFilter?.from && dateFilter?.to ? (commissionDate >= dateFilter.from && commissionDate <= dateFilter.to) : true;
+        });
+
+        filteredCommissions.forEach(commission => {
+            const summary = commissionSummary.get(commission.recipient_profile_id);
+            if (summary) {
+                summary.totalSales += commission.calculation_base_amount;
+                summary.totalCommission += commission.commission_amount;
             }
+        });
 
+        return allProfiles.map(p => {
+            const summary = commissionSummary.get(p.id) || { totalSales: 0, totalCommission: 0 };
             return {
-                ...p,
-                totalSales,
-                totalCommission,
+                id: p.id,
+                name: p.name,
+                entityType: p.entityType,
+                totalSales: summary.totalSales,
+                totalCommission: summary.totalCommission,
             };
         });
-    }, [allProfiles, dateFilter]); // The mock data will "re-fetch" when the date changes.
+    }, [allProfiles, allCommissions, dateFilter]);
 
     const agentData = useMemo(() => {
         let data = reportData.filter(p => p.entityType === 'Agent');

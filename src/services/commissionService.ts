@@ -21,6 +21,12 @@ export type PendingCommission = {
     commissionEarned: number;
 };
 
+export async function getCommissions(): Promise<Commission[]> {
+  noStore();
+  const snapshot = await getDocs(commissionsCollection);
+  return snapshot.docs.map(doc => processDoc<Commission>(doc));
+}
+
 export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
     noStore();
     const profilesSnapshot = await getDocs(commissionProfilesCollection);
