@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -34,30 +35,47 @@ export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void>
     };
     
     await runTransaction(db, async (transaction) => {
+        // --- READ PHASE ---
+        // 1. Get supplier document
         const supplierRef = doc(db, 'suppliers', purchase.supplierId);
         const supplierDoc = await transaction.get(supplierRef);
         if (!supplierDoc.exists()) {
             throw new Error(`Supplier with ID ${purchase.supplierId} not found.`);
         }
 
+        // 2. Get all product documents
+        const productRefs = purchase.items.map(item => doc(db, 'products', item.productId));
+        const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+        const productDataMap = new Map<string, DocumentData>();
+        
+        productDocs.forEach((docSnap, index) => {
+            if (!docSnap.exists()) {
+                throw new Error(`Product not found: ${purchase.items[index].productId}`);
+            }
+            productDataMap.set(docSnap.id, docSnap.data());
+        });
+
+        // --- WRITE PHASE ---
+        // 1. Create the new purchase document
         const newPurchaseRef = doc(collection(db, 'purchases'));
         transaction.set(newPurchaseRef, dataToSave);
         
+        // 2. Update the supplier's totalPurchaseDue
         const currentDue = supplierDoc.data().totalPurchaseDue || 0;
         transaction.update(supplierRef, {
             totalPurchaseDue: currentDue + purchase.paymentDue
         });
 
+        // 3. Update stock for each product
         for (const item of purchase.items) {
             const productRef = doc(db, 'products', item.productId);
-            const productDoc = await transaction.get(productRef);
-            if (!productDoc.exists()) {
-                throw new Error(`Product not found: ${item.productId}`);
+            const productData = productDataMap.get(item.productId);
+            if (productData) { // Should always be true because of checks above
+                const currentStock = productData.currentStock || 0;
+                transaction.update(productRef, {
+                    currentStock: currentStock + item.quantity
+                });
             }
-            const currentStock = productDoc.data().currentStock || 0;
-            transaction.update(productRef, {
-                currentStock: currentStock + item.quantity
-            });
         }
     });
 }
@@ -66,3 +84,4 @@ export async function deletePurchase(id: string): Promise<void> {
     const docRef = doc(db, 'purchases', id);
     await deleteDoc(docRef);
 }
+
