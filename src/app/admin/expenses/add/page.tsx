@@ -89,9 +89,9 @@ export default function AddExpensePage() {
         });
     };
 
-    const handleDateChange = (date: Date | undefined) => {
+    const handleDateChange = (field: 'date' | 'paidOn', date: Date | undefined) => {
         if (date) {
-            setFormData(prev => ({ ...prev, paidOn: date }));
+            setFormData(prev => ({ ...prev, [field]: date }));
         }
     };
     
@@ -113,7 +113,7 @@ export default function AddExpensePage() {
 
         try {
             const finalExpenseData: Omit<Expense, 'id'> = {
-                date: formData.paidOn.toISOString(),
+                date: formData.date.toISOString(),
                 referenceNo: formData.referenceNo || `EXP-${Date.now()}`,
                 location: formData.location,
                 expenseCategory: formData.expenseCategory === 'none' ? '' : categories.find(c => c.id === formData.expenseCategory)?.name || '',
@@ -122,7 +122,7 @@ export default function AddExpensePage() {
                 tax: totalWithTax - Number(formData.totalAmount),
                 totalAmount: totalWithTax,
                 paymentDue: paymentDue,
-                expenseFor: null,
+                expenseFor: formData.expenseFor,
                 contact: null,
                 addedBy: 'Admin', // Hardcoded for now
                 expenseNote: formData.expenseNote || null,
@@ -173,23 +173,30 @@ export default function AddExpensePage() {
                             <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="paidOn">Date:*</Label>
+                            <Label htmlFor="date">Date:*</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.paidOn && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.paidOn ? format(formData.paidOn, "PPP") : <span>Pick a date</span>}</Button>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}</Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.paidOn} onSelect={handleDateChange} initialFocus /></PopoverContent>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={(date) => handleDateChange('date', date)} initialFocus /></PopoverContent>
                             </Popover>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="totalAmount">Total amount:*</Label>
-                            <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
+                         <div className="space-y-2">
+                            <Label htmlFor="expenseFor" className="flex items-center gap-1">Expense For: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                            <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
+                                <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
+                                <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
+                            </Select>
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
                             <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}><SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{taxRates.map(tax => (<SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>))}</SelectContent></Select>
                         </div>
-                        <div className="space-y-2 md:col-span-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="totalAmount">Total amount:*</Label>
+                            <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
                             <Label htmlFor="expenseNote">Expense note:</Label>
                             <Textarea id="expenseNote" value={formData.expenseNote} onChange={handleChange} />
                         </div>
@@ -206,6 +213,15 @@ export default function AddExpensePage() {
                                 <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                 <Input id="paidAmount" type="number" placeholder="0.00" value={formData.paidAmount} onChange={handleChange} className="pl-10" />
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="paidOn">Paid on:*</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.paidOn && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.paidOn ? format(formData.paidOn, "PPP") : <span>Pick a date</span>}</Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.paidOn} onSelect={(date) => handleDateChange('paidOn', date)} initialFocus /></PopoverContent>
+                            </Popover>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="paymentMethod">Payment Method:*</Label>
@@ -231,7 +247,7 @@ export default function AddExpensePage() {
                                 <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                         <div className="space-y-2 md:col-span-2">
                             <Label htmlFor="paymentNote">Payment note:</Label>
                             <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
                         </div>
@@ -252,4 +268,3 @@ export default function AddExpensePage() {
         </div>
     );
 }
-
