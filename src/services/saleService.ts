@@ -84,8 +84,10 @@ export async function addSale(
       }
     }
 
-    // 2. Create individual commission records
+    // 2. Create individual commission records and tally totals
     const commissionsCollectionRef = collection(db, 'commissions');
+    const agentCommissionTotals = new Map<string, number>();
+
     for (const item of sale.items) {
       const productData = productDataMap.get(item.productId);
       if (!productData) continue;
@@ -104,21 +106,17 @@ export async function addSale(
           if (hasCategoryRates) {
             const categoryRateData = categories.find((c: any) => {
                 if (!c.category || !productData.category) {
-                    return false; // Don't match if either category is missing
+                    return false; 
                 }
                 return c.category.trim().toLowerCase() === productData.category.trim().toLowerCase();
             });
 
             if (categoryRateData) {
-              // Found a specific rate, use it.
               calculatedRate = categoryRateData.rate;
             } else if (commissionCategoryRule === 'fallback') {
-              // No specific rate found, but we can fall back to the overall rate.
               calculatedRate = commission.overall || 0;
             }
-            // If no match and rule is 'strict', calculatedRate remains 0, which is correct.
           } else {
-            // No category-specific rates are defined at all, so just use the overall rate.
             calculatedRate = commission.overall || 0;
           }
           
@@ -132,15 +130,31 @@ export async function addSale(
                   calculation_base_amount: saleValue,
                   calculated_rate: calculatedRate,
                   commission_amount: commissionAmount,
-                  status: 'Pending Approval', // New Logic
+                  status: 'Pending Approval',
                   calculation_date: new Date(),
               };
               const newCommissionRef = doc(commissionsCollectionRef);
               transaction.set(newCommissionRef, newCommission);
+
+              const currentTotal = agentCommissionTotals.get(agentId) || 0;
+              agentCommissionTotals.set(agentId, currentTotal + commissionAmount);
           }
         }
       }
     }
+
+    // 3. Update agent profiles with the new earned totals
+    for (const [agentId, commissionToAdd] of agentCommissionTotals.entries()) {
+        const agentRef = doc(db, 'commissionProfiles', agentId);
+        const agentProfileData = agentProfiles.get(agentId); 
+        if (agentProfileData) {
+            const currentEarned = agentProfileData.totalCommissionEarned || 0;
+            transaction.update(agentRef, {
+                totalCommissionEarned: currentEarned + commissionToAdd
+            });
+        }
+    }
+
     return createdSaleId;
   });
   return saleId;
@@ -152,38 +166,29 @@ export async function updateSale(
     commissionCalculationType: 'invoice_value' | 'payment_received',
     commissionCategoryRule: 'strict' | 'fallback'
 ): Promise<void> {
-    // Step 1: Query for old commissions to delete OUTSIDE the transaction.
     const commissionsQuery = query(collection(db, 'commissions'), where("transaction_id", "==", saleId));
     const oldCommissionsSnapshot = await getDocs(commissionsQuery);
 
     await runTransaction(db, async (transaction) => {
         // --- READ PHASE ---
-        // Get original sale data
         const saleRef = doc(db, 'sales', saleId);
         const originalSaleDoc = await transaction.get(saleRef);
         if (!originalSaleDoc.exists()) throw new Error("Sale not found.");
-        
         const originalSaleData = originalSaleDoc.data() as Sale;
 
-        // Get all products involved (original and new)
-        const originalItemsMap = new Map(originalSaleData.items.map(item => [item.productId, item.quantity]));
-        const updatedItemsMap = new Map(updatedSaleData.items.map(item => [item.productId, item.quantity]));
-        const allProductIds = new Set([...originalItemsMap.keys(), ...updatedItemsMap.keys()]);
-        
+        const allProductIds = new Set([...originalSaleData.items.map(i => i.productId), ...updatedSaleData.items.map(i => i.productId)]);
         const productDataMap = new Map<string, DocumentData>();
         if (allProductIds.size > 0) {
-            const productRefs = Array.from(allProductIds).map(id => doc(db, 'products', id));
-            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+            const productDocs = await Promise.all(Array.from(allProductIds).map(id => transaction.get(doc(db, 'products', id))));
             productDocs.forEach(productDoc => {
                 if (productDoc.exists()) productDataMap.set(productDoc.id, productDoc.data());
             });
         }
 
-        // Get all agent profiles involved in the updated sale
+        const allAgentIds = new Set([...(originalSaleData.commissionAgentIds || []), ...(updatedSaleData.commissionAgentIds || [])]);
         const agentProfiles = new Map<string, DocumentData>();
-        if (updatedSaleData.commissionAgentIds && updatedSaleData.commissionAgentIds.length > 0) {
-            const agentRefs = updatedSaleData.commissionAgentIds.map(id => doc(db, 'commissionProfiles', id));
-            const agentDocs = await Promise.all(agentRefs.map(ref => transaction.get(ref)));
+        if (allAgentIds.size > 0) {
+            const agentDocs = await Promise.all(Array.from(allAgentIds).map(id => transaction.get(doc(db, 'commissionProfiles', id))));
             agentDocs.forEach(agentDoc => {
                 if (agentDoc.exists()) agentProfiles.set(agentDoc.id, agentDoc.data());
             });
@@ -191,28 +196,38 @@ export async function updateSale(
         
         // --- WRITE PHASE ---
         
-        // 1. Update product stock based on quantity differences
-        for (const productId of allProductIds) {
-            const productRef = doc(db, 'products', productId);
-            const originalQty = originalItemsMap.get(productId) || 0;
-            const updatedQty = updatedItemsMap.get(productId) || 0;
-            const quantityChange = originalQty - updatedQty; // +ve means stock should increase, -ve means decrease
+        // 1. Revert old stock levels & commission earned
+        for (const item of originalSaleData.items) {
+            const productRef = doc(db, 'products', item.productId);
+            const productData = productDataMap.get(item.productId);
+            if(productData) {
+                 transaction.update(productRef, { currentStock: (productData.currentStock || 0) + item.quantity });
+            }
+        }
+        const oldCommissionsData = oldCommissionsSnapshot.docs.map(d => d.data());
+        for (const commissionData of oldCommissionsData) {
+            const agentProfile = agentProfiles.get(commissionData.recipient_profile_id);
+            if (agentProfile) {
+                const agentRef = doc(db, 'commissionProfiles', commissionData.recipient_profile_id);
+                transaction.update(agentRef, { totalCommissionEarned: (agentProfile.totalCommissionEarned || 0) - commissionData.commission_amount });
+            }
+        }
+        oldCommissionsSnapshot.forEach(commissionDoc => transaction.delete(commissionDoc.ref));
 
-            if (quantityChange !== 0) {
-                const currentStock = productDataMap.get(productId)?.currentStock || 0;
-                transaction.update(productRef, { currentStock: currentStock + quantityChange });
+        // 2. Apply new stock levels & commission earned
+        for (const item of updatedSaleData.items) {
+            const productRef = doc(db, 'products', item.productId);
+            const productData = productDataMap.get(item.productId);
+            if (productData) {
+                transaction.update(productRef, { currentStock: (productData.currentStock || 0) - item.quantity });
             }
         }
         
-        // 2. Delete old commission records
-        oldCommissionsSnapshot.forEach(commissionDoc => {
-            transaction.delete(commissionDoc.ref);
-        });
-
-        // 3. Create new commission records (logic copied and adapted from addSale)
+        const newCommissionTotals = new Map<string, number>();
         const commissionsCollectionRef = collection(db, 'commissions');
+
         for (const item of updatedSaleData.items) {
-            const productData = productDataMap.get(item.productId);
+             const productData = productDataMap.get(item.productId);
             if (!productData) continue;
             
             const saleValue = item.unitPrice * item.quantity;
@@ -227,22 +242,13 @@ export async function updateSale(
                     let calculatedRate = 0;
 
                     if (hasCategoryRates) {
-                        const categoryRateData = categories.find((c: any) => {
-                            if (!c.category || !productData.category) {
-                                return false; // Don't match if either category is missing
-                            }
-                            return c.category.trim().toLowerCase() === productData.category.trim().toLowerCase();
-                        });
-
+                        const categoryRateData = categories.find((c: any) => c.category?.trim().toLowerCase() === productData.category?.trim().toLowerCase());
                         if (categoryRateData) {
-                          // Found a specific rate, use it.
                           calculatedRate = categoryRateData.rate;
                         } else if (commissionCategoryRule === 'fallback') {
-                          // No specific rate found, but we can fall back to the overall rate.
                           calculatedRate = commission.overall || 0;
                         }
                     } else {
-                        // No category-specific rates are defined at all, so just use the overall rate.
                         calculatedRate = commission.overall || 0;
                     }
                     
@@ -260,12 +266,21 @@ export async function updateSale(
                             status: 'Pending Approval',
                             calculation_date: new Date(),
                         });
+                        newCommissionTotals.set(agentId, (newCommissionTotals.get(agentId) || 0) + commissionAmount);
                     }
                 }
             }
         }
+
+        for(const [agentId, newAmount] of newCommissionTotals.entries()) {
+            const agentProfile = agentProfiles.get(agentId);
+            if(agentProfile) {
+                const agentRef = doc(db, 'commissionProfiles', agentId);
+                transaction.update(agentRef, { totalCommissionEarned: (agentProfile.totalCommissionEarned || 0) + newAmount });
+            }
+        }
         
-        // 4. Update the sale document itself
+        // 3. Update the sale document itself
         transaction.update(saleRef, {
             ...updatedSaleData,
             date: new Date(updatedSaleData.date),
@@ -277,7 +292,7 @@ export async function deleteSale(id: string): Promise<void> {
     const saleRef = doc(db, 'sales', id);
     const commissionsQuery = query(collection(db, 'commissions'), where("transaction_id", "==", id));
     
-    // Read which commissions to delete outside the transaction
+    // Read which commissions to delete outside the transaction.
     const commissionsSnapshot = await getDocs(commissionsQuery);
     
     await runTransaction(db, async (transaction) => {
@@ -290,7 +305,6 @@ export async function deleteSale(id: string): Promise<void> {
         // 1. Revert product stock for each item in the sale
         if (saleData.items) {
             const productRefs = saleData.items.map(item => doc(db, 'products', item.productId));
-            // Read all product docs at once
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
             productDocs.forEach((productDoc, index) => {
@@ -302,10 +316,25 @@ export async function deleteSale(id: string): Promise<void> {
             });
         }
 
-        // 2. Delete associated commission records that were queried earlier
-        commissionsSnapshot.forEach(commissionDoc => {
+        // 2. Revert commission totals and delete commissions
+        for (const commissionDoc of commissionsSnapshot.docs) {
+            const commissionData = commissionDoc.data();
+            const agentId = commissionData.recipient_profile_id;
+            const amount = commissionData.commission_amount;
+
+            const agentRef = doc(db, 'commissionProfiles', agentId);
+            try {
+                // We need to read the agent inside the transaction to get the latest value
+                const agentDoc = await transaction.get(agentRef);
+                if (agentDoc.exists()) {
+                    const currentEarned = agentDoc.data().totalCommissionEarned || 0;
+                    transaction.update(agentRef, { totalCommissionEarned: currentEarned - amount });
+                }
+            } catch (e) {
+                console.warn(`Could not find agent profile ${agentId} to revert commission. Manual reconciliation may be needed.`);
+            }
             transaction.delete(commissionDoc.ref);
-        });
+        }
 
         // 3. Delete the sale document itself
         transaction.delete(saleRef);

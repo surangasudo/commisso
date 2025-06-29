@@ -40,6 +40,8 @@ export type CommissionProfile = {
     overall: number;
     categories?: { category: string; rate: number }[];
   };
+  totalCommissionEarned: number;
+  totalCommissionPaid: number;
 };
 
 export type Commission = {
@@ -62,10 +64,7 @@ export type Commission = {
     paid_by_user_id?: string;
 };
 
-export type CommissionProfileWithSummary = CommissionProfile & {
-    totalCommissionEarned: number;
-    totalCommissionPaid: number;
-};
+export type CommissionProfileWithSummary = CommissionProfile;
 
 
 export type Supplier = {

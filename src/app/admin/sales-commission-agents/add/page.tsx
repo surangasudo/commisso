@@ -89,7 +89,7 @@ export default function AddSalesCommissionAgentPage() {
             return;
         }
 
-        const newProfile: Omit<CommissionProfile, 'id'> = {
+        const newProfileData: Omit<CommissionProfile, 'id' | 'totalCommissionEarned' | 'totalCommissionPaid'> = {
             name: agentName,
             entityType: entityType || 'Salesperson',
             phone: phoneNumber,
@@ -106,8 +106,14 @@ export default function AddSalesCommissionAgentPage() {
             }
         };
 
+        const newProfile = {
+            ...newProfileData,
+            totalCommissionEarned: 0,
+            totalCommissionPaid: 0,
+        };
+
         try {
-            await addCommissionProfile(newProfile);
+            await addCommissionProfile(newProfile as any);
             toast({
                 title: "Profile Saved!",
                 description: `The commission profile for ${agentName} has been created.`,

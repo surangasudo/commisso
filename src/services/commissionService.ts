@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -23,35 +24,8 @@ export type PendingCommission = {
 export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
     noStore();
     const profilesSnapshot = await getDocs(commissionProfilesCollection);
-    const profiles = profilesSnapshot.docs.map(doc => processDoc<CommissionProfile>(doc));
-
-    const profilesWithSummary: CommissionProfileWithSummary[] = await Promise.all(
-        profiles.map(async (profile) => {
-            const commissionsQuery = query(commissionsCollection, where("recipient_profile_id", "==", profile.id));
-            const commissionsSnapshot = await getDocs(commissionsQuery);
-            const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
-            
-            let netEarned = 0;
-            let totalPaid = 0;
-
-            for (const commission of allCommissions) {
-                const amount = commission.commission_amount || 0;
-                netEarned += amount;
-
-                if (commission.status === 'Paid') {
-                    totalPaid += amount;
-                }
-            }
-
-            return {
-                ...profile,
-                totalCommissionEarned: Math.round(netEarned * 100) / 100,
-                totalCommissionPaid: Math.round(totalPaid * 100) / 100,
-            };
-        })
-    );
-
-    return profilesWithSummary;
+    const profiles = profilesSnapshot.docs.map(doc => processDoc<CommissionProfileWithSummary>(doc));
+    return profiles;
 }
 
 export async function getCommissionProfile(id: string): Promise<CommissionProfileWithSummary | null> {
@@ -60,28 +34,7 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const profile = processDoc<CommissionProfile>(docSnap);
-        const commissionsSnapshot = await getDocs(query(commissionsCollection, where("recipient_profile_id", "==", id)));
-        const allCommissions = commissionsSnapshot.docs.map(doc => processDoc<Commission>(doc));
-        
-        let netEarned = 0;
-        let totalPaid = 0;
-
-        for (const commission of allCommissions) {
-            const amount = commission.commission_amount || 0;
-            netEarned += amount;
-
-            if (commission.status === 'Paid') {
-                totalPaid += amount;
-            }
-        }
-        
-        return {
-            ...profile,
-            totalCommissionEarned: Math.round(netEarned * 100) / 100,
-            totalCommissionPaid: Math.round(totalPaid * 100) / 100,
-        };
-
+        return processDoc<CommissionProfileWithSummary>(docSnap);
     } else {
         return null;
     }
@@ -135,7 +88,9 @@ export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'
         commission: {
             overall: profile.commission.overall,
             categories: profile.commission.categories?.map(({ category, rate }) => ({ category, rate })) || []
-        }
+        },
+        totalCommissionEarned: 0,
+        totalCommissionPaid: 0,
     };
     await addDoc(commissionProfilesCollection, dataToSave);
 }
@@ -170,6 +125,7 @@ export async function payCommission(
             const profileRef = doc(db, 'commissionProfiles', profile.id);
             const profileDoc = await transaction.get(profileRef);
             if (!profileDoc.exists()) throw new Error("Profile not found");
+            const profileData = profileDoc.data();
 
             const commissionRefs = commissionIds.map(id => doc(db, 'commissions', id));
             const commissionDocs = await Promise.all(commissionRefs.map(ref => transaction.get(ref)));
@@ -198,6 +154,13 @@ export async function payCommission(
                  });
             }
 
+            // Update the summary on the profile
+            const currentPaid = profileData.totalCommissionPaid || 0;
+            transaction.update(profileRef, {
+                totalCommissionPaid: currentPaid + roundedTotal
+            });
+
+
             // Create a single expense record for the total payout
             const newExpense: Omit<Expense, 'id'> = {
                 date: new Date().toISOString(),
@@ -210,9 +173,9 @@ export async function payCommission(
                 totalAmount: roundedTotal,
                 paymentDue: 0,
                 expenseFor: null,
-                contact: profileDoc.data().name,
+                contact: profileData.name,
                 addedBy: 'System',
-                expenseNote: `Commission payout to ${profileDoc.data().name}. Method: ${paymentMethod}. Note: ${paymentNote}`.trim(),
+                expenseNote: `Commission payout to ${profileData.name}. Method: ${paymentMethod}. Note: ${paymentNote}`.trim(),
             };
             
             const newExpenseRef = doc(expensesCollectionRef);
