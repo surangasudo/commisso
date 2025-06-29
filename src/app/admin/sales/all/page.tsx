@@ -145,8 +145,8 @@ export default function AllSalesPage() {
         }
     };
     
-    const handleSelectAll = (checked: boolean | 'indeterminate') => {
-        if (checked === true) {
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
             setSelectedSales(new Set(sales.map(s => s.id)));
         } else {
             setSelectedSales(new Set());
@@ -165,27 +165,41 @@ export default function AllSalesPage() {
 
     const confirmDeleteSelected = async () => {
         const idsToDelete = Array.from(selectedSales);
-        try {
-            await Promise.all(idsToDelete.map(id => deleteSale(id)));
-            
-            setSales(sales.filter(s => !selectedSales.has(s.id)));
-            setSelectedSales(new Set());
-            
-            toast({ 
-                title: "Success", 
-                description: `${idsToDelete.length} sale(s) deleted successfully.` 
-            });
-
-        } catch (error) {
-            toast({ 
-                title: "Error", 
-                description: "Failed to delete one or more sales.", 
-                variant: "destructive" 
-            });
-        } finally {
+        if (idsToDelete.length === 0) {
             setIsBulkDeleteDialogOpen(false);
+            return;
         }
+
+        const results = await Promise.allSettled(idsToDelete.map(id => deleteSale(id)));
+        
+        const successfulDeletions = results
+            .map((result, index) => result.status === 'fulfilled' ? idsToDelete[index] : null)
+            .filter((id): id is string => id !== null);
+
+        const failedDeletionsCount = idsToDelete.length - successfulDeletions.length;
+
+        if (successfulDeletions.length > 0) {
+            setSales(currentSales => currentSales.filter(s => !successfulDeletions.includes(s.id)));
+            toast({
+                title: "Bulk Deletion Complete",
+                description: `${successfulDeletions.length} sale(s) deleted successfully.`,
+            });
+        }
+
+        if (failedDeletionsCount > 0) {
+            toast({
+                title: "Deletion Failed",
+                description: `${failedDeletionsCount} sale(s) could not be deleted. Please check the console for errors.`,
+                variant: "destructive"
+            });
+        }
+
+        setSelectedSales(new Set());
+        setIsBulkDeleteDialogOpen(false);
     };
+
+    const isAllSelected = sales.length > 0 && selectedSales.size === sales.length;
+    const isSomeSelected = selectedSales.size > 0 && selectedSales.size < sales.length;
 
 
   return (
@@ -252,8 +266,8 @@ export default function AllSalesPage() {
                         <TableRow>
                             <TableHead className="w-12">
                                 <Checkbox
-                                    checked={sales.length > 0 && selectedSales.size === sales.length}
-                                    onCheckedChange={handleSelectAll}
+                                    checked={isAllSelected || (isSomeSelected ? 'indeterminate' : false)}
+                                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
                                     aria-label="Select all rows"
                                 />
                             </TableHead>
