@@ -33,8 +33,7 @@ import {
   FileEdit2,
   Check,
   Banknote,
-  DollarSign,
-  Copyright,
+  Repeat,
   Wallet,
   Trash2,
 } from 'lucide-react';
@@ -48,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory } from '@/lib/data';
+import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory, type Currency } from '@/lib/data';
 import { addSale, getSales, deleteSale } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
@@ -98,6 +97,8 @@ import { format } from 'date-fns';
 import { addExpense } from '@/services/expenseService';
 import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { getCurrencies } from '@/services/currencyService';
+import { addMoneyExchange } from '@/services/moneyExchangeService';
 
 type CartItem = {
   product: DetailedProduct;
@@ -1169,6 +1170,129 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
     );
 };
 
+const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { toast } = useToast();
+    const { user } = useAuth();
+    const { formatCurrency } = useCurrency();
+    const [currencies, setCurrencies] = useState<Currency[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const [amount, setAmount] = useState('');
+    const [fromCurrency, setFromCurrency] = useState<string | undefined>(undefined);
+    const [toCurrency, setToCurrency] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        if (open) {
+            const fetchCurrencies = async () => {
+                setIsLoading(true);
+                try {
+                    const currencyData = await getCurrencies();
+                    setCurrencies(currencyData);
+                    // Set default currencies if available
+                    const base = currencyData.find(c => c.isBaseCurrency);
+                    const firstOther = currencyData.find(c => !c.isBaseCurrency);
+                    if (base) setFromCurrency(base.code);
+                    if (firstOther) setToCurrency(firstOther.code);
+                } catch (e) {
+                    toast({ title: 'Error', description: 'Could not load currencies.', variant: 'destructive'});
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+            fetchCurrencies();
+            setAmount('');
+        }
+    }, [open, toast]);
+
+    const { exchangeRate, convertedAmount } = useMemo(() => {
+        if (!fromCurrency || !toCurrency || !amount || currencies.length === 0) {
+            return { exchangeRate: 0, convertedAmount: 0 };
+        }
+        
+        const from = currencies.find(c => c.code === fromCurrency);
+        const to = currencies.find(c => c.code === toCurrency);
+
+        if (!from || !to) return { exchangeRate: 0, convertedAmount: 0 };
+
+        // Rate is how many "to" units you get for one "from" unit
+        const rate = (1 / from.exchangeRate) * to.exchangeRate;
+        const finalAmount = parseFloat(amount) * rate;
+
+        return { exchangeRate: rate, convertedAmount: finalAmount };
+
+    }, [amount, fromCurrency, toCurrency, currencies]);
+    
+    const handleConfirmExchange = async () => {
+        if (!fromCurrency || !toCurrency || !amount || convertedAmount <= 0) {
+            toast({ title: 'Invalid Exchange', description: 'Please fill all fields and enter a valid amount.', variant: 'destructive'});
+            return;
+        }
+
+        try {
+            await addMoneyExchange({
+                date: new Date().toISOString(),
+                fromCurrency,
+                toCurrency,
+                amount: parseFloat(amount),
+                exchangeRate,
+                convertedAmount,
+                addedBy: user?.name || 'Unknown',
+            });
+            toast({ title: 'Success', description: `Exchanged ${amount} ${fromCurrency} to ${convertedAmount.toFixed(2)} ${toCurrency}.`});
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Failed to save money exchange:", error);
+            toast({ title: 'Error', description: 'Could not record the exchange.', variant: 'destructive'});
+        }
+    };
+
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Money Exchange</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="exchange-amount">Amount</Label>
+                        <Input id="exchange-amount" type="number" placeholder="Enter amount to exchange" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="space-y-2 flex-1">
+                            <Label htmlFor="from-currency">From</Label>
+                            <Select value={fromCurrency} onValueChange={setFromCurrency} disabled={isLoading}>
+                                <SelectTrigger id="from-currency"><SelectValue placeholder="From..."/></SelectTrigger>
+                                <SelectContent>
+                                    {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.code} ({c.name})</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Repeat className="w-5 h-5 mt-6 shrink-0 text-muted-foreground"/>
+                        <div className="space-y-2 flex-1">
+                            <Label htmlFor="to-currency">To</Label>
+                            <Select value={toCurrency} onValueChange={setToCurrency} disabled={isLoading}>
+                                <SelectTrigger id="to-currency"><SelectValue placeholder="To..."/></SelectTrigger>
+                                <SelectContent>
+                                    {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.code} ({c.name})</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="text-center bg-muted p-4 rounded-md">
+                        <p className="text-sm text-muted-foreground">Exchange Rate: 1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}</p>
+                        <p className="text-2xl font-bold mt-2">{convertedAmount.toFixed(2)} {toCurrency}</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleConfirmExchange} disabled={isLoading}>Confirm Exchange</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 export default function PosPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
@@ -1218,6 +1342,7 @@ export default function PosPage() {
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
+  const [isExchangeOpen, setIsExchangeOpen] = useState(false);
 
   // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
@@ -1755,6 +1880,7 @@ export default function PosPage() {
                                   <Home />
                               </Button>
                           </Link>
+                           <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsExchangeOpen(true)} title="Money Exchange"><Repeat /></Button>
                           <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 /></Button>
                           <Button variant="ghost" size="icon" className="text-red-500" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
                           <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
@@ -2000,7 +2126,7 @@ export default function PosPage() {
                       <div className="lg:col-span-5 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2">
                           <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
-                          <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Copyright className="mr-2"/> Brands</Button>
+                          <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2"/> Brands</Button>
                       </div>
                       <Card className="flex-1 bg-card p-2">
                           <ScrollArea className="h-full">
@@ -2212,6 +2338,7 @@ export default function PosPage() {
               </DialogFooter>
           </DialogContent>
       </Dialog>
+      <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
     </div>
   );
 }

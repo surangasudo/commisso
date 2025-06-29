@@ -416,6 +416,17 @@ export type Currency = {
   isBaseCurrency?: boolean;
 };
 
+export type MoneyExchange = {
+    id: string;
+    date: string;
+    fromCurrency: string;
+    toCurrency: string;
+    amount: number;
+    exchangeRate: number;
+    convertedAmount: number;
+    addedBy: string;
+};
+
 const defaultPaymentOptions: PaymentOption[] = [
     { method: 'Cash', enabled: true },
     { method: 'Card', enabled: true },
