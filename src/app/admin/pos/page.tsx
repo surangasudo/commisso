@@ -29,7 +29,6 @@ import {
   Undo2,
   WalletCards,
   Monitor,
-  Briefcase,
   Shrink,
   Lock,
   Pencil,
@@ -576,7 +575,7 @@ const CommissionSelector = ({
     <div className="space-y-2">
       <Label htmlFor={`${entityType}-search`}>{label}</Label>
       <div className="relative">
-        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+        <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
         <Input
           id={`${entityType}-search`}
           placeholder={`Search ${label}...`}
@@ -1231,8 +1230,7 @@ export default function PosPage() {
                                     <Home />
                                 </Button>
                             </Link>
-                            <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" onClick={() => clearCart()}><X /></Button>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCloseRegisterOpen(true)}><Briefcase /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
