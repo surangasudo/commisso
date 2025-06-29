@@ -258,7 +258,6 @@ const RegisterDetailsDialog = ({
         { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
         { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
         { label: 'Credit Sales:', value: creditSales, color: '' },
-        { label: 'Total Sales:', value: totalSales, color: '' },
         { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
     ];
 
