@@ -27,13 +27,13 @@ export async function sendSms(
       return { success: false, error: errorMsg };
   }
 
-  const apiKey = config.textlkApiKey;
-  const senderId = config.textlkSenderId;
+  const apiKey = process.env.TEXTLK_API_KEY || config.textlkApiKey;
+  const senderId = process.env.TEXTLK_SENDER_ID || config.textlkSenderId;
 
   if (!apiKey || !senderId) {
-    const errorMsg = 'ERROR: Text.lk API Key or Sender ID is not configured in the settings.';
+    const errorMsg = 'ERROR: Text.lk API Key or Sender ID is not configured in settings or .env file.';
     console.error(errorMsg);
-    return { success: false, error: 'SMS service (Text.lk) is not configured correctly.' };
+    return { success: false, error: 'SMS service (Text.lk) is not configured. Please set credentials in Business Settings > SMS or in the .env file.' };
   }
 
   const url = 'https://app.text.lk/api/v3/sms/send';
