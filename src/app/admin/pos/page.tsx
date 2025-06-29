@@ -83,15 +83,16 @@ import { Label } from "@/components/ui/label";
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrency } from '@/hooks/use-currency';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
-import { useSettings } from '@/hooks/use-settings';
+import { useSettings, type AllSettings } from '@/hooks/use-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppFooter } from '@/components/app-footer';
+import { useAuth } from '@/hooks/use-auth';
 
 type CartItem = {
   product: DetailedProduct;
@@ -194,117 +195,141 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
     );
 };
 
-const RegisterDetailsDialog = ({ open, onOpenChange, cart, totalPayable }: { 
+const RegisterDetailsDialog = ({ 
+    open, 
+    onOpenChange,
+    cart,
+    totalPayable,
+    discount,
+    user,
+    settings
+}: { 
     open: boolean, 
     onOpenChange: (open: boolean) => void,
     cart: CartItem[],
-    totalPayable: number 
+    totalPayable: number,
+    discount: number,
+    user: { name: string, email: string, role: string } | null,
+    settings: AllSettings
 }) => {
     const { formatCurrency } = useCurrency();
-    const cashInHand = 1000.00; // Mock data
-    const totalPayment = cashInHand + totalPayable;
+    const openingCash = 1000.00; // Mock data
+    const totalSale = totalPayable + discount;
+    const totalInRegister = openingCash + totalSale;
+    
+    const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
+
+    const salesByBrand = useMemo(() => {
+        const brands: { [key: string]: { quantity: number; total: number } } = {};
+
+        cart.forEach(item => {
+            const brandName = item.product.brand || 'Unbranded';
+            if (!brands[brandName]) {
+                brands[brandName] = { quantity: 0, total: 0 };
+            }
+            brands[brandName].quantity += item.quantity;
+            brands[brandName].total += item.quantity * item.sellingPrice;
+        });
+
+        return Object.entries(brands).map(([name, data]) => ({
+            name,
+            ...data,
+        }));
+    }, [cart]);
+    
+    const totalBrandQuantity = useMemo(() => salesByBrand.reduce((acc, item) => acc + item.quantity, 0), [salesByBrand]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Register Details (29th Jun, 2025 05:34 AM - 29th Jun, 2025 06:11 AM)</DialogTitle>
+                    <DialogTitle>Register Details</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4 text-sm">
-                    {/* Payment Method Table */}
-                    <div className="grid grid-cols-3 gap-4 border-b pb-2 font-medium">
-                        <div className="col-span-1">Payment Method</div>
-                        <div className="col-span-1 text-right">Sell</div>
-                        <div className="col-span-1 text-right">Expense</div>
-                    </div>
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-3 gap-4">
-                            <span>Cash in hand:</span>
-                            <span className="text-right">{formatCurrency(cashInHand)}</span>
-                            <span className="text-right">--</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <span>Cash Payment:</span>
-                            <span className="text-right">{formatCurrency(totalPayable)}</span>
-                            <span className="text-right">{formatCurrency(0)}</span>
-                        </div>
-                        {/* Other payment methods as zero */}
-                        {['Cheque Payment', 'Card Payment', 'Bank Transfer', 'Advance payment', 'Custom Payment 1', 'Custom Payment 2', 'Custom Payment 3', 'Other Payments'].map(method => (
-                             <div key={method} className="grid grid-cols-3 gap-4">
-                                <span>{method}:</span>
-                                <span className="text-right">{formatCurrency(0)}</span>
-                                <span className="text-right">{formatCurrency(0)}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <Separator />
-
-                    {/* Summary Section */}
-                    <div className="space-y-2">
-                         <div className="grid grid-cols-2 gap-4">
-                            <span className="font-bold">Total Sales:</span>
-                            <span className="text-right font-bold">{formatCurrency(totalPayable)}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 p-2 bg-red-100 rounded-md">
-                            <span className="font-bold">Total Refund</span>
-                            <span className="text-right font-bold">{formatCurrency(0)}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 p-2 bg-green-100 rounded-md">
-                            <span className="font-bold">Total Payment</span>
-                            <span className="text-right font-bold">{formatCurrency(totalPayment)}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 p-2 bg-green-100 rounded-md">
-                            <span className="font-bold">Credit Sales:</span>
-                            <span className="text-right font-bold">{formatCurrency(0)}</span>
-                        </div>
-                         <div className="grid grid-cols-2 gap-4">
-                            <span className="font-bold">Total Sales:</span>
-                            <span className="text-right font-bold">{formatCurrency(totalPayable)}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 p-2 bg-red-100 rounded-md">
-                            <span className="font-bold">Total Expense:</span>
-                            <span className="text-right font-bold">{formatCurrency(0)}</span>
-                        </div>
-                    </div>
-                    
+                <div className="space-y-4 py-4 text-sm printable-area">
                     <div className="text-center font-semibold bg-muted p-2 rounded-md">
-                        Total = {formatCurrency(cashInHand)} (opening) + {formatCurrency(totalPayable)} (Sale) - {formatCurrency(0)} (Refund) - {formatCurrency(0)} (Expense) = {formatCurrency(totalPayment)}
+                        Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSale)} (Sale) - {formatCurrency(0)} (Refund) - {formatCurrency(0)} (Expense) = {formatCurrency(totalInRegister)}
                     </div>
                     
-                    {/* Products Sold Table */}
-                    <div className="pt-4">
-                        <h3 className="font-bold text-lg mb-2">Details of products sold</h3>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>#</TableHead>
-                                        <TableHead>SKU</TableHead>
-                                        <TableHead>Product</TableHead>
-                                        <TableHead className="text-right">Quantity</TableHead>
-                                        <TableHead className="text-right">Total amount</TableHead>
+                    <h3 className="font-bold text-lg mt-4">Details of products sold</h3>
+                    <div className="border rounded-md max-h-[250px] overflow-y-auto">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background z-10">
+                                <TableRow>
+                                    <TableHead>#</TableHead>
+                                    <TableHead>SKU</TableHead>
+                                    <TableHead>Product</TableHead>
+                                    <TableHead className="text-right">Quantity</TableHead>
+                                    <TableHead className="text-right">Total amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {cart.map((item, index) => (
+                                    <TableRow key={item.product.id}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>{item.product.sku}</TableCell>
+                                        <TableCell>{item.product.name}</TableCell>
+                                        <TableCell className="text-right">{item.quantity}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {cart.map((item, index) => (
-                                        <TableRow key={item.product.id}>
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell>{item.product.sku}</TableCell>
-                                            <TableCell>{item.product.name}</TableCell>
-                                            <TableCell className="text-right">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                     <div className="bg-green-100 dark:bg-green-900/20 font-bold p-2 rounded-md flex justify-between text-sm">
+                        <span>#</span>
+                        <div className="flex gap-4">
+                            <span>{totalQuantity}</span>
+                            <div className="text-right">
+                                <p>Discount: (-) {formatCurrency(discount)}</p>
+                                <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                            </div>
                         </div>
                     </div>
-
+                    
+                    <h3 className="font-bold text-lg mt-6">Details of products sold (By Brand)</h3>
+                    <div className="border rounded-md max-h-[250px] overflow-y-auto">
+                        <Table>
+                             <TableHeader className="sticky top-0 bg-background z-10">
+                                <TableRow>
+                                    <TableHead>#</TableHead>
+                                    <TableHead>Brands</TableHead>
+                                    <TableHead className="text-right">Quantity</TableHead>
+                                    <TableHead className="text-right">Total amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {salesByBrand.map((brand, index) => (
+                                    <TableRow key={brand.name}>
+                                        <TableCell>{index + 1}</TableCell>
+                                        <TableCell>{brand.name}</TableCell>
+                                        <TableCell className="text-right">{brand.quantity}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    <div className="bg-green-100 dark:bg-green-900/20 font-bold p-2 rounded-md flex justify-between text-sm">
+                        <span>#</span>
+                        <div className="flex gap-4">
+                            <span>{totalBrandQuantity}</span>
+                            <div className="text-right">
+                                <p>Discount: (-) {formatCurrency(discount)}</p>
+                                <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 border-t pt-4">
+                        <p><strong>User:</strong> {user?.name}</p>
+                        <p><strong>Email:</strong> {user?.email}</p>
+                        <p><strong>Business Location:</strong> {settings.business.businessName}</p>
+                    </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => window.print()}>Print</Button>
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                    <Button variant="outline" onClick={() => window.print()}>Print Mini</Button>
+                    <Button variant="default" onClick={() => window.print()}>Print Detailed</Button>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -800,6 +825,7 @@ export default function PosPage() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const { settings } = useSettings();
+  const { user } = useAuth();
 
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -1714,6 +1740,9 @@ export default function PosPage() {
             onOpenChange={setIsRegisterDetailsOpen}
             cart={cart}
             totalPayable={totalPayable}
+            discount={discount}
+            user={user}
+            settings={settings}
         />
         <EditValueDialog
             open={isDiscountModalOpen}
@@ -1783,4 +1812,3 @@ export default function PosPage() {
     </>
   );
 }
-

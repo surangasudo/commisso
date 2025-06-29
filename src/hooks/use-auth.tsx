@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 type User = {
     name: string;
+    email: string;
     role: 'Admin' | 'Cashier';
 };
 
@@ -50,7 +51,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const login = (role: 'Admin' | 'Cashier') => {
         const name = role === 'Admin' ? 'Mr Admin' : 'Mr Cashier';
-        const userData = { name, role };
+        const email = role === 'Admin' ? 'admin@example.com' : 'cashier@example.com';
+        const userData = { name, role, email };
         localStorage.setItem('erp-user', JSON.stringify(userData));
         setUser(userData);
     };
