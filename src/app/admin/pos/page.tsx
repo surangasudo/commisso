@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useReactToPrint } from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -624,56 +623,28 @@ export default function PosPage() {
   // Refs and state for printing
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef<boolean>(false);
 
-  // Component mount/unmount tracking
+  // Browser-based printing logic
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      // Clear any pending timers on unmount
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
+    if (saleToPrint) {
+        const handleAfterPrint = () => {
+            setSaleToPrint(null);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
+        window.addEventListener('afterprint', handleAfterPrint);
+        
+        // Timeout ensures state updates are rendered before print dialog opens
+        const timer = setTimeout(() => {
+            window.print();
+        }, 100);
 
-  const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    documentTitle: `Receipt-${saleToPrint?.invoiceNo || 'Sale'}`,
-    onAfterPrint: () => {
-        setSaleToPrint(null);
-    },
-    onPrintError: (error) => {
-        console.error('Print error:', error);
-        toast({ title: "Print Error", description: "Failed to print receipt.", variant: "destructive" });
-        setSaleToPrint(null);
-    },
-  });
-
-  // Effect to trigger printing when saleToPrint is set
-  useEffect(() => {
-    if (timerRef.current) {
-        clearTimeout(timerRef.current);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('afterprint', handleAfterPrint);
+        };
     }
-    
-    if (saleToPrint && receiptRef.current && isMountedRef.current) {
-        timerRef.current = setTimeout(() => {
-            if (isMountedRef.current) { // Double check before firing
-                handlePrint();
-            }
-        }, 100); // Small delay to ensure receipt content is rendered
-    }
-
-    return () => {
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-        }
-    };
-  }, [saleToPrint, handlePrint]);
-
+  }, [saleToPrint]);
+  
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -1417,19 +1388,6 @@ export default function PosPage() {
                         </div>
                     </div>
                     
-                    <div className="relative p-4 pt-0">
-                        <div className="text-center text-xs text-slate-400 p-1">
-                            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-                        </div>
-                        <div className="absolute bottom-2 right-4">
-                            <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
-                                <History className="mr-2 h-4 w-4" />
-                                Recent Transactions
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* Footer */}
                     <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 flex flex-col md:flex-row md:items-center md:justify-between z-10 gap-2">
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-center md:justify-start">
                             {!settings.pos.disableDraft && <Button variant="outline" className="h-9 px-2 sm:px-4" onClick={handleDraft}><FileText className="h-4 w-4 sm:mr-2"/><span className="hidden sm:inline">Draft</span></Button>}
@@ -1515,73 +1473,82 @@ export default function PosPage() {
                             <h3 className="text-lg sm:text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
                         </div>
                     </footer>
-                    <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
-                    <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
-                    <RecentTransactionsDialog
-                        open={isRecentTransactionsOpen}
-                        onOpenChange={setIsRecentTransactionsOpen}
-                        recentSales={recentSales}
-                        onEdit={handleEditSale}
-                        onPrint={handlePrintFromDialog}
-                        onDelete={handleDeleteSaleClick}
-                    />
-                    <EditValueDialog
-                        open={isDiscountModalOpen}
-                        onOpenChange={setIsDiscountModalOpen}
-                        title="Edit Discount"
-                        description="Enter the total discount amount for this order."
-                        value={discount}
-                        setValue={setDiscount}
-                    />
-                    <EditValueDialog
-                        open={isTaxModalOpen}
-                        onOpenChange={setIsTaxModalOpen}
-                        title="Edit Order Tax"
-                        description="Enter the total tax amount for this order."
-                        value={orderTax}
-                        setValue={setOrderTax}
-                    />
-                    <EditValueDialog
-                        open={isShippingModalOpen}
-                        onOpenChange={setIsShippingModalOpen}
-                        title="Edit Shipping Charges"
-                        description="Enter the shipping charges for this order."
-                        value={shipping}
-                        setValue={setShipping}
-                    />
-                    <CashPaymentDialog
-                        open={isCashPaymentOpen}
-                        onOpenChange={setIsCashPaymentOpen}
-                        totalPayable={totalPayable}
-                        onFinalize={handleFinalizeCashPayment}
-                    />
-                    <AddCommissionProfileDialog
-                        open={isAddProfileOpen}
-                        onOpenChange={setIsAddProfileOpen}
-                        profileType={profileTypeToAdd}
-                        onProfileAdded={fetchAndCalculateStock}
-                    />
-                    <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure you want to delete this sale?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
                 </div>
             </TooltipProvider>
         </div>
         
         {/* Hidden component for printing */}
-        <div style={{ display: 'none' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+
+        {/* Dialogs that are part of the main page state */}
+        <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
+        <CloseRegisterDialog open={isCloseRegisterOpen} onOpenChange={setIsCloseRegisterOpen} totalPayable={totalPayable} />
+        <RecentTransactionsDialog
+            open={isRecentTransactionsOpen}
+            onOpenChange={setIsRecentTransactionsOpen}
+            recentSales={recentSales}
+            onEdit={handleEditSale}
+            onPrint={handlePrintFromDialog}
+            onDelete={handleDeleteSaleClick}
+        />
+        <EditValueDialog
+            open={isDiscountModalOpen}
+            onOpenChange={setIsDiscountModalOpen}
+            title="Edit Discount"
+            description="Enter the total discount amount for this order."
+            value={discount}
+            setValue={setDiscount}
+        />
+        <EditValueDialog
+            open={isTaxModalOpen}
+            onOpenChange={setIsTaxModalOpen}
+            title="Edit Order Tax"
+            description="Enter the total tax amount for this order."
+            value={orderTax}
+            setValue={setOrderTax}
+        />
+        <EditValueDialog
+            open={isShippingModalOpen}
+            onOpenChange={setIsShippingModalOpen}
+            title="Edit Shipping Charges"
+            description="Enter the shipping charges for this order."
+            value={shipping}
+            setValue={setShipping}
+        />
+        <CashPaymentDialog
+            open={isCashPaymentOpen}
+            onOpenChange={setIsCashPaymentOpen}
+            totalPayable={totalPayable}
+            onFinalize={handleFinalizeCashPayment}
+        />
+        <AddCommissionProfileDialog
+            open={isAddProfileOpen}
+            onOpenChange={setIsAddProfileOpen}
+            profileType={profileTypeToAdd}
+            onProfileAdded={fetchAndCalculateStock}
+        />
+        <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <DialogTitle>Are you sure you want to delete this sale?</DialogTitle>
+                    <AlertDialogDescription>
+                        This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        <div className="absolute bottom-4 right-4 print-hidden">
+            <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
+                <History className="mr-2 h-4 w-4" />
+                Recent Transactions
+            </Button>
+        </div>
+        <div className="text-center text-xs text-slate-400 p-1 print-hidden">
+            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
         </div>
     </>
   );
