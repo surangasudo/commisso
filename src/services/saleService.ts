@@ -32,13 +32,13 @@ export async function addSale(
   sale: Omit<Sale, 'id'>,
   commissionCalculationType: 'invoice_value' | 'payment_received',
   commissionCategoryRule: 'strict' | 'fallback'
-) {
+): Promise<string> {
   const saleDataForDb = {
     ...sale,
     date: new Date(sale.date),
   };
 
-  await runTransaction(db, async (transaction) => {
+  const saleId = await runTransaction(db, async (transaction) => {
     // 1. Fetch all agent profiles for this sale
     const agentProfiles = new Map<string, DocumentData>();
     if (sale.commissionAgentIds && sale.commissionAgentIds.length > 0) {
@@ -68,7 +68,7 @@ export async function addSale(
     // 3. Create the new sale document
     const newSaleRef = doc(collection(db, 'sales'));
     transaction.set(newSaleRef, saleDataForDb);
-    const saleId = newSaleRef.id;
+    const createdSaleId = newSaleRef.id;
 
     // --- WRITE PHASE ---
 
@@ -118,7 +118,7 @@ export async function addSale(
 
           if (commissionAmount > 0) {
               const newCommission = {
-                  transaction_id: saleId,
+                  transaction_id: createdSaleId,
                   recipient_profile_id: agentId,
                   recipient_entity_type: agentProfile.entityType,
                   calculation_base_amount: saleValue,
@@ -133,7 +133,9 @@ export async function addSale(
         }
       }
     }
+    return createdSaleId;
   });
+  return saleId;
 }
 
 export async function updateSale(

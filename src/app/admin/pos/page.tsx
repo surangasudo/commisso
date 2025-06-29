@@ -211,6 +211,11 @@ const RecentTransactionsDialog = ({
     const { formatCurrency } = useCurrency();
     const [activeTab, setActiveTab] = useState("final");
 
+    const handlePrintClick = (sale: Sale) => {
+        onOpenChange(false); // Close this dialog first
+        setTimeout(() => onPrint(sale), 150); // Then trigger print after a short delay
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
@@ -239,7 +244,7 @@ const RecentTransactionsDialog = ({
                                                     <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onEdit(sale.id)}>
                                                         <Pencil className="mr-1 h-3 w-3" /> Edit
                                                     </Button>
-                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
+                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => handlePrintClick(sale)}>
                                                         <Printer className="mr-1 h-3 w-3" /> Print
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => onDelete(sale)}>
@@ -327,24 +332,29 @@ const CashPaymentDialog = ({
     open,
     onOpenChange,
     totalPayable,
-    onFinalize
+    onSave,
+    onPrintAndClose,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
-    onFinalize: (totalPaid: number) => void;
+    onSave: (totalPaid: number) => Promise<boolean>;
+    onPrintAndClose: () => void;
 }) => {
     const { formatCurrency } = useCurrency();
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
+    const [isFinalized, setIsFinalized] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (open) {
-            // Reset on open
             setAmountTendered('');
             setChange(0);
-            setTimeout(() => inputRef.current?.focus(), 100); // Autofocus on open
+            setIsFinalized(false);
+            setIsSaving(false);
+            setTimeout(() => inputRef.current?.focus(), 100);
         }
     }, [open]);
 
@@ -356,17 +366,33 @@ const CashPaymentDialog = ({
             setChange(0);
         }
     }, [amountTendered, totalPayable]);
-    
-    const handleFinalize = () => {
-        onFinalize(parseFloat(amountTendered) || 0);
-    }
-    
+
+    const handleSaveClick = async () => {
+        setIsSaving(true);
+        const success = await onSave(parseFloat(amountTendered) || 0);
+        setIsSaving(false);
+        if (success) {
+            setIsFinalized(true);
+        }
+    };
+
+    const handlePrintClick = () => {
+        onPrintAndClose();
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            handleFinalize();
+            if (isFinalized) {
+                handlePrintClick();
+            } else {
+                handleSaveClick();
+            }
         }
     };
+
+    const buttonAction = isFinalized ? handlePrintClick : handleSaveClick;
+    const buttonText = isFinalized ? "Print Receipt" : (isSaving ? "Saving..." : "Finalize Payment");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -393,6 +419,7 @@ const CashPaymentDialog = ({
                             onChange={(e) => setAmountTendered(e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="text-center text-2xl h-14"
+                            disabled={isFinalized || isSaving}
                         />
                     </div>
                     <div className="text-center">
@@ -402,7 +429,98 @@ const CashPaymentDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleFinalize}>Finalize Payment</Button>
+                    <Button onClick={buttonAction} disabled={isSaving}>
+                        {buttonText}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const CardPaymentDialog = ({
+    open,
+    onOpenChange,
+    totalPayable,
+    onSave,
+    onPrintAndClose,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    totalPayable: number;
+    onSave: () => Promise<boolean>;
+    onPrintAndClose: () => void;
+}) => {
+    const { formatCurrency } = useCurrency();
+    const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '' });
+    const [isFinalized, setIsFinalized] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (open) {
+            setIsFinalized(false);
+            setIsSaving(false);
+            setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
+        }
+    }, [open]);
+
+    const handleSaveClick = async () => {
+        if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
+            toast({ title: 'Missing Card Details', description: 'Please fill in all card details to proceed.', variant: 'destructive' });
+            return;
+        }
+        setIsSaving(true);
+        const success = await onSave();
+        setIsSaving(false);
+        if (success) {
+            setIsFinalized(true);
+        }
+    };
+    
+    const handlePrintClick = () => {
+        onPrintAndClose();
+    };
+    
+    const buttonAction = isFinalized ? handlePrintClick : handleSaveClick;
+    const buttonText = isFinalized ? "Print Receipt" : (isSaving ? "Saving..." : "Finalize Payment");
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Card Payment</DialogTitle>
+                    <DialogDescription>
+                        Enter card details for a total of <strong>{formatCurrency(totalPayable)}</strong>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="card-number">Card Number</Label>
+                        <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({...d, number: e.target.value}))} disabled={isFinalized}/>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="card-holder">Card Holder Name</Label>
+                        <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({...d, holder: e.target.value}))} disabled={isFinalized}/>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                            <Label htmlFor="expiry-month">Expiry Month</Label>
+                            <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({...d, month: e.target.value}))} disabled={isFinalized}/>
+                            </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="expiry-year">Expiry Year</Label>
+                            <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({...d, year: e.target.value}))} disabled={isFinalized}/>
+                            </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="cvv">CVV</Label>
+                            <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({...d, cvv: e.target.value}))} disabled={isFinalized}/>
+                            </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={buttonAction} disabled={isSaving}>{buttonText}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -582,13 +700,6 @@ export default function PosPage() {
   const [changeDue, setChangeDue] = useState(0);
   
   const [isCardPaymentOpen, setIsCardPaymentOpen] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    number: '',
-    holder: '',
-    month: '',
-    year: '',
-    cvv: '',
-  });
   
   const [discount, setDiscount] = useState(0);
   const [orderTax, setOrderTax] = useState(0);
@@ -617,6 +728,7 @@ export default function PosPage() {
   // Ref for printing
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const [finalizedSaleForPrinting, setFinalizedSaleForPrinting] = useState<Sale | null>(null);
 
   // Effect for browser-based printing
   useEffect(() => {
@@ -842,10 +954,10 @@ export default function PosPage() {
       };
   };
 
-  const finalizeSale = async (sale: Omit<Sale, 'id'>) => {
+  const finalizeSale = async (sale: Omit<Sale, 'id'>): Promise<Sale | null> => {
       if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-        return;
+        return null;
       }
       
       if (
@@ -857,7 +969,7 @@ export default function PosPage() {
               description: "A commission agent must be selected for this sale as per business settings.",
               variant: "destructive",
           });
-          return;
+          return null;
       }
       
       if (settings.pos.isServiceStaffRequired && !selectedSalesperson) {
@@ -866,26 +978,26 @@ export default function PosPage() {
               description: "Please select a service staff member (Salesperson) for this sale.",
               variant: "destructive",
           });
-          return;
+          return null;
       }
 
       try {
-          await addSale(sale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
+          const savedSaleId = await addSale(sale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
           toast({
               title: 'Sale Finalized',
-              description: `Payment of ${formatCurrency(sale.totalPaid)} received.`,
+              description: `Payment of ${formatCurrency(sale.totalPaid)} recorded.`,
           });
           
           const completeSaleForReceipt: Sale = {
-            id: 'temp-print-id', // Temporary ID, not saved
+            id: savedSaleId,
             ...sale,
           };
-          setSaleToPrint(completeSaleForReceipt);
-
+          
           clearCart(false);
           setIsMultiPayOpen(false);
           setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
+          return completeSaleForReceipt;
       } catch (error) {
           console.error("Failed to save sale:", error);
           toast({
@@ -893,6 +1005,7 @@ export default function PosPage() {
               description: "Could not save the sale. Please try again.",
               variant: "destructive"
           });
+          return null;
       }
   };
 
@@ -904,19 +1017,38 @@ export default function PosPage() {
     setIsCashPaymentOpen(true);
   };
   
-  const handleFinalizeCashPayment = (totalPaid: number) => {
-    toast({
-        title: "Cash Drawer Opened",
-        description: "Please collect payment and provide change.",
-    });
-
+  const handleSaveFromCashDialog = async (totalPaid: number): Promise<boolean> => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
     const newSale = createSaleObject('Cash', paymentStatus, totalPaid);
-    finalizeSale(newSale);
-    setIsCashPaymentOpen(false);
+    const savedSale = await finalizeSale(newSale);
+    if(savedSale) {
+        setFinalizedSaleForPrinting(savedSale);
+        return true;
+    }
+    return false;
+  };
+  
+  const handleSaveFromCardDialog = async (): Promise<boolean> => {
+    const newSale = createSaleObject('Card', 'Paid', totalPayable);
+    const savedSale = await finalizeSale(newSale);
+    if(savedSale) {
+        setFinalizedSaleForPrinting(savedSale);
+        return true;
+    }
+    return false;
   };
 
-  const handleFinalizeMultiPay = () => {
+  const handlePrintAndCloseDialog = () => {
+    if (finalizedSaleForPrinting) {
+        setSaleToPrint(finalizedSaleForPrinting);
+        setFinalizedSaleForPrinting(null);
+        setIsCashPaymentOpen(false);
+        setIsCardPaymentOpen(false);
+    }
+  };
+
+
+  const handleFinalizeMultiPay = async () => {
       const cash = parseFloat(cashAmount) || 0;
       const card = parseFloat(cardAmount) || 0;
       const totalPaid = cash + card;
@@ -927,7 +1059,10 @@ export default function PosPage() {
       }
 
       const newSale = createSaleObject('Multiple', 'Paid', totalPaid);
-      finalizeSale(newSale);
+      const savedSale = await finalizeSale(newSale);
+      if (savedSale) {
+          setSaleToPrint(savedSale);
+      }
       setCashAmount('');
       setCardAmount('');
   };
@@ -950,26 +1085,29 @@ export default function PosPage() {
       clearCart();
     };
     
-    const handleSuspend = () => {
+    const handleSuspend = async () => {
       if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
       }
-      toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
       
-      if (settings.pos.printInvoiceOnSuspend) {
-        const tempSaleForPrint: Sale = {
-          id: 'temp-print-id',
-          ...createSaleObject('Suspended', 'Due', 0)
-        };
-        setSaleToPrint(tempSaleForPrint);
+      const newSale = createSaleObject('Suspended', 'Due', 0);
+      const savedSale = await finalizeSale(newSale);
+
+      if(savedSale){
+        toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
+        if (settings.pos.printInvoiceOnSuspend) {
+            setSaleToPrint(savedSale);
+        }
       }
-      clearCart(false);
     };
     
-    const handleCreditSale = () => {
+    const handleCreditSale = async () => {
       const newSale = createSaleObject('Credit', 'Due', 0);
-      finalizeSale(newSale);
+      const savedSale = await finalizeSale(newSale);
+      if (savedSale) {
+        setSaleToPrint(savedSale);
+      }
     };
   
     const handleCardPayment = () => {
@@ -978,16 +1116,6 @@ export default function PosPage() {
         return;
       }
       setIsCardPaymentOpen(true);
-    };
-
-    const handleFinalizeCardPayment = () => {
-      if (!cardDetails.number || !cardDetails.holder || !cardDetails.month || !cardDetails.year || !cardDetails.cvv) {
-          toast({ title: 'Missing Card Details', description: 'Please fill in all card details to proceed.', variant: 'destructive' });
-          return;
-      }
-      const newSale = createSaleObject('Card', 'Paid', totalPayable);
-      finalizeSale(newSale);
-      setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
     };
 
     const handleToggleFullscreen = () => {
@@ -1081,11 +1209,7 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setIsRecentTransactionsOpen(false);
-        // Use a small timeout to allow the dialog to close before we trigger the print flow
-        setTimeout(() => {
-            setSaleToPrint(sale);
-        }, 150);
+        setSaleToPrint(sale);
     };
 
   return (
@@ -1427,43 +1551,6 @@ export default function PosPage() {
                                     </DialogContent>
                                 </Dialog>
                             )}
-                            <Dialog open={isCardPaymentOpen} onOpenChange={setIsCardPaymentOpen}>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Card Payment</DialogTitle>
-                                        <DialogDescription>
-                                            Enter card details for a total of <strong>{formatCurrency(totalPayable)}</strong>.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="card-number">Card Number</Label>
-                                            <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({...d, number: e.target.value}))} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="card-holder">Card Holder Name</Label>
-                                            <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({...d, holder: e.target.value}))} />
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-4">
-                                                <div className="space-y-2">
-                                                <Label htmlFor="expiry-month">Expiry Month</Label>
-                                                <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({...d, month: e.target.value}))} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                <Label htmlFor="expiry-year">Expiry Year</Label>
-                                                <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({...d, year: e.target.value}))} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                <Label htmlFor="cvv">CVV</Label>
-                                                <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({...d, cvv: e.target.value}))} />
-                                                </div>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button type="button" onClick={handleFinalizeCardPayment}>Finalize Payment</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
                             
                             {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm" onClick={handleCashPayment}>Cash</Button>}
                             <Button variant="destructive" className="text-xs sm:text-sm" onClick={() => clearCart()}>Cancel</Button>
@@ -1477,7 +1564,6 @@ export default function PosPage() {
             </TooltipProvider>
         </div>
         
-        {/* Hidden component for printing */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
             <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
         </div>
@@ -1521,7 +1607,15 @@ export default function PosPage() {
             open={isCashPaymentOpen}
             onOpenChange={setIsCashPaymentOpen}
             totalPayable={totalPayable}
-            onFinalize={handleFinalizeCashPayment}
+            onSave={handleSaveFromCashDialog}
+            onPrintAndClose={handlePrintAndCloseDialog}
+        />
+         <CardPaymentDialog
+            open={isCardPaymentOpen}
+            onOpenChange={setIsCardPaymentOpen}
+            totalPayable={totalPayable}
+            onSave={handleSaveFromCardDialog}
+            onPrintAndClose={handlePrintAndCloseDialog}
         />
         <AddCommissionProfileDialog
             open={isAddProfileOpen}
