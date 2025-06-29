@@ -1,8 +1,9 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -215,11 +216,13 @@ export default function ListAccountsPage() {
                                         </TableRow>
                                     ))}
                                 </TableBody>
-                                <TableRow>
-                                    <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
-                                    <TableCell className="text-right font-bold">{formatCurrency(totalBalance)}</TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
+                                <TableFooter>
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(totalBalance)}</TableCell>
+                                        <TableCell></TableCell>
+                                    </TableRow>
+                                </TableFooter>
                             </Table>
                         </div>
                     </CardContent>
