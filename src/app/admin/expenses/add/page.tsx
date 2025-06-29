@@ -155,7 +155,7 @@ export default function AddExpensePage() {
 
             <Card>
                 <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                             <Label htmlFor="location">Business Location:*</Label>
                             <Select value={formData.location} onValueChange={(value) => handleSelectChange('location', value)}><SelectTrigger id="location"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent></Select>
@@ -168,6 +168,7 @@ export default function AddExpensePage() {
                             <Label htmlFor="subCategory">Sub category:</Label>
                             <Select value={formData.subCategory} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}><SelectTrigger id="subCategory"><SelectValue placeholder="Please Select" /></SelectTrigger><SelectContent>{subCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent></Select>
                         </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="referenceNo">Reference No:</Label>
                             <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
@@ -181,22 +182,26 @@ export default function AddExpensePage() {
                                 <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={(date) => handleDateChange('date', date)} initialFocus /></PopoverContent>
                             </Popover>
                         </div>
-                         <div className="space-y-2">
+                        <div />
+
+                        <div className="space-y-2">
                             <Label htmlFor="expenseFor" className="flex items-center gap-1">Expense For: <Info className="w-3 h-3 text-muted-foreground"/></Label>
                             <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
                                 <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
                                 <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
                             <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}><SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{taxRates.map(tax => (<SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>))}</SelectContent></Select>
                         </div>
+                        <div />
+                        
                         <div className="space-y-2">
                             <Label htmlFor="totalAmount">Total amount:*</Label>
                             <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 md:col-span-2">
                             <Label htmlFor="expenseNote">Expense note:</Label>
                             <Textarea id="expenseNote" value={formData.expenseNote} onChange={handleChange} />
                         </div>
@@ -247,7 +252,7 @@ export default function AddExpensePage() {
                                 <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2 md:col-span-2">
+                         <div className="space-y-2 lg:col-span-2">
                             <Label htmlFor="paymentNote">Payment note:</Label>
                             <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
                         </div>
