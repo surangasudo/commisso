@@ -907,7 +907,7 @@ const CommissionSelector = ({
   onSelect,
   onRemove,
 }: {
-  entityType: CommissionProfile['entityType'];
+  entityType?: CommissionProfile['entityType'];
   label: string;
   profiles: CommissionProfile[];
   selectedProfile: CommissionProfile | null;
@@ -919,7 +919,7 @@ const CommissionSelector = ({
     if (!searchTerm) return [];
     return profiles.filter(
       (p) =>
-        p.entityType === entityType &&
+        (!entityType || p.entityType === entityType) &&
         (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.phone.includes(searchTerm))
     ).slice(0, 5);
@@ -944,11 +944,11 @@ const CommissionSelector = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={`${entityType}-search`}>{label}</Label>
+      <Label htmlFor={`${entityType || 'all'}-search`}>{label}</Label>
       <div className="relative">
         <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
         <Input
-          id={`${entityType}-search`}
+          id={`${entityType || 'all'}-search`}
           placeholder={`Search ${label}...`}
           className="pl-10 w-full"
           value={searchTerm}
@@ -2024,14 +2024,34 @@ export default function PosPage() {
                                                   </div>
                                               </div>
                                           </div>
-                                      ) : (
-                                          <div className="flex items-center gap-2">
-                                              <div className="flex-1">
-                                                  <CommissionSelector entityType="Salesperson" label={settings.sale.enableCommissionAgent ? "Commission Agent" : "Service Staff"} profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
-                                              </div>
-                                              <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
-                                          </div>
-                                      )}
+                                      ) : settings.sale.enableCommissionAgent && settings.sale.commissionAgent === 'select_from_commission_agent_list' ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <CommissionSelector
+                                                    label="Commission Agent"
+                                                    profiles={commissionProfiles}
+                                                    selectedProfile={selectedSalesperson}
+                                                    onSelect={setSelectedSalesperson}
+                                                    onRemove={() => setSelectedSalesperson(null)}
+                                                />
+                                            </div>
+                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                        </div>
+                                      ) : settings.modules.serviceStaff ? (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1">
+                                                <CommissionSelector 
+                                                    entityType="Salesperson"
+                                                    label="Service Staff"
+                                                    profiles={commissionProfiles}
+                                                    selectedProfile={selectedSalesperson}
+                                                    onSelect={setSelectedSalesperson}
+                                                    onRemove={() => setSelectedSalesperson(null)}
+                                                />
+                                            </div>
+                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus/></Button>
+                                        </div>
+                                      ) : null}
                                   </>
                               ): null}
                               
