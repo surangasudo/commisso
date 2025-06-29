@@ -34,6 +34,7 @@ import {
   Pencil,
   Printer,
   Trash2,
+  Grid3x3,
 } from 'lucide-react';
 import {
   Card,
@@ -192,6 +193,123 @@ const CloseRegisterDialog = ({ open, onOpenChange, totalPayable }: { open: boole
         </Dialog>
     );
 };
+
+const RegisterDetailsDialog = ({ open, onOpenChange, cart, totalPayable }: { 
+    open: boolean, 
+    onOpenChange: (open: boolean) => void,
+    cart: CartItem[],
+    totalPayable: number 
+}) => {
+    const { formatCurrency } = useCurrency();
+    const cashInHand = 1000.00; // Mock data
+    const totalPayment = cashInHand + totalPayable;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Register Details (29th Jun, 2025 05:34 AM - 29th Jun, 2025 06:11 AM)</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4 text-sm">
+                    {/* Payment Method Table */}
+                    <div className="grid grid-cols-3 gap-4 border-b pb-2 font-medium">
+                        <div className="col-span-1">Payment Method</div>
+                        <div className="col-span-1 text-right">Sell</div>
+                        <div className="col-span-1 text-right">Expense</div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-4">
+                            <span>Cash in hand:</span>
+                            <span className="text-right">{formatCurrency(cashInHand)}</span>
+                            <span className="text-right">--</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <span>Cash Payment:</span>
+                            <span className="text-right">{formatCurrency(totalPayable)}</span>
+                            <span className="text-right">{formatCurrency(0)}</span>
+                        </div>
+                        {/* Other payment methods as zero */}
+                        {['Cheque Payment', 'Card Payment', 'Bank Transfer', 'Advance payment', 'Custom Payment 1', 'Custom Payment 2', 'Custom Payment 3', 'Other Payments'].map(method => (
+                             <div key={method} className="grid grid-cols-3 gap-4">
+                                <span>{method}:</span>
+                                <span className="text-right">{formatCurrency(0)}</span>
+                                <span className="text-right">{formatCurrency(0)}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Separator />
+
+                    {/* Summary Section */}
+                    <div className="space-y-2">
+                         <div className="grid grid-cols-2 gap-4">
+                            <span className="font-bold">Total Sales:</span>
+                            <span className="text-right font-bold">{formatCurrency(totalPayable)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 p-2 bg-red-100 rounded-md">
+                            <span className="font-bold">Total Refund</span>
+                            <span className="text-right font-bold">{formatCurrency(0)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 p-2 bg-green-100 rounded-md">
+                            <span className="font-bold">Total Payment</span>
+                            <span className="text-right font-bold">{formatCurrency(totalPayment)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 p-2 bg-green-100 rounded-md">
+                            <span className="font-bold">Credit Sales:</span>
+                            <span className="text-right font-bold">{formatCurrency(0)}</span>
+                        </div>
+                         <div className="grid grid-cols-2 gap-4">
+                            <span className="font-bold">Total Sales:</span>
+                            <span className="text-right font-bold">{formatCurrency(totalPayable)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 p-2 bg-red-100 rounded-md">
+                            <span className="font-bold">Total Expense:</span>
+                            <span className="text-right font-bold">{formatCurrency(0)}</span>
+                        </div>
+                    </div>
+                    
+                    <div className="text-center font-semibold bg-muted p-2 rounded-md">
+                        Total = {formatCurrency(cashInHand)} (opening) + {formatCurrency(totalPayable)} (Sale) - {formatCurrency(0)} (Refund) - {formatCurrency(0)} (Expense) = {formatCurrency(totalPayment)}
+                    </div>
+                    
+                    {/* Products Sold Table */}
+                    <div className="pt-4">
+                        <h3 className="font-bold text-lg mb-2">Details of products sold</h3>
+                        <div className="border rounded-md">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>#</TableHead>
+                                        <TableHead>SKU</TableHead>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead className="text-right">Quantity</TableHead>
+                                        <TableHead className="text-right">Total amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {cart.map((item, index) => (
+                                        <TableRow key={item.product.id}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{item.product.sku}</TableCell>
+                                            <TableCell>{item.product.name}</TableCell>
+                                            <TableCell className="text-right">{item.quantity}</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => window.print()}>Print</Button>
+                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 
 const RecentTransactionsDialog = ({
@@ -713,6 +831,7 @@ export default function PosPage() {
   // States for new header functions
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
+  const [isRegisterDetailsOpen, setIsRegisterDetailsOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
@@ -1230,6 +1349,7 @@ export default function PosPage() {
                                     <Home />
                                 </Button>
                             </Link>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 /></Button>
                             <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
@@ -1589,6 +1709,12 @@ export default function PosPage() {
             onPrint={handlePrintFromDialog}
             onDelete={handleDeleteSaleClick}
         />
+        <RegisterDetailsDialog
+            open={isRegisterDetailsOpen}
+            onOpenChange={setIsRegisterDetailsOpen}
+            cart={cart}
+            totalPayable={totalPayable}
+        />
         <EditValueDialog
             open={isDiscountModalOpen}
             onOpenChange={setIsDiscountModalOpen}
@@ -1657,3 +1783,4 @@ export default function PosPage() {
     </>
   );
 }
+
