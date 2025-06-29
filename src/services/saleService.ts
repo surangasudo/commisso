@@ -39,7 +39,7 @@ export async function addSale(
   };
 
   const saleId = await runTransaction(db, async (transaction) => {
-    // 1. Fetch all agent profiles for this sale
+    // --- READ PHASE ---
     const agentProfiles = new Map<string, DocumentData>();
     if (sale.commissionAgentIds && sale.commissionAgentIds.length > 0) {
       const agentRefs = sale.commissionAgentIds.map((id) => doc(db, 'commissionProfiles', id));
@@ -51,7 +51,6 @@ export async function addSale(
       });
     }
 
-    // 2. Fetch all product documents for this sale
     const productDataMap = new Map<string, DocumentData>();
     if (sale.items && sale.items.length > 0) {
       const productRefs = sale.items.map((item) => doc(db, 'products', item.productId));
@@ -65,14 +64,11 @@ export async function addSale(
       });
     }
 
-    // 3. Create the new sale document
+    // --- WRITE PHASE ---
     const newSaleRef = doc(collection(db, 'sales'));
     transaction.set(newSaleRef, saleDataForDb);
     const createdSaleId = newSaleRef.id;
 
-    // --- WRITE PHASE ---
-
-    // 1. Update product stock levels
     for (const item of sale.items) {
       const productRef = doc(db, 'products', item.productId);
       const productData = productDataMap.get(item.productId);
@@ -84,7 +80,6 @@ export async function addSale(
       }
     }
 
-    // 2. Create individual commission records and tally totals
     const commissionsCollectionRef = collection(db, 'commissions');
     const agentCommissionTotals = new Map<string, number>();
 
@@ -143,7 +138,6 @@ export async function addSale(
       }
     }
 
-    // 3. Update agent profiles with the new earned totals
     for (const [agentId, commissionToAdd] of agentCommissionTotals.entries()) {
         const agentRef = doc(db, 'commissionProfiles', agentId);
         const agentProfileData = agentProfiles.get(agentId); 
@@ -167,7 +161,9 @@ export async function updateSale(
     commissionCategoryRule: 'strict' | 'fallback'
 ): Promise<void> {
     const commissionsQuery = query(collection(db, 'commissions'), where("transaction_id", "==", saleId));
+    
     const oldCommissionsSnapshot = await getDocs(commissionsQuery);
+    const oldCommissionRefs = oldCommissionsSnapshot.docs.map(d => d.ref);
 
     await runTransaction(db, async (transaction) => {
         // --- READ PHASE ---
@@ -177,110 +173,110 @@ export async function updateSale(
         const originalSaleData = originalSaleDoc.data() as Sale;
 
         const allProductIds = new Set([...originalSaleData.items.map(i => i.productId), ...updatedSaleData.items.map(i => i.productId)]);
-        const productDataMap = new Map<string, DocumentData>();
-        if (allProductIds.size > 0) {
-            const productDocs = await Promise.all(Array.from(allProductIds).map(id => transaction.get(doc(db, 'products', id))));
-            productDocs.forEach(productDoc => {
-                if (productDoc.exists()) productDataMap.set(productDoc.id, productDoc.data());
-            });
-        }
-
         const allAgentIds = new Set([...(originalSaleData.commissionAgentIds || []), ...(updatedSaleData.commissionAgentIds || [])]);
-        const agentProfiles = new Map<string, DocumentData>();
-        if (allAgentIds.size > 0) {
-            const agentDocs = await Promise.all(Array.from(allAgentIds).map(id => transaction.get(doc(db, 'commissionProfiles', id))));
-            agentDocs.forEach(agentDoc => {
-                if (agentDoc.exists()) agentProfiles.set(agentDoc.id, agentDoc.data());
-            });
-        }
+        
+        const productRefs = Array.from(allProductIds).map(id => doc(db, 'products', id));
+        const agentRefs = Array.from(allAgentIds).map(id => doc(db, 'commissionProfiles', id));
+        
+        const [productDocs, agentDocs, oldCommissionDocs] = await Promise.all([
+             Promise.all(productRefs.map(ref => transaction.get(ref))),
+             Promise.all(agentRefs.map(ref => transaction.get(ref))),
+             Promise.all(oldCommissionRefs.map(ref => transaction.get(ref)))
+        ]);
+
+        const productDataMap = new Map(productDocs.map(d => [d.id, d.data()]));
+        const agentDataMap = new Map(agentDocs.map(d => [d.id, d.data()]));
         
         // --- WRITE PHASE ---
         
         // 1. Revert old stock levels & commission earned
-        for (const item of originalSaleData.items) {
-            const productRef = doc(db, 'products', item.productId);
-            const productData = productDataMap.get(item.productId);
-            if(productData) {
-                 transaction.update(productRef, { currentStock: (productData.currentStock || 0) + item.quantity });
-            }
-        }
-        const oldCommissionsData = oldCommissionsSnapshot.docs.map(d => d.data());
-        for (const commissionData of oldCommissionsData) {
-            const agentProfile = agentProfiles.get(commissionData.recipient_profile_id);
-            if (agentProfile) {
-                const agentRef = doc(db, 'commissionProfiles', commissionData.recipient_profile_id);
-                transaction.update(agentRef, { totalCommissionEarned: (agentProfile.totalCommissionEarned || 0) - commissionData.commission_amount });
-            }
-        }
-        oldCommissionsSnapshot.forEach(commissionDoc => transaction.delete(commissionDoc.ref));
-
-        // 2. Apply new stock levels & commission earned
-        for (const item of updatedSaleData.items) {
-            const productRef = doc(db, 'products', item.productId);
+        originalSaleData.items.forEach(item => {
             const productData = productDataMap.get(item.productId);
             if (productData) {
-                transaction.update(productRef, { currentStock: (productData.currentStock || 0) - item.quantity });
+                const productRef = doc(db, 'products', item.productId);
+                transaction.update(productRef, { currentStock: (productData.currentStock || 0) + item.quantity });
             }
-        }
+        });
         
+        oldCommissionDocs.forEach(commissionDoc => {
+            if (commissionDoc.exists()) {
+                const commissionData = commissionDoc.data();
+                const agentId = commissionData.recipient_profile_id;
+                const amount = commissionData.commission_amount;
+                const agentData = agentDataMap.get(agentId);
+                
+                if (agentData) {
+                    const agentRef = doc(db, 'commissionProfiles', agentId);
+                    transaction.update(agentRef, { totalCommissionEarned: (agentData.totalCommissionEarned || 0) - amount });
+                }
+                transaction.delete(commissionDoc.ref);
+            }
+        });
+
+        // 2. Apply new stock levels & commission earned
         const newCommissionTotals = new Map<string, number>();
-        const commissionsCollectionRef = collection(db, 'commissions');
 
-        for (const item of updatedSaleData.items) {
-             const productData = productDataMap.get(item.productId);
-            if (!productData) continue;
-            
-            const saleValue = item.unitPrice * item.quantity;
-            if (updatedSaleData.commissionAgentIds && saleValue > 0) {
-                for (const agentId of updatedSaleData.commissionAgentIds) {
-                    const agentProfile = agentProfiles.get(agentId);
-                    if (!agentProfile) continue;
+        updatedSaleData.items.forEach(item => {
+            const productData = productDataMap.get(item.productId);
+            if (productData) {
+                const productRef = doc(db, 'products', item.productId);
+                transaction.update(productRef, { currentStock: (productData.currentStock || 0) - item.quantity });
 
-                    const commission = agentProfile.commission || {};
-                    const categories = commission.categories || [];
-                    const hasCategoryRates = categories.length > 0;
-                    let calculatedRate = 0;
+                const saleValue = item.unitPrice * item.quantity;
+                if (updatedSaleData.commissionAgentIds && saleValue > 0) {
+                    for (const agentId of updatedSaleData.commissionAgentIds) {
+                        const agentProfile = agentDataMap.get(agentId);
+                        if (!agentProfile) continue;
 
-                    if (hasCategoryRates) {
-                        const categoryRateData = categories.find((c: any) => c.category?.trim().toLowerCase() === productData.category?.trim().toLowerCase());
-                        if (categoryRateData) {
-                          calculatedRate = categoryRateData.rate;
-                        } else if (commissionCategoryRule === 'fallback') {
-                          calculatedRate = commission.overall || 0;
+                        const commission = agentProfile.commission || {};
+                        const categories = commission.categories || [];
+                        const hasCategoryRates = categories.length > 0;
+                        let calculatedRate = 0;
+
+                        if (hasCategoryRates) {
+                            const categoryRateData = categories.find((c: any) => c.category?.trim().toLowerCase() === productData.category?.trim().toLowerCase());
+                            if (categoryRateData) {
+                              calculatedRate = categoryRateData.rate;
+                            } else if (commissionCategoryRule === 'fallback') {
+                              calculatedRate = commission.overall || 0;
+                            }
+                        } else {
+                            calculatedRate = commission.overall || 0;
                         }
-                    } else {
-                        calculatedRate = commission.overall || 0;
-                    }
-                    
-                    const commissionAmount = saleValue * (calculatedRate / 100);
+                        
+                        const commissionAmount = saleValue * (calculatedRate / 100);
 
-                    if (commissionAmount > 0) {
-                        const newCommissionRef = doc(commissionsCollectionRef);
-                        transaction.set(newCommissionRef, {
-                            transaction_id: saleId,
-                            recipient_profile_id: agentId,
-                            recipient_entity_type: agentProfile.entityType,
-                            calculation_base_amount: saleValue,
-                            calculated_rate: calculatedRate,
-                            commission_amount: commissionAmount,
-                            status: 'Pending Approval',
-                            calculation_date: new Date(),
-                        });
-                        newCommissionTotals.set(agentId, (newCommissionTotals.get(agentId) || 0) + commissionAmount);
+                        if (commissionAmount > 0) {
+                            newCommissionTotals.set(agentId, (newCommissionTotals.get(agentId) || 0) + commissionAmount);
+                        }
                     }
                 }
             }
-        }
+        });
 
         for(const [agentId, newAmount] of newCommissionTotals.entries()) {
-            const agentProfile = agentProfiles.get(agentId);
-            if(agentProfile) {
+            const agentData = agentDataMap.get(agentId);
+            if(agentData) {
                 const agentRef = doc(db, 'commissionProfiles', agentId);
-                transaction.update(agentRef, { totalCommissionEarned: (agentProfile.totalCommissionEarned || 0) + newAmount });
+                const oldRevertedCommission = oldCommissionDocs.filter(c => c.exists() && c.data()!.recipient_profile_id === agentId).reduce((sum, c) => sum + c.data()!.commission_amount, 0);
+                const revertedTotal = (agentData.totalCommissionEarned || 0) - oldRevertedCommission;
+                transaction.update(agentRef, { totalCommissionEarned: revertedTotal + newAmount });
+
+                // Create new aggregate commission doc
+                const newCommissionRef = doc(collection(db, 'commissions'));
+                transaction.set(newCommissionRef, {
+                    transaction_id: saleId,
+                    recipient_profile_id: agentId,
+                    recipient_entity_type: agentData.entityType,
+                    calculation_base_amount: updatedSaleData.items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0),
+                    calculated_rate: 0,
+                    commission_amount: newAmount,
+                    status: 'Pending Approval',
+                    calculation_date: new Date(),
+                });
             }
         }
         
-        // 3. Update the sale document itself
         transaction.update(saleRef, {
             ...updatedSaleData,
             date: new Date(updatedSaleData.date),
@@ -292,9 +288,12 @@ export async function deleteSale(id: string): Promise<void> {
     const saleRef = doc(db, 'sales', id);
     const commissionsQuery = query(collection(db, 'commissions'), where("transaction_id", "==", id));
     
+    // Query outside transaction to get references, which is allowed.
     const commissionsSnapshot = await getDocs(commissionsQuery);
-    
+    const commissionRefs = commissionsSnapshot.docs.map(d => d.ref);
+
     await runTransaction(db, async (transaction) => {
+        // --- READ PHASE ---
         const saleDoc = await transaction.get(saleRef);
         if (!saleDoc.exists()) {
             console.log(`Sale ${id} not found, it may have been already deleted.`);
@@ -302,39 +301,57 @@ export async function deleteSale(id: string): Promise<void> {
         }
         const saleData = saleDoc.data() as Sale;
 
-        // 1. Revert product stock for each item in the sale
-        if (saleData.items) {
-            const productRefs = saleData.items.map(item => doc(db, 'products', item.productId));
-            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+        // Read all product docs
+        const productRefs = saleData.items ? saleData.items.map(item => doc(db, 'products', item.productId)) : [];
+        const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
-            productDocs.forEach((productDoc, index) => {
-                if (productDoc.exists()) {
-                    const item = saleData.items[index];
-                    const currentStock = productDoc.data().currentStock || 0;
-                    transaction.update(productDoc.ref, { currentStock: currentStock + item.quantity });
-                }
-            });
-        }
+        // Read all commission docs using their references
+        const commissionDocs = await Promise.all(commissionRefs.map(ref => transaction.get(ref)));
 
-        // 2. Revert commission totals and delete commissions
-        for (const commissionDoc of commissionsSnapshot.docs) {
-            const commissionData = commissionDoc.data();
-            const agentId = commissionData.recipient_profile_id;
-            const amount = commissionData.commission_amount;
-
-            if (agentId) {
-                const agentRef = doc(db, 'commissionProfiles', agentId);
-                const agentDoc = await transaction.get(agentRef);
-                if (agentDoc.exists()) {
-                    const currentEarned = agentDoc.data().totalCommissionEarned || 0;
-                    transaction.update(agentRef, { totalCommissionEarned: currentEarned - amount });
-                } else {
-                    console.warn(`Could not find agent profile ${agentId} to revert commission.`);
-                }
+        // Get all unique agent IDs from the commissions to read their profiles
+        const agentIds = new Set<string>();
+        commissionDocs.forEach(commissionDoc => {
+            if (commissionDoc.exists()) {
+                const agentId = commissionDoc.data().recipient_profile_id;
+                if (agentId) agentIds.add(agentId);
             }
-            transaction.delete(commissionDoc.ref);
-        }
+        });
+        const agentRefs = Array.from(agentIds).map(agentId => doc(db, 'commissionProfiles', agentId));
+        const agentDocs = await Promise.all(agentRefs.map(ref => transaction.get(ref)));
+        const agentDataMap = new Map(agentDocs.map(d => [d.id, d.data()]));
 
+        // --- WRITE PHASE ---
+        
+        // 1. Revert product stock
+        productDocs.forEach((productDoc, index) => {
+            if (productDoc.exists()) {
+                const item = saleData.items[index];
+                const currentStock = productDoc.data().currentStock || 0;
+                transaction.update(productDoc.ref, { currentStock: currentStock + item.quantity });
+            }
+        });
+
+        // 2. Revert commission totals and delete commission docs
+        commissionDocs.forEach(commissionDoc => {
+            if (commissionDoc.exists()) {
+                const commissionData = commissionDoc.data();
+                const agentId = commissionData.recipient_profile_id;
+                const amount = commissionData.commission_amount;
+                
+                if (agentId && amount) {
+                    const agentData = agentDataMap.get(agentId);
+                    if (agentData) {
+                        const agentRef = doc(db, 'commissionProfiles', agentId);
+                        const currentEarned = agentData.totalCommissionEarned || 0;
+                        transaction.update(agentRef, { totalCommissionEarned: currentEarned - amount });
+                    } else {
+                         console.warn(`Could not find agent profile ${agentId} to revert commission.`);
+                    }
+                }
+                transaction.delete(commissionDoc.ref);
+            }
+        });
+        
         // 3. Delete the sale document itself
         transaction.delete(saleRef);
     });
