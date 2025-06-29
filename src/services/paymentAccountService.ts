@@ -9,34 +9,10 @@ import { processDoc } from '@/lib/firestore-utils';
 
 const accountsCollection = collection(db, 'paymentAccounts');
 
-const defaultAccounts: Omit<PaymentAccount, 'id' | 'balance'>[] = [
-    { name: 'Cash', accountType: 'Cash', openingBalance: 0, note: 'Default cash account.', isDefault: true },
-    { name: 'Main Bank Account', accountType: 'Checking', accountNumber: '1234567890', openingBalance: 10000, note: 'Primary business checking account.' },
-];
-
-async function seedDefaultAccounts() {
-    const batch = writeBatch(db);
-    for (const account of defaultAccounts) {
-        const newDocRef = doc(accountsCollection);
-        batch.set(newDocRef, {
-            ...account,
-            balance: account.openingBalance,
-        });
-    }
-    await batch.commit();
-}
-
 export async function getAccounts(): Promise<PaymentAccount[]> {
     noStore();
-    let snapshot = await getDocs(accountsCollection);
-    
-    if (snapshot.empty) {
-        await seedDefaultAccounts();
-        snapshot = await getDocs(accountsCollection);
-    }
-    
+    const snapshot = await getDocs(accountsCollection);
     const data = snapshot.docs.map(doc => processDoc<PaymentAccount>(doc));
-
     return data;
 }
 

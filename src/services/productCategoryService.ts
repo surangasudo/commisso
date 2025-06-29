@@ -15,34 +15,9 @@ export type ProductCategory = {
 
 const productCategoriesCollection = collection(db, 'productCategories');
 
-// Default categories to seed
-const defaultCategories: Omit<ProductCategory, 'id'>[] = [
-    { name: 'Electronics', code: 'ELEC' },
-    { name: 'Clothing', code: 'CLOTH' },
-    { name: 'Groceries', code: 'GROC' },
-    { name: 'Books', code: 'BOOK' },
-    { name: 'Sports', code: 'SPORT' },
-    { name: 'Shoes', code: 'SHOE' },
-];
-
-async function seedDefaultCategories(): Promise<void> {
-    const batch = db.batch();
-    for (const category of defaultCategories) {
-        const docRef = doc(productCategoriesCollection);
-        batch.set(docRef, category);
-    }
-    await batch.commit();
-}
-
 export async function getProductCategories(): Promise<ProductCategory[]> {
   noStore();
-  let snapshot = await getDocs(productCategoriesCollection);
-
-  // If the collection is empty, seed it with default data and re-fetch
-  if (snapshot.empty) {
-      await seedDefaultCategories();
-      snapshot = await getDocs(productCategoriesCollection);
-  }
+  const snapshot = await getDocs(productCategoriesCollection);
 
   // Manually construct plain objects to ensure they are serializable
   const data: ProductCategory[] = snapshot.docs.map(doc => {

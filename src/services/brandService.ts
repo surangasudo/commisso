@@ -13,31 +13,9 @@ export type Brand = {
 
 const brandsCollection = collection(db, 'brands');
 
-// Default brands to seed
-const defaultBrands: Omit<Brand, 'id'>[] = [
-    { name: 'Apple' },
-    { name: 'Nike' },
-    { name: 'Sony' },
-    { name: 'Generic' },
-    { name: 'Puma' },
-];
-
-async function seedDefaultBrands(): Promise<void> {
-    for (const brand of defaultBrands) {
-        await addDoc(brandsCollection, brand);
-    }
-}
-
 export async function getBrands(): Promise<Brand[]> {
   noStore();
-  let snapshot = await getDocs(brandsCollection);
-
-  // If the collection is empty, seed it with default data and re-fetch
-  if (snapshot.empty) {
-    await seedDefaultBrands();
-    snapshot = await getDocs(brandsCollection);
-  }
-
+  const snapshot = await getDocs(brandsCollection);
   const data = snapshot.docs.map(doc => processDoc<Brand>(doc));
   return data;
 }

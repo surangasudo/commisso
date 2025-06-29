@@ -9,35 +9,9 @@ import { processDoc } from '@/lib/firestore-utils';
 
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
-// Default categories to seed
-const defaultCategories: Omit<ExpenseCategory, 'id'>[] = [
-    { name: 'Travel', code: 'TRV' },
-    { name: 'Utilities', code: 'UTL' },
-    { name: 'Salaries', code: 'SAL' },
-    { name: 'Maintenance', code: 'MNT' },
-    { name: 'Supplies', code: 'SUP' },
-    { name: 'Sales Commission Payout', code: 'COMM' },
-];
-
-async function seedDefaultCategories(): Promise<void> {
-    const batch = db.batch();
-    for (const category of defaultCategories) {
-        const docRef = doc(expenseCategoriesCollection);
-        batch.set(docRef, category);
-    }
-    await batch.commit();
-}
-
-
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
   noStore();
-  let snapshot = await getDocs(expenseCategoriesCollection);
-  
-  if (snapshot.empty) {
-      await seedDefaultCategories();
-      snapshot = await getDocs(expenseCategoriesCollection);
-  }
-  
+  const snapshot = await getDocs(expenseCategoriesCollection);
   const data = snapshot.docs.map(doc => processDoc<ExpenseCategory>(doc));
   return data;
 }
