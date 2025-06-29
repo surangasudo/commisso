@@ -1,4 +1,5 @@
 
+
 'use client';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
@@ -157,7 +158,7 @@ const CommissionPayoutDialog = ({
                                             </TableCell>
                                             <TableCell>{commission.date}</TableCell>
                                             <TableCell>{commission.invoiceNo}</TableCell>
-                                            <TableCell className="text-right">{formatCurrency(commission.commissionEarned)}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary">{formatCurrency(commission.commissionEarned)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

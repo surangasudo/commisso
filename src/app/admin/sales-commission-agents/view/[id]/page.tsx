@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -96,7 +97,10 @@ export default function ViewCommissionProfilePage() {
         }
 
         const productMap = new Map(products.map(p => [p.id, p]));
-        const relevantSales = sales.filter(s => s.commissionAgentIds?.includes(profile.id));
+        const relevantSales = sales
+            .filter(s => s.commissionAgentIds?.includes(profile.id))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
         let calculatedTotalCommission = 0;
         
         const salesWithCommission = relevantSales.map(sale => {
