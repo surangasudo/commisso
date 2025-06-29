@@ -166,7 +166,8 @@ export default function AddPurchasePage() {
                 date: values.purchaseDate.toISOString(),
                 referenceNo: values.referenceNo || `PO-${Date.now()}`,
                 location: values.location,
-                supplier: selectedSupplier.businessName, // Use the name for storage
+                supplier: selectedSupplier.businessName,
+                supplierId: selectedSupplier.id,
                 purchaseStatus: values.purchaseStatus,
                 paymentStatus: 'Due', // Defaulting to Due on creation
                 grandTotal,

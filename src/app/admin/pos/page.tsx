@@ -1184,6 +1184,8 @@ export default function PosPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [recentSales, setRecentSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
 
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', email: '' });
@@ -1438,12 +1440,18 @@ export default function PosPage() {
           selectedCompany?.id,
           selectedSalesperson?.id
       ].filter((id): id is string => !!id);
+      
+      const customer = customers.find(c => c.id === selectedCustomer);
+      const customerId = customer ? customer.id : null;
+      const customerName = customer ? customer.name : 'Walk-In Customer';
+      const contactNumber = customer ? customer.mobile : 'N/A';
 
       return {
           date: new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
           invoiceNo: `INV-${Date.now()}`,
-          customerName: 'Walk-In Customer', // Simplified
-          contactNumber: 'N/A', // Simplified
+          customerId,
+          customerName,
+          contactNumber,
           location: settings.business.businessName,
           paymentStatus: paymentStatus,
           paymentMethod: paymentMethod,
@@ -1770,7 +1778,7 @@ export default function PosPage() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="flex items-center gap-2">
                                       <UserPlus className="text-muted-foreground flex-shrink-0"/>
-                                      <Select defaultValue="walk-in">
+                                      <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
                                       <SelectTrigger className="w-full">
                                           <SelectValue placeholder="Select a customer" />
                                       </SelectTrigger>

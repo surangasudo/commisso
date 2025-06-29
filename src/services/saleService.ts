@@ -64,10 +64,27 @@ export async function addSale(
       });
     }
 
+    let customerRef;
+    if (sale.customerId && sale.customerId !== 'walk-in') {
+        customerRef = doc(db, 'customers', sale.customerId);
+        const customerDoc = await transaction.get(customerRef);
+        if (!customerDoc.exists()) {
+            throw new Error("Customer not found.");
+        }
+    }
+
     // --- WRITE PHASE ---
     const newSaleRef = doc(collection(db, 'sales'));
     transaction.set(newSaleRef, saleDataForDb);
     const createdSaleId = newSaleRef.id;
+
+    if (customerRef) {
+        const customerDoc = await transaction.get(customerRef); // Re-read to be safe
+        const currentDue = customerDoc.data()?.totalSaleDue || 0;
+        transaction.update(customerRef, {
+            totalSaleDue: currentDue + sale.sellDue
+        });
+    }
 
     for (const item of sale.items) {
       const productRef = doc(db, 'products', item.productId);

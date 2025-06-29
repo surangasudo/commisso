@@ -145,6 +145,7 @@ export type Purchase = {
   date: string;
   location: string;
   supplier: string;
+  supplierId: string;
   purchaseStatus: 'Received' | 'Pending' | 'Ordered' | 'Partial';
   paymentStatus: 'Paid' | 'Due' | 'Partial';
   grandTotal: number;
@@ -177,6 +178,7 @@ export type Sale = {
     id: string;
     date: string;
     invoiceNo: string;
+    customerId: string | null;
     customerName: string;
     contactNumber: string;
     location: string;
