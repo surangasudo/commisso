@@ -109,27 +109,20 @@ export async function addSale(
         for (const agentId of sale.commissionAgentIds) {
           const agentProfile = agentProfiles.get(agentId);
           if (!agentProfile) continue;
-
+          
           const commission = agentProfile.commission || {};
           const categories = commission.categories || [];
-          const hasCategoryRates = categories.length > 0;
+          
           let calculatedRate = 0;
+          const categoryRateData = categories.find((c: any) =>
+              c.category?.trim().toLowerCase() === productData.category?.trim().toLowerCase()
+          );
 
-          if (hasCategoryRates) {
-            const categoryRateData = categories.find((c: any) => {
-                if (!c.category || !productData.category) {
-                    return false; 
-                }
-                return c.category.trim().toLowerCase() === productData.category.trim().toLowerCase();
-            });
-
-            if (categoryRateData) {
-              calculatedRate = categoryRateData.rate;
-            } else if (commissionCategoryRule === 'fallback') {
-              calculatedRate = commission.overall || 0;
-            }
+          if (categoryRateData) {
+              calculatedRate = categoryRateData.rate || 0;
           } else {
-            calculatedRate = commission.overall || 0;
+              // Always fallback to the overall rate if a specific category rate is not found.
+              calculatedRate = commission.overall || 0;
           }
           
           const commissionAmount = saleValue * (calculatedRate / 100);
