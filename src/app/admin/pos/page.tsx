@@ -45,7 +45,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer } from '@/lib/data';
+import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory } from '@/lib/data';
 import { addSale, getSales, deleteSale } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
@@ -93,6 +93,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppFooter } from '@/components/app-footer';
 import { useAuth } from '@/hooks/use-auth';
 import { format } from 'date-fns';
+import { addExpense } from '@/services/expenseService';
+import { getExpenseCategories } from '@/services/expenseCategoryService';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 type CartItem = {
   product: DetailedProduct;
@@ -1036,6 +1039,132 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
     );
 };
 
+const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { toast } = useToast();
+    const settings = useBusinessSettings();
+    const { formatCurrency } = useCurrency();
+    const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [formData, setFormData] = useState({
+        expenseCategory: '',
+        referenceNo: '',
+        totalAmount: '',
+        expenseNote: '',
+    });
+
+    useEffect(() => {
+        if (open) {
+            const fetchCategories = async () => {
+                setIsLoading(true);
+                try {
+                    const cats = await getExpenseCategories();
+                    setCategories(cats.filter(c => !c.parentId));
+                } catch (error) {
+                    toast({ title: "Error", description: "Could not load expense categories.", variant: "destructive" });
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchCategories();
+            // Reset form
+            setFormData({
+                expenseCategory: '',
+                referenceNo: '',
+                totalAmount: '',
+                expenseNote: '',
+            });
+        }
+    }, [open, toast]);
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({...prev, [id]: value}));
+    };
+    
+    const handleSelectChange = (value: string) => {
+        setFormData(prev => ({...prev, expenseCategory: value}));
+    };
+
+    const handleSaveExpense = async () => {
+        const categorySelection = categories.find(c => c.id === formData.expenseCategory);
+        if (!formData.totalAmount || !categorySelection) {
+            toast({ title: "Validation Error", description: "Category and Total Amount are required.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            const total = parseFloat(formData.totalAmount);
+            const expenseData: Omit<Expense, 'id'> = {
+                date: new Date().toISOString(),
+                referenceNo: formData.referenceNo || `EXP-POS-${Date.now()}`,
+                location: settings.business.businessName,
+                expenseCategory: categorySelection.name,
+                subCategory: null,
+                paymentStatus: 'Paid',
+                tax: 0,
+                totalAmount: total,
+                paymentDue: 0, // Assuming paid from till
+                expenseFor: null,
+                contact: null,
+                addedBy: 'Admin', // Hardcoded from POS
+                expenseNote: formData.expenseNote,
+            };
+
+            await addExpense(expenseData);
+            toast({ title: "Expense Added", description: `Expense of ${formatCurrency(total)} has been recorded.` });
+            onOpenChange(false);
+        } catch (error) {
+            console.error("Failed to add expense from POS:", error);
+            toast({ title: "Error", description: "Failed to save expense.", variant: "destructive" });
+        }
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Quick Expense</DialogTitle>
+                    <DialogDescription>Record an expense paid from the register.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="expenseCategory">Expense Category *</Label>
+                        <Select value={formData.expenseCategory} onValueChange={handleSelectChange} disabled={isLoading}>
+                            <SelectTrigger id="expenseCategory">
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {isLoading ? (
+                                    <SelectItem value="loading" disabled>Loading...</SelectItem>
+                                ) : (
+                                    categories.map(cat => (
+                                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                                    ))
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="totalAmount">Total Amount *</Label>
+                        <Input id="totalAmount" type="number" placeholder="0.00" value={formData.totalAmount} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="referenceNo">Reference No.</Label>
+                        <Input id="referenceNo" placeholder="Optional" value={formData.referenceNo} onChange={handleInputChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="expenseNote">Expense Note</Label>
+                        <Textarea id="expenseNote" placeholder="Add a note for this expense" value={formData.expenseNote} onChange={handleInputChange}/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSaveExpense}>Save Expense</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export default function PosPage() {
   const router = useRouter();
@@ -1082,6 +1211,7 @@ export default function PosPage() {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
   const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
 
   // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
@@ -1621,11 +1751,9 @@ export default function PosPage() {
                             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={handleCustomerDisplay}><Monitor /></Button>
                             <ThemeToggle className="text-muted-foreground" />
                             <Button variant="ghost" size="icon" className="text-muted-foreground"><HelpCircle /></Button>
-                            <Link href="/admin/expenses/add" passHref>
-                                <Button variant="destructive" className="h-9 px-3">
-                                    <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
-                                </Button>
-                            </Link>
+                            <Button variant="destructive" className="h-9 px-3" onClick={() => setIsAddExpenseOpen(true)}>
+                                <PlusCircle className="h-4 w-4 sm:mr-2"/> <span className="hidden sm:inline">Add Expense</span>
+                            </Button>
                         </div>
                     </header>
 
@@ -2048,6 +2176,7 @@ export default function PosPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
         <div className="absolute bottom-4 right-4 print-hidden">
             <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
                 <History className="mr-2 h-4 w-4" />
