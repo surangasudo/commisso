@@ -1,6 +1,7 @@
 
 'use server';
 
+import 'dotenv/config';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, runTransaction, writeBatch, query, where } from 'firebase/firestore';
 import { unstable_noStore as noStore } from 'next/cache';
