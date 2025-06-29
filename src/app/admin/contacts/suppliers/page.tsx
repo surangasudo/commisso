@@ -69,6 +69,7 @@ import { useCurrency } from '@/hooks/use-currency';
 import { getSuppliers, deleteSupplier } from '@/services/supplierService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { AppFooter } from '@/components/app-footer';
 
 export default function SuppliersPage() {
   const { toast } = useToast();
@@ -289,9 +290,7 @@ export default function SuppliersPage() {
                 </Card>
             </CardContent>
         </Card>
-        <div className="text-center text-xs text-slate-400 p-1">
-            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
     </div>
     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
       <AlertDialogContent>

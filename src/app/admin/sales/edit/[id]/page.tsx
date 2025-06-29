@@ -19,6 +19,7 @@ import { getProducts } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
+import { AppFooter } from '@/components/app-footer';
 
 type SaleItemWithProduct = {
   product: DetailedProduct;
@@ -334,9 +335,7 @@ export default function EditSalePage() {
                 <Button size="lg" variant="default" onClick={handleSaveChanges}>Save Changes</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

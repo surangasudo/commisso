@@ -25,7 +25,7 @@ export default function LoginPage() {
         <div className="flex min-h-screen flex-col items-center justify-center p-4">
              <div className="absolute top-6 left-6 flex items-center gap-2 text-foreground">
                 <Logo className="h-6 w-6" />
-                <span className="font-headline text-lg">Ultimate ERP</span>
+                <span className="font-headline text-lg">Crimson ERP</span>
             </div>
              <div className="absolute top-4 right-4">
                 <ThemeToggle />

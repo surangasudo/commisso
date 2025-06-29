@@ -91,6 +91,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings } from '@/hooks/use-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AppFooter } from '@/components/app-footer';
 
 type CartItem = {
   product: DetailedProduct;
@@ -1636,9 +1637,7 @@ export default function PosPage() {
                 Recent Transactions
             </Button>
         </div>
-        <div className="text-center text-xs text-slate-400 p-1 print-hidden">
-            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
     </>
   );
 }

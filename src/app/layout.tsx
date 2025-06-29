@@ -6,7 +6,7 @@ import { SettingsProvider } from '@/hooks/use-settings';
 import { AuthProvider } from '@/hooks/use-auth';
 
 export const metadata: Metadata = {
-  title: 'Ultimate ERP - Advanced POS Solution',
+  title: 'Crimson ERP - Advanced POS Solution',
   description: 'An advanced Point of Sale and ERP system for modern businesses.',
 };
 

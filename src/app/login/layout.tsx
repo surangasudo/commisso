@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 
 export const metadata: Metadata = {
-  title: 'Login - Ultimate ERP',
+  title: 'Login - Crimson ERP',
   description: 'Login to access your dashboard.',
 };
 

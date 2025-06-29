@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Percent, Plus, Pencil, Trash2 } from "lucide-react";
 import React, { useState } from 'react';
 import { initialTaxRates, type TaxRate } from "@/lib/data";
+import { AppFooter } from "@/components/app-footer";
 
 export default function TaxRatesPage() {
   const [taxRates, setTaxRates] = useState(initialTaxRates);
@@ -172,9 +173,7 @@ export default function TaxRatesPage() {
             </DialogContent>
         </Dialog>
         
-         <div className="text-center text-xs text-slate-400 p-1">
-            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-        </div>
+        <AppFooter />
       </div>
   );
 }

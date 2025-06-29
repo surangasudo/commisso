@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Box, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { AppFooter } from "@/components/app-footer";
 
 const currentPlan = {
   name: 'Premium',
@@ -75,9 +76,7 @@ export default function PackageSubscriptionPage() {
             </p>
          </CardFooter>
       </Card>
-       <div className="text-center text-xs text-slate-400 p-1">
-        Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-      </div>
+      <AppFooter />
     </div>
   );
 }
