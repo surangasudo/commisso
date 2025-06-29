@@ -35,8 +35,8 @@ import {
   Banknote,
   DollarSign,
   Copyright,
-  Trash2,
   Wallet,
+  Trash2,
 } from 'lucide-react';
 import {
   Card,
@@ -2045,10 +2045,12 @@ export default function PosPage() {
                               <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleQuotation}><FileText className="h-5 w-5 mb-1 text-yellow-500" /><span>Quotation</span></Button>
                               {!settings.pos.disableSuspendSale && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleSuspend}><Pause className="h-5 w-5 mb-1 text-red-500" /><span>Suspend</span></Button>}
                               {!settings.pos.disableCreditSaleButton && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCreditSale}><Check className="h-5 w-5 mb-1 text-purple-500" /><span>Credit Sale</span></Button>}
-                              <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCardPayment}><CreditCard className="h-5 w-5 mb-1 text-pink-500" /><span>Card</span></Button>
                            </div>
 
                            <div className="flex-1 flex justify-center items-center gap-2">
+                                <Button className="bg-pink-600 hover:bg-pink-700 text-white h-12 text-base px-6" onClick={handleCardPayment}>
+                                    <CreditCard className="h-5 w-5 mr-2"/>Card
+                                </Button>
                                 {!settings.pos.disableMultiplePay && (
                                     <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
                                         <DialogTrigger asChild>
