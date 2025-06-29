@@ -1724,7 +1724,7 @@ export default function PosPage() {
 
   return (
     <>
-        <div className="pos-page-container">
+        <div className="pos-page-container relative">
             <TooltipProvider>
                 <div className="flex flex-col h-screen bg-background text-foreground font-sans">
                     <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
@@ -2084,6 +2084,12 @@ export default function PosPage() {
                     </footer>
                 </div>
             </TooltipProvider>
+            <div className="absolute bottom-4 right-4 print-hidden z-20">
+                <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
+                    <History className="mr-2 h-4 w-4" />
+                    Recent Transactions
+                </Button>
+            </div>
         </div>
         
         <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
@@ -2177,13 +2183,6 @@ export default function PosPage() {
             </AlertDialogContent>
         </AlertDialog>
         <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
-        <div className="absolute bottom-4 right-4 print-hidden">
-            <Button variant="default" size="sm" className="h-9" onClick={() => setIsRecentTransactionsOpen(true)}>
-                <History className="mr-2 h-4 w-4" />
-                Recent Transactions
-            </Button>
-        </div>
-        <AppFooter />
     </>
   );
 }
