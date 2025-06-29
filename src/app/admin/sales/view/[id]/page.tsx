@@ -13,6 +13,7 @@ import { getSale } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/hooks/use-currency";
+import { AppFooter } from "@/components/app-footer";
 
 const getPaymentStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -260,8 +261,8 @@ export default function ViewSalePage() {
             </Card>
         </div>
 
-        <div className="text-center text-xs text-slate-400 p-1 print-hidden">
-            Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
+        <div className="print-hidden">
+            <AppFooter />
         </div>
     </div>
   );

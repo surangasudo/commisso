@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useParams, useRouter } from 'next/navigation';
+import { AppFooter } from '@/components/app-footer';
 
 type ReturnItem = {
   product: DetailedProduct;
@@ -339,9 +341,7 @@ export default function EditSellReturnPage() {
                 <Button size="lg" onClick={handleSaveChanges}>Save Changes</Button>
             </div>
 
-            <div className="text-center text-xs text-slate-400 p-1">
-                Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-            </div>
+            <AppFooter />
         </div>
     );
 }

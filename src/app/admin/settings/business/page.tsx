@@ -55,6 +55,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useSettings, type AllSettings } from '@/hooks/use-settings';
+import { AppFooter } from '@/components/app-footer';
 
 const settingsTabs = [
   { value: "business", label: "Business", icon: Building },
@@ -1736,9 +1737,7 @@ export default function BusinessSettingsPage() {
                         <TabsContent value="custom_labels"><UnimplementedForm title="Custom Labels Settings" /></TabsContent>
                     </div>
                 </Tabs>
-                <div className="text-center text-xs text-slate-400 p-1">
-                    Ultimate POS - V6.7 | Copyright © 2025 All rights reserved.
-                </div>
+                <AppFooter />
             </div>
         </TooltipProvider>
     );
