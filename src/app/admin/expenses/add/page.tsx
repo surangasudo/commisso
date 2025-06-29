@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FirebaseError } from 'firebase/app';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
-import { Separator } from '@/components/ui/separator';
+import { Timestamp } from 'firebase/firestore';
 
 type TaxRate = { id: string; name: string; rate: number };
 
@@ -128,7 +128,10 @@ export default function AddExpensePage() {
                 expenseNote: formData.expenseNote || null,
             };
 
-            await addExpense(finalExpenseData);
+            await addExpense({
+                ...finalExpenseData,
+                date: Timestamp.fromDate(new Date(formData.paidOn)),
+            });
             toast({ title: "Success", description: "Expense added successfully." });
             router.push('/admin/expenses/list');
         } catch (error) {
@@ -154,26 +157,31 @@ export default function AddExpensePage() {
             </h1>
 
             <Card>
-                <CardContent className="pt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <CardContent className="pt-6">
+                    {/* Main Expense Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="location">Business Location:*</Label>
-                            <Select value={formData.location} onValueChange={(value) => handleSelectChange('location', value)}><SelectTrigger id="location"><SelectValue /></SelectTrigger><SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent></Select>
+                            <Select value={formData.location} onValueChange={(value) => handleSelectChange('location', value)}>
+                                <SelectTrigger id="location"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="expenseCategory">Expense Category:</Label>
-                            <Select value={formData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}><SelectTrigger id="expenseCategory"><SelectValue placeholder="Please Select" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{mainCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent></Select>
+                            <Select value={formData.expenseCategory} onValueChange={(value) => handleSelectChange('expenseCategory', value)}>
+                                <SelectTrigger id="expenseCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                <SelectContent><SelectItem value="none">None</SelectItem>{mainCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="subCategory">Sub category:</Label>
-                            <Select value={formData.subCategory} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}><SelectTrigger id="subCategory"><SelectValue placeholder="Please Select" /></SelectTrigger><SelectContent>{subCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent></Select>
+                            <Select value={formData.subCategory} onValueChange={(value) => handleSelectChange('subCategory', value)} disabled={subCategories.length === 0}>
+                                <SelectTrigger id="subCategory"><SelectValue placeholder="Please Select" /></SelectTrigger>
+                                <SelectContent>{subCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent>
+                            </Select>
                         </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="referenceNo">Reference No:</Label>
-                            <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
-                        </div>
-                        <div className="space-y-2">
+                         <div className="space-y-2">
                             <Label htmlFor="date">Date:*</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -182,21 +190,24 @@ export default function AddExpensePage() {
                                 <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={(date) => handleDateChange('date', date)} initialFocus /></PopoverContent>
                             </Popover>
                         </div>
-                        <div />
-
                         <div className="space-y-2">
+                            <Label htmlFor="referenceNo">Reference No:</Label>
+                            <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                            <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}>
+                                <SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger>
+                                <SelectContent><SelectItem value="none">None</SelectItem>{taxRates.map(tax => (<SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
                             <Label htmlFor="expenseFor" className="flex items-center gap-1">Expense For: <Info className="w-3 h-3 text-muted-foreground"/></Label>
                             <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
                                 <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
                                 <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                             </Select>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3"/></Label>
-                            <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}><SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{taxRates.map(tax => (<SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>))}</SelectContent></Select>
-                        </div>
-                        <div />
-                        
                         <div className="space-y-2">
                             <Label htmlFor="totalAmount">Total amount:*</Label>
                             <Input id="totalAmount" type="number" placeholder="Total amount" value={formData.totalAmount} onChange={handleChange} />
@@ -207,58 +218,58 @@ export default function AddExpensePage() {
                         </div>
                     </div>
 
-                    <Separator className="my-6" />
-
-                    <h3 className="text-lg font-semibold">Add payment</h3>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
-                        <div className="space-y-2">
-                            <Label htmlFor="paidAmount">Amount:*</Label>
-                             <div className="relative">
-                                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                                <Input id="paidAmount" type="number" placeholder="0.00" value={formData.paidAmount} onChange={handleChange} className="pl-10" />
+                    {/* Payment Section */}
+                    <div className="pt-6 border-t mt-6">
+                        <h3 className="text-lg font-semibold mb-4">Add payment</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
+                            <div className="space-y-2">
+                                <Label htmlFor="paidAmount">Amount:*</Label>
+                                 <div className="relative">
+                                    <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    <Input id="paidAmount" type="number" placeholder="0.00" value={formData.paidAmount} onChange={handleChange} className="pl-10" />
+                                </div>
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="paidOn">Paid on:*</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.paidOn && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.paidOn ? format(formData.paidOn, "PPP") : <span>Pick a date</span>}</Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.paidOn} onSelect={(date) => handleDateChange('paidOn', date)} initialFocus /></PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="paymentMethod">Payment Method:*</Label>
-                            <Select value={formData.paymentMethod} onValueChange={(value) => handleSelectChange('paymentMethod', value)}>
-                                <SelectTrigger id="paymentMethod">
-                                    <div className="flex items-center gap-2">
-                                        <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                        <SelectValue />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="card">Card</SelectItem><SelectItem value="cheque">Cheque</SelectItem><SelectItem value="bank_transfer">Bank Transfer</SelectItem></SelectContent>
-                            </Select>
-                        </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="paymentAccount">Payment Account:</Label>
-                            <Select value={formData.paymentAccount} onValueChange={(value) => handleSelectChange('paymentAccount', value)}>
-                                <SelectTrigger id="paymentAccount">
-                                    <div className="flex items-center gap-2">
-                                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                                        <SelectValue placeholder="None" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
-                            </Select>
-                        </div>
-                         <div className="space-y-2 lg:col-span-2">
-                            <Label htmlFor="paymentNote">Payment note:</Label>
-                            <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
+                            <div className="space-y-2">
+                                <Label htmlFor="paidOn">Paid on:*</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.paidOn && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.paidOn ? format(formData.paidOn, "PPP") : <span>Pick a date</span>}</Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.paidOn} onSelect={(date) => handleDateChange('paidOn', date)} initialFocus /></PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="paymentMethod">Payment Method:*</Label>
+                                <Select value={formData.paymentMethod} onValueChange={(value) => handleSelectChange('paymentMethod', value)}>
+                                    <SelectTrigger id="paymentMethod">
+                                        <div className="flex items-center gap-2">
+                                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                                            <SelectValue />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="card">Card</SelectItem><SelectItem value="cheque">Cheque</SelectItem><SelectItem value="bank_transfer">Bank Transfer</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="paymentAccount">Payment Account:</Label>
+                                <Select value={formData.paymentAccount} onValueChange={(value) => handleSelectChange('paymentAccount', value)}>
+                                    <SelectTrigger id="paymentAccount">
+                                        <div className="flex items-center gap-2">
+                                            <Wallet className="h-4 w-4 text-muted-foreground" />
+                                            <SelectValue placeholder="None" />
+                                        </div>
+                                    </SelectTrigger>
+                                    <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2 lg:col-span-2">
+                                <Label htmlFor="paymentNote">Payment note:</Label>
+                                <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter className="flex justify-between items-center border-t pt-6">
+                <CardFooter className="flex justify-end items-center gap-6 border-t pt-6">
                     <div>
                         <span className="text-lg font-semibold">Payment due:</span>
                         <span className="text-lg font-bold ml-2">{formatCurrency(paymentDue)}</span>
@@ -273,3 +284,4 @@ export default function AddExpensePage() {
         </div>
     );
 }
+
