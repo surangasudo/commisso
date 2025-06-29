@@ -93,6 +93,7 @@ import { useSettings, type AllSettings } from '@/hooks/use-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AppFooter } from '@/components/app-footer';
 import { useAuth } from '@/hooks/use-auth';
+import { format } from 'date-fns';
 
 type CartItem = {
   product: DetailedProduct;
@@ -213,10 +214,54 @@ const RegisterDetailsDialog = ({
     settings: AllSettings
 }) => {
     const { formatCurrency } = useCurrency();
-    const openingCash = 1000.00; // Mock data
-    const totalSale = totalPayable + discount;
-    const totalInRegister = openingCash + totalSale;
+    const [openTime, setOpenTime] = useState('');
+    const [closeTime, setCloseTime] = useState('');
+
+    useEffect(() => {
+        if (open) {
+            const now = new Date();
+            const start = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // random time in last 2 hours
+            setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
+            setCloseTime(format(now, 'dd MMM, yyyy hh:mm a'));
+        }
+    }, [open]);
+
+    // Mock data for the new layout
+    const openingCash = 1000.00;
+    const cashPayment = totalPayable; // Assume all sales are cash for this mock
+    const chequePayment = 0.00;
+    const cardPayment = 0.00;
+    const bankTransfer = 0.00;
+    const advancePayment = 0.00;
+    const otherPayments = 0.00;
+    const totalRefund = 0.00;
+    const totalExpense = 0.00;
+    const totalSales = cashPayment + chequePayment + cardPayment + bankTransfer + otherPayments;
+    const totalPayment = openingCash + totalSales;
+    const creditSales = 0.00; // Not tracked, so mock
     
+    const paymentMethods = [
+        { label: 'Cash in hand:', sell: openingCash, expense: null },
+        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00 },
+        { label: 'Cheque Payment:', sell: chequePayment, expense: 0.00 },
+        { label: 'Card Payment:', sell: cardPayment, expense: 0.00 },
+        { label: 'Bank Transfer:', sell: bankTransfer, expense: 0.00 },
+        { label: 'Advance payment:', sell: advancePayment, expense: 0.00 },
+        { label: 'Custom Payment 1:', sell: 0.00, expense: 0.00 },
+        { label: 'Custom Payment 2:', sell: 0.00, expense: 0.00 },
+        { label: 'Custom Payment 3:', sell: 0.00, expense: 0.00 },
+        { label: 'Other Payments:', sell: otherPayments, expense: 0.00 },
+    ];
+    
+    const summaryRows = [
+        { label: 'Total Sales:', value: totalSales, color: '' },
+        { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
+        { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
+        { label: 'Credit Sales:', value: creditSales, color: '' },
+        { label: 'Total Sales:', value: totalSales, color: '' },
+        { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
+    ];
+
     const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
 
     const salesByBrand = useMemo(() => {
@@ -243,11 +288,43 @@ const RegisterDetailsDialog = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Register Details</DialogTitle>
+                    <DialogTitle>Register Details ({openTime} - {closeTime})</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-4 text-sm printable-area">
+                    {/* Payment breakdown table */}
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Payment Method</TableHead>
+                                    <TableHead className="text-right">Sell</TableHead>
+                                    <TableHead className="text-right">Expense</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paymentMethods.map(pm => (
+                                    <TableRow key={pm.label}>
+                                        <TableCell>{pm.label}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(pm.sell)}</TableCell>
+                                        <TableCell className="text-right">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Summary totals */}
+                    <div className="border rounded-md">
+                        {summaryRows.map(row => (
+                            <div key={row.label} className={cn("flex justify-between p-2 font-semibold border-b last:border-b-0", row.color)}>
+                                <span>{row.label}</span>
+                                <span>{formatCurrency(row.value)}</span>
+                            </div>
+                        ))}
+                    </div>
+
                     <div className="text-center font-semibold bg-muted p-2 rounded-md">
-                        Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSale)} (Sale) - {formatCurrency(0)} (Refund) - {formatCurrency(0)} (Expense) = {formatCurrency(totalInRegister)}
+                        Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefund)} (Refund) - {formatCurrency(totalExpense)} (Expense) = {formatCurrency(totalPayment)}
                     </div>
                     
                     <h3 className="font-bold text-lg mt-4">Details of products sold</h3>
@@ -264,7 +341,7 @@ const RegisterDetailsDialog = ({
                             </TableHeader>
                             <TableBody>
                                 {cart.map((item, index) => (
-                                    <TableRow key={item.product.id}>
+                                    <TableRow key={item.product.id + index}>
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell>{item.product.sku}</TableCell>
                                         <TableCell>{item.product.name}</TableCell>
@@ -273,17 +350,17 @@ const RegisterDetailsDialog = ({
                                     </TableRow>
                                 ))}
                             </TableBody>
+                             <TableFooter>
+                                <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
+                                    <TableCell colSpan={3}>#</TableCell>
+                                    <TableCell className="text-right">{totalQuantity}</TableCell>
+                                    <TableCell className="text-right">
+                                        <p>Discount: (-) {formatCurrency(discount)}</p>
+                                        <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
-                    </div>
-                     <div className="bg-green-100 dark:bg-green-900/20 font-bold p-2 rounded-md flex justify-between text-sm">
-                        <span>#</span>
-                        <div className="flex gap-4">
-                            <span>{totalQuantity}</span>
-                            <div className="text-right">
-                                <p>Discount: (-) {formatCurrency(discount)}</p>
-                                <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                            </div>
-                        </div>
                     </div>
                     
                     <h3 className="font-bold text-lg mt-6">Details of products sold (By Brand)</h3>
@@ -307,17 +384,17 @@ const RegisterDetailsDialog = ({
                                     </TableRow>
                                 ))}
                             </TableBody>
+                             <TableFooter>
+                                <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
+                                    <TableCell colSpan={2}>#</TableCell>
+                                    <TableCell className="text-right">{totalBrandQuantity}</TableCell>
+                                    <TableCell className="text-right">
+                                        <p>Discount: (-) {formatCurrency(discount)}</p>
+                                        <p>Grand Total: {formatCurrency(totalPayable)}</p>
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
-                    </div>
-                    <div className="bg-green-100 dark:bg-green-900/20 font-bold p-2 rounded-md flex justify-between text-sm">
-                        <span>#</span>
-                        <div className="flex gap-4">
-                            <span>{totalBrandQuantity}</span>
-                            <div className="text-right">
-                                <p>Discount: (-) {formatCurrency(discount)}</p>
-                                <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                            </div>
-                        </div>
                     </div>
                     
                     <div className="mt-6 border-t pt-4">
@@ -1371,12 +1448,12 @@ export default function PosPage() {
                         </div>
                         <div className="flex items-center gap-1">
                             <Link href="/admin/dashboard">
-                                <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" title="Go to Dashboard">
+                                <Button variant="ghost" size="icon" className="text-muted-foreground" title="Go to Dashboard">
                                     <Home />
                                 </Button>
                             </Link>
                             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 /></Button>
-                            <Button variant="ghost" size="icon" className="text-red-500 hidden sm:flex" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
+                            <Button variant="ghost" size="icon" className="text-red-500" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleRefresh}><RefreshCw /></Button>
                             <Button variant="ghost" size="icon" className="text-muted-foreground hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink/> : <Expand />}</Button>
