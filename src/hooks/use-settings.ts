@@ -1,5 +1,4 @@
 
-
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
@@ -188,6 +187,9 @@ const initialSettings = {
         maxRedeemPointPerOrder: '1000',
         expiryPeriod: '365',
         expiryPeriodType: 'days',
+    },
+    exchange: {
+        rateMarkupPercent: '0.5',
     },
     modules: {
         serviceStaff: true,

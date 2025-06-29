@@ -47,7 +47,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory, type Currency } from '@/lib/data';
+import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory, type Currency, type MoneyExchange } from '@/lib/data';
 import { addSale, getSales, deleteSale } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
@@ -1173,6 +1173,7 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
 const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { settings } = useSettings();
     const { formatCurrency } = useCurrency();
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -1204,23 +1205,27 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
         }
     }, [open, toast]);
 
-    const { exchangeRate, convertedAmount } = useMemo(() => {
+    const { baseRate, offeredRate, convertedAmount, profit } = useMemo(() => {
         if (!fromCurrency || !toCurrency || !amount || currencies.length === 0) {
-            return { exchangeRate: 0, convertedAmount: 0 };
+            return { baseRate: 0, offeredRate: 0, convertedAmount: 0, profit: 0 };
         }
         
         const from = currencies.find(c => c.code === fromCurrency);
         const to = currencies.find(c => c.code === toCurrency);
+        const markupPercent = parseFloat(settings.exchange.rateMarkupPercent) || 0;
 
-        if (!from || !to) return { exchangeRate: 0, convertedAmount: 0 };
+        if (!from || !to) return { baseRate: 0, offeredRate: 0, convertedAmount: 0, profit: 0 };
 
-        // Rate is how many "to" units you get for one "from" unit
         const rate = (1 / from.exchangeRate) * to.exchangeRate;
-        const finalAmount = parseFloat(amount) * rate;
+        const markup = rate * (markupPercent / 100);
+        const finalRate = rate - markup; // Customer gets fewer units of 'to' currency for their 'from' currency
+        
+        const finalAmount = parseFloat(amount) * finalRate;
+        const profitAmount = parseFloat(amount) * markup;
 
-        return { exchangeRate: rate, convertedAmount: finalAmount };
+        return { baseRate: rate, offeredRate: finalRate, convertedAmount: finalAmount, profit: profitAmount };
 
-    }, [amount, fromCurrency, toCurrency, currencies]);
+    }, [amount, fromCurrency, toCurrency, currencies, settings.exchange.rateMarkupPercent]);
     
     const handleConfirmExchange = async () => {
         if (!fromCurrency || !toCurrency || !amount || convertedAmount <= 0) {
@@ -1234,8 +1239,11 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
                 fromCurrency,
                 toCurrency,
                 amount: parseFloat(amount),
-                exchangeRate,
-                convertedAmount,
+                baseRate: baseRate,
+                offeredRate: offeredRate,
+                markupPercent: parseFloat(settings.exchange.rateMarkupPercent),
+                profit: profit,
+                convertedAmount: convertedAmount,
                 addedBy: user?.name || 'Unknown',
             });
             toast({ title: 'Success', description: `Exchanged ${amount} ${fromCurrency} to ${convertedAmount.toFixed(2)} ${toCurrency}.`});
@@ -1279,10 +1287,21 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
                             </Select>
                         </div>
                     </div>
-                    <div className="text-center bg-muted p-4 rounded-md">
-                        <p className="text-sm text-muted-foreground">Exchange Rate: 1 {fromCurrency} = {exchangeRate.toFixed(4)} {toCurrency}</p>
-                        <p className="text-2xl font-bold mt-2">{convertedAmount.toFixed(2)} {toCurrency}</p>
-                    </div>
+                    <Card className="p-4 space-y-3">
+                        <div className="text-xs text-muted-foreground flex justify-between">
+                            <span>Base Rate: 1 {fromCurrency} = {baseRate.toFixed(4)} {toCurrency}</span>
+                            <span>Markup: {settings.exchange.rateMarkupPercent}%</span>
+                        </div>
+                        <div className="text-sm font-semibold flex justify-between">
+                           <span>Your Rate: 1 {fromCurrency} = {offeredRate.toFixed(4)} {toCurrency}</span>
+                           <span className="text-green-600">Profit: {profit.toFixed(2)} {fromCurrency}</span>
+                        </div>
+                        <Separator/>
+                         <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Customer Receives</p>
+                            <p className="text-2xl font-bold mt-1">{convertedAmount.toFixed(2)} {toCurrency}</p>
+                        </div>
+                    </Card>
                 </div>
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>

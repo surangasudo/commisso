@@ -1,5 +1,4 @@
 
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -45,6 +44,7 @@ import {
   Calculator,
   Search,
   PlusCircle,
+  Repeat,
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,6 +72,7 @@ const settingsTabs = [
   { value: "email_settings", label: "Email Settings", icon: Mail },
   { value: "sms_settings", label: "SMS Settings", icon: MessageSquare },
   { value: "reward_point_settings", label: "Reward Point Settings", icon: Award },
+  { value: "exchange", label: "Exchange", icon: Repeat },
   { value: "modules", label: "Modules", icon: Book },
   { value: "custom_labels", label: "Custom Labels", icon: Tags },
 ];
@@ -1619,6 +1620,49 @@ const ModulesSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
     );
 };
 
+const ExchangeSettingsForm = ({ settings: initialSettingsData, updateSettings }: { settings: AllSettings['exchange'], updateSettings: (newValues: Partial<AllSettings['exchange']>) => void }) => {
+    const { toast } = useToast();
+    const [settings, setSettings] = useState(initialSettingsData);
+
+    useEffect(() => {
+        setSettings(initialSettingsData);
+    }, [initialSettingsData]);
+    
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { id, value } = e.target;
+        setSettings(s => ({...s, [id]: value }));
+    };
+
+    const handleUpdateSettings = () => {
+        updateSettings(settings);
+        toast({
+            title: 'Exchange Settings Updated',
+            description: 'Your money exchange settings have been saved successfully.',
+        });
+    };
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Money Exchange Settings</CardTitle>
+                <CardDescription>Configure your profit margin for currency exchanges.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6">
+                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                     <div className="space-y-2">
+                        <Label htmlFor="rateMarkupPercent" className="flex items-center gap-1">Exchange Rate Markup (%): <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                        <Input id="rateMarkupPercent" type="number" value={settings.rateMarkupPercent} onChange={handleInputChange} />
+                        <p className="text-xs text-muted-foreground">This percentage will be taken as profit from the exchange.</p>
+                    </div>
+                 </div>
+            </CardContent>
+            <CardFooter>
+                <Button onClick={handleUpdateSettings}>Update Settings</Button>
+            </CardFooter>
+        </Card>
+    )
+};
+
 
 const UnimplementedForm = ({ title }: { title: string }) => (
     <Card>
@@ -1730,6 +1774,9 @@ export default function BusinessSettingsPage() {
                         </TabsContent>
                         <TabsContent value="reward_point_settings">
                             <RewardPointSettingsForm settings={settings.rewardPoint} updateSettings={(newValues) => updateSection('rewardPoint', newValues)} />
+                        </TabsContent>
+                        <TabsContent value="exchange">
+                            <ExchangeSettingsForm settings={settings.exchange} updateSettings={(newValues) => updateSection('exchange', newValues)} />
                         </TabsContent>
                          <TabsContent value="modules">
                             <ModulesSettingsForm settings={settings.modules} updateSettings={(newValues) => updateSection('modules', newValues)} />

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -27,6 +28,7 @@ import {
   ChevronDown,
   Box,
   HelpCircle,
+  Repeat,
 } from 'lucide-react';
 
 import {
@@ -188,6 +190,7 @@ const allSidebarNav = [
             { href: "/admin/reports/register", label: "Register Report" },
             { href: "/admin/reports/sales-representative", label: "Sales Representative Report" },
             { href: "/admin/reports/activity-log", label: "Activity Log" },
+            { href: "/admin/reports/money-exchange", label: "Money Exchange Report" },
         ]
     },
     { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates", roles: ['Admin'] },

@@ -422,7 +422,10 @@ export type MoneyExchange = {
     fromCurrency: string;
     toCurrency: string;
     amount: number;
-    exchangeRate: number;
+    baseRate: number;
+    offeredRate: number;
+    markupPercent: number;
+    profit: number;
     convertedAmount: number;
     addedBy: string;
 };
