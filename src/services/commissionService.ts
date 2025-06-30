@@ -129,35 +129,52 @@ export async function payCommission(
     profile: CommissionProfile,
     commissionIds: string[],
     paymentMethod: string,
-    paymentNote: string,
+    paymentNote: string
 ): Promise<{ success: boolean; error?: string }> {
+    if (!profile || !profile.id) {
+        return { success: false, error: "Invalid profile provided." };
+    }
+    if (!commissionIds || commissionIds.length === 0) {
+        return { success: false, error: "No commission records selected for payment." };
+    }
+
     const expensesCollectionRef = collection(db, 'expenses');
-    
+
     try {
         await runTransaction(db, async (transaction) => {
+            // --- 1. READ ALL DATA FIRST ---
             const profileRef = doc(db, 'commissionProfiles', profile.id);
             const profileDoc = await transaction.get(profileRef);
-            if (!profileDoc.exists()) throw new Error("Profile not found");
-            const profileData = profileDoc.data();
+            if (!profileDoc.exists()) {
+                throw new Error("Commission profile not found in database.");
+            }
 
             const commissionRefs = commissionIds.map(id => doc(db, 'commissions', id));
             const commissionDocs = await Promise.all(commissionRefs.map(ref => transaction.get(ref)));
-            
-            let calculatedTotal = 0;
+
+            let totalToPay = 0;
             for (const commissionDoc of commissionDocs) {
-                if (!commissionDoc.exists() || commissionDoc.data().status !== 'Pending Approval') {
-                    throw new Error(`Commission record ${commissionDoc.id} is not valid for payment.`);
+                if (!commissionDoc.exists()) {
+                    throw new Error(`Commission record with ID ${commissionDoc.id} not found.`);
                 }
-                calculatedTotal += commissionDoc.data().commission_amount;
+                const commissionData = commissionDoc.data();
+                if (commissionData.status !== 'Pending Approval') {
+                    throw new Error(`Commission ${commissionDoc.id} is not pending approval and cannot be paid.`);
+                }
+                if (typeof commissionData.commission_amount !== 'number') {
+                    throw new Error(`Commission amount for ${commissionDoc.id} is not a valid number.`);
+                }
+                totalToPay += commissionData.commission_amount;
             }
 
-            const roundedTotal = Math.round(calculatedTotal * 100) / 100;
-            
+            const roundedTotal = Math.round(totalToPay * 100) / 100;
             if (roundedTotal <= 0) {
-                 throw new Error("Payment amount must be greater than zero.");
+                throw new Error("Total payment amount must be greater than zero.");
             }
 
-            // Update status of all selected commission records to 'Paid'
+            // --- 2. PERFORM ALL WRITES ---
+            
+            // Update commission documents
             for (const commissionDoc of commissionDocs) {
                 transaction.update(commissionDoc.ref, { 
                     status: 'Paid',
@@ -167,14 +184,16 @@ export async function payCommission(
                  });
             }
 
-            // Update the summary on the profile
-            const currentPaid = profileData.totalCommissionPaid || 0;
+            // Update profile summary
+            const profileData = profileDoc.data();
+            const currentPaid = typeof profileData.totalCommissionPaid === 'number' ? profileData.totalCommissionPaid : 0;
+            const newTotalPaid = currentPaid + roundedTotal;
+            
             transaction.update(profileRef, {
-                totalCommissionPaid: currentPaid + roundedTotal
+                totalCommissionPaid: newTotalPaid
             });
 
-
-            // Create a single expense record for the total payout
+            // Create expense record
             const newExpense: Omit<Expense, 'id'> = {
                 date: new Date().toISOString(),
                 referenceNo: `COMM-PAY-${Date.now()}`,
@@ -199,9 +218,10 @@ export async function payCommission(
 
     } catch (e: any) {
         console.error("Commission payment transaction failed: ", e);
-        return { success: false, error: e.message }; // Return error message
+        return { success: false, error: e.message };
     }
 }
+
 
 export async function sendPayoutNotification(
     profile: CommissionProfile,
