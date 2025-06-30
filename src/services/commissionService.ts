@@ -27,6 +27,13 @@ export async function getCommissions(): Promise<Commission[]> {
   return snapshot.docs.map(doc => processDoc<Commission>(doc));
 }
 
+export async function getCommissionsForProfile(profileId: string): Promise<Commission[]> {
+  noStore();
+  const q = query(commissionsCollection, where("recipient_profile_id", "==", profileId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => processDoc<Commission>(doc));
+}
+
 export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
     noStore();
     const profilesSnapshot = await getDocs(commissionProfilesCollection);

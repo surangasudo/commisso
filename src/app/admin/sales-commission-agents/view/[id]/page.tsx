@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, User as UserIcon, Phone, Mail, Banknote, Percent, Tag, ShoppingCart } from "lucide-react";
-import { type CommissionProfile, type Sale, type DetailedProduct } from '@/lib/data';
+import { type CommissionProfile, type Sale, type DetailedProduct, type Commission } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCurrency } from '@/hooks/use-currency';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { getCommissionProfile } from '@/services/commissionService';
+import { getCommissionProfile, getCommissionsForProfile } from '@/services/commissionService';
 import { getSales } from '@/services/saleService';
 import { getProducts } from '@/services/productService';
 
@@ -50,6 +50,7 @@ export default function ViewCommissionProfilePage() {
     const [profile, setProfile] = useState<CommissionProfile | null>(null);
     const [sales, setSales] = useState<Sale[]>([]);
     const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [commissions, setCommissions] = useState<Commission[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -58,16 +59,18 @@ export default function ViewCommissionProfilePage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [profileData, salesData, productsData] = await Promise.all([
+                const [profileData, salesData, productsData, commissionsData] = await Promise.all([
                     getCommissionProfile(id),
                     getSales(),
                     getProducts(),
+                    getCommissionsForProfile(id)
                 ]);
 
                 if (profileData) {
                     setProfile(profileData);
                     setSales(salesData);
                     setProducts(productsData);
+                    setCommissions(commissionsData);
                 } else {
                      toast({
                         title: "Error",
@@ -91,52 +94,35 @@ export default function ViewCommissionProfilePage() {
         fetchData();
     }, [id, router, toast]);
 
-    const { commissionableSales, totalCommissionEarned } = useMemo(() => {
-        if (!profile || !sales.length || !products.length) {
-            return { commissionableSales: [], totalCommissionEarned: 0 };
+    const commissionableSales = useMemo(() => {
+        if (!profile || !sales.length || !commissions.length) {
+            return [];
         }
 
-        const productMap = new Map(products.map(p => [p.id, p]));
-        const relevantSales = sales
-            .filter(s => s.commissionAgentIds?.includes(profile.id))
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            
-        let calculatedTotalCommission = 0;
-        
-        const salesWithCommission = relevantSales.map(sale => {
-            let commissionForThisSale = 0;
-            for (const item of sale.items) {
-                const product = productMap.get(item.productId);
-                if (!product) continue;
-                
-                const saleValue = item.unitPrice * item.quantity;
-                const hasCategoryRates = profile.commission.categories && profile.commission.categories.length > 0;
-                let rate = 0;
+        const commissionsBySaleId = new Map<string, number>();
+        commissions.forEach(commission => {
+            const currentTotal = commissionsBySaleId.get(commission.transaction_id) || 0;
+            commissionsBySaleId.set(commission.transaction_id, currentTotal + commission.commission_amount);
+        });
 
-                if (hasCategoryRates) {
-                    rate = profile.commission.categories?.find(c => c.category === product.category)?.rate || 0;
-                } else {
-                    rate = profile.commission.overall;
-                }
-                
-                commissionForThisSale += saleValue * (rate / 100);
+        const salesWithCommission: CommissionableSale[] = [];
+        commissionsBySaleId.forEach((commissionEarned, saleId) => {
+            const sale = sales.find(s => s.id === saleId);
+            if (sale) {
+                salesWithCommission.push({
+                    id: sale.id,
+                    date: new Date(sale.date).toLocaleString(),
+                    invoiceNo: sale.invoiceNo,
+                    customerName: sale.customerName,
+                    totalAmount: sale.totalAmount,
+                    commissionEarned: commissionEarned,
+                });
             }
-            calculatedTotalCommission += commissionForThisSale;
-            
-            return {
-                id: sale.id,
-                date: new Date(sale.date).toLocaleString(),
-                invoiceNo: sale.invoiceNo,
-                customerName: sale.customerName,
-                totalAmount: sale.totalAmount,
-                commissionEarned: commissionForThisSale,
-            };
-        }).filter(s => s.commissionEarned > 0);
-
-        return { commissionableSales: salesWithCommission, totalCommissionEarned: calculatedTotalCommission };
-    }, [profile, sales, products]);
+        });
+        
+        return salesWithCommission.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [profile, sales, commissions]);
     
-    // For display, use the pre-calculated value from the profile for consistency.
     const pendingAmount = (profile?.totalCommissionEarned || 0) - (profile?.totalCommissionPaid || 0);
 
     if (isLoading || !profile) {
