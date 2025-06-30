@@ -40,6 +40,7 @@ const availableTags = {
     "{location_name}",
     "{location_phone}",
     "{commission_amount}",
+    "{commission_details}",
     "{total_sale_amount}",
     "{reporting_period_start}",
     "{reporting_period_end}",
@@ -261,9 +262,9 @@ export default function NotificationTemplatesPage() {
               <TemplateForm
                 tags={availableTags.salesRepresentative}
                 emailSubject="Your Agent Commission Statement from {business_name}"
-                emailBody={`Dear {representative_name},\n\nYour commission as an Agent of {commission_amount} has been calculated for total sales of {total_sale_amount} during the period {reporting_period_start} to {reporting_period_end}.\n\nThank you,\n{business_name}`}
-                smsBody="Thank you for your sales at {location_name}. Your commission of {commission_amount} on total sales of {total_sale_amount} has been calculated. For inquiries call {location_phone}."
-                whatsappText="Dear {representative_name}, your Agent commission of {commission_amount} has been calculated. Thanks, {business_name}."
+                emailBody={`Dear {representative_name},\n\nYou have received a commission payment of {commission_amount} from {business_name}.\n\n{commission_details}\n\nThank you.`}
+                smsBody="Thank you for visiting {business_name}. Your commission of {commission_amount} has been paid. Details: {commission_details}"
+                whatsappText="Dear {representative_name}, your Agent commission of {commission_amount} has been paid. Thanks, {business_name}. Details: {commission_details}"
               />
             </TabsContent>
             <TabsContent value="subagent-commission" className="pt-4">

@@ -40,7 +40,7 @@ const CommissionPayoutDialog = ({
     profile: CommissionProfile | null, 
     open: boolean, 
     onOpenChange: (open: boolean) => void,
-    onPaymentComplete: (profileId: string, result: { success: boolean; amount: number; error?: string; }) => void
+    onPaymentComplete: (profileId: string, result: { success: boolean; amount: number; commissionIds: string[]; error?: string; }) => void
 }) => {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
@@ -109,10 +109,11 @@ const CommissionPayoutDialog = ({
         setIsPaying(true);
 
         try {
-            await payCommission(profile, Array.from(selectedCommissionIds), method, note);
-            onPaymentComplete(profile.id, { success: true, amount: totalToPay });
+            const commissionIdsArray = Array.from(selectedCommissionIds);
+            await payCommission(profile, commissionIdsArray, method, note);
+            onPaymentComplete(profile.id, { success: true, amount: totalToPay, commissionIds: commissionIdsArray });
         } catch (error: any) {
-             onPaymentComplete(profile.id, { success: false, amount: totalToPay, error: error.message });
+             onPaymentComplete(profile.id, { success: false, amount: totalToPay, commissionIds: [], error: error.message });
         } finally {
             setIsPaying(false);
         }
@@ -419,7 +420,7 @@ export default function SalesCommissionAgentsPage() {
     setIsPayDialogOpen(true);
   };
   
-  const handlePaymentComplete = async (profileId: string, result: { success: boolean; amount: number; error?: string }) => {
+  const handlePaymentComplete = async (profileId: string, result: { success: boolean; amount: number; commissionIds: string[], error?: string }) => {
     setIsPayDialogOpen(false);
     
     if (result.success) {
@@ -433,7 +434,7 @@ export default function SalesCommissionAgentsPage() {
               currency: settings.business.currency,
               ...settings.sms
             }
-            const smsResult = await sendPayoutNotification(paidProfile, result.amount, smsConfigPayload);
+            const smsResult = await sendPayoutNotification(paidProfile, result.commissionIds, smsConfigPayload);
              setSmsStatuses(prev => ({
                 ...prev,
                 [profileId]: smsResult.success ? 'success' : 'failed'

@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, DocumentData, runTransaction, query, where } from 'firebase/firestore';
-import { type Commission, type CommissionProfile, type CommissionProfileWithSummary, type Sale, type DetailedProduct, type Expense } from '@/lib/data';
+import { type Commission, type CommissionProfile, type CommissionProfileWithSummary, type Sale, type DetailedProduct, type Expense, type ProductCategory } from '@/lib/data';
 import { sendSms } from '@/services/smsService';
 import { processDoc } from '@/lib/firestore-utils';
 import { type AllSettings } from '@/hooks/use-settings';
@@ -12,6 +12,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 const commissionProfilesCollection = collection(db, 'commissionProfiles');
 const commissionsCollection = collection(db, 'commissions');
+const productCategoriesCollection = collection(db, 'productCategories');
 
 export type PendingCommission = {
     id: string; // Commission ID
@@ -25,6 +26,22 @@ export async function getCommissions(): Promise<Commission[]> {
   noStore();
   const snapshot = await getDocs(commissionsCollection);
   return snapshot.docs.map(doc => processDoc<Commission>(doc));
+}
+
+export async function getCommissionsByIds(ids: string[]): Promise<Commission[]> {
+    if (ids.length === 0) return [];
+    noStore();
+    const commissions: Commission[] = [];
+    // Firestore 'in' query has a limit of 30 items.
+    for (let i = 0; i < ids.length; i += 30) {
+        const chunk = ids.slice(i, i + 30);
+        const q = query(commissionsCollection, where('__name__', 'in', chunk));
+        const snapshot = await getDocs(q);
+        snapshot.docs.forEach(doc => {
+            commissions.push(processDoc<Commission>(doc));
+        });
+    }
+    return commissions;
 }
 
 export async function getCommissionsForProfile(profileId: string): Promise<Commission[]> {
@@ -148,24 +165,34 @@ export async function payCommission(
             if (!profileDoc.exists()) {
                 throw new Error("Commission profile not found in database.");
             }
-
-            const commissionRefs = commissionIds.map(id => doc(db, 'commissions', id));
-            const commissionDocs = await Promise.all(commissionRefs.map(ref => transaction.get(ref)));
-
+            
             let totalToPay = 0;
-            for (const commissionDoc of commissionDocs) {
-                if (!commissionDoc.exists()) {
-                    throw new Error(`Commission record with ID ${commissionDoc.id} not found.`);
+            const commissionDocsData: DocumentData[] = [];
+            
+            // Read commissions in chunks if necessary (though usually not for a single payout)
+            for (let i = 0; i < commissionIds.length; i += 30) {
+                const chunk = commissionIds.slice(i, i + 30);
+                const commissionsQuery = query(commissionsCollection, where('__name__', 'in', chunk));
+                const commissionSnapshot = await getDocs(commissionsQuery);
+                
+                if(commissionSnapshot.docs.length !== chunk.length) {
+                    throw new Error("One or more commission records could not be found.");
                 }
-                const commissionData = commissionDoc.data();
-                if (commissionData.status !== 'Pending Approval') {
-                    throw new Error(`Commission ${commissionDoc.id} is not pending approval and cannot be paid.`);
+
+                for (const commissionDoc of commissionSnapshot.docs) {
+                    const commissionData = commissionDoc.data();
+                    commissionDocsData.push(commissionDoc); // Store the whole doc for later reference
+
+                    if (commissionData.status !== 'Pending Approval') {
+                        throw new Error(`Commission ${commissionDoc.id} is not pending approval and cannot be paid.`);
+                    }
+                    if (typeof commissionData.commission_amount !== 'number') {
+                        throw new Error(`Commission amount for ${commissionDoc.id} is not a valid number.`);
+                    }
+                    totalToPay += commissionData.commission_amount;
                 }
-                if (typeof commissionData.commission_amount !== 'number') {
-                    throw new Error(`Commission amount for ${commissionDoc.id} is not a valid number.`);
-                }
-                totalToPay += commissionData.commission_amount;
             }
+            
 
             const roundedTotal = Math.round(totalToPay * 100) / 100;
             if (roundedTotal <= 0) {
@@ -175,7 +202,7 @@ export async function payCommission(
             // --- 2. PERFORM ALL WRITES ---
             
             // Update commission documents
-            for (const commissionDoc of commissionDocs) {
+            for (const commissionDoc of commissionDocsData) {
                 transaction.update(commissionDoc.ref, { 
                     status: 'Paid',
                     payment_date: new Date(),
@@ -225,14 +252,48 @@ export async function payCommission(
 
 export async function sendPayoutNotification(
     profile: CommissionProfile,
-    amount: number,
+    commissionIds: string[],
     smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string }
 ): Promise<{ success: boolean; error?: string }> {
      if (!profile.phone || profile.phone.trim() === '') {
         return { success: false, error: "Profile does not have a phone number." };
     }
 
-    const message = `You have received a commission payment of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(amount)} from ${smsConfig.businessName}. Thank you.`;
+    // Fetch details for the paid commissions
+    const paidCommissions = await getCommissionsByIds(commissionIds);
+    if (paidCommissions.length === 0) {
+         return { success: false, error: "Could not find paid commission details to generate notification." };
+    }
+    
+    const categoriesSnapshot = await getDocs(productCategoriesCollection);
+    const categoryMap = new Map<string, string>();
+    categoriesSnapshot.docs.forEach(doc => {
+        categoryMap.set(doc.id, doc.data().name);
+    });
+
+    const breakdown: { [categoryName: string]: { amount: number, invoices: Set<string> } } = {};
+    let totalPaid = 0;
+
+    paidCommissions.forEach(commission => {
+        const categoryName = commission.product_category_id ? categoryMap.get(commission.product_category_id) || 'Uncategorized' : 'Uncategorized';
+        
+        if (!breakdown[categoryName]) {
+            breakdown[categoryName] = { amount: 0, invoices: new Set() };
+        }
+        
+        breakdown[categoryName].amount += commission.commission_amount;
+        breakdown[categoryName].invoices.add(commission.transaction_id);
+        totalPaid += commission.commission_amount;
+    });
+
+    const detailsString = Object.entries(breakdown)
+        .map(([category, data]) => {
+            const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(data.amount);
+            return `${category} (${data.invoices.size} invoices): ${formattedAmount}`;
+        })
+        .join(', ');
+
+    const message = `Thank you for visiting ${smsConfig.businessName}. Your commission details: ${detailsString}. Total paid: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaid)}.`;
     
     try {
         const smsResult = await sendSms(profile.phone, message, smsConfig);
