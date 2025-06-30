@@ -101,55 +101,54 @@ export async function addSale(
     const agentCommissionTotals = new Map<string, number>();
 
     for (const item of sale.items) {
-      const productData = productDataMap.get(item.productId);
-      if (!productData) continue;
+        const productData = productDataMap.get(item.productId);
+        if (!productData) continue;
+        
+        const saleValue = item.unitPrice * item.quantity;
+        if (!sale.commissionAgentIds || saleValue <= 0) continue;
 
-      const saleValue = item.unitPrice * item.quantity;
-      if (sale.commissionAgentIds && saleValue > 0) {
         for (const agentId of sale.commissionAgentIds) {
-          const agentProfile = agentProfiles.get(agentId);
-          if (!agentProfile) continue;
-          
-          const commission = agentProfile.commission || {};
-          const categories = commission.categories || [];
-          
-          let finalRate = 0;
-          const categorySpecificRate = categories.find((c: any) =>
-              c.category?.trim().toLowerCase() === productData.category?.trim()?.toLowerCase()
-          )?.rate;
+            const agentProfile = agentProfiles.get(agentId);
+            if (!agentProfile) continue;
 
-          if (categorySpecificRate !== undefined) {
-              finalRate = categorySpecificRate;
-          } else {
-              const hasAnyCategoryRates = categories.length > 0;
-              if (hasAnyCategoryRates && commissionCategoryRule === 'strict') {
-                  finalRate = 0; 
-              } else {
-                  finalRate = commission.overall || 0;
-              }
-          }
-          
-          const commissionAmount = saleValue * (finalRate / 100);
+            const commissionSettings = agentProfile.commission || {};
+            const categoryRates = Array.isArray(commissionSettings.categories) ? commissionSettings.categories : [];
+            const overallRate = typeof commissionSettings.overall === 'number' ? commissionSettings.overall : 0;
+            const productCategory = typeof productData.category === 'string' ? productData.category.trim().toLowerCase() : null;
 
-          if (commissionAmount > 0) {
-              const newCommission = {
-                  transaction_id: createdSaleId,
-                  recipient_profile_id: agentId,
-                  recipient_entity_type: agentProfile.entityType,
-                  calculation_base_amount: saleValue,
-                  calculated_rate: finalRate,
-                  commission_amount: commissionAmount,
-                  status: 'Pending Approval',
-                  calculation_date: new Date(),
-              };
-              const newCommissionRef = doc(commissionsCollectionRef);
-              transaction.set(newCommissionRef, newCommission);
+            let applicableRate = overallRate;
 
-              const currentTotal = agentCommissionTotals.get(agentId) || 0;
-              agentCommissionTotals.set(agentId, currentTotal + commissionAmount);
-          }
+            if (productCategory) {
+                const categoryRule = categoryRates.find(
+                    (c: any) => typeof c.category === 'string' && c.category.trim().toLowerCase() === productCategory
+                );
+                if (categoryRule && typeof categoryRule.rate === 'number') {
+                    applicableRate = categoryRule.rate;
+                } else if (categoryRates.length > 0 && commissionCategoryRule === 'strict') {
+                    applicableRate = 0;
+                }
+            } else if (categoryRates.length > 0 && commissionCategoryRule === 'strict') {
+                applicableRate = 0;
+            }
+
+            const commissionAmount = saleValue * (applicableRate / 100);
+
+            if (commissionAmount > 0) {
+                const newCommissionRef = doc(commissionsCollectionRef);
+                transaction.set(newCommissionRef, {
+                    transaction_id: createdSaleId,
+                    recipient_profile_id: agentId,
+                    recipient_entity_type: agentProfile.entityType,
+                    calculation_base_amount: saleValue,
+                    calculated_rate: applicableRate,
+                    commission_amount: commissionAmount,
+                    status: 'Pending Approval',
+                    calculation_date: new Date(),
+                });
+                const currentTotal = agentCommissionTotals.get(agentId) || 0;
+                agentCommissionTotals.set(agentId, currentTotal + commissionAmount);
+            }
         }
-      }
     }
 
     for (const [agentId, commissionToAdd] of agentCommissionTotals.entries()) {
