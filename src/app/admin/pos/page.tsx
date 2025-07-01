@@ -917,10 +917,11 @@ const CommissionSelector = ({
   const [searchTerm, setSearchTerm] = useState('');
   const filteredProfiles = useMemo(() => {
     if (!searchTerm) return [];
+    const lowercasedTerm = searchTerm.toLowerCase();
     return profiles.filter(
       (p) =>
         (!entityType || p.entityType === entityType) &&
-        (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.name.toLowerCase().includes(lowercasedTerm) ||
           p.phone.includes(searchTerm))
     ).slice(0, 5);
   }, [searchTerm, profiles, entityType]);
@@ -1915,10 +1916,10 @@ export default function PosPage() {
                   </header>
 
                   {/* Main Content */}
-                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-8 gap-4 p-4 overflow-hidden">
+                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-hidden">
                       
                       {/* Left Side: Cart */}
-                      <div className="lg:col-span-3 flex flex-col gap-2">
+                      <div className="lg:col-span-5 flex flex-col gap-2">
                           <Card className="p-3 bg-card">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="flex items-center gap-2">
@@ -2162,14 +2163,14 @@ export default function PosPage() {
                       </div>
                       
                       {/* Right Side: Product Selection */}
-                      <div className="lg:col-span-5 flex flex-col gap-2">
+                      <div className="lg:col-span-7 flex flex-col gap-2">
                       <div className="grid grid-cols-2 gap-2">
                           <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
                           <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2"/> Brands</Button>
                       </div>
                       <Card className="flex-1 bg-card p-2">
                           <ScrollArea className="h-full">
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
                                   {isLoading ? (
                                       Array.from({ length: 10 }).map((_, i) => (
                                           <Card key={i}>
