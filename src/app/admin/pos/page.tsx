@@ -2164,51 +2164,51 @@ export default function PosPage() {
                       
                       {/* Right Side: Product Selection */}
                       <div className="lg:col-span-7 flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
-                          <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
-                          <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2"/> Brands</Button>
-                      </div>
-                      <Card className="flex-1 bg-card p-2">
-                          <ScrollArea className="h-full">
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-                                  {isLoading ? (
-                                      Array.from({ length: 10 }).map((_, i) => (
-                                          <Card key={i}>
+                          <div className="grid grid-cols-2 gap-2">
+                              <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2"/> Category</Button>
+                              <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2"/> Brands</Button>
+                          </div>
+                          <Card className="flex-1 flex flex-col bg-card p-2">
+                              <ScrollArea className="h-full">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+                                      {isLoading ? (
+                                          Array.from({ length: 10 }).map((_, i) => (
+                                              <Card key={i}>
+                                                  <div className="relative aspect-square bg-muted">
+                                                      <Skeleton className="h-full w-full" />
+                                                  </div>
+                                                  <div className="p-2 text-center">
+                                                      <Skeleton className="h-4 w-3/4 mx-auto mb-1" />
+                                                      <Skeleton className="h-3 w-1/2 mx-auto mb-1" />
+                                                      <Skeleton className="h-4 w-1/4 mx-auto mb-1" />
+                                                      <Skeleton className="h-3 w-1/3 mx-auto" />
+                                                  </div>
+                                              </Card>
+                                          ))
+                                      ) : (
+                                      filteredProducts.map(product => (
+                                          <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
                                               <div className="relative aspect-square bg-muted">
-                                                  <Skeleton className="h-full w-full" />
+                                                  <Image
+                                                      src={product.image}
+                                                      alt={product.name}
+                                                      fill
+                                                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                                                      data-ai-hint={product.name.split(' ').slice(0, 2).join(' ')}
+                                                  />
                                               </div>
                                               <div className="p-2 text-center">
-                                                  <Skeleton className="h-4 w-3/4 mx-auto mb-1" />
-                                                  <Skeleton className="h-3 w-1/2 mx-auto mb-1" />
-                                                  <Skeleton className="h-4 w-1/4 mx-auto mb-1" />
-                                                  <Skeleton className="h-3 w-1/3 mx-auto" />
+                                                  <p className="text-xs font-semibold truncate">{product.name}</p>
+                                                  <p className="text-xs text-muted-foreground">({product.sku})</p>
+                                                  <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
+                                                  <p className="text-xs text-green-600 dark:text-green-400 font-bold">{product.currentStock ?? 0} {product.unit} in stock</p>
                                               </div>
                                           </Card>
                                       ))
-                                  ) : (
-                                  filteredProducts.map(product => (
-                                      <Card key={product.id} className="cursor-pointer group overflow-hidden bg-card" onClick={() => addToCart(product)}>
-                                          <div className="relative aspect-square bg-muted">
-                                              <Image
-                                                  src={product.image}
-                                                  alt={product.name}
-                                                  fill
-                                                  className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                                                  data-ai-hint={product.name.split(' ').slice(0, 2).join(' ')}
-                                              />
-                                          </div>
-                                          <div className="p-2 text-center">
-                                              <p className="text-xs font-semibold truncate">{product.name}</p>
-                                              <p className="text-xs text-muted-foreground">({product.sku})</p>
-                                              <p className="text-sm font-bold text-primary">{formatCurrency(product.sellingPrice)}</p>
-                                              <p className="text-xs text-green-600 dark:text-green-400 font-bold">{product.currentStock ?? 0} {product.unit} in stock</p>
-                                          </div>
-                                      </Card>
-                                  ))
-                                  )}
-                              </div>
-                          </ScrollArea>
-                      </Card>
+                                      )}
+                                  </div>
+                              </ScrollArea>
+                          </Card>
                       </div>
                   </div>
                   
