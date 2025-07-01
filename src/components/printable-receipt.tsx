@@ -24,7 +24,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }
 
     if (!sale) {
-        return <div ref={ref} className="printable-receipt-area" />;
+        return <div ref={ref} />;
     }
     
     const subtotal = sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);

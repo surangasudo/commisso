@@ -907,7 +907,7 @@ const CommissionSelector = ({
   onSelect,
   onRemove,
 }: {
-  entityType?: CommissionProfile['entityType'];
+  entityType?: CommissionProfile['entityType'] | 'All';
   label: string;
   profiles: CommissionProfile[];
   selectedProfile: CommissionProfile | null;
@@ -920,7 +920,7 @@ const CommissionSelector = ({
     const lowercasedTerm = searchTerm.toLowerCase();
     return profiles.filter(
       (p) =>
-        (!entityType || p.entityType === entityType) &&
+        (entityType === 'All' || !entityType || p.entityType === entityType) &&
         (p.name.toLowerCase().includes(lowercasedTerm) ||
           p.phone.includes(searchTerm))
     ).slice(0, 5);
@@ -1375,23 +1375,18 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // Ref for printing
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [finalizedSaleForPrinting, setFinalizedSaleForPrinting] = useState<Sale | null>(null);
 
   // Effect for browser-based printing
   useEffect(() => {
     if (saleToPrint) {
-        // A small timeout ensures the class is applied and the DOM updates
-        // before the blocking print dialog appears.
-        const timer = setTimeout(() => {
-            document.body.classList.add('is-printing');
-            window.print();
-            document.body.classList.remove('is-printing');
-            setSaleToPrint(null); // Reset after printing
-        }, 100); 
-
-        return () => clearTimeout(timer);
+      // Use a timeout to ensure state has updated and component has re-rendered
+      const timer = setTimeout(() => {
+        window.print();
+        setSaleToPrint(null); // Reset after print dialog is triggered
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [saleToPrint]);
   
@@ -2030,6 +2025,7 @@ export default function PosPage() {
                                             <div className="flex-1">
                                                 <CommissionSelector
                                                     label="Commission Agent"
+                                                    entityType="All"
                                                     profiles={commissionProfiles}
                                                     selectedProfile={selectedSalesperson}
                                                     onSelect={setSelectedSalesperson}
@@ -2273,8 +2269,8 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div className="printable-receipt-area-wrapper" style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+      <div className="printable-receipt-area-wrapper">
+          <PrintableReceipt sale={saleToPrint} products={products} />
       </div>
 
       {/* Dialogs that are part of the main page state */}
