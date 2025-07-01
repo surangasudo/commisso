@@ -30,7 +30,7 @@ import {
   Pencil,
   Printer,
   Grid3x3,
-  FileEdit2,
+  FileEdit,
   Check,
   Banknote,
   Repeat,
@@ -2214,7 +2214,7 @@ export default function PosPage() {
                   <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 z-10">
                       <div className="flex items-center justify-between gap-2">
                            <div className="flex items-center gap-1">
-                              {!settings.pos.disableDraft && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleDraft}><FileEdit2 className="h-5 w-5 mb-1 text-blue-500" /><span>Draft</span></Button>}
+                              {!settings.pos.disableDraft && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleDraft}><FileEdit className="h-5 w-5 mb-1 text-blue-500" /><span>Draft</span></Button>}
                               <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleQuotation}><FileText className="h-5 w-5 mb-1 text-yellow-500" /><span>Quotation</span></Button>
                               {!settings.pos.disableSuspendSale && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleSuspend}><Pause className="h-5 w-5 mb-1 text-red-500" /><span>Suspend</span></Button>}
                               {!settings.pos.disableCreditSaleButton && <Button variant="ghost" className="h-auto p-1 flex-col text-xs hover:bg-transparent text-foreground" onClick={handleCreditSale}><Check className="h-5 w-5 mb-1 text-purple-500" /><span>Credit Sale</span></Button>}
