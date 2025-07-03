@@ -580,8 +580,8 @@ const RecentTransactionsDialog = ({
     const [activeTab, setActiveTab] = useState("final");
 
     const handlePrintClick = (sale: Sale) => {
-        onOpenChange(false); // Close this dialog first
-        onPrint(sale); // Then trigger print after a short delay
+        onOpenChange(false);
+        onPrint(sale);
     }
 
     return (
@@ -705,18 +705,15 @@ const CashPaymentDialog = ({
     onOpenChange,
     totalPayable,
     onSave,
-    onPrintAndClose,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
     onSave: (totalPaid: number) => Promise<boolean>;
-    onPrintAndClose: () => void;
 }) => {
     const { formatCurrency } = useCurrency();
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
-    const [isFinalized, setIsFinalized] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -724,7 +721,6 @@ const CashPaymentDialog = ({
         if (open) {
             setAmountTendered('');
             setChange(0);
-            setIsFinalized(false);
             setIsSaving(false);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
@@ -741,30 +737,16 @@ const CashPaymentDialog = ({
 
     const handleSaveClick = async () => {
         setIsSaving(true);
-        const success = await onSave(parseFloat(amountTendered) || 0);
+        await onSave(parseFloat(amountTendered) || totalPayable);
         setIsSaving(false);
-        if (success) {
-            setIsFinalized(true);
-        }
-    };
-
-    const handlePrintClick = () => {
-        onPrintAndClose();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            if (isFinalized) {
-                handlePrintClick();
-            } else {
-                handleSaveClick();
-            }
+            handleSaveClick();
         }
     };
-
-    const buttonAction = isFinalized ? handlePrintClick : handleSaveClick;
-    const buttonText = isFinalized ? "Print Receipt" : (isSaving ? "Saving..." : "Finalize Payment");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -791,7 +773,7 @@ const CashPaymentDialog = ({
                             onChange={(e) => setAmountTendered(e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="text-center text-2xl h-14"
-                            disabled={isFinalized || isSaving}
+                            disabled={isSaving}
                         />
                     </div>
                     <div className="text-center">
@@ -801,8 +783,8 @@ const CashPaymentDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={buttonAction} disabled={isSaving}>
-                        {buttonText}
+                    <Button onClick={handleSaveClick} disabled={isSaving}>
+                        {isSaving ? "Saving..." : "Finalize Payment"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -815,23 +797,19 @@ const CardPaymentDialog = ({
     onOpenChange,
     totalPayable,
     onSave,
-    onPrintAndClose,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
     onSave: () => Promise<boolean>;
-    onPrintAndClose: () => void;
 }) => {
     const { formatCurrency } = useCurrency();
     const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '' });
-    const [isFinalized, setIsFinalized] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
         if (open) {
-            setIsFinalized(false);
             setIsSaving(false);
             setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
         }
@@ -843,19 +821,10 @@ const CardPaymentDialog = ({
             return;
         }
         setIsSaving(true);
-        const success = await onSave();
+        await onSave();
         setIsSaving(false);
-        if (success) {
-            setIsFinalized(true);
-        }
     };
     
-    const handlePrintClick = () => {
-        onPrintAndClose();
-    };
-    
-    const buttonAction = isFinalized ? handlePrintClick : handleSaveClick;
-    const buttonText = isFinalized ? "Print Receipt" : (isSaving ? "Saving..." : "Finalize Payment");
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -869,30 +838,30 @@ const CardPaymentDialog = ({
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
                         <Label htmlFor="card-number">Card Number</Label>
-                        <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({...d, number: e.target.value}))} disabled={isFinalized}/>
+                        <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({...d, number: e.target.value}))} disabled={isSaving}/>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="card-holder">Card Holder Name</Label>
-                        <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({...d, holder: e.target.value}))} disabled={isFinalized}/>
+                        <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({...d, holder: e.target.value}))} disabled={isSaving}/>
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
                             <Label htmlFor="expiry-month">Expiry Month</Label>
-                            <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({...d, month: e.target.value}))} disabled={isFinalized}/>
+                            <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({...d, month: e.target.value}))} disabled={isSaving}/>
                             </div>
                             <div className="space-y-2">
                             <Label htmlFor="expiry-year">Expiry Year</Label>
-                            <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({...d, year: e.target.value}))} disabled={isFinalized}/>
+                            <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({...d, year: e.target.value}))} disabled={isSaving}/>
                             </div>
                             <div className="space-y-2">
                             <Label htmlFor="cvv">CVV</Label>
-                            <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({...d, cvv: e.target.value}))} disabled={isFinalized}/>
+                            <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({...d, cvv: e.target.value}))} disabled={isSaving}/>
                             </div>
                     </div>
                 </div>
                 <DialogFooter>
                      <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={buttonAction} disabled={isSaving}>{buttonText}</Button>
+                    <Button onClick={handleSaveClick} disabled={isSaving}>{isSaving ? "Saving..." : "Finalize Payment"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1376,15 +1345,13 @@ export default function PosPage() {
   
   // Ref for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  const [finalizedSaleForPrinting, setFinalizedSaleForPrinting] = useState<Sale | null>(null);
 
   // Effect for browser-based printing
   useEffect(() => {
     if (saleToPrint) {
-      // Use a timeout to ensure state has updated and component has re-rendered
       const timer = setTimeout(() => {
         window.print();
-        setSaleToPrint(null); // Reset after print dialog is triggered
+        setSaleToPrint(null);
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -1656,8 +1623,6 @@ export default function PosPage() {
           };
           
           clearCart(false);
-          setIsMultiPayOpen(false);
-          setIsCardPaymentOpen(false);
           await fetchAndCalculateStock();
           return completeSaleForReceipt;
       } catch (error) {
@@ -1671,44 +1636,30 @@ export default function PosPage() {
       }
   };
 
-  const handleCashPayment = () => {
-    if (cart.length === 0) {
-        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-        return;
-    }
-    setIsCashPaymentOpen(true);
-  };
-  
-  const handleSaveFromCashDialog = async (totalPaid: number): Promise<boolean> => {
+  const handleFinalizeCashPayment = async (totalPaid: number): Promise<boolean> => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
     const newSale = createSaleObject('Cash', paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setFinalizedSaleForPrinting(savedSale);
+        setSaleToPrint(savedSale);
+        setIsCashPaymentOpen(false);
         return true;
     }
+    setIsCashPaymentOpen(false);
     return false;
   };
   
-  const handleSaveFromCardDialog = async (): Promise<boolean> => {
+  const handleFinalizeCardPayment = async (): Promise<boolean> => {
     const newSale = createSaleObject('Card', 'Paid', totalPayable);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setFinalizedSaleForPrinting(savedSale);
+        setSaleToPrint(savedSale);
+        setIsCardPaymentOpen(false);
         return true;
     }
+    setIsCardPaymentOpen(false);
     return false;
   };
-
-  const handlePrintAndCloseDialog = () => {
-    if (finalizedSaleForPrinting) {
-        setSaleToPrint(finalizedSaleForPrinting);
-        setFinalizedSaleForPrinting(null);
-        setIsCashPaymentOpen(false);
-        setIsCardPaymentOpen(false);
-    }
-  };
-
 
   const handleFinalizeMultiPay = async () => {
       const cash = parseFloat(cashAmount) || 0;
@@ -1727,6 +1678,7 @@ export default function PosPage() {
       }
       setCashAmount('');
       setCardAmount('');
+      setIsMultiPayOpen(false);
   };
 
   const handleDraft = () => {
@@ -1765,6 +1717,10 @@ export default function PosPage() {
     };
     
     const handleCreditSale = async () => {
+      if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+      }
       const newSale = createSaleObject('Credit', 'Due', 0);
       const savedSale = await finalizeSale(newSale);
       if (savedSale) {
@@ -1772,14 +1728,6 @@ export default function PosPage() {
       }
     };
   
-    const handleCardPayment = () => {
-      if (cart.length === 0) {
-        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-        return;
-      }
-      setIsCardPaymentOpen(true);
-    };
-
     const handleToggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => {
@@ -2218,7 +2166,7 @@ export default function PosPage() {
                            </div>
 
                            <div className="flex-1 flex justify-center items-center gap-2">
-                                <Button className="bg-pink-600 hover:bg-pink-700 text-white h-12 text-base px-6" onClick={handleCardPayment}>
+                                <Button className="bg-pink-600 hover:bg-pink-700 text-white h-12 text-base px-6" onClick={() => setIsCardPaymentOpen(true)}>
                                     <CreditCard className="h-5 w-5 mr-2"/>Card
                                 </Button>
                                 <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
@@ -2249,7 +2197,7 @@ export default function PosPage() {
                                         </DialogFooter>
                                     </DialogContent>
                                 </Dialog>
-                                {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-12 text-base px-6" onClick={handleCashPayment}><Banknote className="h-5 w-5 mr-2"/>Cash</Button>}
+                                {!settings.pos.disableExpressCheckout && <Button className="bg-green-500 hover:bg-green-600 text-white h-12 text-base px-6" onClick={() => setIsCashPaymentOpen(true)}><Banknote className="h-5 w-5 mr-2"/>Cash</Button>}
                                 <Button variant="destructive" className="h-12 text-base px-6" onClick={() => clearCart()}><X className="h-5 w-5 mr-2"/>Cancel</Button>
                            </div>
                            
@@ -2329,15 +2277,13 @@ export default function PosPage() {
           open={isCashPaymentOpen}
           onOpenChange={setIsCashPaymentOpen}
           totalPayable={totalPayable}
-          onSave={handleSaveFromCashDialog}
-          onPrintAndClose={handlePrintAndCloseDialog}
+          onSave={handleFinalizeCashPayment}
       />
        <CardPaymentDialog
           open={isCardPaymentOpen}
           onOpenChange={setIsCardPaymentOpen}
           totalPayable={totalPayable}
-          onSave={handleSaveFromCardDialog}
-          onPrintAndClose={handlePrintAndCloseDialog}
+          onSave={handleFinalizeCardPayment}
       />
       <AddCommissionProfileDialog
           open={isAddProfileOpen}

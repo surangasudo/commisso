@@ -108,12 +108,16 @@ body {
     visibility: hidden;
   }
 
-  .printable-area, .printable-area *,
-  .printable-receipt-area, .printable-receipt-area * {
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  
+  .printable-receipt-area-wrapper, 
+  .printable-receipt-area-wrapper * {
     visibility: visible;
   }
 
-  .printable-area, .printable-receipt-area {
+  .printable-area, .printable-receipt-area-wrapper {
     position: absolute;
     left: 0;
     top: 0;
