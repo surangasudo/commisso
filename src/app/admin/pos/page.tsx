@@ -99,6 +99,7 @@ import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 import { getCurrencies } from '@/services/currencyService';
 import { addMoneyExchange } from '@/services/moneyExchangeService';
+import { useReactToPrint } from 'react-to-print';
 
 type CartItem = {
   product: DetailedProduct;
@@ -737,8 +738,11 @@ const CashPaymentDialog = ({
 
     const handleSaveClick = async () => {
         setIsSaving(true);
-        await onSave(parseFloat(amountTendered) || totalPayable);
+        const success = await onSave(parseFloat(amountTendered) || totalPayable);
         setIsSaving(false);
+        if (success) {
+            onOpenChange(false);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -821,8 +825,11 @@ const CardPaymentDialog = ({
             return;
         }
         setIsSaving(true);
-        await onSave();
+        const success = await onSave();
         setIsSaving(false);
+        if (success) {
+            onOpenChange(false);
+        }
     };
     
 
@@ -1345,17 +1352,18 @@ export default function PosPage() {
   
   // Ref for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
-  // Effect for browser-based printing
+  const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null),
+  });
+
   useEffect(() => {
     if (saleToPrint) {
-      const timer = setTimeout(() => {
-        window.print();
-        setSaleToPrint(null);
-      }, 100);
-      return () => clearTimeout(timer);
+        handlePrint();
     }
-  }, [saleToPrint]);
+  }, [saleToPrint, handlePrint]);
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1642,10 +1650,8 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        setIsCashPaymentOpen(false);
         return true;
     }
-    setIsCashPaymentOpen(false);
     return false;
   };
   
@@ -1654,10 +1660,8 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        setIsCardPaymentOpen(false);
         return true;
     }
-    setIsCardPaymentOpen(false);
     return false;
   };
 
@@ -2217,8 +2221,8 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div className="printable-receipt-area-wrapper">
-          <PrintableReceipt sale={saleToPrint} products={products} />
+      <div className="hidden">
+          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
       </div>
 
       {/* Dialogs that are part of the main page state */}
