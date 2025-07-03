@@ -2222,7 +2222,7 @@ export default function PosPage() {
       </div>
       
       <div className="hidden">
-          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}
