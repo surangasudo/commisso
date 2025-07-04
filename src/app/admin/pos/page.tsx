@@ -1633,6 +1633,7 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
+        setTimeout(() => handlePrint(), 0);
     }
   };
   
@@ -1692,6 +1693,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
+            setTimeout(() => handlePrint(), 0);
         }
       }
     };
@@ -1797,6 +1799,7 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setTimeout(() => handlePrint(), 0);
     };
     
   return (
@@ -2194,12 +2197,11 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div className="visually-hidden">
+      <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
             products={products}
-            onMounted={handlePrint}
         />
       </div>
 

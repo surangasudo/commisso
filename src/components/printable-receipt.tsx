@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
@@ -10,18 +10,11 @@ import { Logo } from '@/components/icons';
 type PrintableReceiptProps = {
     sale: Sale | null;
     products: DetailedProduct[];
-    onMounted?: () => void;
 };
 
-export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products, onMounted }, ref) => {
+export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
-
-    useEffect(() => {
-        if (sale && onMounted) {
-            onMounted();
-        }
-    }, [sale, onMounted]);
 
     const getProductInfo = (productId: string, field: 'name' | 'sku') => {
         const product = products.find(p => p.id === productId);

@@ -107,7 +107,7 @@ body {
 }
 
 @media print {
-  body * {
+  body {
     visibility: hidden;
   }
   .printable-area, .printable-area * {
