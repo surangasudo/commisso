@@ -710,7 +710,7 @@ const CashPaymentDialog = ({
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
-    onSave: (totalPaid: number) => Promise<boolean>;
+    onSave: (totalPaid: number) => Promise<void>;
 }) => {
     const { formatCurrency } = useCurrency();
     const [amountTendered, setAmountTendered] = useState('');
@@ -738,11 +738,9 @@ const CashPaymentDialog = ({
 
     const handleSaveClick = async () => {
         setIsSaving(true);
-        const success = await onSave(parseFloat(amountTendered) || totalPayable);
+        await onSave(parseFloat(amountTendered) || totalPayable);
         setIsSaving(false);
-        if (success) {
-            onOpenChange(false);
-        }
+        onOpenChange(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -805,7 +803,7 @@ const CardPaymentDialog = ({
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
-    onSave: () => Promise<boolean>;
+    onSave: () => Promise<void>;
 }) => {
     const { formatCurrency } = useCurrency();
     const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '' });
@@ -825,11 +823,9 @@ const CardPaymentDialog = ({
             return;
         }
         setIsSaving(true);
-        const success = await onSave();
+        await onSave();
         setIsSaving(false);
-        if (success) {
-            onOpenChange(false);
-        }
+        onOpenChange(false);
     };
     
 
@@ -1360,7 +1356,7 @@ export default function PosPage() {
   });
 
   useEffect(() => {
-    if (saleToPrint) {
+    if (saleToPrint && receiptRef.current) {
         handlePrint();
     }
   }, [saleToPrint, handlePrint]);
@@ -1644,25 +1640,21 @@ export default function PosPage() {
       }
   };
 
-  const handleFinalizeCashPayment = async (totalPaid: number): Promise<boolean> => {
+  const handleFinalizeCashPayment = async (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
     const newSale = createSaleObject('Cash', paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        return true;
     }
-    return false;
   };
   
-  const handleFinalizeCardPayment = async (): Promise<boolean> => {
+  const handleFinalizeCardPayment = async () => {
     const newSale = createSaleObject('Card', 'Paid', totalPayable);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        return true;
     }
-    return false;
   };
 
   const handleFinalizeMultiPay = async () => {
@@ -2222,7 +2214,7 @@ export default function PosPage() {
       </div>
       
       <div className="hidden">
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
       </div>
 
       {/* Dialogs that are part of the main page state */}
