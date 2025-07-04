@@ -1356,7 +1356,7 @@ export default function PosPage() {
   });
 
   useEffect(() => {
-    if (saleToPrint) {
+    if (saleToPrint && receiptRef.current) {
         handlePrint();
     }
   }, [saleToPrint, handlePrint]);
@@ -2213,7 +2213,7 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div className="hidden">
+      <div className="visually-hidden">
         <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
       </div>
 
