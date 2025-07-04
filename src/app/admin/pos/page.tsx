@@ -1357,7 +1357,11 @@ export default function PosPage() {
 
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        handlePrint();
+        // Use a timeout to ensure the component has rendered before printing
+        const timer = setTimeout(() => {
+            handlePrint();
+        }, 50);
+        return () => clearTimeout(timer);
     }
   }, [saleToPrint, handlePrint]);
   
