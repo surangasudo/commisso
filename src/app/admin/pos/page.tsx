@@ -580,11 +580,6 @@ const RecentTransactionsDialog = ({
     const { formatCurrency } = useCurrency();
     const [activeTab, setActiveTab] = useState("final");
 
-    const handlePrintClick = (sale: Sale) => {
-        onOpenChange(false);
-        onPrint(sale);
-    }
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
@@ -614,7 +609,7 @@ const RecentTransactionsDialog = ({
                                                     <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onEdit(sale.id)}>
                                                         <Pencil className="mr-1 h-3 w-3" /> Edit
                                                     </Button>
-                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => handlePrintClick(sale)}>
+                                                    <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
                                                         <Printer className="mr-1 h-3 w-3" /> Print
                                                     </Button>
                                                     <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => onDelete(sale)}>
@@ -1347,8 +1342,8 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // Ref for printing
-  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
@@ -1813,10 +1808,10 @@ export default function PosPage() {
     };
 
     useEffect(() => {
-        if (saleToPrint && receiptRef.current) {
+        if (saleToPrint) {
             const timer = setTimeout(() => {
                 handlePrint();
-            }, 100);
+            }, 500); // Give react time to update the state and DOM before printing
             return () => clearTimeout(timer);
         }
     }, [saleToPrint, handlePrint]);
@@ -2217,7 +2212,7 @@ export default function PosPage() {
       </div>
       
       <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
-          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}

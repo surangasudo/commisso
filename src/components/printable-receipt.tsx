@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
@@ -10,21 +10,14 @@ import { Logo } from '@/components/icons';
 type PrintableReceiptProps = {
     sale: Sale | null;
     products: DetailedProduct[];
-    onMounted?: () => void;
 };
 
-export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products, onMounted }, ref) => {
+export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
 
-    useEffect(() => {
-        if (sale && onMounted) {
-            onMounted();
-        }
-    }, [sale, onMounted]);
-
     if (!sale) {
-        return <div ref={ref} className="visually-hidden"></div>;
+        return <div ref={ref}></div>; // Render an empty div with ref if no sale data
     }
 
     const getProductInfo = (productId: string, field: 'name' | 'sku') => {
@@ -35,7 +28,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     };
 
     return (
-        <div ref={ref} className="font-sans bg-white text-gray-800 p-8 printable-receipt-area">
+        <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
