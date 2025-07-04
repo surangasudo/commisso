@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ReactToPrint from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -99,7 +100,6 @@ import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 import { getCurrencies } from '@/services/currencyService';
 import { addMoneyExchange } from '@/services/moneyExchangeService';
-import { useReactToPrint } from 'react-to-print';
 
 type CartItem = {
   product: DetailedProduct;
@@ -1349,21 +1349,13 @@ export default function PosPage() {
   // Ref for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
-
-  const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
-      onAfterPrint: () => setSaleToPrint(null),
-  });
+  const printTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        // Use a timeout to ensure the component has rendered before printing
-        const timer = setTimeout(() => {
-            handlePrint();
-        }, 50);
-        return () => clearTimeout(timer);
+    if (saleToPrint && printTriggerRef.current) {
+        printTriggerRef.current.click();
     }
-  }, [saleToPrint, handlePrint]);
+  }, [saleToPrint]);
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -2218,7 +2210,12 @@ export default function PosPage() {
       </div>
       
       <div className="visually-hidden">
-        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        <ReactToPrint
+          trigger={() => <button ref={printTriggerRef}>Print</button>}
+          content={() => receiptRef.current}
+          onAfterPrint={() => setSaleToPrint(null)}
+        />
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}
