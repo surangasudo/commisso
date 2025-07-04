@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import ReactToPrint from 'react-to-print';
+import { useReactToPrint } from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -1349,13 +1349,11 @@ export default function PosPage() {
   // Ref for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const printTriggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (saleToPrint && printTriggerRef.current) {
-        printTriggerRef.current.click();
-    }
-  }, [saleToPrint]);
+  const handlePrint = useReactToPrint({
+    content: () => receiptRef.current,
+    onAfterPrint: () => setSaleToPrint(null),
+  });
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1813,6 +1811,16 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
     };
+    
+    useEffect(() => {
+        if (saleToPrint && receiptRef.current) {
+          // Use setTimeout to ensure the component has rendered before printing
+          const timer = setTimeout(() => {
+            handlePrint();
+          }, 500); // A small delay
+          return () => clearTimeout(timer);
+        }
+    }, [saleToPrint, handlePrint]);
 
   return (
     <div className="pos-page-container">
@@ -2209,12 +2217,7 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div className="visually-hidden">
-        <ReactToPrint
-          trigger={() => <button ref={printTriggerRef}>Print</button>}
-          content={() => receiptRef.current}
-          onAfterPrint={() => setSaleToPrint(null)}
-        />
+      <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: 'auto', height: 'auto', overflow: 'visible' }}>
         {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
