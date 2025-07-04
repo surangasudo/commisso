@@ -1356,7 +1356,7 @@ export default function PosPage() {
   });
 
   useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
+    if (saleToPrint) {
         handlePrint();
     }
   }, [saleToPrint, handlePrint]);
@@ -2320,3 +2320,5 @@ export default function PosPage() {
     </div>
   );
 }
+
+    

@@ -25,7 +25,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
 
     return (
         <div ref={ref}>
-            {sale && (
+            {sale ? (
                 <div className="font-sans bg-white text-gray-800 p-8 printable-receipt-area">
                     <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
                         <div className="flex items-center gap-4">
@@ -111,9 +111,11 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                         <p>Please contact us with any questions regarding this invoice.</p>
                     </footer>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 });
 
 PrintableReceipt.displayName = 'PrintableReceipt';
+
+    
