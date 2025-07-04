@@ -1811,17 +1811,16 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
     };
-    
+
     useEffect(() => {
         if (saleToPrint && receiptRef.current) {
-          // Use setTimeout to ensure the component has rendered before printing
-          const timer = setTimeout(() => {
-            handlePrint();
-          }, 500); // A small delay
-          return () => clearTimeout(timer);
+            const timer = setTimeout(() => {
+                handlePrint();
+            }, 100);
+            return () => clearTimeout(timer);
         }
     }, [saleToPrint, handlePrint]);
-
+    
   return (
     <div className="pos-page-container">
       <div className="relative">
@@ -2217,8 +2216,8 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: 'auto', height: 'auto', overflow: 'visible' }}>
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
       </div>
 
       {/* Dialogs that are part of the main page state */}
@@ -2324,5 +2323,3 @@ export default function PosPage() {
     </div>
   );
 }
-
-    
