@@ -1628,23 +1628,21 @@ export default function PosPage() {
       }
   };
 
-  const handleFinalizeCashPayment = async (totalPaid: number) => {
-    const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
-    const newSale = createSaleObject('Cash', paymentStatus, totalPaid);
+  const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+    const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        setTimeout(() => handlePrint(), 100);
     }
   };
   
+  const handleFinalizeCashPayment = async (totalPaid: number) => {
+    const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
+    await finalizeAndPrint('Cash', paymentStatus, totalPaid);
+  };
+  
   const handleFinalizeCardPayment = async () => {
-    const newSale = createSaleObject('Card', 'Paid', totalPayable);
-    const savedSale = await finalizeSale(newSale);
-    if(savedSale) {
-        setSaleToPrint(savedSale);
-        setTimeout(() => handlePrint(), 100);
-    }
+    await finalizeAndPrint('Card', 'Paid', totalPayable);
   };
 
   const handleFinalizeMultiPay = async () => {
@@ -1656,13 +1654,8 @@ export default function PosPage() {
           toast({ title: 'Insufficient Payment', description: `Paid amount is less than the total payable of ${formatCurrency(totalPayable)}.`, variant: 'destructive'});
           return;
       }
-
-      const newSale = createSaleObject('Multiple', 'Paid', totalPaid);
-      const savedSale = await finalizeSale(newSale);
-      if (savedSale) {
-          setSaleToPrint(savedSale);
-          setTimeout(() => handlePrint(), 100);
-      }
+      
+      await finalizeAndPrint('Multiple', 'Paid', totalPaid);
       setCashAmount('');
       setCardAmount('');
       setIsMultiPayOpen(false);
@@ -1699,7 +1692,6 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            setTimeout(() => handlePrint(), 100);
         }
       }
     };
@@ -1710,11 +1702,7 @@ export default function PosPage() {
         return;
       }
       const newSale = createSaleObject('Credit', 'Due', 0);
-      const savedSale = await finalizeSale(newSale);
-      if (savedSale) {
-        setSaleToPrint(savedSale);
-        setTimeout(() => handlePrint(), 100);
-      }
+      await finalizeAndPrint('Credit', 'Due', 0);
     };
   
     const handleToggleFullscreen = () => {
@@ -1809,7 +1797,6 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setTimeout(() => handlePrint(), 100);
     };
     
   return (
@@ -2208,7 +2195,12 @@ export default function PosPage() {
       </div>
       
       <div className="visually-hidden">
-        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+        <PrintableReceipt
+            ref={receiptRef}
+            sale={saleToPrint}
+            products={products}
+            onMounted={handlePrint}
+        />
       </div>
 
       {/* Dialogs that are part of the main page state */}
