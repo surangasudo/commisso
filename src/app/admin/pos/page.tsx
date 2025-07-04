@@ -1,10 +1,9 @@
 
 'use client';
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useReactToPrint } from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -711,7 +710,7 @@ const CashPaymentDialog = ({
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = React.useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (open) {
@@ -1341,13 +1340,11 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  
-  const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    onAfterPrint: () => setSaleToPrint(null),
-  });
+
+  const handlePrintComplete = () => {
+    setSaleToPrint(null);
+  };
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1633,7 +1630,6 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        setTimeout(() => handlePrint(), 0);
     }
   };
   
@@ -1693,7 +1689,6 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            setTimeout(() => handlePrint(), 0);
         }
       }
     };
@@ -1799,7 +1794,6 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setTimeout(() => handlePrint(), 0);
     };
     
   return (
@@ -2197,13 +2191,13 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div style={{ position: 'absolute', left: '-9999px', top: 'auto', width: '1px', height: '1px', overflow: 'hidden' }}>
+      {saleToPrint && (
         <PrintableReceipt
-            ref={receiptRef}
             sale={saleToPrint}
             products={products}
+            onPrintComplete={handlePrintComplete}
         />
-      </div>
+      )}
 
       {/* Dialogs that are part of the main page state */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
