@@ -1341,10 +1341,9 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Ref for printing
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-
+  
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
     onAfterPrint: () => setSaleToPrint(null),
@@ -1635,6 +1634,7 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
+        setTimeout(() => handlePrint(), 100);
     }
   };
   
@@ -1643,6 +1643,7 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
+        setTimeout(() => handlePrint(), 100);
     }
   };
 
@@ -1660,6 +1661,7 @@ export default function PosPage() {
       const savedSale = await finalizeSale(newSale);
       if (savedSale) {
           setSaleToPrint(savedSale);
+          setTimeout(() => handlePrint(), 100);
       }
       setCashAmount('');
       setCardAmount('');
@@ -1697,6 +1699,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
+            setTimeout(() => handlePrint(), 100);
         }
       }
     };
@@ -1710,6 +1713,7 @@ export default function PosPage() {
       const savedSale = await finalizeSale(newSale);
       if (savedSale) {
         setSaleToPrint(savedSale);
+        setTimeout(() => handlePrint(), 100);
       }
     };
   
@@ -1805,16 +1809,8 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setTimeout(() => handlePrint(), 100);
     };
-
-    useEffect(() => {
-        if (saleToPrint) {
-            const timer = setTimeout(() => {
-                handlePrint();
-            }, 500); // Give react time to update the state and DOM before printing
-            return () => clearTimeout(timer);
-        }
-    }, [saleToPrint, handlePrint]);
     
   return (
     <div className="pos-page-container">
@@ -2211,8 +2207,8 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
       
-      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
-          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+      <div className="visually-hidden">
+        <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
       </div>
 
       {/* Dialogs that are part of the main page state */}
