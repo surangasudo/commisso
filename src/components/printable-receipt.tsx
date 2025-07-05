@@ -8,20 +8,22 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale; // No longer accepts null, parent component handles this
+    sale: Sale;
     products: DetailedProduct[];
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
+
     const productMap = React.useMemo(() => {
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // The component now assumes `sale` and `settings` are always present,
-    // as the parent component handles conditional rendering. This prevents hook-related errors.
-    
+    // This component now assumes it will only be rendered with valid sale and settings data,
+    // as the parent component (PosPage) handles the conditional rendering.
+    // This prevents hook-related errors and ensures print content is always valid.
+
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
