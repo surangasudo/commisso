@@ -8,7 +8,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale | null; // Allow sale to be null initially
+    sale: Sale;
     products: DetailedProduct[];
 };
 
@@ -21,11 +21,11 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // Conditional rendering is handled in the return statement, AFTER all hooks have been called.
-    if (!sale || !settings) {
-        // You can return a loading state or null here if required data isn't ready.
-        // This is safe because it's still after all top-level hook calls.
-        return <div ref={ref}></div>; // Return an empty div with the ref
+    // This component now assumes `sale` and `settings` are always provided,
+    // as the parent component (`PosPage`) will only render it when data is ready.
+    if (!settings) {
+      // Still good to have a guard for settings, as it comes from a context
+      return <div ref={ref}>Loading settings...</div>;
     }
 
     return (

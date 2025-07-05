@@ -1344,16 +1344,17 @@ export default function PosPage() {
   // --- Start of Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  
+
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef,
+      content: () => receiptRef.current,
       documentTitle: 'Receipt',
       onAfterPrint: () => setSaleToPrint(null),
   });
-  
+
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        handlePrint();
+        // A small timeout allows React to render the new receipt content before printing
+        setTimeout(() => handlePrint(), 0);
     }
   }, [saleToPrint, handlePrint]);
   // --- End of Corrected Printing Logic ---
@@ -2203,7 +2204,7 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       <div style={{ display: 'none' }}>
+      <div style={{ position: 'absolute', left: '-9999px' }}>
           {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
