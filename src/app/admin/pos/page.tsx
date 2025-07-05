@@ -1350,10 +1350,10 @@ export default function PosPage() {
       onAfterPrint: () => setSaleToPrint(null),
   });
   
-  // This effect ensures printing only happens after the component has rendered with the new sale data.
+  // This effect triggers the print only when saleToPrint has data
   useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        handlePrint();
+    if (saleToPrint) {
+      handlePrint();
     }
   }, [saleToPrint, handlePrint]);
 
@@ -2202,14 +2202,12 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       <div style={{ position: 'absolute', left: '-9999px' }}>
-          {saleToPrint && (
-              <PrintableReceipt
-                  ref={receiptRef}
-                  sale={saleToPrint}
-                  products={products}
-              />
-          )}
+       <div className="hidden">
+          <PrintableReceipt
+              ref={receiptRef}
+              sale={saleToPrint}
+              products={products}
+          />
       </div>
 
       {/* Dialogs that are part of the main page state */}

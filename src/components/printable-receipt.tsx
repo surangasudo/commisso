@@ -9,7 +9,7 @@ import { Logo } from '@/components/icons';
 
 
 type PrintableReceiptProps = {
-    sale: Sale;
+    sale: Sale | null;
     products: DetailedProduct[];
 };
 
@@ -20,6 +20,10 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
 
+    // If there's no sale data, render an empty div with the ref so the parent can always find it.
+    if (!sale) {
+        return <div ref={ref}></div>;
+    }
 
     // Create a product map for efficient lookups (O(1) instead of O(n) inside a loop)
     // This prevents performance issues with large product lists.
