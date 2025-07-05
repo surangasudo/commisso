@@ -1341,14 +1341,14 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // --- Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  // Corrected Printing Logic - uses `contentRef`
   const handlePrint = useReactToPrint({
-    contentRef: () => receiptRef.current,
+    content: () => receiptRef.current,
     documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-    onAfterPrint: () => setSaleToPrint(null), // Clean up after printing
+    onAfterPrint: () => setSaleToPrint(null),
     onPrintError: (errorLocation, error) => {
       toast({
         title: "Printing Failed",
@@ -1360,13 +1360,14 @@ export default function PosPage() {
     },
   });
 
-  // This effect triggers the print dialog *after* the state has been updated
-  // and the component has had a chance to re-render.
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        handlePrint();
+        // A small timeout allows React to render the new receipt content before printing
+        setTimeout(() => handlePrint(), 0);
     }
   }, [saleToPrint, handlePrint]);
+  // --- End of Corrected Printing Logic ---
+  
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -2214,8 +2215,9 @@ export default function PosPage() {
       </div>
 
       <div className="hidden">
-          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
+
 
       {/* Dialogs that are part of the main page state */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />

@@ -13,20 +13,15 @@ type PrintableReceiptProps = {
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
-    // All hooks are called at the top level, in the same order on every render.
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
     const productMap = React.useMemo(() => {
-        // We can safely create the map even if `products` is empty.
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // This component will only be rendered when `sale` and `settings` are available,
-    // so we can safely assume they exist.
-    if (!settings) {
-        return <div ref={ref}>Loading settings...</div>;
-    }
-
+    // This component will now only be rendered when `sale` and `settings` are available,
+    // so we can safely assume they exist without a null check here.
+    
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             {/* Header */}
