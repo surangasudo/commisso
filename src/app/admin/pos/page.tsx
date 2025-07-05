@@ -1341,12 +1341,13 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Printing Logic
+  // --- Start of Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-
+  
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
+      documentTitle: 'Receipt',
       onAfterPrint: () => setSaleToPrint(null),
   });
   
@@ -1355,6 +1356,7 @@ export default function PosPage() {
         handlePrint();
     }
   }, [saleToPrint, handlePrint]);
+  // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -2201,7 +2203,7 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       <div className="absolute -left-full">
+       <div style={{ position: 'absolute', left: '-9999px' }}>
           <PrintableReceipt
               ref={receiptRef}
               sale={saleToPrint}
