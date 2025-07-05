@@ -1346,7 +1346,7 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
+    contentRef: receiptRef, // Use contentRef instead of content
     documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
     onAfterPrint: () => setSaleToPrint(null),
     onPrintError: (errorLocation, error) => {
@@ -1362,10 +1362,9 @@ export default function PosPage() {
 
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        // A small timeout allows React to render the new receipt content before printing
-        setTimeout(() => handlePrint(), 0);
+        handlePrint();
     }
-  }, [saleToPrint, handlePrint]);
+  }, [saleToPrint, handlePrint]); // Correctly depend on saleToPrint
   // --- End of Corrected Printing Logic ---
   
 
