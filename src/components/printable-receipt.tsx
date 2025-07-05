@@ -8,29 +8,22 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale;
+    sale: Sale; // No longer accepts null, parent component handles this
     products: DetailedProduct[];
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
-    // CORRECT: All hooks are called at the top level, in the same order on every render.
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
     const productMap = React.useMemo(() => {
-        // We can safely create the map even if `products` is empty.
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // This component now assumes `sale` and `settings` are always provided,
-    // as the parent component (`PosPage`) will only render it when data is ready.
-    if (!settings) {
-      // Still good to have a guard for settings, as it comes from a context
-      return <div ref={ref}>Loading settings...</div>;
-    }
-
+    // The component now assumes `sale` and `settings` are always present,
+    // as the parent component handles conditional rendering. This prevents hook-related errors.
+    
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
-            {/* Header */}
             <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />

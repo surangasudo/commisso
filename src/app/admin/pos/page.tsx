@@ -1342,22 +1342,22 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // --- Start of Corrected Printing Logic ---
-  const receiptRef = useRef<HTMLDivElement>(null);
-  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+    const receiptRef = useRef<HTMLDivElement>(null);
+    const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
-      documentTitle: 'Receipt',
-      onAfterPrint: () => setSaleToPrint(null),
-  });
+    const handlePrint = useReactToPrint({
+        content: () => receiptRef.current,
+        documentTitle: 'Receipt',
+        onAfterPrint: () => setSaleToPrint(null), // Reset state after printing
+    });
 
-  useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        // A small timeout allows React to render the new receipt content before printing
-        setTimeout(() => handlePrint(), 0);
-    }
-  }, [saleToPrint, handlePrint]);
-  // --- End of Corrected Printing Logic ---
+    useEffect(() => {
+      // This effect triggers the print dialog ONLY when saleToPrint is updated with a sale object.
+      if (saleToPrint && receiptRef.current) {
+          handlePrint();
+      }
+    }, [saleToPrint, handlePrint]); // Correctly depend on saleToPrint
+    // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -2204,8 +2204,9 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-      <div style={{ position: 'absolute', left: '-9999px' }}>
-          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+      {/* Conditionally rendered but hidden container for the receipt */}
+      <div className="hidden">
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}
