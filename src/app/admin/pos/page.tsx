@@ -1346,7 +1346,7 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef,
       documentTitle: 'Receipt',
       onAfterPrint: () => setSaleToPrint(null),
   });
@@ -2203,12 +2203,8 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       <div style={{ position: 'absolute', left: '-9999px' }}>
-          <PrintableReceipt
-              ref={receiptRef}
-              sale={saleToPrint}
-              products={products}
-          />
+       <div style={{ display: 'none' }}>
+          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}

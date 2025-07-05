@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -7,35 +8,36 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale | null;
+    sale: Sale | null; // Allow sale to be null initially
     products: DetailedProduct[];
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
+    // CORRECT: All hooks are called at the top level, in the same order on every render.
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
-    
     const productMap = React.useMemo(() => {
+        // We can safely create the map even if `products` is empty.
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
+    // Conditional rendering is handled in the return statement, AFTER all hooks have been called.
     if (!sale || !settings) {
-        return <div ref={ref}></div>;
+        // You can return a loading state or null here if required data isn't ready.
+        // This is safe because it's still after all top-level hook calls.
+        return <div ref={ref}></div>; // Return an empty div with the ref
     }
 
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
+            {/* Header */}
             <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {settings?.business?.businessName ?? 'Your Business'}
-                        </h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{settings?.business?.businessName ?? 'Your Business'}</h1>
                         <p className="text-sm text-gray-500">123 Business St, City, 12345</p>
-                        <p className="text-sm text-gray-500">
-                            {settings?.email?.fromAddress ?? 'contact@business.com'}
-                        </p>
+                        <p className="text-sm text-gray-500">{settings?.email?.fromAddress ?? 'contact@business.com'}</p>
                     </div>
                 </div>
                 <div className="text-right">
