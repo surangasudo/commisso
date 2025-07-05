@@ -1,5 +1,5 @@
-
 'use client';
+
 
 import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
@@ -7,10 +7,12 @@ import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
+
 type PrintableReceiptProps = {
     sale: Sale;
     products: DetailedProduct[];
 };
+
 
 // This is a "dumb" component that just renders the receipt.
 // It uses React.forwardRef to pass the ref down to the DOM element.
@@ -18,12 +20,13 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
 
-    const getProductInfo = (productId: string, field: 'name' | 'sku') => {
-        const product = products.find(p => p.id === productId);
-        if (field === 'name') return product?.name || 'Unknown Product';
-        if (field === 'sku') return product?.sku || 'N/A';
-        return '';
-    };
+
+    // Create a product map for efficient lookups (O(1) instead of O(n) inside a loop)
+    // This prevents performance issues with large product lists.
+    const productMap = React.useMemo(() => {
+        return new Map(products.map(p => [p.id, p]));
+    }, [products]);
+
 
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
@@ -31,9 +34,10 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{settings.business.businessName}</h1>
-                        <p className="text-sm text-gray-500">123 Awesome St, Phoenix, AZ 85001</p>
-                        <p className="text-sm text-gray-500">contact@awesomeshop.com</p>
+                        {/* CORRECTED: Use optional chaining and nullish coalescing to prevent crashes and provide fallbacks. */}
+                        <h1 className="text-2xl font-bold text-gray-900">{settings?.business?.businessName ?? 'Your Business'}</h1>
+                        <p className="text-sm text-gray-500">{settings?.business?.address ?? '123 Business St, City, 12345'}</p>
+                        <p className="text-sm text-gray-500">{settings?.business?.email ?? 'contact@business.com'}</p>
                     </div>
                 </div>
                 <div className="text-right">
@@ -41,6 +45,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <p className="text-gray-500 mt-1"># {sale.invoiceNo}</p>
                 </div>
             </header>
+
 
             <section className="flex justify-between my-8">
                 <div>
@@ -53,6 +58,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <p><strong className="text-gray-600">Payment Status:</strong> {sale.paymentStatus}</p>
                 </div>
             </section>
+
 
             <section>
                 <table className="w-full text-sm">
@@ -68,10 +74,12 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     </thead>
                     <tbody>
                         {sale.items.map((item, index) => (
-                            <tr key={index} className="border-b border-gray-100">
+                            // IMPROVED: Use a unique ID for the key if available.
+                            <tr key={item.productId || index} className="border-b border-gray-100">
                                 <td className="p-3">{index + 1}</td>
-                                <td className="p-3">{getProductInfo(item.productId, 'name')}</td>
-                                <td className="p-3">{getProductInfo(item.productId, 'sku')}</td>
+                                {/* OPTIMIZED: Use the productMap for efficient data retrieval. */}
+                                <td className="p-3">{productMap.get(item.productId)?.name ?? 'Unknown Product'}</td>
+                                <td className="p-3">{productMap.get(item.productId)?.sku ?? 'N/A'}</td>
                                 <td className="p-3 text-center">{item.quantity}</td>
                                 <td className="p-3 text-right">{formatCurrency(item.unitPrice)}</td>
                                 <td className="p-3 text-right font-medium">{formatCurrency(item.quantity * item.unitPrice)}</td>
@@ -80,6 +88,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     </tbody>
                 </table>
             </section>
+
 
             <section className="flex justify-end mt-8">
                 <div className="w-full max-w-xs space-y-3">
@@ -113,5 +122,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         </div>
     );
 });
+
 
 PrintableReceipt.displayName = 'PrintableReceipt';
