@@ -1,8 +1,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { useReactToPrint } from 'react-to-print';
+import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
@@ -11,26 +10,13 @@ import { Logo } from '@/components/icons';
 type PrintableReceiptProps = {
     sale: Sale;
     products: DetailedProduct[];
-    onPrintComplete: () => void;
 };
 
-export const PrintableReceipt = ({ sale, products, onPrintComplete }: PrintableReceiptProps) => {
+// This is a "dumb" component that just renders the receipt.
+// It uses React.forwardRef to pass the ref down to the DOM element.
+export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
-    const componentRef = useRef<HTMLDivElement>(null);
-
-    const handlePrint = useReactToPrint({
-        content: () => componentRef.current,
-        onAfterPrint: onPrintComplete,
-    });
-
-    useEffect(() => {
-        if (sale && componentRef.current) {
-             const timer = setTimeout(() => handlePrint(), 50);
-             return () => clearTimeout(timer);
-        }
-    }, [sale, handlePrint]);
-
 
     const getProductInfo = (productId: string, field: 'name' | 'sku') => {
         const product = products.find(p => p.id === productId);
@@ -40,92 +26,92 @@ export const PrintableReceipt = ({ sale, products, onPrintComplete }: PrintableR
     };
 
     return (
-        <div className="visually-hidden">
-            <div ref={componentRef} className="font-sans bg-white text-gray-800 p-8">
-                <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
-                    <div className="flex items-center gap-4">
-                        <Logo className="h-16 w-16 text-primary" />
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">{settings.business.businessName}</h1>
-                            <p className="text-sm text-gray-500">123 Awesome St, Phoenix, AZ 85001</p>
-                            <p className="text-sm text-gray-500">contact@awesomeshop.com</p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <h2 className="text-3xl font-bold uppercase text-gray-700">Invoice</h2>
-                        <p className="text-gray-500 mt-1"># {sale.invoiceNo}</p>
-                    </div>
-                </header>
-
-                <section className="flex justify-between my-8">
+        <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
+            <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
+                <div className="flex items-center gap-4">
+                    <Logo className="h-16 w-16 text-primary" />
                     <div>
-                        <h3 className="font-bold mb-2">Bill To:</h3>
-                        <p className="text-gray-600">{sale.customerName}</p>
-                        {sale.contactNumber && <p className="text-gray-600">{sale.contactNumber}</p>}
+                        <h1 className="text-2xl font-bold text-gray-900">{settings.business.businessName}</h1>
+                        <p className="text-sm text-gray-500">123 Awesome St, Phoenix, AZ 85001</p>
+                        <p className="text-sm text-gray-500">contact@awesomeshop.com</p>
                     </div>
-                    <div className="text-right">
-                        <p><strong className="text-gray-600">Invoice Date:</strong> {new Date(sale.date).toLocaleDateString()}</p>
-                        <p><strong className="text-gray-600">Payment Status:</strong> {sale.paymentStatus}</p>
-                    </div>
-                </section>
+                </div>
+                <div className="text-right">
+                    <h2 className="text-3xl font-bold uppercase text-gray-700">Invoice</h2>
+                    <p className="text-gray-500 mt-1"># {sale.invoiceNo}</p>
+                </div>
+            </header>
 
-                <section>
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="text-left font-semibold p-3">#</th>
-                                <th className="text-left font-semibold p-3">Product</th>
-                                <th className="text-left font-semibold p-3">SKU</th>
-                                <th className="text-center font-semibold p-3">Qty</th>
-                                <th className="text-right font-semibold p-3">Rate</th>
-                                <th className="text-right font-semibold p-3">Amount</th>
+            <section className="flex justify-between my-8">
+                <div>
+                    <h3 className="font-bold mb-2">Bill To:</h3>
+                    <p className="text-gray-600">{sale.customerName}</p>
+                    {sale.contactNumber && <p className="text-gray-600">{sale.contactNumber}</p>}
+                </div>
+                <div className="text-right">
+                    <p><strong className="text-gray-600">Invoice Date:</strong> {new Date(sale.date).toLocaleDateString()}</p>
+                    <p><strong className="text-gray-600">Payment Status:</strong> {sale.paymentStatus}</p>
+                </div>
+            </section>
+
+            <section>
+                <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="text-left font-semibold p-3">#</th>
+                            <th className="text-left font-semibold p-3">Product</th>
+                            <th className="text-left font-semibold p-3">SKU</th>
+                            <th className="text-center font-semibold p-3">Qty</th>
+                            <th className="text-right font-semibold p-3">Rate</th>
+                            <th className="text-right font-semibold p-3">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sale.items.map((item, index) => (
+                            <tr key={index} className="border-b border-gray-100">
+                                <td className="p-3">{index + 1}</td>
+                                <td className="p-3">{getProductInfo(item.productId, 'name')}</td>
+                                <td className="p-3">{getProductInfo(item.productId, 'sku')}</td>
+                                <td className="p-3 text-center">{item.quantity}</td>
+                                <td className="p-3 text-right">{formatCurrency(item.unitPrice)}</td>
+                                <td className="p-3 text-right font-medium">{formatCurrency(item.quantity * item.unitPrice)}</td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {sale.items.map((item, index) => (
-                                <tr key={index} className="border-b border-gray-100">
-                                    <td className="p-3">{index + 1}</td>
-                                    <td className="p-3">{getProductInfo(item.productId, 'name')}</td>
-                                    <td className="p-3">{getProductInfo(item.productId, 'sku')}</td>
-                                    <td className="p-3 text-center">{item.quantity}</td>
-                                    <td className="p-3 text-right">{formatCurrency(item.unitPrice)}</td>
-                                    <td className="p-3 text-right font-medium">{formatCurrency(item.quantity * item.unitPrice)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </section>
+                        ))}
+                    </tbody>
+                </table>
+            </section>
 
-                <section className="flex justify-end mt-8">
-                    <div className="w-full max-w-xs space-y-3">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Subtotal:</span>
-                            <span>{formatCurrency(sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0))}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Tax:</span>
-                            <span>+ {formatCurrency(sale.taxAmount || 0)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-lg text-gray-800 border-t border-gray-200 pt-3">
-                            <span>Grand Total:</span>
-                            <span>{formatCurrency(sale.totalAmount)}</span>
-                        </div>
-                         <div className="flex justify-between">
-                            <span className="text-gray-600">Amount Paid ({sale.paymentMethod}):</span>
-                            <span>{formatCurrency(sale.totalPaid)}</span>
-                        </div>
-                        <div className="flex justify-between font-bold text-xl text-primary">
-                            <span>Amount Due:</span>
-                            <span>{formatCurrency(sale.sellDue)}</span>
-                        </div>
+            <section className="flex justify-end mt-8">
+                <div className="w-full max-w-xs space-y-3">
+                    <div className="flex justify-between">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span>{formatCurrency(sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0))}</span>
                     </div>
-                </section>
-                
-                <footer className="mt-12 text-center text-gray-500 text-xs border-t border-gray-100 pt-6">
-                    <p>Thank you for your business!</p>
-                    <p>Please contact us with any questions regarding this invoice.</p>
-                </footer>
-            </div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-600">Tax:</span>
+                        <span>+ {formatCurrency(sale.taxAmount || 0)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg text-gray-800 border-t border-gray-200 pt-3">
+                        <span>Grand Total:</span>
+                        <span>{formatCurrency(sale.totalAmount)}</span>
+                    </div>
+                        <div className="flex justify-between">
+                        <span className="text-gray-600">Amount Paid ({sale.paymentMethod}):</span>
+                        <span>{formatCurrency(sale.totalPaid)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-xl text-primary">
+                        <span>Amount Due:</span>
+                        <span>{formatCurrency(sale.sellDue)}</span>
+                    </div>
+                </div>
+            </section>
+            
+            <footer className="mt-12 text-center text-gray-500 text-xs border-t border-gray-100 pt-6">
+                <p>Thank you for your business!</p>
+                <p>Please contact us with any questions regarding this invoice.</p>
+            </footer>
         </div>
     );
-};
+});
+
+PrintableReceipt.displayName = 'PrintableReceipt';

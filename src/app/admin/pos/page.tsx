@@ -1,9 +1,10 @@
 
 'use client';
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useReactToPrint } from 'react-to-print';
 import {
   Search,
   UserPlus,
@@ -1340,12 +1341,22 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // Printing Logic
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  const handlePrintComplete = () => {
-    setSaleToPrint(null);
-  };
+  const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null),
+  });
   
+  // This effect ensures printing only happens after the component has rendered with the new sale data.
+  useEffect(() => {
+    if (saleToPrint && receiptRef.current) {
+        handlePrint();
+    }
+  }, [saleToPrint, handlePrint]);
+
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -2190,14 +2201,16 @@ export default function PosPage() {
               </div>
           </TooltipProvider>
       </div>
-      
-      {saleToPrint && (
-        <PrintableReceipt
-            sale={saleToPrint}
-            products={products}
-            onPrintComplete={handlePrintComplete}
-        />
-      )}
+
+       <div style={{ position: 'absolute', left: '-9999px' }}>
+          {saleToPrint && (
+              <PrintableReceipt
+                  ref={receiptRef}
+                  sale={saleToPrint}
+                  products={products}
+              />
+          )}
+      </div>
 
       {/* Dialogs that are part of the main page state */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
