@@ -13,19 +13,25 @@ type PrintableReceiptProps = {
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
+    // All hooks are called at the top level, in the same order on every render.
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
-
     const productMap = React.useMemo(() => {
+        // We can safely create the map even if `products` is empty.
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // This component now assumes it will only be rendered with valid sale and settings data,
-    // as the parent component (PosPage) handles the conditional rendering.
-    // This prevents hook-related errors and ensures print content is always valid.
+    // The parent component (`PosPage`) now handles the conditional rendering.
+    // This component will only be rendered when `sale` and `settings` are available.
+    if (!sale || !settings) {
+        // This return is primarily for safety and shouldn't be hit in the normal flow.
+        // It returns an empty div with the ref to prevent React from crashing, but the parent's logic avoids this.
+        return <div ref={ref}></div>
+    }
 
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
+            {/* Header */}
             <header className="flex justify-between items-start pb-8 border-b-2 border-gray-100">
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
@@ -41,6 +47,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 </div>
             </header>
 
+            {/* Billing Info */}
             <section className="flex justify-between my-8">
                 <div>
                     <h3 className="font-bold mb-2">Bill To:</h3>
@@ -53,6 +60,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 </div>
             </section>
 
+            {/* Items Table */}
             <section>
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50">
@@ -80,6 +88,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 </table>
             </section>
 
+            {/* Totals */}
             <section className="flex justify-end mt-8">
                 <div className="w-full max-w-xs space-y-3">
                     <div className="flex justify-between">
@@ -105,6 +114,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 </div>
             </section>
             
+            {/* Footer */}
             <footer className="mt-12 text-center text-gray-500 text-xs border-t border-gray-100 pt-6">
                 <p>Thank you for your business!</p>
                 <p>Please contact us with any questions regarding this invoice.</p>

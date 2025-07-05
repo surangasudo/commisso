@@ -1341,7 +1341,7 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // --- Start of Corrected Printing Logic ---
+  // --- Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
@@ -1356,12 +1356,14 @@ export default function PosPage() {
         variant: "destructive",
       });
       console.error("Printing error:", error);
+      setSaleToPrint(null);
     },
   });
 
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        // A small timeout allows React to render the new receipt content before printing
+        // The timeout ensures that React has finished rendering the receipt
+        // with the new `saleToPrint` data before the print dialog is opened.
         setTimeout(() => handlePrint(), 0);
     }
   }, [saleToPrint, handlePrint]);
