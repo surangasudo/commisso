@@ -1341,12 +1341,11 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // --- Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
+    contentRef: receiptRef,
     documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
     onAfterPrint: () => setSaleToPrint(null),
     onPrintError: (errorLocation, error) => {
@@ -1367,7 +1366,6 @@ export default function PosPage() {
         setTimeout(() => handlePrint(), 0);
     }
   }, [saleToPrint, handlePrint]);
-  // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
