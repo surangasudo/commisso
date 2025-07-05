@@ -21,12 +21,10 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // The parent component (`PosPage`) now handles the conditional rendering.
-    // This component will only be rendered when `sale` and `settings` are available.
-    if (!sale || !settings) {
-        // This return is primarily for safety and shouldn't be hit in the normal flow.
-        // It returns an empty div with the ref to prevent React from crashing, but the parent's logic avoids this.
-        return <div ref={ref}></div>
+    // This component will only be rendered when `sale` and `settings` are available,
+    // so we can safely assume they exist.
+    if (!settings) {
+        return <div ref={ref}>Loading settings...</div>;
     }
 
     return (

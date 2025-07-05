@@ -1344,26 +1344,27 @@ export default function PosPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
+  // Corrected Printing Logic - uses `contentRef`
   const handlePrint = useReactToPrint({
-    contentRef: receiptRef,
+    contentRef: () => receiptRef.current,
     documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-    onAfterPrint: () => setSaleToPrint(null),
+    onAfterPrint: () => setSaleToPrint(null), // Clean up after printing
     onPrintError: (errorLocation, error) => {
       toast({
         title: "Printing Failed",
         description: "Could not print the receipt. Please try again.",
         variant: "destructive",
       });
-      console.error("Printing error:", error);
+      console.error("Printing error:", errorLocation, error);
       setSaleToPrint(null);
     },
   });
 
+  // This effect triggers the print dialog *after* the state has been updated
+  // and the component has had a chance to re-render.
   useEffect(() => {
     if (saleToPrint && receiptRef.current) {
-        // The timeout ensures that React has finished rendering the receipt
-        // with the new `saleToPrint` data before the print dialog is opened.
-        setTimeout(() => handlePrint(), 0);
+        handlePrint();
     }
   }, [saleToPrint, handlePrint]);
 
@@ -2213,7 +2214,7 @@ export default function PosPage() {
       </div>
 
       <div className="hidden">
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
+          {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       {/* Dialogs that are part of the main page state */}
