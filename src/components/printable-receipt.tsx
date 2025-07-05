@@ -1,5 +1,5 @@
-
 'use client';
+
 import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
@@ -12,14 +12,19 @@ type PrintableReceiptProps = {
 };
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
+    // All hooks are called at the top level, in the same order on every render.
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
-    const productMap = React.useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
+    const productMap = React.useMemo(() => {
+        // We can safely create the map even if `products` is empty.
+        return new Map(products.map(p => [p.id, p]));
+    }, [products]);
 
-    // If there's no sale data, render an empty div with the ref so the parent can always find it.
-    // This is crucial to prevent the `findDOMNode` error.
-    if (!sale) {
-        return <div ref={ref}></div>;
+    // Conditional rendering is handled in the return statement, AFTER all hooks have been called.
+    if (!sale || !settings) {
+        // Return a loading state or null here if required data isn't ready.
+        // This is safe because it's still after all top-level hook calls.
+        return <div ref={ref}>Loading receipt...</div>;
     }
 
     return (
@@ -29,7 +34,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <Logo className="h-16 w-16 text-primary" />
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">{settings?.business?.businessName ?? 'Your Business'}</h1>
-                        <p className="text-sm text-gray-500">{settings?.business?.address ?? '123 Business St, City, 12345'}</p>
+                        <p className="text-sm text-gray-500">{settings?.business?.address ?? '123 Business St'}</p>
                         <p className="text-sm text-gray-500">{settings?.business?.email ?? 'contact@business.com'}</p>
                     </div>
                 </div>
@@ -92,7 +97,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                         <span>Grand Total:</span>
                         <span>{formatCurrency(sale.totalAmount)}</span>
                     </div>
-                        <div className="flex justify-between">
+                    <div className="flex justify-between">
                         <span className="text-gray-600">Amount Paid ({sale.paymentMethod}):</span>
                         <span>{formatCurrency(sale.totalPaid)}</span>
                     </div>
