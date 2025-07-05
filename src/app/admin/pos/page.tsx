@@ -1350,10 +1350,9 @@ export default function PosPage() {
       onAfterPrint: () => setSaleToPrint(null),
   });
   
-  // This effect triggers the print only when saleToPrint has data
   useEffect(() => {
-    if (saleToPrint) {
-      handlePrint();
+    if (saleToPrint && receiptRef.current) {
+        handlePrint();
     }
   }, [saleToPrint, handlePrint]);
 
@@ -2202,7 +2201,7 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       <div className="hidden">
+       <div className="absolute -left-full">
           <PrintableReceipt
               ref={receiptRef}
               sale={saleToPrint}

@@ -1,36 +1,26 @@
+
 'use client';
-
-
 import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
-
 type PrintableReceiptProps = {
     sale: Sale | null;
     products: DetailedProduct[];
 };
 
-
-// This is a "dumb" component that just renders the receipt.
-// It uses React.forwardRef to pass the ref down to the DOM element.
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
+    const productMap = React.useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
 
     // If there's no sale data, render an empty div with the ref so the parent can always find it.
+    // This is crucial to prevent the `findDOMNode` error.
     if (!sale) {
         return <div ref={ref}></div>;
     }
-
-    // Create a product map for efficient lookups (O(1) instead of O(n) inside a loop)
-    // This prevents performance issues with large product lists.
-    const productMap = React.useMemo(() => {
-        return new Map(products.map(p => [p.id, p]));
-    }, [products]);
-
 
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
@@ -38,7 +28,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
                     <div>
-                        {/* CORRECTED: Use optional chaining and nullish coalescing to prevent crashes and provide fallbacks. */}
                         <h1 className="text-2xl font-bold text-gray-900">{settings?.business?.businessName ?? 'Your Business'}</h1>
                         <p className="text-sm text-gray-500">{settings?.business?.address ?? '123 Business St, City, 12345'}</p>
                         <p className="text-sm text-gray-500">{settings?.business?.email ?? 'contact@business.com'}</p>
@@ -49,7 +38,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <p className="text-gray-500 mt-1"># {sale.invoiceNo}</p>
                 </div>
             </header>
-
 
             <section className="flex justify-between my-8">
                 <div>
@@ -62,7 +50,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <p><strong className="text-gray-600">Payment Status:</strong> {sale.paymentStatus}</p>
                 </div>
             </section>
-
 
             <section>
                 <table className="w-full text-sm">
@@ -78,10 +65,8 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     </thead>
                     <tbody>
                         {sale.items.map((item, index) => (
-                            // IMPROVED: Use a unique ID for the key if available.
                             <tr key={item.productId || index} className="border-b border-gray-100">
                                 <td className="p-3">{index + 1}</td>
-                                {/* OPTIMIZED: Use the productMap for efficient data retrieval. */}
                                 <td className="p-3">{productMap.get(item.productId)?.name ?? 'Unknown Product'}</td>
                                 <td className="p-3">{productMap.get(item.productId)?.sku ?? 'N/A'}</td>
                                 <td className="p-3 text-center">{item.quantity}</td>
@@ -92,7 +77,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     </tbody>
                 </table>
             </section>
-
 
             <section className="flex justify-end mt-8">
                 <div className="w-full max-w-xs space-y-3">
@@ -126,6 +110,5 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         </div>
     );
 });
-
 
 PrintableReceipt.displayName = 'PrintableReceipt';
