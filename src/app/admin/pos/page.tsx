@@ -37,6 +37,7 @@ import {
   Repeat,
   Wallet,
   Trash2,
+  CheckCircle,
 } from 'lucide-react';
 import {
   Card,
@@ -106,6 +107,50 @@ type CartItem = {
   quantity: number;
   sellingPrice: number;
 };
+
+const ReceiptFinalizedDialog = ({
+    open,
+    onOpenChange,
+    onPrint,
+    sale,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onPrint: () => void;
+    sale: Sale | null;
+}) => {
+    const handlePrintClick = () => {
+        onPrint();
+        onOpenChange(false);
+    };
+
+    const handleClose = () => {
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <div className="flex flex-col items-center text-center gap-4 py-4">
+                        <CheckCircle className="h-16 w-16 text-green-500" />
+                        <DialogTitle className="text-2xl">Sale Finalized!</DialogTitle>
+                        <DialogDescription>
+                            The sale with invoice number <strong>{sale?.invoiceNo}</strong> has been completed successfully.
+                        </DialogDescription>
+                    </div>
+                </DialogHeader>
+                <DialogFooter className="sm:justify-center gap-2">
+                    <Button variant="outline" onClick={handleClose}>Close</Button>
+                    <Button onClick={handlePrintClick}>
+                        <Printer className="mr-2 h-4 w-4" /> Print Receipt
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const [display, setDisplay] = useState('0');
@@ -1330,6 +1375,8 @@ export default function PosPage() {
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
+  
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
@@ -1341,12 +1388,11 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // --- Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-    contentRef: receiptRef, // Use contentRef instead of content
+    content: () => receiptRef.current,
     documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
     onAfterPrint: () => setSaleToPrint(null),
     onPrintError: (errorLocation, error) => {
@@ -1359,14 +1405,6 @@ export default function PosPage() {
       setSaleToPrint(null);
     },
   });
-
-  useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        handlePrint();
-    }
-  }, [saleToPrint, handlePrint]); // Correctly depend on saleToPrint
-  // --- End of Corrected Printing Logic ---
-  
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1623,10 +1661,6 @@ export default function PosPage() {
 
       try {
           const savedSaleId = await addSale(sale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
-          toast({
-              title: 'Sale Finalized',
-              description: `Payment of ${formatCurrency(sale.totalPaid)} recorded.`,
-          });
           
           const completeSaleForReceipt: Sale = {
             id: savedSaleId,
@@ -1647,21 +1681,22 @@ export default function PosPage() {
       }
   };
 
-  const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+  const finalizeAndShowModal = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setSaleToPrint(savedSale);
+        setSaleToPrint(savedSale); // Set the sale data for printing
+        setIsReceiptModalOpen(true); // Open the success modal
     }
   };
   
   const handleFinalizeCashPayment = async (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
-    await finalizeAndPrint('Cash', paymentStatus, totalPaid);
+    await finalizeAndShowModal('Cash', paymentStatus, totalPaid);
   };
   
   const handleFinalizeCardPayment = async () => {
-    await finalizeAndPrint('Card', 'Paid', totalPayable);
+    await finalizeAndShowModal('Card', 'Paid', totalPayable);
   };
 
   const handleFinalizeMultiPay = async () => {
@@ -1674,7 +1709,7 @@ export default function PosPage() {
           return;
       }
       
-      await finalizeAndPrint('Multiple', 'Paid', totalPaid);
+      await finalizeAndShowModal('Multiple', 'Paid', totalPaid);
       setCashAmount('');
       setCardAmount('');
       setIsMultiPayOpen(false);
@@ -1711,6 +1746,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
+            setIsReceiptModalOpen(true);
         }
       }
     };
@@ -1721,7 +1757,7 @@ export default function PosPage() {
         return;
       }
       const newSale = createSaleObject('Credit', 'Due', 0);
-      await finalizeAndPrint('Credit', 'Due', 0);
+      await finalizeAndShowModal('Credit', 'Due', 0);
     };
   
     const handleToggleFullscreen = () => {
@@ -1816,10 +1852,16 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setTimeout(() => handlePrint(), 0); // Use timeout to ensure state update and render
     };
     
   return (
     <div className="pos-page-container">
+      {saleToPrint && (
+          <div style={{ display: "none" }}>
+              <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+          </div>
+      )}
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -2212,12 +2254,7 @@ export default function PosPage() {
               </div>
           </TooltipProvider>
       </div>
-
-      <div className="hidden">
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
-      </div>
-
-
+      
       {/* Dialogs that are part of the main page state */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
       <CloseRegisterDialog
@@ -2318,6 +2355,12 @@ export default function PosPage() {
           </DialogContent>
       </Dialog>
       <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
+      <ReceiptFinalizedDialog
+        open={isReceiptModalOpen}
+        onOpenChange={setIsReceiptModalOpen}
+        onPrint={handlePrint}
+        sale={saleToPrint}
+      />
     </div>
   );
 }
