@@ -1392,18 +1392,18 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-    onAfterPrint: () => setSaleToPrint(null),
-    onPrintError: (errorLocation, error) => {
-      toast({
-        title: "Printing Failed",
-        description: "Could not print the receipt. Please try again.",
-        variant: "destructive",
-      });
-      console.error("Printing error:", errorLocation, error);
-      setSaleToPrint(null);
-    },
+      contentRef: () => receiptRef.current,
+      documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
+      onAfterPrint: () => setSaleToPrint(null),
+      onPrintError: (errorLocation, error) => {
+          toast({
+              title: "Printing Failed",
+              description: "Could not print the receipt. Please try again.",
+              variant: "destructive",
+          });
+          console.error("Printing error:", errorLocation, error);
+          setSaleToPrint(null);
+      },
   });
 
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1685,8 +1685,8 @@ export default function PosPage() {
     const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setSaleToPrint(savedSale); // Set the sale data for printing
-        setIsReceiptModalOpen(true); // Open the success modal
+        setSaleToPrint(savedSale); 
+        setIsReceiptModalOpen(true);
     }
   };
   
@@ -1852,16 +1852,20 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setTimeout(() => handlePrint(), 0); // Use timeout to ensure state update and render
+        setIsRecentTransactionsOpen(false);
+        setTimeout(() => handlePrint(), 100);
     };
     
   return (
     <div className="pos-page-container">
+      {/* --- Start of Corrected Printing Logic --- */}
+      {/* 1. The component is only rendered when there is a sale to print */}
       {saleToPrint && (
           <div style={{ display: "none" }}>
               <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
           </div>
       )}
+      {/* --- End of Corrected Printing Logic --- */}
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
