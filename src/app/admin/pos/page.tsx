@@ -1388,11 +1388,12 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // --- Start of Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-      contentRef: () => receiptRef.current,
+      content: () => receiptRef.current,
       documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
       onAfterPrint: () => setSaleToPrint(null),
       onPrintError: (errorLocation, error) => {
@@ -1853,19 +1854,18 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
+        // A short timeout can help ensure the state update renders before printing.
         setTimeout(() => handlePrint(), 100);
     };
     
   return (
     <div className="pos-page-container">
-      {/* --- Start of Corrected Printing Logic --- */}
-      {/* 1. The component is only rendered when there is a sale to print */}
-      {saleToPrint && (
+      {/* The component to be printed. It's only rendered when there's data. */}
+      {saleToPrint && settings && (
           <div style={{ display: "none" }}>
               <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
           </div>
       )}
-      {/* --- End of Corrected Printing Logic --- */}
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
