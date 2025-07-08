@@ -19,7 +19,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
     
-    // The component now expects `sale` and `settings` to be always available when rendered.
+    // This component now expects `sale` and `settings` to be always available when rendered.
     // The check is removed to prevent returning null content.
 
     return (

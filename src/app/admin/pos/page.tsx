@@ -122,16 +122,12 @@ const ReceiptFinalizedDialog = ({
     const receiptRef = useRef<HTMLDivElement>(null);
     
     const handlePrint = useReactToPrint({
-        content: () => receiptRef.current,
+        contentRef: () => receiptRef.current,
         documentTitle: sale?.invoiceNo ?? "Receipt",
         onAfterPrint: () => onOpenChange(false),
     });
 
     if (!sale) return null;
-
-    const handlePrintClick = () => {
-        handlePrint();
-    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -147,7 +143,7 @@ const ReceiptFinalizedDialog = ({
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                    <Button onClick={handlePrintClick}>
+                    <Button onClick={handlePrint}>
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
