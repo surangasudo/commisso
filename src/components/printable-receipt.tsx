@@ -8,7 +8,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale;
+    sale: Sale | null; // Allow sale to be null
     products: DetailedProduct[];
 };
 
@@ -19,6 +19,12 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
+    // If there's no sale data, render an empty div with the ref.
+    // This ensures the ref is always attached to a DOM element.
+    if (!sale || !settings) {
+        return <div ref={ref}></div>;
+    }
+
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             {/* Header */}
@@ -26,9 +32,9 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 <div className="flex items-center gap-4">
                     <Logo className="h-16 w-16 text-primary" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{settings?.business?.businessName ?? 'Your Business'}</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{settings.business.businessName}</h1>
                         <p className="text-sm text-gray-500">123 Business St, City, 12345</p>
-                        <p className="text-sm text-gray-500">{settings?.email?.fromAddress ?? 'contact@business.com'}</p>
+                        <p className="text-sm text-gray-500">{settings.email.fromAddress}</p>
                     </div>
                 </div>
                 <div className="text-right">

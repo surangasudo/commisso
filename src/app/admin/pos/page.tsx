@@ -119,7 +119,9 @@ const ReceiptFinalizedDialog = ({
     onPrint: () => void;
     sale: Sale | null;
 }) => {
-    const handleClose = () => {
+    
+    const handlePrintClick = () => {
+        onPrint();
         onOpenChange(false);
     };
 
@@ -136,8 +138,8 @@ const ReceiptFinalizedDialog = ({
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
-                    <Button variant="outline" onClick={handleClose}>Close</Button>
-                    <Button onClick={onPrint}>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+                    <Button onClick={handlePrintClick}>
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
@@ -1387,7 +1389,7 @@ export default function PosPage() {
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      contentRef: () => receiptRef.current,
+      content: () => receiptRef.current,
       documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
       onAfterPrint: () => setSaleToPrint(null),
       onPrintError: (errorLocation, error) => {
@@ -1398,7 +1400,28 @@ export default function PosPage() {
           });
           setSaleToPrint(null);
       },
+      onBeforePrint: () => {
+          return new Promise((resolve) => {
+              if (saleToPrint && receiptRef.current) {
+                  resolve();
+              } else {
+                  toast({
+                      title: "Print Error",
+                      description: "Receipt data is not available.",
+                      variant: "destructive"
+                  });
+              }
+          });
+      },
   });
+
+  useEffect(() => {
+    if (saleToPrint && receiptRef.current) {
+        // The timeout ensures that React has finished rendering the receipt
+        // with the new `saleToPrint` data before the print dialog is opened.
+        setTimeout(() => handlePrint(), 0);
+    }
+  }, [saleToPrint, handlePrint]);
   // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1846,20 +1869,17 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        // A short timeout can help ensure the state update renders before printing.
-        setTimeout(() => handlePrint(), 100);
+        setSaleToPrint(sale);
     };
     
   return (
     <div className="pos-page-container">
-      {/* The component to be printed. It's only rendered when there's data. */}
-      {saleToPrint && settings && (
-          <div style={{ display: "none" }}>
-              <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
-          </div>
-      )}
+      {/* The component to be printed. It's always rendered but hidden. */}
+      <div style={{ display: "none" }}>
+          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+      </div>
+
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
