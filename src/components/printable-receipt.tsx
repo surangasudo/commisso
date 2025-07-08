@@ -4,17 +4,17 @@
 import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
-import { useSettings } from '@/hooks/use-settings';
+import { type AllSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
     sale: Sale;
     products: DetailedProduct[];
+    settings: AllSettings;
 };
 
-export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products }, ref) => {
+export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products, settings }, ref) => {
     const { formatCurrency } = useCurrency();
-    const { settings } = useSettings();
     const productMap = React.useMemo(() => {
         return new Map(products.map(p => [p.id, p]));
     }, [products]);

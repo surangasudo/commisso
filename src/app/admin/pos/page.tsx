@@ -112,13 +112,29 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    onPrint,
+    products,
+    settings,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    sale: Sale;
-    onPrint: () => void;
+    sale: Sale | null;
+    products: DetailedProduct[];
+    settings: AllSettings | null;
 }) => {
+    const receiptRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = useReactToPrint({
+        contentRef: () => receiptRef.current,
+    });
+
+    const handlePrintClick = () => {
+        handlePrint();
+    };
+
+    if (!sale || !settings) {
+        return null;
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -133,10 +149,14 @@ const ReceiptFinalizedDialog = ({
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                    <Button onClick={onPrint}>
+                    <Button onClick={handlePrintClick}>
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
+                {/* The component to print is now rendered inside the dialog, but hidden */}
+                <div style={{ display: 'none' }}>
+                    <PrintableReceipt ref={receiptRef} sale={sale} products={products} settings={settings} />
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1380,14 +1400,7 @@ export default function PosPage() {
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
   
-  const handlePrint = useReactToPrint({
-      contentRef: () => receiptRef.current,
-      documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-      onAfterPrint: () => setSaleToPrint(null),
-  });
-
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -2333,18 +2346,14 @@ export default function PosPage() {
           </DialogContent>
       </Dialog>
       <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
-      {saleToPrint && (
-        <>
-            <ReceiptFinalizedDialog
-                open={isReceiptDialogOpen}
-                onOpenChange={setIsReceiptDialogOpen}
-                sale={saleToPrint}
-                onPrint={handlePrint}
-            />
-            <div style={{ display: 'none' }}>
-                <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
-            </div>
-        </>
+      {saleToPrint && settings && (
+        <ReceiptFinalizedDialog
+            open={isReceiptDialogOpen}
+            onOpenChange={setIsReceiptDialogOpen}
+            sale={saleToPrint}
+            products={products}
+            settings={settings}
+        />
       )}
     </div>
   );
