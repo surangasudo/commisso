@@ -8,7 +8,7 @@ import { useSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale | null; // Allow sale to be null
+    sale: Sale;
     products: DetailedProduct[];
 };
 
@@ -19,9 +19,9 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // If there's no sale data, render an empty div with the ref.
-    // This ensures the ref is always attached to a DOM element.
-    if (!sale || !settings) {
+    if (!settings) {
+        // This can happen on initial load before settings are available.
+        // Render an empty div to attach the ref to, but it will be hidden.
         return <div ref={ref}></div>;
     }
 

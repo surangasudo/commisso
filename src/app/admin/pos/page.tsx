@@ -1383,16 +1383,16 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // --- Start of Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: () => receiptRef.current,
       documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
       onAfterPrint: () => setSaleToPrint(null),
       onPrintError: (errorLocation, error) => {
+          console.error('Print error:', errorLocation, error);
           toast({
               title: "Printing Failed",
               description: "Could not print the receipt. Please try again.",
@@ -1400,29 +1400,7 @@ export default function PosPage() {
           });
           setSaleToPrint(null);
       },
-      onBeforePrint: () => {
-          return new Promise((resolve) => {
-              if (saleToPrint && receiptRef.current) {
-                  resolve();
-              } else {
-                  toast({
-                      title: "Print Error",
-                      description: "Receipt data is not available.",
-                      variant: "destructive"
-                  });
-              }
-          });
-      },
   });
-
-  useEffect(() => {
-    if (saleToPrint && receiptRef.current) {
-        // The timeout ensures that React has finished rendering the receipt
-        // with the new `saleToPrint` data before the print dialog is opened.
-        setTimeout(() => handlePrint(), 0);
-    }
-  }, [saleToPrint, handlePrint]);
-  // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1875,9 +1853,8 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-      {/* The component to be printed. It's always rendered but hidden. */}
-      <div style={{ display: "none" }}>
-          <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />
+      <div style={{ display: 'none' }}>
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
       </div>
 
       <div className="relative">
