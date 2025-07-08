@@ -1393,9 +1393,9 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef, // CORRECT: Pass the ref directly.
       documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-      onAfterPrint: () => setSaleToPrint(null),
+      onAfterPrint: () => setSaleToPrint(null), // Clean up after printing
       onPrintError: (errorLocation, error) => {
           toast({
               title: "Printing Failed",
@@ -1406,6 +1406,7 @@ export default function PosPage() {
           setSaleToPrint(null);
       },
   });
+  // --- End of Corrected Printing Logic ---
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
