@@ -18,12 +18,9 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     const productMap = React.useMemo(() => {
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
-
-    if (!settings) {
-        // This can happen on initial load before settings are available.
-        // Render an empty div to attach the ref to, but it will be hidden.
-        return <div ref={ref}></div>;
-    }
+    
+    // The component now expects `sale` and `settings` to be always available when rendered.
+    // The check is removed to prevent returning null content.
 
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">

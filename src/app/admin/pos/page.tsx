@@ -111,18 +111,26 @@ type CartItem = {
 const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
-    onPrint,
     sale,
+    products,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onPrint: () => void;
     sale: Sale | null;
+    products: DetailedProduct[];
 }) => {
+    const receiptRef = useRef<HTMLDivElement>(null);
     
+    const handlePrint = useReactToPrint({
+        content: () => receiptRef.current,
+        documentTitle: sale?.invoiceNo ?? "Receipt",
+        onAfterPrint: () => onOpenChange(false),
+    });
+
+    if (!sale) return null;
+
     const handlePrintClick = () => {
-        onPrint();
-        onOpenChange(false);
+        handlePrint();
     };
 
     return (
@@ -143,6 +151,9 @@ const ReceiptFinalizedDialog = ({
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
+                <div style={{ display: 'none' }}>
+                    <PrintableReceipt ref={receiptRef} sale={sale} products={products} />
+                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1383,24 +1394,7 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-
-  const handlePrint = useReactToPrint({
-      contentRef: () => receiptRef.current,
-      documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-      onAfterPrint: () => setSaleToPrint(null),
-      onPrintError: (errorLocation, error) => {
-          console.error('Print error:', errorLocation, error);
-          toast({
-              title: "Printing Failed",
-              description: "Could not print the receipt. Please try again.",
-              variant: "destructive",
-          });
-          setSaleToPrint(null);
-      },
-  });
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1682,7 +1676,6 @@ export default function PosPage() {
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
         setSaleToPrint(savedSale);
-        setIsReceiptModalOpen(true);
     }
   };
   
@@ -1742,7 +1735,6 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            setIsReceiptModalOpen(true);
         }
       }
     };
@@ -1853,10 +1845,6 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-      <div style={{ display: 'none' }}>
-        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} />}
-      </div>
-
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -2351,10 +2339,14 @@ export default function PosPage() {
       </Dialog>
       <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
       <ReceiptFinalizedDialog
-        open={isReceiptModalOpen}
-        onOpenChange={setIsReceiptModalOpen}
-        onPrint={handlePrint}
+        open={!!saleToPrint}
+        onOpenChange={(isOpen) => {
+            if (!isOpen) {
+                setSaleToPrint(null);
+            }
+        }}
         sale={saleToPrint}
+        products={products}
       />
     </div>
   );
