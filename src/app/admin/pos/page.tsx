@@ -119,11 +119,6 @@ const ReceiptFinalizedDialog = ({
     onPrint: () => void;
     sale: Sale | null;
 }) => {
-    const handlePrintClick = () => {
-        onPrint();
-        onOpenChange(false);
-    };
-
     const handleClose = () => {
         onOpenChange(false);
     };
@@ -142,7 +137,7 @@ const ReceiptFinalizedDialog = ({
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                     <Button variant="outline" onClick={handleClose}>Close</Button>
-                    <Button onClick={handlePrintClick}>
+                    <Button onClick={onPrint}>
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
@@ -1376,8 +1371,6 @@ export default function PosPage() {
   const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
   
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-
   // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
@@ -1391,18 +1384,18 @@ export default function PosPage() {
   // --- Start of Corrected Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef, // CORRECT: Pass the ref directly.
+      contentRef: () => receiptRef.current,
       documentTitle: saleToPrint?.invoiceNo ?? "Receipt",
-      onAfterPrint: () => setSaleToPrint(null), // Clean up after printing
+      onAfterPrint: () => setSaleToPrint(null),
       onPrintError: (errorLocation, error) => {
           toast({
               title: "Printing Failed",
               description: "Could not print the receipt. Please try again.",
               variant: "destructive",
           });
-          console.error("Printing error:", errorLocation, error);
           setSaleToPrint(null);
       },
   });
@@ -1687,7 +1680,7 @@ export default function PosPage() {
     const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setSaleToPrint(savedSale); 
+        setSaleToPrint(savedSale);
         setIsReceiptModalOpen(true);
     }
   };
