@@ -122,13 +122,11 @@ const ReceiptFinalizedDialog = ({
     settings: AllSettings | null;
 }) => {
     const receiptRef = useRef<HTMLDivElement>(null);
-
-    const handlePrint = useReactToPrint({
-        contentRef: () => receiptRef.current,
-    });
-
+    
+    // Updated to use window.print()
     const handlePrintClick = () => {
-        handlePrint();
+        // This will trigger the browser's native print dialog
+        window.print();
     };
 
     if (!sale || !settings) {
@@ -153,8 +151,8 @@ const ReceiptFinalizedDialog = ({
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
-                {/* The component to print is now rendered inside the dialog, but hidden */}
-                <div style={{ display: 'none' }}>
+                {/* The component to print is now rendered inside the dialog, but hidden from screen view */}
+                <div className="print-only" style={{ display: 'none' }}>
                     <PrintableReceipt ref={receiptRef} sale={sale} products={products} settings={settings} />
                 </div>
             </DialogContent>
@@ -1853,6 +1851,25 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
+      <style jsx global>{`
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .print-only, .print-only * {
+                visibility: visible;
+            }
+            .print-only {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .pos-page-container {
+                display: none;
+            }
+        }
+      `}</style>
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
