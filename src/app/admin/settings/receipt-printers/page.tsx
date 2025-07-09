@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Printer, Plus, Pencil, Trash2, Info } from "lucide-react";
 import React, { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 type ConnectionType = 'Network' | 'Bluetooth' | 'USB' | 'Printer';
 
@@ -26,6 +32,7 @@ type ReceiptPrinter = {
 const initialPrinters: ReceiptPrinter[] = [
   { id: 'p-1', name: 'Cashier Printer (Epson TM-T88V)', connectionType: 'Network', capabilityProfile: 'Default', charPerLine: 42, ipAddress: '192.168.1.100', port: 9100 },
   { id: 'p-2', name: 'Kitchen Printer (Generic)', connectionType: 'Network', capabilityProfile: 'Simple', charPerLine: 32, ipAddress: '192.168.1.101', port: 9100 },
+  { id: 'p-3', name: 'Browser-based printing', connectionType: 'Printer', capabilityProfile: 'Default', charPerLine: 42 },
 ];
 
 const initialFormData: Omit<ReceiptPrinter, 'id'> = {
@@ -92,6 +99,7 @@ export default function ReceiptPrintersPage() {
   };
   
   return (
+      <TooltipProvider>
       <div className="flex flex-col gap-6">
         <h1 className="font-headline text-3xl font-bold flex items-center gap-2">
           <Printer className="w-8 h-8" />
@@ -224,5 +232,6 @@ export default function ReceiptPrintersPage() {
                 </DialogContent>
             </Dialog>
       </div>
+      </TooltipProvider>
   );
 }
