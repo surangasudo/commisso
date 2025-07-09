@@ -112,26 +112,17 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    products,
-    settings,
+    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    sale: Sale | null;
-    products: DetailedProduct[];
-    settings: AllSettings | null;
+    sale: Sale;
+    onPrint: () => void;
 }) => {
-    const receiptRef = useRef<HTMLDivElement>(null);
     
-    // Updated to use window.print()
     const handlePrintClick = () => {
-        // This will trigger the browser's native print dialog
-        window.print();
+        onPrint();
     };
-
-    if (!sale || !settings) {
-        return null;
-    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,10 +142,6 @@ const ReceiptFinalizedDialog = ({
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
-                {/* The component to print is now rendered inside the dialog, but hidden from screen view */}
-                <div className="print-only" style={{ display: 'none' }}>
-                    <PrintableReceipt ref={receiptRef} sale={sale} products={products} settings={settings} />
-                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1396,8 +1383,14 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // State for printing
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+
+  const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null), // Clear the sale to print after printing
+  });
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1851,25 +1844,16 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-      <style jsx global>{`
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            .print-only, .print-only * {
-                visibility: visible;
-            }
-            .print-only {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .pos-page-container {
-                display: none;
-            }
-        }
-      `}</style>
+      <div style={{ display: 'none' }}>
+        {saleToPrint && settings && (
+          <PrintableReceipt
+              ref={receiptRef}
+              sale={saleToPrint}
+              products={products}
+              settings={settings}
+          />
+        )}
+      </div>
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -2368,10 +2352,10 @@ export default function PosPage() {
             open={isReceiptDialogOpen}
             onOpenChange={setIsReceiptDialogOpen}
             sale={saleToPrint}
-            products={products}
-            settings={settings}
+            onPrint={handlePrint}
         />
       )}
     </div>
   );
 }
+
