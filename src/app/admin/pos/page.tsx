@@ -1388,8 +1388,8 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
-      onAfterPrint: () => setSaleToPrint(null), // Clear the sale to print after printing
+      contentRef: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null),
   });
   
   const fetchAndCalculateStock = useCallback(async () => {
