@@ -19,6 +19,11 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
+    // This check is important. If there's no sale data, render null.
+    if (!sale) {
+        return null;
+    }
+
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             {/* Header */}

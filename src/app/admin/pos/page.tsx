@@ -119,9 +119,9 @@ const ReceiptFinalizedDialog = ({
     sale: Sale | null;
     onPrint: () => void;
 }) => {
-    
     const handlePrintClick = () => {
         onPrint();
+        onOpenChange(false);
     };
 
     return (
@@ -1386,11 +1386,13 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
-  // Printing refs and hooks
+  // ** START: Correct Printing Setup **
   const receiptRef = useRef(null);
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
+      onAfterPrint: () => setSaleToPrint(null), // Clear sale data after printing
   });
+  // ** END: Correct Printing Setup **
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1837,8 +1839,8 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setIsRecentTransactionsOpen(false);
         setSaleToPrint(sale);
+        setIsRecentTransactionsOpen(false);
         // A small timeout to ensure the state updates and the receipt component renders
         setTimeout(() => {
             handlePrint();
@@ -2240,17 +2242,16 @@ export default function PosPage() {
           </TooltipProvider>
       </div>
 
-       {/* Hidden component for printing */}
-      {saleToPrint && (
-        <div style={{ display: 'none' }}>
+      <div style={{ display: 'none' }}>
+        {saleToPrint && (
             <PrintableReceipt
                 ref={receiptRef}
                 sale={saleToPrint}
                 products={products}
                 settings={settings}
             />
-        </div>
-      )}
+        )}
+      </div>
       
       {/* Dialogs that are part of the main page state */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
@@ -2352,7 +2353,7 @@ export default function PosPage() {
           </DialogContent>
       </Dialog>
       <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
-      {isReceiptDialogOpen && saleToPrint && settings && (
+      {isReceiptDialogOpen && (
         <ReceiptFinalizedDialog
             open={isReceiptDialogOpen}
             onOpenChange={setIsReceiptDialogOpen}
