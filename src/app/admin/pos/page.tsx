@@ -112,22 +112,16 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    products,
-    settings
+    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
-    products: DetailedProduct[];
-    settings: AllSettings;
+    onPrint: () => void;
 }) => {
-    const receiptRef = useRef(null);
-    const handlePrint = useReactToPrint({
-        contentRef: () => receiptRef.current,
-    });
 
     const handlePrintClick = () => {
-        handlePrint();
+        onPrint();
     };
 
     return (
@@ -148,16 +142,6 @@ const ReceiptFinalizedDialog = ({
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
-                <div style={{ display: 'none' }}>
-                    {sale && (
-                        <PrintableReceipt
-                            ref={receiptRef}
-                            sale={sale}
-                            products={products}
-                            settings={settings}
-                        />
-                    )}
-                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1402,6 +1386,11 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
+  const receiptRef = useRef(null);
+  const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+  });
+  
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -1849,7 +1838,10 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        setIsReceiptDialogOpen(true);
+        // A short delay to ensure state is set before printing
+        setTimeout(() => {
+            handlePrint();
+        }, 100);
     };
     
   return (
@@ -2249,13 +2241,20 @@ export default function PosPage() {
 
       <ReceiptFinalizedDialog
         open={isReceiptDialogOpen}
-        onOpenChange={setIsReceiptDialogOpen}
+        onOpenChange={(isOpen) => {
+            if (!isOpen) setSaleToPrint(null);
+            setIsReceiptDialogOpen(isOpen);
+        }}
         sale={saleToPrint}
-        products={products}
-        settings={settings}
+        onPrint={handlePrint}
       />
       
-      {/* Dialogs that are part of the main page state */}
+      {/* Hidden printable component */}
+      <div style={{ display: "none" }}>
+        {saleToPrint && <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} settings={settings} />}
+      </div>
+      
+      {/* Other Dialogs */}
       <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
       <CloseRegisterDialog
           open={isCloseRegisterOpen}

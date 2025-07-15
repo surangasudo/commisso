@@ -19,7 +19,12 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // The component is now only rendered when `sale` is valid, so no null check needed.
+    if (!sale) {
+        // Return a non-empty div even if there's no sale to print,
+        // which helps the react-to-print library find a non-null ref.
+        return <div ref={ref} style={{ display: 'none' }}></div>;
+    }
+
     return (
         <div ref={ref} className="font-sans bg-white text-gray-800 p-8">
             {/* Header */}
