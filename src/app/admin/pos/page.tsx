@@ -112,21 +112,32 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    onPrint
+    products,
+    settings
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
-    onPrint: () => void;
+    products: DetailedProduct[];
+    settings: AllSettings;
 }) => {
+    const receiptRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = useReactToPrint({
+      content: () => receiptRef.current,
+      onAfterPrint: () => onOpenChange(false),
+    });
     
     const handlePrintClick = () => {
-        onPrint();
+        handlePrint();
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
+                <div style={{ display: 'none' }}>
+                    <PrintableReceipt ref={receiptRef} sale={sale} products={products} settings={settings} />
+                </div>
                 <DialogHeader>
                     <div className="flex flex-col items-center text-center gap-4 py-4">
                         <CheckCircle className="h-16 w-16 text-green-500" />
@@ -1384,12 +1395,6 @@ export default function PosPage() {
   
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
-
-  const receiptRef = useRef<HTMLDivElement>(null);
-  const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    onAfterPrint: () => setSaleToPrint(null),
-  });
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1840,11 +1845,6 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-        {/* Hidden component for printing */}
-        <div style={{ display: 'none' }}>
-            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} settings={settings} />
-        </div>
-
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -2244,7 +2244,8 @@ export default function PosPage() {
             if (!isOpen) setSaleToPrint(null);
         }}
         sale={saleToPrint}
-        onPrint={handlePrint}
+        products={products}
+        settings={settings}
       />
       
       {/* Other Dialogs */}
@@ -2268,7 +2269,7 @@ export default function PosPage() {
       />
       <RegisterDetailsDialog
           open={isRegisterDetailsOpen}
-          onOpenChange={setIsRegisterDetailsOpen}
+          onOpenChange={setIsRegisterDetailsDialog}
           cart={cart}
           totalPayable={totalPayable}
           discount={discount}
