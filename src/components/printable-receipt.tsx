@@ -20,6 +20,8 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }, [products]);
 
     if (!sale) {
+        // Render an empty div with the ref if there's no sale data.
+        // This is crucial for react-to-print to have a target initially.
         return <div ref={ref} />;
     }
 

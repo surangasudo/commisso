@@ -1385,7 +1385,6 @@ export default function PosPage() {
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
-  // Correct printing setup
   const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
