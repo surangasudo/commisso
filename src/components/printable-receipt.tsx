@@ -8,7 +8,7 @@ import { type AllSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale;
+    sale: Sale | null; // Allow null
     products: DetailedProduct[];
     settings: AllSettings;
 };
@@ -20,9 +20,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }, [products]);
 
     if (!sale) {
-        // Return a non-empty div even if there's no sale to print,
-        // which helps the react-to-print library find a non-null ref.
-        return <div ref={ref} style={{ display: 'none' }}></div>;
+        return <div ref={ref} />;
     }
 
     return (
