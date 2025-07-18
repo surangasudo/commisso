@@ -19,6 +19,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
+    // If sale is null, render an empty div with the ref to avoid errors
     if (!sale) {
         return <div ref={ref} />;
     }
