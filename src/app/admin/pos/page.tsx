@@ -125,11 +125,11 @@ const ReceiptFinalizedDialog = ({
 
     const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
-      onAfterPrint: () => onOpenChange(false),
     });
     
     const handlePrintClick = () => {
         handlePrint();
+        onOpenChange(false);
     };
 
     return (
@@ -2269,7 +2269,7 @@ export default function PosPage() {
       />
       <RegisterDetailsDialog
           open={isRegisterDetailsOpen}
-          onOpenChange={setIsRegisterDetailsDialog}
+          onOpenChange={setIsRegisterDetailsOpen}
           cart={cart}
           totalPayable={totalPayable}
           discount={discount}
