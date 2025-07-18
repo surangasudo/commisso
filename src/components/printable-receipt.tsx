@@ -8,7 +8,7 @@ import { type AllSettings } from '@/hooks/use-settings';
 import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
-    sale: Sale | null; // Allow null
+    sale: Sale | null; 
     products: DetailedProduct[];
     settings: AllSettings;
 };
@@ -19,7 +19,6 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // If sale is null, render an empty div with the ref to avoid errors
     if (!sale) {
         return <div ref={ref} />;
     }

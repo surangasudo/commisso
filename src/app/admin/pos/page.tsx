@@ -112,24 +112,16 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    products,
-    settings
+    onPrint
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
-    products: DetailedProduct[];
-    settings: AllSettings;
+    onPrint: () => void;
 }) => {
-    const receiptRef = useRef<HTMLDivElement>(null);
-
-    const handlePrint = useReactToPrint({
-        content: () => receiptRef.current,
-        onAfterPrint: () => console.log('Print job finished'),
-    });
     
     const handlePrintClick = () => {
-        handlePrint();
+        onPrint();
     };
 
     return (
@@ -150,9 +142,6 @@ const ReceiptFinalizedDialog = ({
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
-                 <div style={{ display: "none" }}>
-                    <PrintableReceipt ref={receiptRef} sale={sale} products={products} settings={settings} />
-                </div>
             </DialogContent>
         </Dialog>
     );
@@ -1395,6 +1384,13 @@ export default function PosPage() {
   
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+
+  // Correct printing setup
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    content: () => receiptRef.current,
+    onAfterPrint: () => setSaleToPrint(null),
+  });
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1845,6 +1841,11 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
+        {/* Hidden component for printing */}
+        <div style={{ display: 'none' }}>
+            <PrintableReceipt ref={receiptRef} sale={saleToPrint} products={products} settings={settings} />
+        </div>
+
       <div className="relative">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
@@ -2244,8 +2245,7 @@ export default function PosPage() {
             if (!isOpen) setSaleToPrint(null);
         }}
         sale={saleToPrint}
-        products={products}
-        settings={settings}
+        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
