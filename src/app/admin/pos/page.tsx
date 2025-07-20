@@ -1855,7 +1855,7 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-      <div style={{ display: 'none' }}>
+       <div style={{ display: 'none' }}>
         {saleToPrint && (
             <PrintableReceipt
                 ref={receiptRef}

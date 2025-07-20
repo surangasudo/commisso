@@ -5,7 +5,6 @@ import React from 'react';
 import { type Sale, type DetailedProduct } from '@/lib/data';
 import { useCurrency } from '@/hooks/use-currency';
 import { type AllSettings } from '@/hooks/use-settings';
-import { Logo } from '@/components/icons';
 
 type PrintableReceiptProps = {
     sale: Sale | null; 
