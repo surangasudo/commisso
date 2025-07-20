@@ -1846,7 +1846,10 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setIsReceiptDialogOpen(true);
+        // The timeout ensures state is set before print is called
+        setTimeout(() => {
+            handleReactPrint();
+        }, 0);
         setIsRecentTransactionsOpen(false);
     };
     
