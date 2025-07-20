@@ -122,7 +122,6 @@ const ReceiptFinalizedDialog = ({
     
     const handlePrintClick = () => {
         onPrint();
-        onOpenChange(false);
     };
 
     return (
@@ -1384,19 +1383,22 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // State for printing
-  const [finalizedSale, setFinalizedSale] = useState<Sale | null>(null);
+  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const handleReactPrint = useReactToPrint({
       content: () => receiptRef.current,
-      documentTitle: `Receipt-${finalizedSale?.invoiceNo || ''}`,
-      onAfterPrint: () => setFinalizedSale(null)
+      documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
+      onAfterPrint: () => setSaleToPrint(null)
   });
 
   const handlePrint = () => {
-    setTimeout(() => handleReactPrint(), 0);
+    // A timeout is used to ensure the state has updated and the component has re-rendered
+    // before the print dialog is triggered.
+    setTimeout(() => {
+        handleReactPrint();
+    }, 0);
   };
-
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1677,7 +1679,7 @@ export default function PosPage() {
     const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     const savedSale = await finalizeSale(newSale);
     if(savedSale) {
-        setFinalizedSale(savedSale);
+        setSaleToPrint(savedSale);
         setIsReceiptDialogOpen(true);
     }
   };
@@ -1737,7 +1739,7 @@ export default function PosPage() {
       if(savedSale){
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
-            setFinalizedSale(savedSale);
+            setSaleToPrint(savedSale);
             setIsReceiptDialogOpen(true);
         }
       }
@@ -1843,7 +1845,7 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setFinalizedSale(sale);
+        setSaleToPrint(sale);
         setIsReceiptDialogOpen(true);
         setIsRecentTransactionsOpen(false);
     };
@@ -1851,10 +1853,10 @@ export default function PosPage() {
   return (
     <div className="pos-page-container">
       <div style={{ display: 'none' }}>
-        {finalizedSale && (
+        {saleToPrint && (
             <PrintableReceipt
                 ref={receiptRef}
-                sale={finalizedSale}
+                sale={saleToPrint}
                 products={products}
                 settings={settings}
             />
@@ -2256,7 +2258,7 @@ export default function PosPage() {
       <ReceiptFinalizedDialog
         open={isReceiptDialogOpen}
         onOpenChange={setIsReceiptDialogOpen}
-        sale={finalizedSale}
+        sale={saleToPrint}
         onPrint={handlePrint}
       />
       
