@@ -122,7 +122,7 @@ const ReceiptFinalizedDialog = ({
     settings: AllSettings;
 }) => {
     const receiptRef = useRef<HTMLDivElement>(null);
-
+    
     const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
     });
