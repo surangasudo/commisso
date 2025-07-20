@@ -119,7 +119,7 @@ const ReceiptFinalizedDialog = ({
     sale: Sale | null;
     onPrint: () => void;
 }) => {
-    
+
     const handlePrintClick = () => {
         onPrint();
     };
@@ -1385,6 +1385,8 @@ export default function PosPage() {
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  
+  // --- NEW RELIABLE PRINTING LOGIC ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const handleReactPrint = useReactToPrint({
       content: () => receiptRef.current,
@@ -1393,11 +1395,10 @@ export default function PosPage() {
   });
 
   const handlePrint = () => {
-    // A timeout is used to ensure the state has updated and the component has re-rendered
-    // before the print dialog is triggered.
-    setTimeout(() => {
-        handleReactPrint();
-    }, 0);
+      // A small timeout ensures the component has re-rendered with the correct data
+      setTimeout(() => {
+          handleReactPrint();
+      }, 0);
   };
   
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1846,11 +1847,11 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setIsRecentTransactionsOpen(false);
         // The timeout ensures state is set before print is called
         setTimeout(() => {
             handleReactPrint();
         }, 0);
-        setIsRecentTransactionsOpen(false);
     };
     
   return (
