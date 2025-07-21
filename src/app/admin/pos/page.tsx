@@ -1385,21 +1385,12 @@ export default function PosPage() {
   // State for printing
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  
-  // --- NEW RELIABLE PRINTING LOGIC ---
   const receiptRef = useRef<HTMLDivElement>(null);
-  const handleReactPrint = useReactToPrint({
+  const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null)
   });
-
-  const handlePrint = () => {
-      // A small timeout ensures the component has re-rendered with the correct data
-      setTimeout(() => {
-          handleReactPrint();
-      }, 0);
-  };
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1682,6 +1673,7 @@ export default function PosPage() {
     if(savedSale) {
         setSaleToPrint(savedSale);
         setIsReceiptDialogOpen(true);
+        setTimeout(() => handlePrint(), 0);
     }
   };
   
@@ -1741,7 +1733,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            setIsReceiptDialogOpen(true);
+            setTimeout(() => handlePrint(), 0);
         }
       }
     };
@@ -1848,10 +1840,7 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        // The timeout ensures state is set before print is called
-        setTimeout(() => {
-            handleReactPrint();
-        }, 0);
+        setTimeout(() => handlePrint(), 0);
     };
     
   return (
