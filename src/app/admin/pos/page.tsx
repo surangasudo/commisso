@@ -119,11 +119,6 @@ const ReceiptFinalizedDialog = ({
     sale: Sale | null;
     onPrint: () => void;
 }) => {
-
-    const handlePrintClick = () => {
-        onPrint();
-    };
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -138,7 +133,7 @@ const ReceiptFinalizedDialog = ({
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                    <Button onClick={handlePrintClick}>
+                    <Button onClick={onPrint}>
                         <Printer className="mr-2 h-4 w-4" /> Print Receipt
                     </Button>
                 </DialogFooter>
@@ -1841,6 +1836,7 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
+        // Use timeout to ensure state is updated before printing
         setTimeout(() => handleReactPrint(), 0);
     };
     
