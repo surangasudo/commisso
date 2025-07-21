@@ -112,12 +112,12 @@ const ReceiptFinalizedDialog = ({
     open,
     onOpenChange,
     sale,
-    onPrint,
+    onClose,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
-    onPrint: () => void;
+    onClose: () => void;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,15 +127,12 @@ const ReceiptFinalizedDialog = ({
                         <CheckCircle className="h-16 w-16 text-green-500" />
                         <DialogTitle className="text-2xl">Sale Finalized!</DialogTitle>
                         <DialogDescription>
-                            The sale with invoice number <strong>{sale?.invoiceNo}</strong> has been completed successfully.
+                            The sale with invoice number <strong>{sale?.invoiceNo}</strong> has been completed successfully. The print dialog will open automatically.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-                    <Button onClick={onPrint}>
-                        <Printer className="mr-2 h-4 w-4" /> Print Receipt
-                    </Button>
+                    <Button variant="outline" onClick={onClose}>Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1367,7 +1364,6 @@ export default function PosPage() {
   const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
   const [isExchangeOpen, setIsExchangeOpen] = useState(false);
   
-  // States for agent selection
   const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
   const [selectedSubAgent, setSelectedSubAgent] = useState<CommissionProfile | null>(null);
@@ -1379,15 +1375,20 @@ export default function PosPage() {
   
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
-  // --- Start: Robust Printing Logic ---
+  
   const receiptRef = useRef<HTMLDivElement>(null);
   const handleReactPrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null),
   });
-  // --- End: Robust Printing Logic ---
+
+  const handlePrint = () => {
+    // This timeout ensures the state has updated and the component has re-rendered
+    setTimeout(() => {
+        handleReactPrint();
+    }, 0);
+  };
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1729,7 +1730,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            handleReactPrint();
+            handlePrint();
         }
       }
     };
@@ -1836,8 +1837,7 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        // Use timeout to ensure state is updated before printing
-        setTimeout(() => handleReactPrint(), 0);
+        handlePrint();
     };
     
   return (
@@ -2247,7 +2247,7 @@ export default function PosPage() {
         open={isReceiptDialogOpen}
         onOpenChange={setIsReceiptDialogOpen}
         sale={saleToPrint}
-        onPrint={handleReactPrint}
+        onClose={() => setIsReceiptDialogOpen(false)}
       />
       
       {/* Other Dialogs */}

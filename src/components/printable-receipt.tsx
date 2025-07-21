@@ -12,6 +12,7 @@ type PrintableReceiptProps = {
     settings: AllSettings;
 };
 
+// Simplified component, no longer needs forwardRef with the new useEffect printing logic
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products, settings }, ref) => {
     const { formatCurrency } = useCurrency();
     const productMap = React.useMemo(() => {
