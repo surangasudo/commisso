@@ -122,6 +122,7 @@ const ReceiptFinalizedDialog = ({
 
     const handlePrintClick = () => {
         onPrint();
+        onOpenChange(false);
     };
 
     return (
@@ -1382,16 +1383,24 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // State for printing
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  
-  const handlePrint = useReactToPrint({
+
+  // --- Start: Robust Printing Logic ---
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const handleReactPrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
-      onAfterPrint: () => setSaleToPrint(null)
+      onAfterPrint: () => setSaleToPrint(null),
   });
+
+  const handlePrint = () => {
+      // Small timeout to ensure the state has updated the DOM before printing.
+      setTimeout(() => {
+          handleReactPrint();
+      }, 0);
+  };
+  // --- End: Robust Printing Logic ---
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1733,7 +1742,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            setTimeout(() => handlePrint(), 0);
+            handlePrint();
         }
       }
     };
@@ -1840,12 +1849,12 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        setTimeout(() => handlePrint(), 0);
+        handlePrint();
     };
     
   return (
     <div className="pos-page-container">
-      <div style={{ display: 'none' }}>
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <PrintableReceipt
               ref={receiptRef}
               sale={saleToPrint}
