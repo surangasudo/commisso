@@ -113,12 +113,20 @@ const ReceiptFinalizedDialog = ({
     onOpenChange,
     sale,
     onClose,
+    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
     onClose: () => void;
+    onPrint: () => void;
 }) => {
+    
+    const handlePrintClick = () => {
+        onPrint();
+        onOpenChange(false);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -127,12 +135,13 @@ const ReceiptFinalizedDialog = ({
                         <CheckCircle className="h-16 w-16 text-green-500" />
                         <DialogTitle className="text-2xl">Sale Finalized!</DialogTitle>
                         <DialogDescription>
-                            The sale with invoice number <strong>{sale?.invoiceNo}</strong> has been completed successfully. The print dialog will open automatically.
+                            The sale with invoice number <strong>{sale?.invoiceNo}</strong> has been completed successfully.
                         </DialogDescription>
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                     <Button variant="outline" onClick={onClose}>Close</Button>
+                    <Button onClick={handlePrintClick}><Printer className="mr-2 h-4 w-4"/> Print Receipt</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1373,22 +1382,16 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // Printing state
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  
   const receiptRef = useRef<HTMLDivElement>(null);
-  const handleReactPrint = useReactToPrint({
+
+  const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null),
   });
-
-  const handlePrint = () => {
-    // This timeout ensures the state has updated and the component has re-rendered
-    setTimeout(() => {
-        handleReactPrint();
-    }, 0);
-  };
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1837,7 +1840,8 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        handlePrint();
+        // Using setTimeout to ensure the state update renders the component before printing.
+        setTimeout(() => handlePrint(), 0);
     };
     
   return (
@@ -2248,6 +2252,7 @@ export default function PosPage() {
         onOpenChange={setIsReceiptDialogOpen}
         sale={saleToPrint}
         onClose={() => setIsReceiptDialogOpen(false)}
+        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
