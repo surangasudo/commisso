@@ -384,7 +384,7 @@ const CloseRegisterDialog = ({
                             </div>
                             <div className="mt-4">
                                 <h4 className="font-semibold">Cash Denominations</h4>
-                                <p className="text-xs text-muted-foreground">Add denominations in Settings -&gt; Business Settings -&gt; POS -&gt; Cash Denominations</p>
+                                <p className="text-xs text-muted-foreground">Add denominations in Settings -> Business Settings -> POS -> Cash Denominations</p>
                             </div>
                             <div className="mt-4 space-y-2">
                                 <Label htmlFor="closing-note">Closing Note:</Label>
@@ -1387,7 +1387,7 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null)
   });
@@ -1673,7 +1673,6 @@ export default function PosPage() {
     if(savedSale) {
         setSaleToPrint(savedSale);
         setIsReceiptDialogOpen(true);
-        setTimeout(() => handlePrint(), 0);
     }
   };
   
@@ -1845,7 +1844,7 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
-       <div style={{ display: 'none' }}>
+      <div style={{ display: 'none' }}>
         {saleToPrint && (
             <PrintableReceipt
                 ref={receiptRef}
