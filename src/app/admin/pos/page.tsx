@@ -122,7 +122,6 @@ const ReceiptFinalizedDialog = ({
 
     const handlePrintClick = () => {
         onPrint();
-        onOpenChange(false);
     };
 
     return (
@@ -1393,13 +1392,6 @@ export default function PosPage() {
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null),
   });
-
-  const handlePrint = () => {
-      // Small timeout to ensure the state has updated the DOM before printing.
-      setTimeout(() => {
-          handleReactPrint();
-      }, 0);
-  };
   // --- End: Robust Printing Logic ---
   
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1742,7 +1734,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            handlePrint();
+            handleReactPrint();
         }
       }
     };
@@ -1849,7 +1841,7 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
         setIsRecentTransactionsOpen(false);
-        handlePrint();
+        setTimeout(() => handleReactPrint(), 0);
     };
     
   return (
@@ -2259,7 +2251,7 @@ export default function PosPage() {
         open={isReceiptDialogOpen}
         onOpenChange={setIsReceiptDialogOpen}
         sale={saleToPrint}
-        onPrint={handlePrint}
+        onPrint={handleReactPrint}
       />
       
       {/* Other Dialogs */}
