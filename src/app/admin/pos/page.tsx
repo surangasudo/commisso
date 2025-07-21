@@ -640,8 +640,8 @@ const RecentTransactionsDialog = ({
                             <Table>
                                 <TableBody>
                                     {recentSales.map((sale, index) => (
-                                        <TableRow key={sale.id}>
-                                            <TableCell className="w-8">{index + 1}.</TableCell>
+                                        <TableRow key={sale.id} className="hover:bg-muted/50">
+                                            <TableCell className="w-8 pr-0">{index + 1}.</TableCell>
                                             <TableCell className="font-medium">
                                                 {sale.invoiceNo} ({sale.customerName})
                                             </TableCell>
@@ -1390,7 +1390,7 @@ export default function PosPage() {
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
-      onAfterPrint: () => setSaleToPrint(null),
+      removeAfterPrint: true,
   });
   
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1733,7 +1733,8 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint(savedSale);
-            handlePrint();
+            // Use timeout to ensure state update renders before printing
+            setTimeout(() => handlePrint(), 0);
         }
       }
     };
@@ -1846,6 +1847,7 @@ export default function PosPage() {
     
   return (
     <div className="pos-page-container">
+      {/* Hidden printable component, always in the DOM */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <PrintableReceipt
               ref={receiptRef}
