@@ -1383,11 +1383,12 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // State for printing
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
+  
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef,
+      content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
       onAfterPrint: () => setSaleToPrint(null)
   });
@@ -1845,14 +1846,12 @@ export default function PosPage() {
   return (
     <div className="pos-page-container">
       <div style={{ display: 'none' }}>
-        {saleToPrint && (
-            <PrintableReceipt
-                ref={receiptRef}
-                sale={saleToPrint}
-                products={products}
-                settings={settings}
-            />
-        )}
+          <PrintableReceipt
+              ref={receiptRef}
+              sale={saleToPrint}
+              products={products}
+              settings={settings}
+          />
       </div>
       <div className="relative">
           <TooltipProvider>
