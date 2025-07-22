@@ -113,13 +113,11 @@ const ReceiptFinalizedDialog = ({
     onOpenChange,
     sale,
     onClose,
-    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
     onClose: () => void;
-    onPrint: () => void;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,7 +133,6 @@ const ReceiptFinalizedDialog = ({
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
                      <Button variant="outline" onClick={onClose}>Close</Button>
-                     <Button onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -736,12 +733,12 @@ const CashPaymentDialog = ({
     open,
     onOpenChange,
     totalPayable,
-    onSave,
+    onFinalize,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
-    onSave: (totalPaid: number) => Promise<void>;
+    onFinalize: (totalPaid: number) => void;
 }) => {
     const { formatCurrency } = useCurrency();
     const [amountTendered, setAmountTendered] = useState('');
@@ -769,7 +766,7 @@ const CashPaymentDialog = ({
 
     const handleSaveClick = async () => {
         setIsSaving(true);
-        await onSave(parseFloat(amountTendered) || totalPayable);
+        onFinalize(parseFloat(amountTendered) || totalPayable);
         setIsSaving(false);
         onOpenChange(false);
     };
@@ -829,12 +826,12 @@ const CardPaymentDialog = ({
     open,
     onOpenChange,
     totalPayable,
-    onSave,
+    onFinalize,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     totalPayable: number;
-    onSave: () => Promise<void>;
+    onFinalize: () => void;
 }) => {
     const { formatCurrency } = useCurrency();
     const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '' });
@@ -854,7 +851,7 @@ const CardPaymentDialog = ({
             return;
         }
         setIsSaving(true);
-        await onSave();
+        onFinalize();
         setIsSaving(false);
         onOpenChange(false);
     };
@@ -895,7 +892,7 @@ const CardPaymentDialog = ({
                 </div>
                 <DialogFooter>
                      <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveClick} disabled={isSaving}>{isSaving ? "Saving..." : "Finalize Payment"}</Button>
+                    <Button onClick={handleSaveClick} disabled={isSaving}>{isSaving ? "Processing..." : "Finalize Payment"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1376,20 +1373,58 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Printing state
+  // Printing state and logic
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const saleToSaveRef = useRef<Omit<Sale, 'id'> | null>(null);
+  const [finalizedSale, setFinalizedSale] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+
+  const handleAfterPrint = useCallback(async () => {
+    if (saleToSaveRef.current) {
+        const saleToSave = saleToSaveRef.current;
+        saleToSaveRef.current = null; // Clear ref to prevent re-saving
+        
+        try {
+            const savedSaleId = await addSale(saleToSave, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
+            const completeSale: Sale = { ...saleToSave, id: savedSaleId };
+            
+            setFinalizedSale(completeSale);
+            setIsReceiptDialogOpen(true);
+            clearCart(false);
+            await fetchAndCalculateStock();
+        } catch (error) {
+            console.error("Failed to save sale after printing:", error);
+            toast({
+                title: "Error Saving Sale",
+                description: "The sale could not be saved after printing. Please check your connection and try again.",
+                variant: "destructive"
+            });
+        }
+    }
+  }, [settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule]); // Dependencies will be updated later
 
   const handlePrint = useReactToPrint({
       contentRef: receiptRef,
-      documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
-      removeAfterPrint: true,
-      onAfterPrint: () => {
-          setSaleToPrint(null);
-      }
+      documentTitle: `Receipt-${finalizedSale?.invoiceNo || ''}`,
+      onAfterPrint: handleAfterPrint,
   });
-  
+
+  const finalizeAndPrint = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+    if (cart.length === 0) {
+        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
+        return;
+    }
+    
+    const saleObject = createSaleObject(paymentMethod, paymentStatus, totalPaid);
+    
+    // Set the data to be printed and saved
+    setFinalizedSale({ ...saleObject, id: 'temp-id' }); // Use a temp ID for rendering
+    saleToSaveRef.current = saleObject;
+
+    // Trigger the print dialog. The save logic is now in `onAfterPrint`.
+    handlePrint();
+  };
+
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -1616,74 +1651,16 @@ export default function PosPage() {
       };
   };
 
-  const finalizeSale = async (sale: Omit<Sale, 'id'>): Promise<Sale | null> => {
-      if (cart.length === 0) {
-        toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
-        return null;
-      }
-      
-      if (
-        settings.sale.enableCommissionAgent &&
-        !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson
-      ) {
-          toast({
-              title: "Agent Required",
-              description: "A commission agent must be selected for this sale as per business settings.",
-              variant: "destructive",
-          });
-          return null;
-      }
-      
-      if (settings.pos.isServiceStaffRequired && !selectedSalesperson) {
-          toast({
-              title: "Service Staff Required",
-              description: "Please select a service staff member (Salesperson) for this sale.",
-              variant: "destructive",
-          });
-          return null;
-      }
-
-      try {
-          const savedSaleId = await addSale(sale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
-          
-          const completeSaleForReceipt: Sale = {
-            id: savedSaleId,
-            ...sale,
-          };
-          
-          clearCart(false);
-          await fetchAndCalculateStock();
-          return completeSaleForReceipt;
-      } catch (error) {
-          console.error("Failed to save sale:", error);
-          toast({
-              title: "Error",
-              description: "Could not save the sale. Please try again.",
-              variant: "destructive"
-          });
-          return null;
-      }
-  };
-
-  const finalizeAndShowModal = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
-    const newSale = createSaleObject(paymentMethod, paymentStatus, totalPaid);
-    const savedSale = await finalizeSale(newSale);
-    if(savedSale) {
-        setSaleToPrint(savedSale);
-        setIsReceiptDialogOpen(true);
-    }
-  };
-  
-  const handleFinalizeCashPayment = async (totalPaid: number) => {
+  const handleFinalizeCashPayment = (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
-    await finalizeAndShowModal('Cash', paymentStatus, totalPaid);
+    finalizeAndPrint('Cash', paymentStatus, totalPaid);
   };
   
-  const handleFinalizeCardPayment = async () => {
-    await finalizeAndShowModal('Card', 'Paid', totalPayable);
+  const handleFinalizeCardPayment = () => {
+    finalizeAndPrint('Card', 'Paid', totalPayable);
   };
 
-  const handleFinalizeMultiPay = async () => {
+  const handleFinalizeMultiPay = () => {
       const cash = parseFloat(cashAmount) || 0;
       const card = parseFloat(cardAmount) || 0;
       const totalPaid = cash + card;
@@ -1693,7 +1670,7 @@ export default function PosPage() {
           return;
       }
       
-      await finalizeAndShowModal('Multiple', 'Paid', totalPaid);
+      finalizeAndPrint('Multiple', 'Paid', totalPaid);
       setCashAmount('');
       setCardAmount('');
       setIsMultiPayOpen(false);
@@ -1724,13 +1701,17 @@ export default function PosPage() {
       }
       
       const newSale = createSaleObject('Suspended', 'Due', 0);
-      const savedSale = await finalizeSale(newSale);
-
-      if(savedSale){
+      try {
+        await addSale(newSale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
-            setSaleToPrint(savedSale);
+            setFinalizedSale({ ...newSale, id: 'temp-id' });
+            handlePrint();
         }
+        clearCart(false);
+        await fetchAndCalculateStock();
+      } catch (e) {
+         toast({ title: 'Error Suspending', description: 'Could not suspend sale.', variant: 'destructive'});
       }
     };
     
@@ -1739,8 +1720,7 @@ export default function PosPage() {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
       }
-      const newSale = createSaleObject('Credit', 'Due', 0);
-      await finalizeAndShowModal('Credit', 'Due', 0);
+      finalizeAndPrint('Credit', 'Due', 0);
     };
   
     const handleToggleFullscreen = () => {
@@ -1834,8 +1814,8 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setSaleToPrint(sale);
-        setIsRecentTransactionsOpen(false);
+        setFinalizedSale(sale);
+        handlePrint();
     };
     
   return (
@@ -1844,7 +1824,7 @@ export default function PosPage() {
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <PrintableReceipt
               ref={receiptRef}
-              sale={saleToPrint}
+              sale={finalizedSale}
               products={products}
               settings={settings}
           />
@@ -2245,12 +2225,11 @@ export default function PosPage() {
       <ReceiptFinalizedDialog
         open={isReceiptDialogOpen}
         onOpenChange={setIsReceiptDialogOpen}
-        sale={saleToPrint}
+        sale={finalizedSale}
         onClose={() => {
             setIsReceiptDialogOpen(false);
-            setSaleToPrint(null);
+            setFinalizedSale(null);
         }}
-        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
@@ -2309,13 +2288,13 @@ export default function PosPage() {
           open={isCashPaymentOpen}
           onOpenChange={setIsCashPaymentOpen}
           totalPayable={totalPayable}
-          onSave={handleFinalizeCashPayment}
+          onFinalize={handleFinalizeCashPayment}
       />
        <CardPaymentDialog
           open={isCardPaymentOpen}
           onOpenChange={setIsCardPaymentOpen}
           totalPayable={totalPayable}
-          onSave={handleFinalizeCardPayment}
+          onFinalize={handleFinalizeCardPayment}
       />
       <AddCommissionProfileDialog
           open={isAddProfileOpen}
