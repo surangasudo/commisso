@@ -1375,41 +1375,26 @@ export default function PosPage() {
   
   // Printing state and logic
   const receiptRef = useRef<HTMLDivElement>(null);
-  const saleToSaveRef = useRef<Omit<Sale, 'id'> | null>(null);
-  const [finalizedSale, setFinalizedSale] = useState<Sale | null>(null);
-  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
-  const handleAfterPrint = useCallback(async () => {
-    if (saleToSaveRef.current) {
-        const saleToSave = saleToSaveRef.current;
-        saleToSaveRef.current = null; // Clear ref to prevent re-saving
-        
-        try {
-            const savedSaleId = await addSale(saleToSave, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
-            const completeSale: Sale = { ...saleToSave, id: savedSaleId };
-            
-            setFinalizedSale(completeSale);
-            setIsReceiptDialogOpen(true);
-            clearCart(false);
-            await fetchAndCalculateStock();
-        } catch (error) {
-            console.error("Failed to save sale after printing:", error);
-            toast({
-                title: "Error Saving Sale",
-                description: "The sale could not be saved after printing. Please check your connection and try again.",
-                variant: "destructive"
-            });
-        }
-    }
-  }, [settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule]); // Dependencies will be updated later
+  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
 
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef,
-      documentTitle: `Receipt-${finalizedSale?.invoiceNo || ''}`,
-      onAfterPrint: handleAfterPrint,
+      content: () => receiptRef.current,
+      documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
   });
+  
+  useEffect(() => {
+    if (saleToPrint) {
+        // Use timeout to ensure state update has rendered the component
+        const timer = setTimeout(() => {
+            handlePrint();
+        }, 100); 
+        return () => clearTimeout(timer);
+    }
+  }, [saleToPrint, handlePrint]);
 
-  const finalizeAndPrint = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+
+  const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
@@ -1417,12 +1402,22 @@ export default function PosPage() {
     
     const saleObject = createSaleObject(paymentMethod, paymentStatus, totalPaid);
     
-    // Set the data to be printed and saved
-    setFinalizedSale({ ...saleObject, id: 'temp-id' }); // Use a temp ID for rendering
-    saleToSaveRef.current = saleObject;
-
-    // Trigger the print dialog. The save logic is now in `onAfterPrint`.
-    handlePrint();
+    try {
+      const savedSaleId = await addSale(saleObject, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
+      const completeSale: Sale = { ...saleObject, id: savedSaleId };
+      
+      setSaleToPrint(completeSale); // This will trigger the useEffect to print
+      setIsReceiptDialogOpen(true);
+      clearCart(false);
+      await fetchAndCalculateStock();
+    } catch (error) {
+        console.error("Failed to save sale:", error);
+        toast({
+            title: "Error Saving Sale",
+            description: "The sale could not be saved. Please check your connection and try again.",
+            variant: "destructive"
+        });
+    }
   };
 
   const fetchAndCalculateStock = useCallback(async () => {
@@ -1702,11 +1697,10 @@ export default function PosPage() {
       
       const newSale = createSaleObject('Suspended', 'Due', 0);
       try {
-        await addSale(newSale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
+        const savedSaleId = await addSale(newSale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
-            setFinalizedSale({ ...newSale, id: 'temp-id' });
-            handlePrint();
+            setSaleToPrint({ ...newSale, id: savedSaleId });
         }
         clearCart(false);
         await fetchAndCalculateStock();
@@ -1814,8 +1808,7 @@ export default function PosPage() {
     };
     
     const handlePrintFromDialog = (sale: Sale) => {
-        setFinalizedSale(sale);
-        handlePrint();
+        setSaleToPrint(sale);
     };
     
   return (
@@ -1824,7 +1817,7 @@ export default function PosPage() {
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <PrintableReceipt
               ref={receiptRef}
-              sale={finalizedSale}
+              sale={saleToPrint}
               products={products}
               settings={settings}
           />
@@ -2225,10 +2218,10 @@ export default function PosPage() {
       <ReceiptFinalizedDialog
         open={isReceiptDialogOpen}
         onOpenChange={setIsReceiptDialogOpen}
-        sale={finalizedSale}
+        sale={saleToPrint}
         onClose={() => {
             setIsReceiptDialogOpen(false);
-            setFinalizedSale(null);
+            setSaleToPrint(null);
         }}
       />
       
