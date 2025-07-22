@@ -19,7 +19,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }, [products]);
 
     if (!sale) {
-        // Render an empty div with the ref attached if no sale data, so ref is never null.
+        // Render an empty div with the ref attached so it's never null.
         return <div ref={ref} />; 
     }
 

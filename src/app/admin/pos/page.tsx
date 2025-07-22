@@ -113,11 +113,13 @@ const ReceiptFinalizedDialog = ({
     onOpenChange,
     sale,
     onClose,
+    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
     onClose: () => void;
+    onPrint: () => void;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,7 +134,8 @@ const ReceiptFinalizedDialog = ({
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
-                    <Button variant="outline" onClick={onClose}>Close</Button>
+                     <Button variant="outline" onClick={onClose}>Close</Button>
+                     <Button onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1374,28 +1377,18 @@ export default function PosPage() {
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
   // Printing state
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
+      removeAfterPrint: true,
       onAfterPrint: () => {
           setSaleToPrint(null);
       }
   });
-
-  // Automated printing trigger
-  useEffect(() => {
-    if (saleToPrint) {
-        // Use a timeout to ensure the state has updated the DOM
-        const timer = setTimeout(() => {
-            handlePrint();
-        }, 100); 
-        return () => clearTimeout(timer);
-    }
-  }, [saleToPrint, handlePrint]);
   
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -2257,6 +2250,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
+        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
