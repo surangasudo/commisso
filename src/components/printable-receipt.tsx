@@ -19,7 +19,8 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }, [products]);
 
     if (!sale) {
-        return <div ref={ref} />; // Render an empty div with the ref if no sale data
+        // Render an empty div with the ref attached if no sale data, so ref is never null.
+        return <div ref={ref} />; 
     }
 
     const subtotal = sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
