@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -14,32 +13,36 @@ type PrintableReceiptProps = {
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(({ sale, products, settings }, ref) => {
     const { formatCurrency } = useCurrency();
+    
     const productMap = React.useMemo(() => {
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // Render an empty div with the ref if there's no sale.
-    // This ensures the ref is always attached to a DOM element.
+    // Early return if no sale - but ensure we have a proper structure
     if (!sale) {
-        return <div ref={ref} />; 
+        return (
+            <div ref={ref} style={{ width: '300px', minHeight: '100px' }}>
+                <div>No receipt data available</div>
+            </div>
+        );
     }
 
     const subtotal = sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
     const discountAmount = subtotal > 0 ? (sale.totalAmount - subtotal - (sale.taxAmount || 0)) : 0;
 
     return (
-        <div ref={ref} className="bg-white text-black p-4 font-mono text-xs w-[300px]">
+        <div ref={ref} className="bg-white text-black p-4 font-mono text-xs" style={{ width: '300px' }}>
             <header className="text-center mb-4">
-                <h1 className="text-lg font-bold">{settings.business.businessName}</h1>
+                <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>
                 <p>Linking Street, Phoenix, Arizona, USA</p>
-                <p>GSTIN: {settings.tax.taxNumber1}</p>
+                {settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
             </header>
 
             <h2 className="text-center font-bold text-base mb-2">INVOICE</h2>
             <p><span className="font-semibold">Invoice No:</span> {sale.invoiceNo}</p>
-            <p><span className="font-semibold">Customer:</span> {sale.customerName}</p>
-            <p><span className="font-semibold">Contact:</span> {sale.contactNumber}</p>
+            {sale.customerName && <p><span className="font-semibold">Customer:</span> {sale.customerName}</p>}
+            {sale.contactNumber && <p><span className="font-semibold">Contact:</span> {sale.contactNumber}</p>}
 
             <table className="w-full my-4">
                 <thead>
@@ -70,14 +73,18 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                     <span>Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
                 </div>
-                <div className="flex justify-between">
-                    <span>Discount:</span>
-                    <span>(-) {formatCurrency(Math.abs(discountAmount))}</span>
-                </div>
-                 <div className="flex justify-between">
-                    <span>Tax:</span>
-                    <span>(+) {formatCurrency(sale.taxAmount || 0)}</span>
-                </div>
+                {discountAmount !== 0 && (
+                    <div className="flex justify-between">
+                        <span>Discount:</span>
+                        <span>(-) {formatCurrency(Math.abs(discountAmount))}</span>
+                    </div>
+                )}
+                {sale.taxAmount !== undefined && sale.taxAmount > 0 && (
+                    <div className="flex justify-between">
+                        <span>Tax:</span>
+                        <span>(+) {formatCurrency(sale.taxAmount)}</span>
+                    </div>
+                )}
                 <div className="flex justify-between font-bold text-sm border-t-2 border-dashed border-black pt-1">
                     <span>Total:</span>
                     <span>{formatCurrency(sale.totalAmount)}</span>
@@ -85,11 +92,13 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
             </div>
 
             <div className="mt-4 border-t-2 border-dashed border-black pt-2">
-                 <div className="flex justify-between">
-                    <span>{sale.paymentMethod}:</span>
-                    <span>{formatCurrency(sale.totalPaid)}</span>
-                </div>
-                 <div className="flex justify-between">
+                {sale.paymentMethod && (
+                    <div className="flex justify-between">
+                        <span>{sale.paymentMethod}:</span>
+                        <span>{formatCurrency(sale.totalPaid)}</span>
+                    </div>
+                )}
+                <div className="flex justify-between">
                     <span>Total Paid:</span>
                     <span>{formatCurrency(sale.totalPaid)}</span>
                 </div>

@@ -1375,15 +1375,12 @@ export default function PosPage() {
   
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
   const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
-      documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
-      onAfterPrint: () => setSaleToPrint(null),
   });
   
-  const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+  const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
@@ -1637,12 +1634,12 @@ export default function PosPage() {
 
   const handleFinalizeCashPayment = (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
-    finalizeAndPrint('Cash', paymentStatus, totalPaid);
+    finalizeAndShowReceipt('Cash', paymentStatus, totalPaid);
     setIsCashPaymentOpen(false);
   };
   
   const handleFinalizeCardPayment = () => {
-    finalizeAndPrint('Card', 'Paid', totalPayable);
+    finalizeAndShowReceipt('Card', 'Paid', totalPayable);
     setIsCardPaymentOpen(false);
   };
 
@@ -1656,7 +1653,7 @@ export default function PosPage() {
           return;
       }
       
-      finalizeAndPrint('Multiple', 'Paid', totalPaid);
+      finalizeAndShowReceipt('Multiple', 'Paid', totalPaid);
       setCashAmount('');
       setCardAmount('');
       setIsMultiPayOpen(false);
@@ -1705,7 +1702,7 @@ export default function PosPage() {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
       }
-      finalizeAndPrint('Credit', 'Due', 0);
+      finalizeAndShowReceipt('Credit', 'Due', 0);
     };
   
     const handleToggleFullscreen = () => {
@@ -1800,12 +1797,16 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setTimeout(() => handlePrint(), 0);
     };
     
+    useEffect(() => {
+        if (saleToPrint) {
+            handlePrint();
+        }
+    }, [saleToPrint, handlePrint]);
+
   return (
     <div className="pos-page-container">
-      {/* Hidden printable component, always in the DOM */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
           <PrintableReceipt
               ref={receiptRef}
