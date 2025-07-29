@@ -1376,10 +1376,12 @@ export default function PosPage() {
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
+  
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
+      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
   });
-  
+
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
@@ -1797,17 +1799,12 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setTimeout(() => handlePrint(), 100);
     };
-    
-    useEffect(() => {
-        if (saleToPrint) {
-            handlePrint();
-        }
-    }, [saleToPrint, handlePrint]);
 
   return (
     <div className="pos-page-container">
-      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+      <div style={{ position: 'absolute', left: '-9999px' }}>
           <PrintableReceipt
               ref={receiptRef}
               sale={saleToPrint}
