@@ -770,8 +770,7 @@ const CashPaymentDialog = ({
     const handleSaveClick = async () => {
         setIsSaving(true);
         onFinalize(parseFloat(amountTendered) || totalPayable);
-        setIsSaving(false);
-        onOpenChange(false);
+        // Note: The onOpenChange is called by the parent after finalization logic
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -855,8 +854,6 @@ const CardPaymentDialog = ({
         }
         setIsSaving(true);
         onFinalize();
-        setIsSaving(false);
-        onOpenChange(false);
     };
     
 
@@ -1376,11 +1373,10 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // Printing state and logic
-  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
+  const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
@@ -1412,12 +1408,6 @@ export default function PosPage() {
         });
     }
   };
-
-  useEffect(() => {
-    if (saleToPrint) {
-        handlePrint();
-    }
-  }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1648,10 +1638,12 @@ export default function PosPage() {
   const handleFinalizeCashPayment = (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
     finalizeAndPrint('Cash', paymentStatus, totalPaid);
+    setIsCashPaymentOpen(false);
   };
   
   const handleFinalizeCardPayment = () => {
     finalizeAndPrint('Card', 'Paid', totalPayable);
+    setIsCardPaymentOpen(false);
   };
 
   const handleFinalizeMultiPay = () => {
@@ -1808,6 +1800,7 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
+        setTimeout(() => handlePrint(), 0);
     };
     
   return (
