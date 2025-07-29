@@ -113,11 +113,13 @@ const ReceiptFinalizedDialog = ({
     onOpenChange,
     sale,
     onClose,
+    onPrint,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     sale: Sale | null;
     onClose: () => void;
+    onPrint: () => void;
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,6 +134,7 @@ const ReceiptFinalizedDialog = ({
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
+                     <Button onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print Receipt</Button>
                      <Button variant="outline" onClick={onClose}>Close</Button>
                 </DialogFooter>
             </DialogContent>
@@ -1376,24 +1379,13 @@ export default function PosPage() {
   // Printing state and logic
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
   });
   
-  useEffect(() => {
-    if (saleToPrint) {
-        // Use timeout to ensure state update has rendered the component
-        const timer = setTimeout(() => {
-            handlePrint();
-        }, 100); 
-        return () => clearTimeout(timer);
-    }
-  }, [saleToPrint, handlePrint]);
-
-  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
   const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
@@ -1406,7 +1398,7 @@ export default function PosPage() {
       const savedSaleId = await addSale(saleObject, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
       const completeSale: Sale = { ...saleObject, id: savedSaleId };
       
-      setSaleToPrint(completeSale); // This will trigger the useEffect to print
+      setSaleToPrint(completeSale);
       setIsReceiptDialogOpen(true);
       clearCart(false);
       await fetchAndCalculateStock();
@@ -1810,6 +1802,12 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
     };
+
+    useEffect(() => {
+        if (saleToPrint) {
+            handlePrint();
+        }
+    }, [saleToPrint, handlePrint]);
     
   return (
     <div className="pos-page-container">
@@ -2223,6 +2221,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
+        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
