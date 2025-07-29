@@ -1375,13 +1375,20 @@ export default function PosPage() {
   
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
   
+  // ✅ CORRECT way to set up react-to-print
+  const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
-      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+    content: () => receiptRef.current,
+    documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+    onBeforeGetContent: () => {
+        return !!saleToPrint; // Only proceed if saleToPrint exists
+    },
+    onAfterPrint: () => {
+      setSaleToPrint(null); // Clear the sale data after printing
+    }
   });
-
+  
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
@@ -1395,7 +1402,7 @@ export default function PosPage() {
       const completeSale: Sale = { ...saleObject, id: savedSaleId };
       
       setSaleToPrint(completeSale);
-      setIsReceiptDialogOpen(true);
+      setIsReceiptDialogOpen(true); // Show the dialog, but printing is handled separately
       clearCart(false);
       await fetchAndCalculateStock();
     } catch (error) {
@@ -1799,11 +1806,15 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        setTimeout(() => handlePrint(), 100);
+        // Using a timeout to ensure the state updates before printing
+        setTimeout(() => {
+            handlePrint();
+        }, 100);
     };
 
   return (
     <div className="pos-page-container">
+      {/* ✅ Hidden printable component - ALWAYS rendered but visually hidden */}
       <div style={{ position: 'absolute', left: '-9999px' }}>
           <PrintableReceipt
               ref={receiptRef}
