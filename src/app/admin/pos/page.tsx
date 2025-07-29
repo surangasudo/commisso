@@ -1382,8 +1382,9 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
 
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef,
+      content: () => receiptRef.current,
       documentTitle: `Receipt-${saleToPrint?.invoiceNo || ''}`,
+      onAfterPrint: () => setSaleToPrint(null),
   });
   
   const finalizeAndPrint = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
@@ -1411,6 +1412,12 @@ export default function PosPage() {
         });
     }
   };
+
+  useEffect(() => {
+    if (saleToPrint) {
+        handlePrint();
+    }
+  }, [saleToPrint, handlePrint]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1802,12 +1809,6 @@ export default function PosPage() {
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
     };
-
-    useEffect(() => {
-        if (saleToPrint) {
-            handlePrint();
-        }
-    }, [saleToPrint, handlePrint]);
     
   return (
     <div className="pos-page-container">
