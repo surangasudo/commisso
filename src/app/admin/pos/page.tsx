@@ -1373,22 +1373,21 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // ✅ Correct Printing Logic
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-  
-  // ✅ CORRECT way to set up react-to-print
-  const receiptRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
     documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
     onBeforeGetContent: () => {
-        return !!saleToPrint; // Only proceed if saleToPrint exists
+      return !!saleToPrint; // Only proceed if saleToPrint exists
     },
     onAfterPrint: () => {
       setSaleToPrint(null); // Clear the sale data after printing
     }
   });
-  
+
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
@@ -1402,7 +1401,7 @@ export default function PosPage() {
       const completeSale: Sale = { ...saleObject, id: savedSaleId };
       
       setSaleToPrint(completeSale);
-      setIsReceiptDialogOpen(true); // Show the dialog, but printing is handled separately
+      setIsReceiptDialogOpen(true);
       clearCart(false);
       await fetchAndCalculateStock();
     } catch (error) {
