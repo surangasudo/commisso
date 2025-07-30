@@ -1376,11 +1376,36 @@ export default function PosPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
+  
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+      onBeforeGetContent: () => {
+          if (!receiptRef.current) {
+              console.error("Print failed: receiptRef is null");
+              return false;
+          }
+          if (!saleToPrint) {
+              console.error("Print failed: no sale data to print");
+              return false;
+          }
+          console.log("Print content ready");
+          return true;
+      },
+      onAfterPrint: () => {
+          console.log("Print completed successfully");
+      },
   });
+  
+  const handlePrintFromDialog = (sale: Sale) => {
+    setSaleToPrint(sale);
+    // Use a timeout to ensure the state has updated the DOM
+    const timer = setTimeout(() => {
+        handlePrint();
+    }, 100); 
+    return () => clearTimeout(timer);
+  };
+  
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -1797,13 +1822,6 @@ export default function PosPage() {
         }
     };
     
-    const handlePrintFromDialog = (sale: Sale) => {
-        setSaleToPrint(sale);
-        setTimeout(() => {
-            handlePrint();
-        }, 100);
-    };
-
   return (
     <>
       <div style={{ position: 'absolute', left: '-9999px' }}>
@@ -2215,7 +2233,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
-        onPrint={handlePrint}
+        onPrint={() => handlePrintFromDialog(saleToPrint!)}
       />
       
       {/* Other Dialogs */}
