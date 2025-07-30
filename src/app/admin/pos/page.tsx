@@ -1379,7 +1379,7 @@ export default function PosPage() {
   
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
-      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+      documentTitle: `Receipt_${saleToPrint?.invoiceNo || "unknown"}`,
       onBeforeGetContent: () => {
           if (!receiptRef.current) {
               console.error("Print failed: receiptRef is null");
@@ -1394,16 +1394,15 @@ export default function PosPage() {
       },
       onAfterPrint: () => {
           console.log("Print completed successfully");
+          setSaleToPrint(null);
       },
   });
-  
+
   const handlePrintFromDialog = (sale: Sale) => {
     setSaleToPrint(sale);
-    // Use a timeout to ensure the state has updated the DOM
-    const timer = setTimeout(() => {
+    setTimeout(() => {
         handlePrint();
-    }, 100); 
-    return () => clearTimeout(timer);
+    }, 100);
   };
   
 
