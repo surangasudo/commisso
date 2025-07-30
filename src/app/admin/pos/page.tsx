@@ -1373,19 +1373,13 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
-  // ✅ Correct Printing Logic
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+
   const handlePrint = useReactToPrint({
-    content: () => receiptRef.current,
-    documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
-    onBeforeGetContent: () => {
-      return !!saleToPrint; // Only proceed if saleToPrint exists
-    },
-    onAfterPrint: () => {
-      setSaleToPrint(null); // Clear the sale data after printing
-    }
+      content: () => receiptRef.current,
+      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
   });
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
@@ -1805,24 +1799,22 @@ export default function PosPage() {
     
     const handlePrintFromDialog = (sale: Sale) => {
         setSaleToPrint(sale);
-        // Using a timeout to ensure the state updates before printing
         setTimeout(() => {
             handlePrint();
         }, 100);
     };
 
   return (
-    <div className="pos-page-container">
-      {/* ✅ Hidden printable component - ALWAYS rendered but visually hidden */}
+    <>
       <div style={{ position: 'absolute', left: '-9999px' }}>
-          <PrintableReceipt
-              ref={receiptRef}
-              sale={saleToPrint}
-              products={products}
-              settings={settings}
-          />
+        <PrintableReceipt
+            ref={receiptRef}
+            sale={saleToPrint}
+            products={products}
+            settings={settings}
+        />
       </div>
-      <div className="relative">
+      <div className="pos-page-container">
           <TooltipProvider>
               <div className="flex flex-col h-screen bg-background text-foreground font-sans">
                   <header className="bg-card shadow-sm p-2 flex items-center justify-between z-10 flex-wrap gap-y-2">
@@ -2326,6 +2318,6 @@ export default function PosPage() {
           </DialogContent>
       </Dialog>
       <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
-    </div>
+    </>
   );
 }
