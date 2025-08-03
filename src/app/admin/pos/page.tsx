@@ -1379,7 +1379,7 @@ export default function PosPage() {
   
   const handlePrint = useReactToPrint({
       content: () => receiptRef.current,
-      documentTitle: `Receipt_${saleToPrint?.invoiceNo || "unknown"}`,
+      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
       onBeforeGetContent: () => {
           if (!receiptRef.current) {
               console.error("Print failed: receiptRef is null");
@@ -1389,22 +1389,12 @@ export default function PosPage() {
               console.error("Print failed: no sale data to print");
               return false;
           }
-          console.log("Print content ready");
           return true;
       },
       onAfterPrint: () => {
-          console.log("Print completed successfully");
           setSaleToPrint(null);
       },
   });
-
-  const handlePrintFromDialog = (sale: Sale) => {
-    setSaleToPrint(sale);
-    setTimeout(() => {
-        handlePrint();
-    }, 100);
-  };
-  
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -2232,7 +2222,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
-        onPrint={() => handlePrintFromDialog(saleToPrint!)}
+        onPrint={handlePrint}
       />
       
       {/* Other Dialogs */}
@@ -2251,7 +2241,10 @@ export default function PosPage() {
           onOpenChange={setIsRecentTransactionsOpen}
           recentSales={recentSales}
           onEdit={handleEditSale}
-          onPrint={handlePrintFromDialog}
+          onPrint={(sale) => {
+              setSaleToPrint(sale);
+              setTimeout(() => handlePrint(), 100);
+          }}
           onDelete={handleDeleteSaleClick}
       />
       <RegisterDetailsDialog
