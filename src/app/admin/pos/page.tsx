@@ -1381,22 +1381,26 @@ export default function PosPage() {
   const handlePrint = useReactToPrint({
       contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
-      onBeforePrint: () => {
-          console.log("Preparing to print receipt...");
-          if (!saleToPrint) {
-              console.error("[Print Error] No sale data is set to be printed.");
-              return false; // Cancel printing
-          }
-          if (!receiptRef.current) {
-              console.error("[Print Error] The receipt component ref is not available.");
-              return false; // Cancel printing
-          }
-          return true;
-      },
       onAfterPrint: () => {
           console.log("Print job completed or cancelled.");
+          // Optional: clear the sale data after printing to prevent re-printing stale data
+          // setSaleToPrint(null);
       },
   });
+
+  const printReceipt = useCallback(() => {
+    if (!saleToPrint) {
+      console.warn('printReceipt called, but no saleToPrint is set.');
+      toast({ title: 'No Receipt Data', description: 'There is no receipt data to print.', variant: 'destructive' });
+      return;
+    }
+    if (!receiptRef.current) {
+        console.warn('printReceipt called, but the receipt component ref is not available yet.');
+        toast({ title: 'Print Error', description: 'The printable component is not ready.', variant: 'destructive' });
+        return;
+    }
+    handlePrint();
+  }, [handlePrint, saleToPrint, toast]);
   // --- End of New Printing Logic ---
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
@@ -1411,8 +1415,8 @@ export default function PosPage() {
       const savedSaleId = await addSale(saleObject, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
       const completeSale: Sale = { ...saleObject, id: savedSaleId };
       
-      setSaleToPrint(completeSale); // Set the data for the printable component
-      setIsReceiptDialogOpen(true); // Show the success dialog with the print button
+      setSaleToPrint(completeSale);
+      setIsReceiptDialogOpen(true);
       
       clearCart(false);
       await fetchAndCalculateStock();
@@ -1709,7 +1713,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint({ ...newSale, id: savedSaleId });
-            handlePrint();
+            printReceipt();
         }
         clearCart(false);
         await fetchAndCalculateStock();
@@ -2227,7 +2231,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
-        onPrint={handlePrint}
+        onPrint={printReceipt}
       />
       
       {/* Other Dialogs */}
@@ -2248,7 +2252,7 @@ export default function PosPage() {
           onEdit={handleEditSale}
           onPrint={(sale) => {
               setSaleToPrint(sale);
-              setTimeout(() => handlePrint(), 100);
+              setTimeout(() => printReceipt(), 100);
           }}
           onDelete={handleDeleteSaleClick}
       />
