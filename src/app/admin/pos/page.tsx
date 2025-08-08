@@ -1373,37 +1373,31 @@ export default function PosPage() {
   const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
   const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
   
+  // --- Start of New Printing Logic ---
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      content: () => {
-        if (!receiptRef.current) {
-            console.error("[Print] contentRef missing. receiptRef.current is null.");
-            return null;
-        }
-        return receiptRef.current;
-      },
+      contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
-      onBeforeGetContent: () => {
+      onBeforePrint: () => {
+          console.log("Preparing to print receipt...");
           if (!saleToPrint) {
-              console.error("[Print] onBeforeGetContent: saleToPrint is null – aborting print.");
-              toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
-              return false; // Abort print
+              console.error("[Print Error] No sale data is set to be printed.");
+              return false; // Cancel printing
           }
           if (!receiptRef.current) {
-              console.error("[Print] onBeforeGetContent: receiptRef is not attached yet.");
-              toast({ title: 'Print Error', description: 'Printable component not ready.', variant: 'destructive' });
-              return false; // Abort print
+              console.error("[Print Error] The receipt component ref is not available.");
+              return false; // Cancel printing
           }
           return true;
       },
       onAfterPrint: () => {
-          setSaleToPrint(null); // Optional: clear after printing
+          console.log("Print job completed or cancelled.");
       },
   });
-
+  // --- End of New Printing Logic ---
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -1417,8 +1411,9 @@ export default function PosPage() {
       const savedSaleId = await addSale(saleObject, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
       const completeSale: Sale = { ...saleObject, id: savedSaleId };
       
-      setSaleToPrint(completeSale);
-      setIsReceiptDialogOpen(true);
+      setSaleToPrint(completeSale); // Set the data for the printable component
+      setIsReceiptDialogOpen(true); // Show the success dialog with the print button
+      
       clearCart(false);
       await fetchAndCalculateStock();
     } catch (error) {
@@ -1714,6 +1709,7 @@ export default function PosPage() {
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
             setSaleToPrint({ ...newSale, id: savedSaleId });
+            handlePrint();
         }
         clearCart(false);
         await fetchAndCalculateStock();
@@ -1822,17 +1818,7 @@ export default function PosPage() {
     
   return (
     <>
-      <div
-        style={{
-          position: 'absolute',
-          left: -99999,
-          top: 0,
-          width: 0,
-          height: 0,
-          overflow: 'hidden',
-        }}
-        aria-hidden
-      >
+      <div style={{ display: 'none' }}>
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
