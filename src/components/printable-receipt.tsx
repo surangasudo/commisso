@@ -35,7 +35,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         <div ref={ref} className="bg-white text-black p-4 font-mono text-xs" style={{ width: '300px' }}>
             <header className="text-center mb-4">
                 <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>
-                <p>Linking Street, Phoenix, Arizona, USA</p>
+                <p>{/* Add address from settings if available */}</p>
                 {settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
             </header>

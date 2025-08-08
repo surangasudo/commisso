@@ -1378,23 +1378,32 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      content: () => {
+        if (!receiptRef.current) {
+            console.error("[Print] contentRef missing. receiptRef.current is null.");
+            return null;
+        }
+        return receiptRef.current;
+      },
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
       onBeforeGetContent: () => {
-          if (!receiptRef.current) {
-              console.error("Print failed: receiptRef is null");
-              return false;
-          }
           if (!saleToPrint) {
-              console.error("Print failed: no sale data to print");
-              return false;
+              console.error("[Print] onBeforeGetContent: saleToPrint is null – aborting print.");
+              toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
+              return false; // Abort print
+          }
+          if (!receiptRef.current) {
+              console.error("[Print] onBeforeGetContent: receiptRef is not attached yet.");
+              toast({ title: 'Print Error', description: 'Printable component not ready.', variant: 'destructive' });
+              return false; // Abort print
           }
           return true;
       },
       onAfterPrint: () => {
-          setSaleToPrint(null);
+          setSaleToPrint(null); // Optional: clear after printing
       },
   });
+
 
   const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -1813,7 +1822,17 @@ export default function PosPage() {
     
   return (
     <>
-      <div style={{ position: 'absolute', left: '-9999px' }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: -99999,
+          top: 0,
+          width: 0,
+          height: 0,
+          overflow: 'hidden',
+        }}
+        aria-hidden
+      >
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
