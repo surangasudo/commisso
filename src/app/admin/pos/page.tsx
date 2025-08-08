@@ -1381,22 +1381,34 @@ export default function PosPage() {
   const handlePrint = useReactToPrint({
       contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+      onBeforePrint: () => new Promise<void>((resolve) => {
+          if (!saleToPrint) {
+            console.error('[Print] onBeforePrint: saleToPrint is null – aborting print.');
+            alert('No receipt to print');
+            // Do not resolve to cancel printing
+            return;
+          }
+          if (!receiptRef.current) {
+            console.error('[Print] onBeforePrint: receiptRef is not attached yet.');
+            alert('Printable component not ready');
+            // Do not resolve to cancel printing
+            return;
+          }
+          resolve();
+      }),
       onAfterPrint: () => {
-          console.log("Print job completed or cancelled.");
-          // Optional: clear the sale data after printing to prevent re-printing stale data
-          // setSaleToPrint(null);
+          console.log('Print completed successfully');
       },
   });
 
   const printReceipt = useCallback(() => {
     if (!saleToPrint) {
-      console.warn('printReceipt called, but no saleToPrint is set.');
-      toast({ title: 'No Receipt Data', description: 'There is no receipt data to print.', variant: 'destructive' });
-      return;
-    }
-    if (!receiptRef.current) {
-        console.warn('printReceipt called, but the receipt component ref is not available yet.');
-        toast({ title: 'Print Error', description: 'The printable component is not ready.', variant: 'destructive' });
+        console.warn('No sale data to print');
+        toast({
+            title: 'Print Error',
+            description: 'No sale data available to print.',
+            variant: 'destructive',
+        });
         return;
     }
     handlePrint();
@@ -1712,8 +1724,9 @@ export default function PosPage() {
         const savedSaleId = await addSale(newSale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
         toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
         if (settings.pos.printInvoiceOnSuspend) {
-            setSaleToPrint({ ...newSale, id: savedSaleId });
-            printReceipt();
+            const completeSale: Sale = { ...newSale, id: savedSaleId };
+            setSaleToPrint(completeSale);
+            setTimeout(() => handlePrint(), 100);
         }
         clearCart(false);
         await fetchAndCalculateStock();

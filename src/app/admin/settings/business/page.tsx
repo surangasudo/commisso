@@ -94,17 +94,6 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
         setSettings(s => ({...s, [id]: value as any}));
     };
     
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setSettings(s => ({...s, logo: reader.result as string}));
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
     const handleUpdateSettings = () => {
         updateSettings(settings);
         toast({
@@ -266,14 +255,9 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
                     </Select>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="logo">Upload Logo:</Label>
-                    <div className="flex items-center gap-2">
-                        <Input id="logo" type="file" className="flex-1" onChange={handleFileChange} accept="image/*" />
-                         {settings.logo && (
-                            <img src={settings.logo} alt="Logo Preview" className="h-10 w-10 rounded-md object-contain border" />
-                        )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Previous logo (if exists) will be replaced</p>
+                    <Label htmlFor="logo">Logo URL:</Label>
+                    <Input id="logo" placeholder="https://your-domain.com/logo.png" value={settings.logo || ''} onChange={handleInputChange} />
+                    <p className="text-xs text-muted-foreground">Enter a public URL for your business logo.</p>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="fyStartMonth" className="flex items-center gap-1">Financial year start month: <Info className="w-3 h-3 text-muted-foreground"/></Label>
