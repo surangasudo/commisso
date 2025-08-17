@@ -19,7 +19,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
 
-    // Early return if no sale - but ensure we have a proper structure
+    // Always render a DOM node that holds the ref, even if no sale.
     if (!sale) {
         return (
             <div ref={ref} style={{ width: '300px', minHeight: '100px' }}>
@@ -32,11 +32,23 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     const discountAmount = subtotal > 0 ? (sale.totalAmount - subtotal - (sale.taxAmount || 0)) : 0;
 
     return (
-        <div ref={ref} className="bg-white text-black p-4 font-mono text-xs" style={{ width: '300px' }}>
+        <div 
+            ref={ref} 
+            className="bg-white text-black p-4 font-mono text-xs" 
+            style={{ width: '300px' }} // Fixed width improves layout predictability in iframe
+        >
             <header className="text-center mb-4">
-                {settings.business.logo && <img src={settings.business.logo} alt="Business Logo" className="mx-auto h-16 w-auto object-contain mb-2" data-ai-hint="logo" />}
+                {settings.business.logo && (
+                    <img 
+                        src={settings.business.logo} 
+                        alt="Business Logo" 
+                        className="mx-auto h-16 w-auto object-contain mb-2" 
+                        decoding="async"
+                        loading="eager"
+                    />
+                )}
                 <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>
-                <p>{/* Add address from settings if available */}</p>
+                {/* Address optional: ensure it does not fetch remote assets */}
                 {settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
             </header>
