@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
@@ -134,7 +133,7 @@ const ReceiptFinalizedDialog = ({
                     </div>
                 </DialogHeader>
                 <DialogFooter className="sm:justify-center gap-2">
-                     <Button onClick={onPrint}><Printer className="mr-2 h-4 w-4" /> Print Receipt</Button>
+                     <Button onClick={onPrint} disabled={!sale}><Printer className="mr-2 h-4 w-4" /> Print Receipt</Button>
                      <Button variant="outline" onClick={onClose}>Close</Button>
                 </DialogFooter>
             </DialogContent>
@@ -1376,7 +1375,7 @@ export default function PosPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
-
+  
   const handlePrint = useReactToPrint({
       contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
@@ -1384,17 +1383,17 @@ export default function PosPage() {
 
   const printReceipt = useCallback(() => {
     if (!saleToPrint) {
-        console.warn('PrintReceipt called, but no sale data is ready.');
-        toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
-        return;
+      console.warn('[Print] Attempted to print with no saleToPrint data.');
+      toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
+      return;
     }
     if (!receiptRef.current) {
-        console.warn('PrintReceipt called, but the receipt component ref is not attached.');
+        console.warn('[Print] Attempted to print but receiptRef is not attached yet.');
         toast({ title: 'Print Error', description: 'Print component is not ready.', variant: 'destructive' });
         return;
     }
     handlePrint();
-  }, [saleToPrint, handlePrint, toast]);
+  }, [handlePrint, saleToPrint, toast]);
 
   const finalizeAndShowReceipt = useCallback(async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -1421,7 +1420,7 @@ export default function PosPage() {
             variant: "destructive"
         });
     }
-  }, [cart, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule, createSaleObject, toast, fetchAndCalculateStock]);
+  }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1588,7 +1587,7 @@ export default function PosPage() {
     );
   };
 
-  const clearCart = (showToast = true) => {
+  const clearCart = useCallback((showToast = true) => {
     setCart([]);
     setDiscount(0);
     setOrderTax(0);
@@ -1604,7 +1603,7 @@ export default function PosPage() {
             description: 'The transaction has been cancelled.',
         });
     }
-  };
+  }, [toast]);
 
   const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
       const commissionAgentIds = [
@@ -1816,7 +1815,17 @@ export default function PosPage() {
     
   return (
     <>
-      <div style={{ position: 'absolute', left: '-9999px', top: 0, width: 0, height: 0, overflow: 'hidden' }}>
+      <div
+        style={{
+          position: 'absolute',
+          left: -99999,
+          top: 0,
+          width: 0,
+          height: 0,
+          overflow: 'hidden',
+        }}
+        aria-hidden
+      >
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
@@ -2246,7 +2255,7 @@ export default function PosPage() {
           onEdit={handleEditSale}
           onPrint={(sale) => {
               setSaleToPrint(sale);
-              printReceipt();
+              setTimeout(() => printReceipt(), 100);
           }}
           onDelete={handleDeleteSaleClick}
       />
