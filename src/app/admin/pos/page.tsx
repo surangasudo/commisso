@@ -1395,8 +1395,13 @@ export default function PosPage() {
     }
     handlePrint();
   }, [handlePrint, saleToPrint, toast]);
-
   
+  const subtotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
+  }, [cart]);
+
+  const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
+
   const clearCart = useCallback((showToast = true) => {
     setCart([]);
     setDiscount(0);
@@ -1414,6 +1419,54 @@ export default function PosPage() {
         });
     }
   }, [toast]);
+
+  const fetchAndCalculateStock = useCallback(async () => {
+      if (products.length === 0) {
+        setIsLoading(true);
+      }
+        
+      try {
+        const [productsData, salesData, purchasesData, profilesData, customersData] = await Promise.all([
+          getProducts(),
+          getSales(),
+          getPurchases(),
+          getCommissionProfiles(),
+          getCustomers(),
+        ]);
+
+        setCustomers(customersData);
+        setRecentSales(salesData.slice(0, 10));
+
+        const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
+          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const purchasesByProduct = purchasesData.flatMap(p => p.items).reduce((acc, item) => {
+          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const productsWithCalculatedStock = productsData.map(product => {
+          const purchased = purchasesByProduct[product.id] || 0;
+          const sold = salesByProduct[product.id] || 0;
+          const calculatedStock = (product.currentStock || 0) + purchased - sold;
+          return { ...product, currentStock: calculatedStock };
+        });
+
+        setProducts(productsWithCalculatedStock);
+        setCommissionProfiles(profilesData);
+      } catch (error) {
+        console.error("Failed to fetch data and calculate stock:", error);
+        toast({
+          title: "Error",
+          description: "Could not load stock levels. Please try refreshing.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }, [toast, products.length]);
   
   const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
       const commissionAgentIds = [
@@ -1485,54 +1538,6 @@ export default function PosPage() {
     }
   }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart]);
 
-  const fetchAndCalculateStock = useCallback(async () => {
-      if (products.length === 0) {
-        setIsLoading(true);
-      }
-        
-      try {
-        const [productsData, salesData, purchasesData, profilesData, customersData] = await Promise.all([
-          getProducts(),
-          getSales(),
-          getPurchases(),
-          getCommissionProfiles(),
-          getCustomers(),
-        ]);
-
-        setCustomers(customersData);
-        setRecentSales(salesData.slice(0, 10));
-
-        const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
-          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
-          return acc;
-        }, {} as Record<string, number>);
-
-        const purchasesByProduct = purchasesData.flatMap(p => p.items).reduce((acc, item) => {
-          acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
-          return acc;
-        }, {} as Record<string, number>);
-
-        const productsWithCalculatedStock = productsData.map(product => {
-          const purchased = purchasesByProduct[product.id] || 0;
-          const sold = salesByProduct[product.id] || 0;
-          const calculatedStock = (product.currentStock || 0) + purchased - sold;
-          return { ...product, currentStock: calculatedStock };
-        });
-
-        setProducts(productsWithCalculatedStock);
-        setCommissionProfiles(profilesData);
-      } catch (error) {
-        console.error("Failed to fetch data and calculate stock:", error);
-        toast({
-          title: "Error",
-          description: "Could not load stock levels. Please try refreshing.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }, [toast, products.length]);
-
   useEffect(() => {
     fetchAndCalculateStock();
   }, [fetchAndCalculateStock]);
@@ -1561,12 +1566,6 @@ export default function PosPage() {
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-  const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
-  }, [cart]);
-
-  const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
-  
   useEffect(() => {
     const customerDisplayData = {
         cart: cart.map(item => ({
