@@ -36,11 +36,11 @@ const initialPrinters: ReceiptPrinter[] = [
 ];
 
 const initialFormData: Omit<ReceiptPrinter, 'id'> = {
-    name: '',
+    name: 'Cashier Printer',
     connectionType: 'Network',
     capabilityProfile: 'Default',
     charPerLine: 42,
-    ipAddress: '',
+    ipAddress: '192.168.0.100',
     port: 9100,
     path: ''
 };
@@ -48,7 +48,7 @@ const initialFormData: Omit<ReceiptPrinter, 'id'> = {
 export default function ReceiptPrintersPage() {
   const { toast } = useToast();
   const [printers, setPrinters] = useState(initialPrinters);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(true);
   const [editingPrinter, setEditingPrinter] = useState<ReceiptPrinter | null>(null);
   const [formData, setFormData] = useState<Omit<ReceiptPrinter, 'id'>>(initialFormData);
 
