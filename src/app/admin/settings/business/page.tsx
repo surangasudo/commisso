@@ -256,7 +256,7 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="logo">Logo URL:</Label>
-                    <Input id="logo" placeholder="https://your-domain.com/logo.png" value={settings.logo || ''} onChange={handleInputChange} />
+                    <Input id="logo" placeholder="https://your-domain.com/logo.png" value={settings.logo || 'https://placehold.co/150x60.png'} onChange={handleInputChange} />
                     <p className="text-xs text-muted-foreground">Enter a public URL for your business logo.</p>
                 </div>
                 <div className="space-y-2">
