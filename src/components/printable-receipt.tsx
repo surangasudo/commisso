@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -17,6 +18,15 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     const productMap = React.useMemo(() => {
         return new Map(products.map(p => [p.id, p]));
     }, [products]);
+
+    // Add a guard to ensure settings are loaded before rendering the receipt.
+    if (!settings || !settings.invoice) {
+        return (
+             <div ref={ref} style={{ width: '300px', minHeight: '100px' }}>
+                <div>Loading settings...</div>
+            </div>
+        );
+    }
 
     // Always render a DOM node that holds the ref, even if no sale.
     if (!sale) {
