@@ -45,10 +45,16 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     return (
         <div 
             ref={ref} 
-            className="bg-white text-black p-4 font-mono text-xs" 
-            style={{ width: '300px' }} // Fixed width improves layout predictability in iframe
+            style={{ 
+                width: '300px', 
+                padding: '16px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontFamily: 'monospace', 
+                fontSize: '12px' 
+            }}
         >
-            <header className="text-center mb-4">
+            <header style={{ textAlign: 'center', marginBottom: '16px' }}>
                 {/* {layoutSettings.showLogo && settings.business.logo && (
                     <img 
                         src={settings.business.logo} 
@@ -58,83 +64,83 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                         loading="eager"
                     />
                 )} */}
-                {layoutSettings.showBusinessName && <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>}
+                {layoutSettings.showBusinessName && <h1 style={{fontSize: '1.125rem', fontWeight: 'bold'}}>{settings.business?.businessName || 'Business Name'}</h1>}
                 {layoutSettings.showTax1 && settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
             </header>
 
-            <h2 className="text-center font-bold text-base mb-2">{layoutSettings.invoiceHeading || 'INVOICE'}</h2>
-            <p><span className="font-semibold">Invoice No:</span> {sale.invoiceNo}</p>
-            {sale.customerName && <p><span className="font-semibold">Customer:</span> {sale.customerName}</p>}
-            {layoutSettings.showMobileNumber && sale.contactNumber && <p><span className="font-semibold">Contact:</span> {sale.contactNumber}</p>}
+            <h2 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '1rem', marginBottom: '8px' }}>{layoutSettings.invoiceHeading || 'INVOICE'}</h2>
+            <p><span style={{ fontWeight: '600' }}>Invoice No:</span> {sale.invoiceNo}</p>
+            {sale.customerName && <p><span style={{ fontWeight: '600' }}>Customer:</span> {sale.customerName}</p>}
+            {layoutSettings.showMobileNumber && sale.contactNumber && <p><span style={{ fontWeight: '600' }}>Contact:</span> {sale.contactNumber}</p>}
 
-            <table className="w-full my-4">
+            <table style={{ width: '100%', margin: '16px 0' }}>
                 <thead>
-                    <tr className="border-b-2 border-dashed border-black">
-                        <th className="text-left font-bold">Product</th>
-                        <th className="text-center font-bold">Qty</th>
-                        <th className="text-right font-bold">Price</th>
-                        <th className="text-right font-bold">Amount</th>
+                    <tr style={{ borderBottom: '2px dashed black' }}>
+                        <th style={{ textAlign: 'left', fontWeight: 'bold' }}>Product</th>
+                        <th style={{ textAlign: 'center', fontWeight: 'bold' }}>Qty</th>
+                        <th style={{ textAlign: 'right', fontWeight: 'bold' }}>Price</th>
+                        <th style={{ textAlign: 'right', fontWeight: 'bold' }}>Amount</th>
                     </tr>
                 </thead>
                 <tbody>
                     {sale.items.map((item, index) => {
                         const product = productMap.get(item.productId);
                         return (
-                            <tr key={index} className="border-b border-dashed border-gray-400">
-                                <td className="py-1">{product?.name ?? 'Unknown'}</td>
-                                <td className="text-center py-1">{item.quantity}</td>
-                                <td className="text-right py-1">{item.unitPrice.toFixed(2)}</td>
-                                <td className="text-right py-1">{(item.quantity * item.unitPrice).toFixed(2)}</td>
+                            <tr key={index} style={{ borderBottom: '1px dashed #9ca3af' }}>
+                                <td style={{ padding: '4px 0' }}>{product?.name ?? 'Unknown'}</td>
+                                <td style={{ textAlign: 'center', padding: '4px 0' }}>{item.quantity}</td>
+                                <td style={{ textAlign: 'right', padding: '4px 0' }}>{item.unitPrice.toFixed(2)}</td>
+                                <td style={{ textAlign: 'right', padding: '4px 0' }}>{(item.quantity * item.unitPrice).toFixed(2)}</td>
                             </tr>
                         )
                     })}
                 </tbody>
             </table>
             
-            <div className="space-y-1">
-                <div className="flex justify-between">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Subtotal:</span>
                     <span>{formatCurrency(subtotal)}</span>
                 </div>
                 {discountAmount !== 0 && (
-                    <div className="flex justify-between">
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>Discount:</span>
                         <span>(-) {formatCurrency(Math.abs(discountAmount))}</span>
                     </div>
                 )}
                 {sale.taxAmount !== undefined && sale.taxAmount > 0 && (
-                    <div className="flex justify-between">
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>Tax:</span>
                         <span>(+) {formatCurrency(sale.taxAmount)}</span>
                     </div>
                 )}
-                <div className="flex justify-between font-bold text-sm border-t-2 border-dashed border-black pt-1">
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '14px', borderTop: '2px dashed black', paddingTop: '4px' }}>
                     <span>Total:</span>
                     <span>{formatCurrency(sale.totalAmount)}</span>
                 </div>
             </div>
 
-            <div className="mt-4 border-t-2 border-dashed border-black pt-2">
+            <div style={{ marginTop: '16px', borderTop: '2px dashed black', paddingTop: '8px' }}>
                 {sale.paymentMethod && (
-                    <div className="flex justify-between">
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span>{sale.paymentMethod}:</span>
                         <span>{formatCurrency(sale.totalPaid)}</span>
                     </div>
                 )}
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Total Paid:</span>
                     <span>{formatCurrency(sale.totalPaid)}</span>
                 </div>
                 {sale.sellDue > 0 && (
-                    <div className="flex justify-between font-bold">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                         <span>Balance Due:</span>
                         <span>{formatCurrency(sale.sellDue)}</span>
                     </div>
                 )}
             </div>
 
-            <footer className="text-center mt-6">
+            <footer style={{ textAlign: 'center', marginTop: '24px' }}>
                 <p>{layoutSettings.footerText || 'Thank you for your business!'}</p>
             </footer>
         </div>
