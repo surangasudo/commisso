@@ -20,7 +20,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     }, [products]);
 
     // Add a guard to ensure settings are loaded before rendering the receipt.
-    if (!settings || !settings.invoice) {
+    if (!settings?.invoice) {
         return (
              <div ref={ref} style={{ width: '300px', minHeight: '100px' }}>
                 <div>Loading settings...</div>
@@ -49,7 +49,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
             style={{ width: '300px' }} // Fixed width improves layout predictability in iframe
         >
             <header className="text-center mb-4">
-                {layoutSettings.showLogo && settings.business.logo && (
+                {/* {layoutSettings.showLogo && settings.business.logo && (
                     <img 
                         src={settings.business.logo} 
                         alt="Business Logo" 
@@ -57,7 +57,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                         decoding="async"
                         loading="eager"
                     />
-                )}
+                )} */}
                 {layoutSettings.showBusinessName && <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>}
                 {layoutSettings.showTax1 && settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
