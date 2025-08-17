@@ -1378,7 +1378,7 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
   });
 
@@ -1395,12 +1395,12 @@ export default function PosPage() {
     }
     handlePrint();
   }, [handlePrint, saleToPrint, toast]);
-  
-  const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
-  }, [cart]);
 
-  const totalPayable = useMemo(() => subtotal - discount + orderTax + shipping, [subtotal, discount, orderTax, shipping]);
+  const { subtotal, totalPayable } = useMemo(() => {
+    const currentSubtotal = cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
+    const currentTotalPayable = currentSubtotal - discount + orderTax + shipping;
+    return { subtotal: currentSubtotal, totalPayable: currentTotalPayable };
+  }, [cart, discount, orderTax, shipping]);
 
   const clearCart = useCallback((showToast = true) => {
     setCart([]);
@@ -1419,7 +1419,7 @@ export default function PosPage() {
         });
     }
   }, [toast]);
-
+  
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
         setIsLoading(true);
@@ -1467,7 +1467,7 @@ export default function PosPage() {
         setIsLoading(false);
       }
     }, [toast, products.length]);
-  
+
   const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
       const commissionAgentIds = [
           selectedAgent?.id,
@@ -1825,6 +1825,7 @@ export default function PosPage() {
           width: 0,
           height: 0,
           overflow: 'hidden',
+          display: 'none',
         }}
         aria-hidden
       >

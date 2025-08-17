@@ -32,7 +32,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
     if (!sale) {
         return (
             <div ref={ref} style={{ width: '300px', minHeight: '100px' }}>
-                <div>No receipt data available</div>
+                {/* This div must be present for the ref to attach to, even if there's no data yet. */}
             </div>
         );
     }
