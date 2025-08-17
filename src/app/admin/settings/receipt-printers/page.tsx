@@ -36,11 +36,11 @@ const initialPrinters: ReceiptPrinter[] = [
 ];
 
 const initialFormData: Omit<ReceiptPrinter, 'id'> = {
-    name: 'Cashier Printer',
+    name: '',
     connectionType: 'Network',
     capabilityProfile: 'Default',
     charPerLine: 42,
-    ipAddress: '192.168.0.100',
+    ipAddress: '',
     port: 9100,
     path: ''
 };
@@ -48,7 +48,7 @@ const initialFormData: Omit<ReceiptPrinter, 'id'> = {
 export default function ReceiptPrintersPage() {
   const { toast } = useToast();
   const [printers, setPrinters] = useState(initialPrinters);
-  const [isDialogOpen, setIsDialogOpen] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPrinter, setEditingPrinter] = useState<ReceiptPrinter | null>(null);
   const [formData, setFormData] = useState<Omit<ReceiptPrinter, 'id'>>(initialFormData);
 
@@ -112,7 +112,7 @@ export default function ReceiptPrintersPage() {
                     <Button size="sm" onClick={handleAddClick}><Plus className="mr-2 h-4 w-4" /> Add new printer</Button>
                 </div>
                 <CardDescription>
-                    Manage all your receipt printers.
+                    Manage all your receipt printers. To "Save as PDF", use the browser-based printing option.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -180,7 +180,7 @@ export default function ReceiptPrintersPage() {
                                         <SelectItem value="Network">Network</SelectItem>
                                         <SelectItem value="Bluetooth">Bluetooth</SelectItem>
                                         <SelectItem value="USB">USB</SelectItem>
-                                        <SelectItem value="Printer">Printer</SelectItem>
+                                        <SelectItem value="Printer">Printer (Browser-based)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -200,7 +200,7 @@ export default function ReceiptPrintersPage() {
                             </div>
                         </div>
                         
-                        {(formData.connectionType === 'Network') && (
+                        {formData.connectionType === 'Network' && (
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                 <div className="space-y-2">
                                     <Label htmlFor="ipAddress">IP Address *</Label>
@@ -213,13 +213,24 @@ export default function ReceiptPrintersPage() {
                              </div>
                         )}
                         
-                        {(formData.connectionType === 'Printer' || formData.connectionType === 'USB') && (
+                        {(formData.connectionType === 'USB') && (
                             <div className="pt-4 border-t">
                                 <div className="space-y-2">
                                     <Label htmlFor="path">Path *</Label>
-                                    <Input id="path" value={formData.path || ''} onChange={handleInputChange} placeholder={formData.connectionType === 'USB' ? 'e.g., /dev/usb/lp0' : 'e.g., /dev/lp0'}/>
+                                    <Input id="path" value={formData.path || ''} onChange={handleInputChange} placeholder={'e.g., /dev/usb/lp0'}/>
                                     <p className="text-xs text-muted-foreground">
-                                        For parallel port on Linux, the path is typically <code>/dev/lp0</code>. For USB, it could be <code>/dev/usb/lp0</code>.
+                                        For USB, the path is typically <code>/dev/usb/lp0</code> on Linux systems.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {formData.connectionType === 'Printer' && (
+                             <div className="pt-4 border-t">
+                                <div className="p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-r-md">
+                                    <p className="font-semibold">Browser-based Printing</p>
+                                    <p className="text-sm mt-1">
+                                        This option will use your web browser's print dialog. From there, you can select any printer installed on your computer, including **Microsoft Print to PDF** or **Save as PDF**.
                                     </p>
                                 </div>
                             </div>
