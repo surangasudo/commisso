@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
@@ -1379,33 +1380,23 @@ export default function PosPage() {
   const handlePrint = useReactToPrint({
       contentRef: receiptRef,
       documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
-      onBeforePrint: () => {
-        if (!saleToPrint || !receiptRef.current) {
-            console.error("Print pre-check failed. Data or ref is missing.");
-            return false;
-        }
-        return true;
-      },
-      onAfterPrint: () => {
-          console.log('Print job completed.');
-      },
   });
 
   const printReceipt = useCallback(() => {
     if (!saleToPrint) {
-        console.warn('printReceipt called but saleToPrint is null.');
+        console.warn('PrintReceipt called, but no sale data is ready.');
         toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
         return;
     }
     if (!receiptRef.current) {
-        console.warn('printReceipt called but receiptRef is not attached.');
+        console.warn('PrintReceipt called, but the receipt component ref is not attached.');
         toast({ title: 'Print Error', description: 'Print component is not ready.', variant: 'destructive' });
         return;
     }
     handlePrint();
   }, [saleToPrint, handlePrint, toast]);
 
-  const finalizeAndShowReceipt = async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
+  const finalizeAndShowReceipt = useCallback(async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
         toast({ title: 'Cart Empty', description: 'Please add products to the cart first.', variant: 'destructive' });
         return;
@@ -1430,7 +1421,7 @@ export default function PosPage() {
             variant: "destructive"
         });
     }
-  };
+  }, [cart, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule, createSaleObject, toast, fetchAndCalculateStock]);
 
   const fetchAndCalculateStock = useCallback(async () => {
       if (products.length === 0) {
@@ -1615,7 +1606,7 @@ export default function PosPage() {
     }
   };
 
-  const createSaleObject = (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
+  const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
       const commissionAgentIds = [
           selectedAgent?.id,
           selectedSubAgent?.id,
@@ -1656,7 +1647,7 @@ export default function PosPage() {
           taxAmount: orderTax,
           commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
       };
-  };
+  }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalesperson]);
 
   const handleFinalizeCashPayment = (totalPaid: number) => {
     const paymentStatus = totalPaid >= totalPayable ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Due');
@@ -1716,7 +1707,7 @@ export default function PosPage() {
         if (settings.pos.printInvoiceOnSuspend) {
             const completeSale: Sale = { ...newSale, id: savedSaleId };
             setSaleToPrint(completeSale);
-            setTimeout(() => printReceipt(), 100);
+            printReceipt();
         }
         clearCart(false);
         await fetchAndCalculateStock();
@@ -1825,7 +1816,7 @@ export default function PosPage() {
     
   return (
     <>
-      <div style={{ position: 'absolute', left: '-9999px' }}>
+      <div style={{ position: 'absolute', left: '-9999px', top: 0, width: 0, height: 0, overflow: 'hidden' }}>
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
@@ -2234,7 +2225,7 @@ export default function PosPage() {
             setIsReceiptDialogOpen(false);
             setSaleToPrint(null);
         }}
-        onPrint={() => printReceipt()}
+        onPrint={printReceipt}
       />
       
       {/* Other Dialogs */}
@@ -2255,7 +2246,7 @@ export default function PosPage() {
           onEdit={handleEditSale}
           onPrint={(sale) => {
               setSaleToPrint(sale);
-              setTimeout(() => printReceipt(), 100);
+              printReceipt();
           }}
           onDelete={handleDeleteSaleClick}
       />
