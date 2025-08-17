@@ -29,6 +29,8 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
 
     const subtotal = sale.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
     const discountAmount = subtotal > 0 ? (sale.totalAmount - subtotal - (sale.taxAmount || 0)) : 0;
+    
+    const { invoice: layoutSettings } = settings;
 
     return (
         <div 
@@ -37,7 +39,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
             style={{ width: '300px' }} // Fixed width improves layout predictability in iframe
         >
             <header className="text-center mb-4">
-                {settings.business.logo && (
+                {layoutSettings.showLogo && settings.business.logo && (
                     <img 
                         src={settings.business.logo} 
                         alt="Business Logo" 
@@ -46,16 +48,15 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                         loading="eager"
                     />
                 )}
-                <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>
-                {/* Address optional: ensure it does not fetch remote assets */}
-                {settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
+                {layoutSettings.showBusinessName && <h1 className="text-lg font-bold">{settings.business?.businessName || 'Business Name'}</h1>}
+                {layoutSettings.showTax1 && settings.tax?.taxNumber1 && <p>GSTIN: {settings.tax.taxNumber1}</p>}
                 <p>Date: {new Date(sale.date).toLocaleString()}</p>
             </header>
 
-            <h2 className="text-center font-bold text-base mb-2">INVOICE</h2>
+            <h2 className="text-center font-bold text-base mb-2">{layoutSettings.invoiceHeading || 'INVOICE'}</h2>
             <p><span className="font-semibold">Invoice No:</span> {sale.invoiceNo}</p>
             {sale.customerName && <p><span className="font-semibold">Customer:</span> {sale.customerName}</p>}
-            {sale.contactNumber && <p><span className="font-semibold">Contact:</span> {sale.contactNumber}</p>}
+            {layoutSettings.showMobileNumber && sale.contactNumber && <p><span className="font-semibold">Contact:</span> {sale.contactNumber}</p>}
 
             <table className="w-full my-4">
                 <thead>
@@ -124,7 +125,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
             </div>
 
             <footer className="text-center mt-6">
-                <p>Thank you for your business!</p>
+                <p>{layoutSettings.footerText || 'Thank you for your business!'}</p>
             </footer>
         </div>
     );
