@@ -13,7 +13,7 @@ type PrintableReceiptProps = {
 
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(
     ({ sale, products, settings, formatCurrency }, ref) => {
-        if (!sale || !settings) {
+        if (!sale || !settings || !settings.invoice) {
             return <div ref={ref}>Loading...</div>;
         }
 
