@@ -1378,7 +1378,7 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      // The `content` option is removed from here
+      content: () => receiptRef.current,
   });
 
   const printReceipt = useCallback(() => {
@@ -1386,8 +1386,7 @@ export default function PosPage() {
       toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
       return;
     }
-    // We pass the content reference directly to the print handler
-    handlePrint(null, () => receiptRef.current);
+    handlePrint();
   }, [handlePrint, saleToPrint, toast]);
   
   const { subtotal, totalPayable } = useMemo(() => {
