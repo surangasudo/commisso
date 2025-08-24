@@ -1378,8 +1378,7 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      contentRef: receiptRef,
-      documentTitle: `Receipt_${saleToPrint?.invoiceNo || 'unknown'}`,
+      content: () => receiptRef.current,
   });
 
   const printReceipt = useCallback(() => {
@@ -1825,6 +1824,7 @@ export default function PosPage() {
           width: 0,
           height: 0,
           overflow: 'hidden',
+          zIndex: -1,
         }}
       >
         <PrintableReceipt
