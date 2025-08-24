@@ -1378,28 +1378,66 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+      // The `content` option is removed from here
   });
 
   const printReceipt = useCallback(() => {
     if (!saleToPrint) {
-      console.warn('[Print] Attempted to print with no saleToPrint data.');
       toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
       return;
     }
-    if (!receiptRef.current) {
-        console.warn('[Print] Attempted to print but receiptRef is not attached yet.');
-        toast({ title: 'Print Error', description: 'Print component is not ready.', variant: 'destructive' });
-        return;
-    }
-    handlePrint();
+    // We pass the content reference directly to the print handler
+    handlePrint(null, () => receiptRef.current);
   }, [handlePrint, saleToPrint, toast]);
-
+  
   const { subtotal, totalPayable } = useMemo(() => {
     const currentSubtotal = cart.reduce((acc, item) => acc + item.sellingPrice * item.quantity, 0);
     const currentTotalPayable = currentSubtotal - discount + orderTax + shipping;
     return { subtotal: currentSubtotal, totalPayable: currentTotalPayable };
   }, [cart, discount, orderTax, shipping]);
+
+  const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
+      const commissionAgentIds = [
+          selectedAgent?.id,
+          selectedSubAgent?.id,
+          selectedCompany?.id,
+          selectedSalesperson?.id
+      ].filter((id): id is string => !!id);
+      
+      const customer = customers.find(c => c.id === selectedCustomer);
+      const customerId = customer ? customer.id : null;
+      const customerName = customer ? customer.name : 'Walk-In Customer';
+      const contactNumber = customer ? customer.mobile : 'N/A';
+
+      return {
+          date: new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          invoiceNo: `INV-${Date.now()}`,
+          customerId,
+          customerName,
+          contactNumber,
+          location: settings.business.businessName,
+          paymentStatus: paymentStatus,
+          paymentMethod: paymentMethod,
+          totalAmount: totalPayable,
+          totalPaid: totalPaid,
+          sellDue: Math.max(0, totalPayable - totalPaid),
+          sellReturnDue: 0,
+          shippingStatus: null,
+          totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
+          addedBy: 'Admin', // Mocked
+          sellNote: null,
+          staffNote: null,
+          shippingDetails: null,
+          items: cart.map(item => ({
+              productId: item.product.id,
+              quantity: item.quantity,
+              unitPrice: item.sellingPrice,
+              tax: 0, // Simplified
+          })),
+          taxAmount: orderTax,
+          commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
+      };
+  }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalesperson]);
 
   const clearCart = useCallback((showToast = true) => {
     setCart([]);
@@ -1466,49 +1504,6 @@ export default function PosPage() {
         setIsLoading(false);
       }
     }, [toast, products.length]);
-
-  const createSaleObject = useCallback((paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial' | 'Suspended', totalPaid: number): Omit<Sale, 'id'> => {
-      const commissionAgentIds = [
-          selectedAgent?.id,
-          selectedSubAgent?.id,
-          selectedCompany?.id,
-          selectedSalesperson?.id
-      ].filter((id): id is string => !!id);
-      
-      const customer = customers.find(c => c.id === selectedCustomer);
-      const customerId = customer ? customer.id : null;
-      const customerName = customer ? customer.name : 'Walk-In Customer';
-      const contactNumber = customer ? customer.mobile : 'N/A';
-
-      return {
-          date: new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-          invoiceNo: `INV-${Date.now()}`,
-          customerId,
-          customerName,
-          contactNumber,
-          location: settings.business.businessName,
-          paymentStatus: paymentStatus,
-          paymentMethod: paymentMethod,
-          totalAmount: totalPayable,
-          totalPaid: totalPaid,
-          sellDue: Math.max(0, totalPayable - totalPaid),
-          sellReturnDue: 0,
-          shippingStatus: null,
-          totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
-          addedBy: 'Admin', // Mocked
-          sellNote: null,
-          staffNote: null,
-          shippingDetails: null,
-          items: cart.map(item => ({
-              productId: item.product.id,
-              quantity: item.quantity,
-              unitPrice: item.sellingPrice,
-              tax: 0, // Simplified
-          })),
-          taxAmount: orderTax,
-          commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
-      };
-  }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalesperson]);
 
   const finalizeAndShowReceipt = useCallback(async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number) => {
     if (cart.length === 0) {
@@ -1819,7 +1814,7 @@ export default function PosPage() {
       <div
         style={{
           position: 'absolute',
-          left: -99999,
+          left: '-9999px',
           top: 0,
           width: 0,
           height: 0,
