@@ -1825,15 +1825,14 @@ export default function PosPage() {
           width: 0,
           height: 0,
           overflow: 'hidden',
-          display: 'none',
         }}
-        aria-hidden
       >
         <PrintableReceipt
             ref={receiptRef}
             sale={saleToPrint}
             products={products}
             settings={settings}
+            formatCurrency={formatCurrency}
         />
       </div>
       <div className="pos-page-container">
