@@ -1378,13 +1378,13 @@ export default function PosPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   
   const handlePrint = useReactToPrint({
-      content: () => receiptRef.current,
+    content: () => receiptRef.current,
   });
 
   const printReceipt = useCallback(() => {
     if (!saleToPrint) {
-      toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
-      return;
+        toast({ title: 'Print Error', description: 'No receipt data to print.', variant: 'destructive' });
+        return;
     }
     handlePrint();
   }, [handlePrint, saleToPrint, toast]);

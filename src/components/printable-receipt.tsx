@@ -46,7 +46,8 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
         };
 
         return (
-            <div ref={ref} style={containerStyle}>
+            <div ref={ref}>
+              <div style={containerStyle}>
                 <header style={headerStyle}>
                     {/* The logo is commented out to prevent loading issues */}
                     {/* {layoutSettings.showLogo && settings.business.logo && (
@@ -121,6 +122,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
                 <footer style={{ textAlign: 'center', marginTop: '16px', borderTop: '1px dashed black', paddingTop: '8px' }}>
                     <p>{layoutSettings.footerText}</p>
                 </footer>
+              </div>
             </div>
         );
     }
