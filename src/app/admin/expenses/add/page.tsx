@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { FirebaseError } from 'firebase/app';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
-import { Timestamp } from 'firebase/firestore';
+
 
 type TaxRate = { id: string; name: string; rate: number };
 
@@ -70,7 +70,7 @@ export default function AddExpensePage() {
         };
         fetchData();
     }, [toast]);
-    
+
     const mainCategories = categories.filter(c => !c.parentId);
     const subCategories = formData.expenseCategory ? categories.filter(c => c.parentId === formData.expenseCategory) : [];
 
@@ -94,7 +94,7 @@ export default function AddExpensePage() {
             setFormData(prev => ({ ...prev, [field]: date }));
         }
     };
-    
+
     const { totalWithTax, paymentDue } = useMemo(() => {
         const total = Number(formData.totalAmount) || 0;
         const paid = Number(formData.paidAmount) || 0;
@@ -130,13 +130,12 @@ export default function AddExpensePage() {
 
             await addExpense({
                 ...finalExpenseData,
-                date: Timestamp.fromDate(new Date(formData.paidOn)),
-            });
+            }, settings.prefixes.expenses);
             toast({ title: "Success", description: "Expense added successfully." });
             router.push('/admin/expenses/list');
         } catch (error) {
             console.error("Failed to add expense:", error);
-             if (error instanceof FirebaseError && error.code === 'permission-denied') {
+            if (error instanceof FirebaseError && error.code === 'permission-denied') {
                 toast({
                     title: "Permission Error",
                     description: "You don't have permission to add expenses. Please check your Firestore security rules.",
@@ -181,7 +180,7 @@ export default function AddExpensePage() {
                                 <SelectContent>{subCategories.map(cat => (<SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>))}</SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label htmlFor="date">Date:*</Label>
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -195,14 +194,14 @@ export default function AddExpensePage() {
                             <Input id="referenceNo" placeholder="Leave empty to autogenerate" value={formData.referenceNo} onChange={handleChange} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                            <Label htmlFor="taxId" className="flex items-center gap-1">Applicable Tax: <Info className="w-3 h-3 text-muted-foreground" /></Label>
                             <Select value={formData.taxId} onValueChange={(value) => handleSelectChange('taxId', value)}>
                                 <SelectTrigger id="taxId"><SelectValue placeholder="None" /></SelectTrigger>
                                 <SelectContent><SelectItem value="none">None</SelectItem>{taxRates.map(tax => (<SelectItem key={tax.id} value={tax.id}>{tax.name}</SelectItem>))}</SelectContent>
                             </Select>
                         </div>
-                         <div className="space-y-2">
-                            <Label htmlFor="expenseFor" className="flex items-center gap-1">Expense For: <Info className="w-3 h-3 text-muted-foreground"/></Label>
+                        <div className="space-y-2">
+                            <Label htmlFor="expenseFor" className="flex items-center gap-1">Expense For: <Info className="w-3 h-3 text-muted-foreground" /></Label>
                             <Select value={formData.expenseFor} onValueChange={(value) => handleSelectChange('expenseFor', value)}>
                                 <SelectTrigger id="expenseFor"><SelectValue placeholder="None" /></SelectTrigger>
                                 <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
@@ -224,7 +223,7 @@ export default function AddExpensePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
                             <div className="space-y-2">
                                 <Label htmlFor="paidAmount">Amount:*</Label>
-                                 <div className="relative">
+                                <div className="relative">
                                     <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                     <Input id="paidAmount" type="number" placeholder="0.00" value={formData.paidAmount} onChange={handleChange} className="pl-10" />
                                 </div>
@@ -250,7 +249,7 @@ export default function AddExpensePage() {
                                     <SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="card">Card</SelectItem><SelectItem value="cheque">Cheque</SelectItem><SelectItem value="bank_transfer">Bank Transfer</SelectItem></SelectContent>
                                 </Select>
                             </div>
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="paymentAccount">Payment Account:</Label>
                                 <Select value={formData.paymentAccount} onValueChange={(value) => handleSelectChange('paymentAccount', value)}>
                                     <SelectTrigger id="paymentAccount">
@@ -262,9 +261,9 @@ export default function AddExpensePage() {
                                     <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
                                 </Select>
                             </div>
-                             <div className="space-y-2 lg:col-span-2">
+                            <div className="space-y-2 lg:col-span-2">
                                 <Label htmlFor="paymentNote">Payment note:</Label>
-                                <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange}/>
+                                <Textarea id="paymentNote" value={formData.paymentNote} onChange={handleChange} />
                             </div>
                         </div>
                     </div>
@@ -275,8 +274,8 @@ export default function AddExpensePage() {
                         <span className="text-lg font-bold ml-2">{formatCurrency(paymentDue)}</span>
                     </div>
                     <div className="flex gap-2">
-                         <Button size="lg" onClick={handleSave}>Save</Button>
-                         <Button size="lg" variant="secondary" onClick={() => router.back()}>Close</Button>
+                        <Button size="lg" onClick={handleSave}>Save</Button>
+                        <Button size="lg" variant="secondary" onClick={() => router.back()}>Close</Button>
                     </div>
                 </CardFooter>
             </Card>

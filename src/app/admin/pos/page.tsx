@@ -789,10 +789,17 @@ const CashPaymentDialog = ({
     onFinalize: (totalPaid: number) => void;
 }) => {
     const { formatCurrency } = useCurrency();
+    const { settings } = useSettings();
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
     const [isSaving, setIsSaving] = useState(false);
     const inputRef = React.useRef<HTMLInputElement>(null);
+
+    const denominations = useMemo(() => {
+        return settings.payment.cashDenominations
+            ? settings.payment.cashDenominations.split(',').map(d => parseFloat(d.trim())).filter(n => !isNaN(n) && n > 0)
+            : [];
+    }, [settings.payment.cashDenominations]);
 
     useEffect(() => {
         if (open) {
@@ -825,6 +832,12 @@ const CashPaymentDialog = ({
         }
     };
 
+    const handleDenominationClick = (amount: number) => {
+        const currentTendered = parseFloat(amountTendered) || 0;
+        setAmountTendered((currentTendered + amount).toString());
+        inputRef.current?.focus();
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -839,6 +852,7 @@ const CashPaymentDialog = ({
                         <p className="text-sm text-muted-foreground">Total Payable</p>
                         <p className="text-4xl font-bold">{formatCurrency(totalPayable)}</p>
                     </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="amount-tendered">Amount Tendered</Label>
                         <Input
@@ -853,6 +867,22 @@ const CashPaymentDialog = ({
                             disabled={isSaving}
                         />
                     </div>
+
+                    {denominations.length > 0 && (
+                        <div className="grid grid-cols-4 gap-2">
+                            {denominations.map((denom) => (
+                                <Button
+                                    key={denom}
+                                    variant="outline"
+                                    onClick={() => handleDenominationClick(denom)}
+                                    className="h-12 text-lg font-medium"
+                                >
+                                    +{denom}
+                                </Button>
+                            ))}
+                        </div>
+                    )}
+
                     <div className="text-center">
                         <p className="text-sm text-muted-foreground">Change Due</p>
                         <p className="text-3xl font-bold text-green-600">{formatCurrency(change)}</p>
@@ -1050,7 +1080,9 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
             name,
             entityType: profileType,
             phone,
-            commission: { overall: 0 } // Default commission
+            commission: { overall: 0 }, // Default commission
+            totalCommissionEarned: 0,
+            totalCommissionPaid: 0
         };
 
         try {
@@ -1160,7 +1192,7 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
                 expenseNote: formData.expenseNote,
             };
 
-            await addExpense(expenseData);
+            await addExpense(expenseData, settings.prefixes.expenses);
             toast({ title: "Expense Added", description: `Expense of ${formatCurrency(total)} has been recorded.` });
             onOpenChange(false);
         } catch (error) {
@@ -1428,6 +1460,31 @@ export default function PosPage() {
     const { formatCurrency } = useCurrency();
     const { settings } = useSettings();
     const { user } = useAuth();
+
+    // --- Shortcuts ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            const checkShortcut = (shortcut: string | undefined): boolean => {
+                if (!shortcut) return false;
+                const parts = shortcut.toLowerCase().split('+');
+                const key = parts[parts.length - 1];
+                const hasShift = parts.includes('shift');
+                const hasCtrl = parts.includes('ctrl');
+                const hasAlt = parts.includes('alt');
+                return e.key.toLowerCase() === key && e.shiftKey === hasShift && e.ctrlKey === hasCtrl && e.altKey === hasAlt;
+            };
+
+            if (checkShortcut(settings.pos.draftShortcut) && !settings.pos.disableDraft) handleDraft();
+            if (checkShortcut(settings.pos.cancelShortcut)) clearCart();
+            if (checkShortcut(settings.pos.expressCheckout) && !settings.pos.disableExpressCheckout) setIsCashPaymentOpen(true);
+            if (checkShortcut(settings.pos.payAndCheckout) && !settings.pos.disableMultiplePay) setIsMultiPayOpen(true);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [settings.pos]);
+
 
     const [products, setProducts] = useState<DetailedProduct[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -1831,10 +1888,10 @@ export default function PosPage() {
 
         const newSale = createSaleObject('Suspended', 'Due', 0);
         try {
-            const savedSaleId = await addSale(newSale, settings.sale.commissionCalculationType, settings.sale.commissionCategoryRule);
+            const { id: savedSaleId, invoiceNo } = await addSale(newSale, settings.sale.commissionCalculationType as "invoice_value" | "payment_received", settings.sale.commissionCategoryRule as "strict" | "fallback");
             toast({ title: 'Sale Suspended', description: 'The current sale has been suspended.' });
             if (settings.pos.printInvoiceOnSuspend) {
-                const completeSale: Sale = { ...newSale, id: savedSaleId };
+                const completeSale: Sale = { ...newSale, id: savedSaleId, invoiceNo: invoiceNo }; // Use the generated invoice number and id
                 setSaleToPrint(completeSale);
                 printReceipt();
             }
@@ -1892,7 +1949,7 @@ export default function PosPage() {
                 totalSaleDue: 0,
                 totalSaleReturnDue: 0,
             };
-            await addCustomer(customerToAdd);
+            await addCustomer(customerToAdd, settings.prefixes.contacts);
             toast({
                 title: "Success",
                 description: "Customer has been added successfully."

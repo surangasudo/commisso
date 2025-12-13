@@ -13,10 +13,12 @@ import { addCustomer } from '@/services/customerService';
 import { useToast } from '@/hooks/use-toast';
 import { type Customer } from '@/lib/data';
 import { FirebaseError } from 'firebase/app';
+import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 export default function AddCustomerPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const settings = useBusinessSettings();
     const [customerData, setCustomerData] = useState<Partial<Customer>>({
         customerGroup: 'retail',
         openingBalance: 0,
@@ -28,9 +30,9 @@ export default function AddCustomerPage() {
         const { id, value } = e.target;
         setCustomerData(prev => ({ ...prev, [id]: value }));
     };
-    
+
     const handleSelectChange = (value: string) => {
-        setCustomerData(prev => ({...prev, customerGroup: value}));
+        setCustomerData(prev => ({ ...prev, customerGroup: value }));
     };
 
     const handleSave = async () => {
@@ -58,7 +60,7 @@ export default function AddCustomerPage() {
                 totalSaleReturnDue: 0,
                 customField1: customerData.customField1 || ''
             };
-            await addCustomer(newCustomer);
+            await addCustomer(newCustomer, settings.prefixes.contacts);
             toast({
                 title: "Success",
                 description: "Customer has been added successfully."
@@ -87,7 +89,7 @@ export default function AddCustomerPage() {
     return (
         <div className="flex flex-col gap-6">
             <h1 className="font-headline text-3xl font-bold">Add a new Customer</h1>
-            
+
             <Card>
                 <CardHeader>
                     <CardTitle>Customer Details</CardTitle>
@@ -111,7 +113,7 @@ export default function AddCustomerPage() {
                             <Label htmlFor="contactId">Contact ID</Label>
                             <Input id="contactId" placeholder="Leave blank to auto-generate" onChange={handleInputChange} />
                         </div>
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <Label htmlFor="name">Name *</Label>
                             <Input id="name" placeholder="Customer's full name" required onChange={handleInputChange} />
                         </div>

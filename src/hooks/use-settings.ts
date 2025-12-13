@@ -182,6 +182,8 @@ const initialSettings = {
         smsService: 'textlk' as 'textlk', // Only Text.lk is supported now
         textlkApiKey: '',
         textlkSenderId: '',
+        enableSmsOnSale: false,
+        smsTemplate: 'Dear {name}, thank you for your purchase of {amount} at {business}. Invoice: {invoice}',
     },
     rewardPoint: {
         enableRewardPoint: true,
