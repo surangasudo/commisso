@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,31 +8,36 @@ body {
 
 @layer base {
   :root {
-    --background: 220 89% 95%; /* Light Blue */
+    --background: 0 0% 100%;
+    /* Pure White */
     --foreground: 224 71% 4%;
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
-    
-    --primary: 221 89% 61%; /* Saturated Blue */
+
+    --primary: 0 100% 30%;
+    /* Crimson #990000 */
     --primary-foreground: 0 0% 100%;
-    
-    --secondary: 216 34% 91%;
+
+    --secondary: 0 0% 96%;
+    /* Very Light Gray */
     --secondary-foreground: 224 71% 4%;
     --muted: 216 34% 91%;
     --muted-foreground: 223 44% 45%;
-    
-    --accent: 16 100% 57%; /* Orange */
+
+    --accent: 16 100% 57%;
+    /* Orange */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 221 89% 61%; /* Saturated Blue */
+    --ring: 0 100% 30%;
+    /* Crimson */
     --radius: 0.5rem;
-    
+
     /* Sidebar specific variables */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 224 71% 4%;
@@ -43,7 +47,7 @@ body {
     --sidebar-accent-foreground: 224 71% 4%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-    
+
     /* Chart specific variables */
     --chart-1: 221 83% 53%;
     --chart-2: 142 76% 36%;
@@ -59,15 +63,15 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 215 28% 17%;
     --popover-foreground: 210 40% 98%;
-    
+
     --primary: 221 89% 61%;
     --primary-foreground: 0 0% 100%;
-    
+
     --secondary: 215 28% 17%;
     --secondary-foreground: 210 40% 98%;
     --muted: 215 28% 17%;
     --muted-foreground: 218 24% 63%;
-    
+
     --accent: 16 100% 57%;
     --accent-foreground: 0 0% 100%;
 
@@ -92,6 +96,7 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }

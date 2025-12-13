@@ -10,12 +10,12 @@ export type User = {
 };
 
 export const users: User[] = [
-    { id: 'user-001', username: 'admin', name: 'Mr Admin', role: 'Admin', email: 'admin@example.com', status: 'Active' },
-    { id: 'user-002', username: 'admin-essentials', name: 'Mr Admin Essential', role: 'Admin', email: 'admin_essentials@example.com', status: 'Active' },
-    { id: 'user-003', username: 'cashier', name: 'Mr Demo Cashier', role: 'Cashier', email: 'cashier@example.com', status: 'Active' },
-    { id: 'user-004', username: 'demo-admin', name: 'Mr. Demo Admin', role: 'Admin', email: 'demoadmin@example.com', status: 'Active' },
-    { id: 'user-005', username: 'superadmin', name: 'Mr. Super Admin', role: 'Admin', email: 'superadmin@example.com', status: 'Active' },
-    { id: 'user-006', username: 'woocommerce_user', name: 'Mr. WooCommerce User', role: 'Admin', email: 'woo@example.com', status: 'Active' },
+  { id: 'user-001', username: 'admin', name: 'Mr Admin', role: 'Admin', email: 'admin@example.com', status: 'Active' },
+  { id: 'user-002', username: 'admin-essentials', name: 'Mr Admin Essential', role: 'Admin', email: 'admin_essentials@example.com', status: 'Active' },
+  { id: 'user-003', username: 'cashier', name: 'Mr Demo Cashier', role: 'Cashier', email: 'cashier@example.com', status: 'Active' },
+  { id: 'user-004', username: 'demo-admin', name: 'Mr. Demo Admin', role: 'Admin', email: 'demoadmin@example.com', status: 'Active' },
+  { id: 'user-005', username: 'superadmin', name: 'Mr. Super Admin', role: 'Admin', email: 'superadmin@example.com', status: 'Active' },
+  { id: 'user-006', username: 'woocommerce_user', name: 'Mr. WooCommerce User', role: 'Admin', email: 'woo@example.com', status: 'Active' },
 ];
 
 
@@ -45,23 +45,23 @@ export type CommissionProfile = {
 };
 
 export type Commission = {
-    id: string;
-    transaction_id: string;
-    transaction_sell_line_id?: string;
-    recipient_profile_id: string;
-    recipient_entity_type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
-    product_category_id?: string;
-    calculation_base_amount: number;
-    calculated_rate: number;
-    commission_amount: number;
-    status: 'Pending Approval' | 'Approved' | 'Paid' | 'Reversed';
-    calculation_date: string; // ISO string
-    approval_date?: string; // ISO string
-    payment_date?: string; // ISO string
-    payment_details?: string;
-    payment_method?: string;
-    approved_by_user_id?: string;
-    paid_by_user_id?: string;
+  id: string;
+  transaction_id: string;
+  transaction_sell_line_id?: string;
+  recipient_profile_id: string;
+  recipient_entity_type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
+  product_category_id?: string;
+  calculation_base_amount: number;
+  calculated_rate: number;
+  commission_amount: number;
+  status: 'Pending Approval' | 'Approved' | 'Paid' | 'Reversed';
+  calculation_date: string; // ISO string
+  approval_date?: string; // ISO string
+  payment_date?: string; // ISO string
+  payment_details?: string;
+  payment_method?: string;
+  approved_by_user_id?: string;
+  paid_by_user_id?: string;
 };
 
 export type CommissionProfileWithSummary = CommissionProfile;
@@ -176,39 +176,40 @@ export type SaleItem = {
 };
 
 export type Sale = {
-    id: string;
-    date: string;
-    invoiceNo: string;
-    customerId: string | null;
-    customerName: string;
-    contactNumber: string;
-    location: string;
-    paymentStatus: 'Paid' | 'Due' | 'Partial';
-    paymentMethod: string;
-    totalAmount: number;
-    totalPaid: number;
-    sellDue: number;
-    sellReturnDue: number;
-    shippingStatus: string | null;
-    totalItems: number;
-    addedBy: string;
-    sellNote: string | null;
-    staffNote: string | null;
-    shippingDetails: string | null;
-    taxAmount?: number;
-    items: SaleItem[];
-    commissionAgentIds: string[] | null;
+  id: string;
+  date: string;
+  invoiceNo: string;
+  customerId: string | null;
+  customerName: string;
+  contactNumber: string;
+  location: string;
+  paymentStatus: 'Paid' | 'Due' | 'Partial';
+  paymentMethod: string;
+  totalAmount: number;
+  totalPaid: number;
+  sellDue: number;
+  sellReturnDue: number;
+  shippingStatus: string | null;
+  totalItems: number;
+  addedBy: string;
+  sellNote: string | null;
+  staffNote: string | null;
+  shippingDetails: string | null;
+  taxAmount?: number;
+  items: SaleItem[];
+  commissionAgentIds: string[] | null;
+  paymentReference?: string;
 };
 
 export type Draft = {
-    id: string;
-    date: string;
-    draftNo: string;
-    customerName: string;
-    location: string;
-    totalAmount: number;
-    totalItems: number;
-    addedBy: string;
+  id: string;
+  date: string;
+  draftNo: string;
+  customerName: string;
+  location: string;
+  totalAmount: number;
+  totalItems: number;
+  addedBy: string;
 };
 
 export type SellReturn = {
@@ -287,29 +288,29 @@ export type ExpenseCategory = {
 };
 
 export type ProfitData = {
-    openingStockPurchase: number;
-    openingStockSale: number;
-    totalPurchase: number;
-    totalStockAdjustment: number;
-    totalExpense: number;
-    totalPurchaseShipping: number;
-    purchaseAdditionalExpense: number;
-    totalTransferShipping: number;
-    totalSellDiscount: number;
-    totalCustomerReward: number;
-    totalSellReturn: number;
-    totalPayroll: number;
-    totalProductionCost: number;
-    closingStockPurchase: number;
-    closingStockSale: number;
-    totalSales: number;
-    totalSellShipping: number;
-    sellAdditionalExpenses: number;
-    totalStockRecovered: number;
-    totalPurchaseReturn: number;
-    totalPurchaseDiscount: number;
-    totalSellRoundOff: number;
-    hmsTotal: number;
+  openingStockPurchase: number;
+  openingStockSale: number;
+  totalPurchase: number;
+  totalStockAdjustment: number;
+  totalExpense: number;
+  totalPurchaseShipping: number;
+  purchaseAdditionalExpense: number;
+  totalTransferShipping: number;
+  totalSellDiscount: number;
+  totalCustomerReward: number;
+  totalSellReturn: number;
+  totalPayroll: number;
+  totalProductionCost: number;
+  closingStockPurchase: number;
+  closingStockSale: number;
+  totalSales: number;
+  totalSellShipping: number;
+  sellAdditionalExpenses: number;
+  totalStockRecovered: number;
+  totalPurchaseReturn: number;
+  totalPurchaseDiscount: number;
+  totalSellRoundOff: number;
+  hmsTotal: number;
 };
 
 export type ProductProfit = { product: string; profit: number; };
@@ -326,20 +327,20 @@ export type SubAgentProfit = { subAgentName: string; profit: number; };
 export type CompanyProfit = { company: string; profit: number; };
 
 export type RegisterLog = {
-    id: string;
-    openTime: string;
-    closeTime: string | null;
-    location: string;
-    user: string;
-    closingNote: string | null;
-    status: 'Open' | 'Closed';
-    totalCardSlips: number;
-    totalCheques: number;
-    totalCash: number;
-    totalRefunds: number;
-    totalExpenses: number;
-    closingCash: number;
-    openingCash: number;
+  id: string;
+  openTime: string;
+  closeTime: string | null;
+  location: string;
+  user: string;
+  closingNote: string | null;
+  status: 'Open' | 'Closed';
+  totalCardSlips: number;
+  totalCheques: number;
+  totalCash: number;
+  totalRefunds: number;
+  totalExpenses: number;
+  closingCash: number;
+  openingCash: number;
 };
 
 export type ActivityLog = {
@@ -417,32 +418,32 @@ export type Currency = {
 };
 
 export type MoneyExchange = {
-    id: string;
-    date: string;
-    fromCurrency: string;
-    toCurrency: string;
-    amount: number;
-    baseRate: number;
-    offeredRate: number;
-    markupPercent: number;
-    profit: number;
-    convertedAmount: number;
-    addedBy: string;
+  id: string;
+  date: string;
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  baseRate: number;
+  offeredRate: number;
+  markupPercent: number;
+  profit: number;
+  convertedAmount: number;
+  addedBy: string;
 };
 
 const defaultPaymentOptions: PaymentOption[] = [
-    { method: 'Cash', enabled: true },
-    { method: 'Card', enabled: true },
-    { method: 'Cheque', enabled: true },
-    { method: 'Bank Transfer', enabled: true },
-    { method: 'Other', enabled: true },
-    { method: 'Custom Payment 1', enabled: false },
-    { method: 'Custom Payment 2', enabled: false },
-    { method: 'Custom Payment 3', enabled: false },
-    { method: 'Custom Payment 4', enabled: false },
-    { method: 'Custom Payment 5', enabled: false },
-    { method: 'Custom Payment 6', enabled: false },
-    { method: 'Custom Payment 7', enabled: false },
+  { method: 'Cash', enabled: true },
+  { method: 'Card', enabled: true },
+  { method: 'Cheque', enabled: true },
+  { method: 'Bank Transfer', enabled: true },
+  { method: 'Other', enabled: true },
+  { method: 'Custom Payment 1', enabled: false },
+  { method: 'Custom Payment 2', enabled: false },
+  { method: 'Custom Payment 3', enabled: false },
+  { method: 'Custom Payment 4', enabled: false },
+  { method: 'Custom Payment 5', enabled: false },
+  { method: 'Custom Payment 6', enabled: false },
+  { method: 'Custom Payment 7', enabled: false },
 ];
 
 export const businessLocations: BusinessLocation[] = [
@@ -461,7 +462,7 @@ export const businessLocations: BusinessLocation[] = [
     invoiceLayoutForSale: 'Default',
     paymentOptions: defaultPaymentOptions,
   },
-   {
+  {
     id: 'loc-2',
     name: 'Warehouse A',
     locationId: 'WH-A',
@@ -475,7 +476,7 @@ export const businessLocations: BusinessLocation[] = [
     website: '',
     paymentOptions: defaultPaymentOptions,
   },
-    {
+  {
     id: 'loc-3',
     name: 'Warehouse B',
     locationId: 'WH-B',

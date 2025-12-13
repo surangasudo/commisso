@@ -141,6 +141,14 @@ const initialSettings = {
         defaultDatatableEntries: '25',
         showHelpText: true,
     },
+    invoice: {
+        invoiceLayout: 'default',
+        invoiceScheme: 'default',
+        showBusinessName: true,
+        showLocationName: true,
+        invoiceHeading: 'Invoice',
+        footerText: 'Thank you for shopping with us!',
+    },
     prefixes: {
         purchase: 'PO',
         purchaseReturn: '',
@@ -223,7 +231,7 @@ type SettingsContextType = {
 
 const SettingsContext = createContext<SettingsContextType>({
     settings: initialSettings,
-    updateSection: () => {},
+    updateSection: () => { },
 });
 
 export const useSettings = () => useContext(SettingsContext);

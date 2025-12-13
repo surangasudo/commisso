@@ -7,12 +7,12 @@
  * This service makes real API calls.
  */
 
- type SmsConfig = {
-    smsService: 'textlk';
-    textlkApiKey?: string;
-    textlkSenderId?: string;
-    // Allow other properties that might be passed from settings
-    [key: string]: any;
+type SmsConfig = {
+  smsService: 'textlk';
+  textlkApiKey?: string;
+  textlkSenderId?: string;
+  // Allow other properties that might be passed from settings
+  [key: string]: any;
 };
 
 export async function sendSms(
@@ -20,15 +20,23 @@ export async function sendSms(
   message: string,
   config: SmsConfig
 ): Promise<{ success: boolean; error?: string; data?: any }> {
-  
+
   if (config.smsService !== 'textlk') {
-      const errorMsg = `Unsupported SMS service: '${config.smsService}'. Only 'textlk' is configured.`;
-      console.error(errorMsg);
-      return { success: false, error: errorMsg };
+    const errorMsg = `Unsupported SMS service: '${config.smsService}'. Only 'textlk' is configured.`;
+    console.error(errorMsg);
+    return { success: false, error: errorMsg };
   }
 
   const apiKey = process.env.TEXTLK_API_KEY || config.textlkApiKey;
   const senderId = process.env.TEXTLK_SENDER_ID || config.textlkSenderId;
+
+  console.log('Attempting to send SMS via Text.lk...');
+  console.log('Config Source:', {
+    hasEnvKey: !!process.env.TEXTLK_API_KEY,
+    hasConfigKey: !!config.textlkApiKey,
+    senderId: senderId,
+    recipient: recipient
+  });
 
   if (!apiKey || !senderId) {
     const errorMsg = 'ERROR: Text.lk API Key or Sender ID is not configured in settings or .env file.';
