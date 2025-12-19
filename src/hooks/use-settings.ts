@@ -70,6 +70,8 @@ const initialSettings = {
         razorpayKeySecret: '',
         allowOverselling: false,
         commissionCategoryRule: 'fallback' as 'strict' | 'fallback',
+        requireCustomerForCreditSale: false,
+        requireCommissionAgentForCreditSale: false,
     },
     pos: {
         expressCheckout: 'shift+e',
@@ -144,10 +146,23 @@ const initialSettings = {
     invoice: {
         invoiceLayout: 'default',
         invoiceScheme: 'default',
+        design: 'classic' as 'classic' | 'modern', // classic = thermal, modern = A4
         showBusinessName: true,
         showLocationName: true,
         invoiceHeading: 'Invoice',
         footerText: 'Thank you for shopping with us!',
+        showLogo: true,
+        showMobileNumber: true,
+        showQrCode: true,
+        showTax1: true,
+        showTax2: false,
+        showLandmark: true,
+        showCity: true,
+        showState: true,
+        showZipCode: true,
+        showCountry: true,
+        showEmail: true,
+        showAlternateNumber: false,
     },
     prefixes: {
         purchase: 'PO',

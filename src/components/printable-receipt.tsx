@@ -12,10 +12,16 @@ type PrintableReceiptProps = {
     formatCurrency: (value: number) => string;
 };
 
+import { ModernInvoice } from './invoice-designs/ModernInvoice';
+
 export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceiptProps>(
     ({ sale, products, settings, formatCurrency }, ref) => {
         if (!sale || !settings) {
             return <div ref={ref}>Loading...</div>;
+        }
+
+        if (settings.invoice.design === 'modern') {
+            return <ModernInvoice ref={ref} sale={sale} products={products} settings={settings} formatCurrency={formatCurrency} />;
         }
 
         const layoutSettings = settings.invoice;

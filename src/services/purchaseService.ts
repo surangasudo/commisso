@@ -1,6 +1,6 @@
 
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, addDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
@@ -11,9 +11,9 @@ import { unstable_noStore as noStore } from 'next/cache';
 const purchasesCollection = collection(db, 'purchases');
 
 export async function getPurchases(): Promise<Purchase[]> {
-  noStore();
-  const snapshot = await getDocs(purchasesCollection);
-  return snapshot.docs.map(doc => processDoc<Purchase>(doc));
+    noStore();
+    const snapshot = await getDocs(purchasesCollection);
+    return snapshot.docs.map(doc => processDoc<Purchase>(doc));
 }
 
 export async function getPurchase(id: string): Promise<Purchase | null> {
@@ -33,7 +33,7 @@ export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void>
         ...purchase,
         date: new Date(purchase.date),
     };
-    
+
     await runTransaction(db, async (transaction) => {
         // --- READ PHASE ---
         // 1. Get supplier document
@@ -47,7 +47,7 @@ export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void>
         const productRefs = purchase.items.map(item => doc(db, 'products', item.productId));
         const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
         const productDataMap = new Map<string, DocumentData>();
-        
+
         productDocs.forEach((docSnap, index) => {
             if (!docSnap.exists()) {
                 throw new Error(`Product not found: ${purchase.items[index].productId}`);
@@ -59,7 +59,7 @@ export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void>
         // 1. Create the new purchase document
         const newPurchaseRef = doc(collection(db, 'purchases'));
         transaction.set(newPurchaseRef, dataToSave);
-        
+
         // 2. Update the supplier's totalPurchaseDue
         const currentDue = supplierDoc.data().totalPurchaseDue || 0;
         transaction.update(supplierRef, {

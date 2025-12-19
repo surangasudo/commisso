@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { SlidersHorizontal, Search, Plus, Trash2, Info, Calendar as CalendarIcon } from "lucide-react";
 import { type DetailedProduct } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
@@ -107,14 +107,20 @@ export default function AddStockAdjustmentPage() {
 
     const formValues = form.watch();
 
-    const totalAmount = useMemo(() => {
-        return formValues.items.reduce((acc, item) => acc + (Math.abs(item.quantity) * item.unitPrice), 0);
-    }, [formValues.items]);
+    const items = formValues.items || [];
+
+    // Calculate total directly to ensure it matches the rendered rows
+    const totalAmount = items.reduce((acc, item) => {
+        const qty = Number(item.quantity) || 0;
+        const price = Number(item.unitPrice) || 0;
+        return acc + (Math.abs(qty) * price);
+    }, 0);
 
     async function onSubmit(values: StockAdjustmentFormValues) {
         try {
             await addStockAdjustment({
                 ...values,
+                date: values.date.toISOString(),
                 addedBy: 'Admin', // Hardcoded for now
             });
             toast({
@@ -122,14 +128,15 @@ export default function AddStockAdjustmentPage() {
                 description: "Stock adjustment has been saved successfully."
             });
             router.push('/admin/stock-adjustment/list');
-        } catch (error) {
+        } catch (error: any) {
             console.error("Failed to add stock adjustment:", error);
             toast({
                 title: "Error",
-                description: "Failed to save stock adjustment. Please try again.",
+                description: `Failed to save stock adjustment: ${error.message || "Unknown error"}`,
                 variant: "destructive"
             });
         }
+
     }
 
     return (
@@ -145,24 +152,24 @@ export default function AddStockAdjustmentPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 <FormField control={form.control} name="location" render={({ field }) => (
                                     <FormItem><FormLabel>Business Location:*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                        <SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent>
-                                    </Select><FormMessage /></FormItem>
-                                )}/>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent><SelectItem value={settings.business.businessName}>{settings.business.businessName}</SelectItem></SelectContent>
+                                        </Select><FormMessage /></FormItem>
+                                )} />
                                 <FormField control={form.control} name="referenceNo" render={({ field }) => (
                                     <FormItem><FormLabel>Reference No:</FormLabel><FormControl><Input placeholder="Leave blank to auto generate" {...field} /></FormControl><FormMessage /></FormItem>
-                                )}/>
+                                )} />
                                 <FormField control={form.control} name="date" render={({ field }) => (
                                     <FormItem className="flex flex-col"><FormLabel>Date:*</FormLabel>
-                                    <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}> <CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}</Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
-                                    <FormMessage /></FormItem>
-                                )}/>
+                                        <Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}> <CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}</Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
+                                        <FormMessage /></FormItem>
+                                )} />
                                 <FormField control={form.control} name="adjustmentType" render={({ field }) => (
                                     <FormItem><FormLabel className="flex items-center gap-1">Adjustment type:* <Info className="w-3 h-3 text-muted-foreground" /></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Abnormal">Abnormal</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                                )}/>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Normal">Normal</SelectItem><SelectItem value="Abnormal">Abnormal</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                )} />
                             </div>
                         </CardContent>
                     </Card>
@@ -186,17 +193,19 @@ export default function AddStockAdjustmentPage() {
                                         {fields.length > 0 ? fields.map((item, index) => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-medium">{item.productName}</TableCell>
-                                                <TableCell><FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => (<Input type="number" className="w-32 h-9" {...field} placeholder="e.g. -1 or 1" />)}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => (<Input type="number" className="w-32 h-9" {...field} placeholder="e.g. -1 or 1" />)} /></TableCell>
                                                 <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
                                                 <TableCell className="font-semibold">{formatCurrency(Math.abs(formValues.items[index]?.quantity || 0) * (formValues.items[index]?.unitPrice || 0))}</TableCell>
                                                 <TableCell className="text-center"><Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => remove(index)}><Trash2 className="w-4 h-4" /></Button></TableCell>
                                             </TableRow>
                                         )) : (<TableRow><TableCell colSpan={5} className="text-center h-24">No products added yet.</TableCell></TableRow>)}
                                     </TableBody>
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="text-right font-bold">Total Adjustment Value:</TableCell>
-                                        <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
-                                    </TableRow>
+                                    <TableFooter>
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-right font-bold">Total Adjustment Value:</TableCell>
+                                            <TableCell className="font-bold">{formatCurrency(totalAmount)}</TableCell>
+                                        </TableRow>
+                                    </TableFooter>
                                 </Table>
                             </div>
                             <FormMessage className="mt-2">{form.formState.errors.items?.root?.message || form.formState.errors.items?.message}</FormMessage>
@@ -207,10 +216,10 @@ export default function AddStockAdjustmentPage() {
                         <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <FormField control={form.control} name="totalAmountRecovered" render={({ field }) => (
                                 <FormItem><FormLabel className="flex items-center gap-1">Total amount recovered: <Info className="w-3 h-3 text-muted-foreground" /></FormLabel><FormControl><Input type="number" placeholder="0" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
+                            )} />
                             <FormField control={form.control} name="reason" render={({ field }) => (
                                 <FormItem><FormLabel>Reason:</FormLabel><FormControl><Textarea placeholder="Reason for adjustment" {...field} /></FormControl><FormMessage /></FormItem>
-                            )}/>
+                            )} />
                         </CardContent>
                     </Card>
 

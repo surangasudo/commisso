@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Login - Crimson POS',
@@ -11,8 +11,8 @@ export default function LoginLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-        <body className="font-body antialiased">{children}</body>
-    </html>
+    <>
+      {children}
+    </>
   );
 }

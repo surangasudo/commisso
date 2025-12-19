@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
@@ -10,10 +10,10 @@ import { processDoc } from '@/lib/firestore-utils';
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
 export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
-  noStore();
-  const snapshot = await getDocs(expenseCategoriesCollection);
-  const data = snapshot.docs.map(doc => processDoc<ExpenseCategory>(doc));
-  return data;
+    noStore();
+    const snapshot = await getDocs(expenseCategoriesCollection);
+    const data = snapshot.docs.map(doc => processDoc<ExpenseCategory>(doc));
+    return data;
 }
 
 export async function addExpenseCategory(category: Omit<ExpenseCategory, 'id'>): Promise<void> {

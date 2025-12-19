@@ -1,6 +1,6 @@
 
 
-'use server';
+// use server removed
 
 /**
  * @fileOverview Service to send SMS messages using Text.lk.
@@ -27,8 +27,8 @@ export async function sendSms(
     return { success: false, error: errorMsg };
   }
 
-  const apiKey = process.env.TEXTLK_API_KEY || config.textlkApiKey;
-  const senderId = process.env.TEXTLK_SENDER_ID || config.textlkSenderId;
+  const apiKey = process.env.NEXT_PUBLIC_TEXTLK_API_KEY || process.env.TEXTLK_API_KEY || config.textlkApiKey;
+  const senderId = process.env.NEXT_PUBLIC_TEXTLK_SENDER_ID || process.env.TEXTLK_SENDER_ID || config.textlkSenderId;
 
   console.log('Attempting to send SMS via Text.lk...');
   console.log('Config Source:', {
@@ -39,9 +39,9 @@ export async function sendSms(
   });
 
   if (!apiKey || !senderId) {
-    const errorMsg = 'ERROR: Text.lk API Key or Sender ID is not configured in settings or .env file.';
-    console.error(errorMsg);
-    return { success: false, error: 'SMS service (Text.lk) is not configured. Please set credentials in Business Settings > SMS or in the .env file.' };
+    const errorMsg = 'SMS Service: Text.lk credentials not found. SMS notification skipped.';
+    console.warn(errorMsg); // Changed to warn to prevent runtime error overlay in development
+    return { success: false, error: 'SMS service is not configured. (Credentials missing in Settings/Env)' };
   }
 
   const url = 'https://app.text.lk/api/v3/sms/send';

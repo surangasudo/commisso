@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
@@ -21,15 +21,15 @@ export async function getBrands(): Promise<Brand[]> {
 }
 
 export async function addBrand(brand: Omit<Brand, 'id'>): Promise<void> {
-    await addDoc(brandsCollection, brand);
+  await addDoc(brandsCollection, brand);
 }
 
 export async function updateBrand(id: string, brand: Partial<Omit<Brand, 'id'>>): Promise<void> {
-    const docRef = doc(db, 'brands', id);
-    await updateDoc(docRef, brand);
+  const docRef = doc(db, 'brands', id);
+  await updateDoc(docRef, brand);
 }
 
 export async function deleteBrand(id: string): Promise<void> {
-    const docRef = doc(db, 'brands', id);
-    await deleteDoc(docRef);
+  const docRef = doc(db, 'brands', id);
+  await deleteDoc(docRef);
 }

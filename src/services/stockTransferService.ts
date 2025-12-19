@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
@@ -28,7 +28,7 @@ export async function getStockTransfers(): Promise<StockTransfer[]> {
 
 export async function addStockTransfer(transfer: StockTransferInput): Promise<DocumentData> {
     const totalAmount = transfer.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) + (transfer.shippingCharges || 0);
-    
+
     const newTransferData = {
         date: new Date(transfer.date),
         referenceNo: transfer.referenceNo || `ST-${Date.now()}`,
@@ -45,23 +45,23 @@ export async function addStockTransfer(transfer: StockTransferInput): Promise<Do
     return await runTransaction(db, async (transaction) => {
         const newTransferRef = doc(collection(db, "stockTransfers"));
         transaction.set(newTransferRef, newTransferData);
-        
+
         for (const item of transfer.items) {
             const productRef = doc(db, 'products', item.productId);
             const productDoc = await transaction.get(productRef);
             if (!productDoc.exists()) {
                 throw `Product with ID ${item.productId} does not exist.`;
             }
-            
+
             const productData = productDoc.data();
             const currentTransferred = Number(productData.totalUnitTransferred) || 0;
             const newTotalTransferred = currentTransferred + item.quantity;
-            
-            transaction.update(productRef, { 
-                totalUnitTransferred: newTotalTransferred 
+
+            transaction.update(productRef, {
+                totalUnitTransferred: newTotalTransferred
             });
         }
-        
+
         return { id: newTransferRef.id, ...newTransferData };
     });
 }

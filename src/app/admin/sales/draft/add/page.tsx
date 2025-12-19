@@ -1,40 +1,60 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Plus, Trash2, User, Calendar, FilePlus, Info, PlusCircle, X } from "lucide-react";
-import { detailedProducts, type DetailedProduct, customers, users } from '@/lib/data';
+import { Search, Plus, Trash2, User, Calendar, FilePlus, Info, PlusCircle, X, Monitor } from "lucide-react";
+import { type DetailedProduct, type Customer, type Sale } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogDescription,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 import { AppFooter } from '@/components/app-footer';
+import { getProducts } from '@/services/productService';
+import { getCustomers, addCustomer as addCustomerService } from '@/services/customerService';
+import { addDraft } from '@/services/saleService';
+import { useCurrency } from '@/hooks/use-currency';
 
 type DraftItem = {
-  product: DetailedProduct;
-  quantity: number;
-  unitPrice: number;
-  discount: number;
-  tax: number;
+    product: DetailedProduct;
+    quantity: number;
+    unitPrice: number;
+    discount: number;
+    tax: number;
 };
 
 export default function AddDraftPage() {
     const { toast } = useToast();
+    const { formatCurrency } = useCurrency();
+    const [products, setProducts] = useState<DetailedProduct[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
     const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentDate, setCurrentDate] = useState('');
-    const [additionalExpenses, setAdditionalExpenses] = useState<{ id: number, name: string, amount: string }[]>([]);
+
+    // Form State
+    const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+    const [discountType, setDiscountType] = useState('Percentage');
+    const [discountAmount, setDiscountAmount] = useState('0');
+    const [orderTaxId, setOrderTaxId] = useState('none');
+    const [sellNote, setSellNote] = useState('');
+
+    // Shipping State
+    const [shippingDetails, setShippingDetails] = useState('');
+    const [shippingAddress, setShippingAddress] = useState('');
+    const [shippingCharges, setShippingCharges] = useState('0');
+    const [shippingStatus, setShippingStatus] = useState('');
+    const [deliveredTo, setDeliveredTo] = useState('');
 
     // State for the Add Customer Dialog
     const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -43,18 +63,39 @@ export default function AddDraftPage() {
     const [newCustomerEmail, setNewCustomerEmail] = useState('');
     const [newCustomerAddress, setNewCustomerAddress] = useState('');
 
+    const [isSaving, setIsSaving] = useState(false);
+
     useEffect(() => {
         const now = new Date();
         const formatted = `${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
         setCurrentDate(formatted);
-    }, []);
-    
+
+        const loadData = async () => {
+            try {
+                const [productsData, customersData] = await Promise.all([
+                    getProducts(),
+                    getCustomers()
+                ]);
+                setProducts(productsData);
+                setCustomers(customersData);
+            } catch (error) {
+                console.error("Failed to load initial data", error);
+                toast({
+                    title: "Error",
+                    description: "Failed to load products or customers. Please refresh.",
+                    variant: "destructive"
+                });
+            }
+        };
+        loadData();
+    }, [toast]);
+
     const searchResults = searchTerm
-    ? detailedProducts.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-      ).slice(0, 5)
-    : [];
+        ? products.filter(p =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        ).slice(0, 5)
+        : [];
 
     const handleAddProduct = (product: DetailedProduct) => {
         if (!draftItems.some(item => item.product.id === product.id)) {
@@ -68,7 +109,7 @@ export default function AddDraftPage() {
         }
         setSearchTerm('');
     };
-    
+
     const handleRemoveItem = (productId: string) => {
         setDraftItems(draftItems.filter(item => item.product.id !== productId));
     };
@@ -79,16 +120,28 @@ export default function AddDraftPage() {
         ));
     };
 
-    const calculateSubtotal = (item: DraftItem) => {
+    const calculateItemSubtotal = (item: DraftItem) => {
         return item.quantity * item.unitPrice;
     }
-    
-    const totalItems = draftItems.reduce((acc, item) => acc + item.quantity, 0);
-    const subtotal = draftItems.reduce((acc, item) => acc + calculateSubtotal(item), 0);
 
-    const handleSaveDraft = () => {
+    const totalItems = draftItems.reduce((acc, item) => acc + item.quantity, 0);
+    const subtotal = draftItems.reduce((acc, item) => acc + calculateItemSubtotal(item), 0);
+
+    // Order level calculations
+    const orderDiscount = discountType === 'Percentage'
+        ? (subtotal * (parseFloat(discountAmount) || 0) / 100)
+        : (parseFloat(discountAmount) || 0);
+
+    const taxableAmount = subtotal - orderDiscount;
+    const orderTaxRate = orderTaxId === 'vat-10' ? 0.10 : 0; // Hardcoded tax rate for demo
+    const orderTax = taxableAmount * orderTaxRate;
+
+    const shipping = parseFloat(shippingCharges) || 0;
+    const totalPayable = taxableAmount + orderTax + shipping;
+
+    const handleSaveDraft = async () => {
         if (draftItems.length === 0) {
-             toast({
+            toast({
                 title: "Draft is empty",
                 description: "Please add products to the draft before saving.",
                 variant: "destructive",
@@ -96,23 +149,78 @@ export default function AddDraftPage() {
             return;
         }
 
-        console.log("Saving draft:", draftItems);
-        toast({
-            title: "Success!",
-            description: "Your draft has been saved successfully.",
-        });
-        setDraftItems([]);
+        if (!selectedCustomerId && selectedCustomerId !== 'walk-in') {
+            toast({
+                title: "Customer Required",
+                description: "Please select a customer.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const draftData: Omit<Sale, 'id'> = {
+                invoiceNo: '', // Auto-generated by addDraft service now
+                date: new Date().toISOString(),
+                customerId: selectedCustomerId,
+                customerName: customers.find(c => c.id === selectedCustomerId)?.name || 'Walk-in Customer',
+                contactNumber: customers.find(c => c.id === selectedCustomerId)?.mobile || '',
+                items: draftItems.map(item => ({
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    subtotal: calculateItemSubtotal(item),
+                    discount: item.discount,
+                    tax: item.tax
+                })),
+                totalAmount: totalPayable,
+                paymentStatus: 'Due',
+                paymentMethod: 'Draft',
+                totalPaid: 0,
+                sellDue: totalPayable,
+                sellReturnDue: 0,
+                location: 'Awesome Shop', // default
+                addedBy: 'Admin', // default
+                staffNote: '',
+                totalItems: totalItems,
+                // paymentReference is optional, undefined is fine
+                sellNote: sellNote,
+                shippingStatus: shippingStatus || null,
+                shippingDetails: JSON.stringify({
+                    details: shippingDetails,
+                    address: shippingAddress,
+                    charges: shipping,
+                    deliveredTo: deliveredTo
+                }),
+                taxAmount: orderTax,
+                commissionAgentIds: null,
+            };
+
+            await addDraft(draftData);
+
+            toast({
+                title: "Success!",
+                description: "Your draft has been saved successfully.",
+            });
+            // Reset form
+            setDraftItems([]);
+            setSelectedCustomerId('');
+            setSellNote('');
+            setShippingCharges('0');
+        } catch (error) {
+            console.error("Error saving draft:", error);
+            toast({
+                title: "Error",
+                description: "Failed to save draft. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     }
-    
-    const addAdditionalExpense = () => {
-        setAdditionalExpenses([...additionalExpenses, { id: Date.now(), name: '', amount: '' }]);
-    };
 
-    const removeAdditionalExpense = (id: number) => {
-        setAdditionalExpenses(additionalExpenses.filter(exp => exp.id !== id));
-    };
-
-    const handleSaveCustomer = () => {
+    const handleSaveCustomer = async () => {
         if (!newCustomerName || !newCustomerMobile) {
             toast({
                 title: "Error",
@@ -122,26 +230,49 @@ export default function AddDraftPage() {
             return;
         }
 
-        // In a real app, you would save this data to your backend
-        // and likely update the customer list.
-        console.log("New Customer:", { 
-            name: newCustomerName, 
-            mobile: newCustomerMobile, 
-            email: newCustomerEmail, 
-            address: newCustomerAddress 
-        });
+        try {
+            // Basic customer structure matching requirements
+            const customerData: any = {
+                name: newCustomerName,
+                mobile: newCustomerMobile,
+                email: newCustomerEmail,
+                address: newCustomerAddress,
+                contactId: `CUST-${Date.now()}`, // Temporary ID generation if service needs it, or service handles it
+                createdAt: new Date().toISOString(),
+                // Add other required fields with defaults
+                openingBalance: 0,
+                totalSaleDue: 0,
+                totalSaleReturnDue: 0,
+                customerGroup: 'default'
+            };
 
-        toast({
-            title: "Customer Added",
-            description: `${newCustomerName} has been successfully added.`,
-        });
+            await addCustomerService(customerData, 'CUST'); // Assuming prefix is handled or passed
 
-        // Reset form and close dialog
-        setNewCustomerName('');
-        setNewCustomerMobile('');
-        setNewCustomerEmail('');
-        setNewCustomerAddress('');
-        setIsAddCustomerOpen(false);
+            toast({
+                title: "Customer Added",
+                description: `${newCustomerName} has been successfully added.`,
+            });
+
+            // Refresh customers
+            const updatedCustomers = await getCustomers();
+            setCustomers(updatedCustomers);
+
+            // Allow selecting the new customer immediately
+            // Needs to find the ID of the new customer, but for now just refresh is good enough.
+
+            setNewCustomerName('');
+            setNewCustomerMobile('');
+            setNewCustomerEmail('');
+            setNewCustomerAddress('');
+            setIsAddCustomerOpen(false);
+        } catch (error) {
+            console.error("Error adding customer:", error);
+            toast({
+                title: "Error",
+                description: "Failed to add customer.",
+                variant: "destructive",
+            });
+        }
     };
 
     return (
@@ -169,11 +300,11 @@ export default function AddDraftPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="p-4 border rounded-md space-y-4">
                             <div className="flex gap-2">
-                                <Select>
+                                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
                                     <SelectTrigger id="customer">
                                         <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4 text-muted-foreground" />
-                                        <SelectValue placeholder="Select Customer" />
+                                            <User className="h-4 w-4 text-muted-foreground" />
+                                            <SelectValue placeholder="Select Customer" />
                                         </div>
                                     </SelectTrigger>
                                     <SelectContent>
@@ -219,53 +350,14 @@ export default function AddDraftPage() {
                                     </DialogContent>
                                 </Dialog>
                             </div>
-                            <div>
-                                <h4 className="font-semibold text-sm">Billing Address:</h4>
-                                <p className="text-sm text-muted-foreground">Walk-in Customer, <br/>Linking Street, Phoenix, Arizona, USA</p>
-                            </div>
-                            <div>
-                                <h4 className="font-semibold text-sm">Shipping Address:</h4>
-                                <p className="text-sm text-muted-foreground">Walk-in Customer</p>
-                            </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="pay-term" className="flex items-center gap-1">Pay term: <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                                <div className="flex gap-2">
-                                    <Input id="pay-term-value" type="number" placeholder="e.g. 30" />
-                                    <Select>
-                                        <SelectTrigger id="pay-term-unit" className="w-[120px]">
-                                            <SelectValue placeholder="Please Select" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="days">Days</SelectItem>
-                                            <SelectItem value="months">Months</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="sale-date">Sale Date *</Label>
                                 <div className="flex items-center gap-2 border rounded-md px-3 h-10 text-sm bg-slate-100">
                                     <Calendar className="w-4 h-4 text-muted-foreground" />
                                     <span>{currentDate}</span>
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="invoice-scheme">Invoice scheme:</Label>
-                                <Select defaultValue="Default">
-                                    <SelectTrigger id="invoice-scheme"><SelectValue /></SelectTrigger>
-                                    <SelectContent><SelectItem value="Default">Default</SelectItem></SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="invoice-no">Invoice No.:</Label>
-                                <Input id="invoice-no" placeholder="Keep blank to auto generate" />
-                            </div>
-                            <div className="space-y-2 col-span-full">
-                                <Label htmlFor="attach-document">Attach Document:</Label>
-                                <Input id="attach-document" type="file" />
-                                <p className="text-xs text-muted-foreground">Max File size: 5MB. Allowed File: .pdf, .csv, .zip, .doc, .docx, .jpeg, .jpg, .png</p>
                             </div>
                         </div>
                     </div>
@@ -274,7 +366,7 @@ export default function AddDraftPage() {
 
             <Card>
                 <CardContent className="pt-6">
-                     <div className="relative mb-4">
+                    <div className="relative mb-4">
                         <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Enter Product name / SKU / Scan bar code"
@@ -283,17 +375,17 @@ export default function AddDraftPage() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         {searchResults.length > 0 && (
-                            <div className="absolute z-10 w-full bg-card border rounded-md shadow-lg mt-1">
-                            {searchResults.map(product => (
-                                <div
-                                key={product.id}
-                                className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
-                                onClick={() => handleAddProduct(product)}
-                                >
-                                <span>{product.name} ({product.sku})</span>
-                                <Plus className="w-4 h-4" />
-                                </div>
-                            ))}
+                            <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
+                                {searchResults.map(product => (
+                                    <div
+                                        key={product.id}
+                                        className="p-2 hover:bg-accent cursor-pointer flex justify-between items-center text-sm"
+                                        onClick={() => handleAddProduct(product)}
+                                    >
+                                        <span>{product.name} ({product.sku})</span>
+                                        <Plus className="w-4 h-4" />
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -305,9 +397,6 @@ export default function AddDraftPage() {
                                     <TableHead className="min-w-[200px]">Product</TableHead>
                                     <TableHead>Quantity</TableHead>
                                     <TableHead>Unit Price</TableHead>
-                                    <TableHead>Discount</TableHead>
-                                    <TableHead>Tax</TableHead>
-                                    <TableHead>Price inc. tax</TableHead>
                                     <TableHead>Subtotal</TableHead>
                                     <TableHead className="text-center w-12"><X className="w-4 h-4 mx-auto" /></TableHead>
                                 </TableRow>
@@ -318,11 +407,8 @@ export default function AddDraftPage() {
                                         <TableCell>{index + 1}</TableCell>
                                         <TableCell>{item.product.name}</TableCell>
                                         <TableCell><Input type="number" value={item.quantity} onChange={(e) => handleItemChange(item.product.id, 'quantity', parseInt(e.target.value))} className="w-24 h-9" /></TableCell>
-                                        <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell>0.00</TableCell>
-                                        <TableCell>0.00</TableCell>
-                                        <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                                        <TableCell>${calculateSubtotal(item).toFixed(2)}</TableCell>
+                                        <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                                        <TableCell>{formatCurrency(calculateItemSubtotal(item))}</TableCell>
                                         <TableCell className="text-center">
                                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500 hover:bg-red-50" onClick={() => handleRemoveItem(item.product.id)}>
                                                 <Trash2 className="w-4 h-4" />
@@ -331,51 +417,51 @@ export default function AddDraftPage() {
                                     </TableRow>
                                 )) : (
                                     <TableRow>
-                                        <TableCell colSpan={9} className="text-center h-24">No products added yet.</TableCell>
+                                        <TableCell colSpan={6} className="text-center h-24">No products added yet.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
                         </Table>
                     </div>
-                     <div className="flex justify-end mt-2 text-sm font-medium">
-                        Items: {totalItems.toFixed(2)} Total: ${subtotal.toFixed(2)}
+                    <div className="flex justify-end mt-2 text-sm font-medium">
+                        Items: {totalItems.toFixed(2)} Total: {formatCurrency(subtotal)}
                     </div>
-                    <hr className="my-4"/>
+                    <hr className="my-4" />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                             <Label htmlFor="discount-type" className="flex items-center gap-1">Discount Type:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                             <Select defaultValue="Percentage">
-                                <SelectTrigger><SelectValue/></SelectTrigger>
+                            <Label htmlFor="discount-type" className="flex items-center gap-1">Discount Type:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
+                            <Select value={discountType} onValueChange={setDiscountType}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Fixed">Fixed</SelectItem>
                                     <SelectItem value="Percentage">Percentage</SelectItem>
                                 </SelectContent>
-                             </Select>
+                            </Select>
                         </div>
-                         <div className="space-y-2">
-                             <Label htmlFor="discount-amount" className="flex items-center gap-1">Discount Amount:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                             <Input id="discount-amount" type="number" defaultValue="10.00"/>
+                        <div className="space-y-2">
+                            <Label htmlFor="discount-amount" className="flex items-center gap-1">Discount Amount:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
+                            <Input id="discount-amount" type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} />
                         </div>
                         <div>
-                             <p className="text-sm mt-6">Discount Amount(-): $0.00</p>
+                            <p className="text-sm mt-6">Discount Amount(-): {formatCurrency(orderDiscount)}</p>
                         </div>
-                         <div className="space-y-2">
-                             <Label htmlFor="order-tax" className="flex items-center gap-1">Order Tax:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
-                             <Select>
-                                <SelectTrigger><SelectValue placeholder="None"/></SelectTrigger>
+                        <div className="space-y-2">
+                            <Label htmlFor="order-tax" className="flex items-center gap-1">Order Tax:* <Info className="w-3 h-3 text-muted-foreground" /></Label>
+                            <Select value={orderTaxId} onValueChange={setOrderTaxId}>
+                                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="none">None</SelectItem>
                                     <SelectItem value="vat-10">VAT@10%</SelectItem>
                                 </SelectContent>
-                             </Select>
+                            </Select>
                         </div>
-                         <div className="flex items-end">
-                            <p className="text-sm">Order Tax(+): $0.00</p>
+                        <div className="flex items-end">
+                            <p className="text-sm">Order Tax(+): {formatCurrency(orderTax)}</p>
                         </div>
                     </div>
                     <div className="space-y-2 mt-4">
                         <Label htmlFor="sell-note">Sell Note</Label>
-                        <Textarea id="sell-note" />
+                        <Textarea id="sell-note" value={sellNote} onChange={(e) => setSellNote(e.target.value)} />
                     </div>
                 </CardContent>
             </Card>
@@ -383,13 +469,13 @@ export default function AddDraftPage() {
             <Card>
                 <CardHeader><CardTitle>Shipping</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="space-y-2"><Label>Shipping Details</Label><Textarea placeholder="Shipping Details"/></div>
-                    <div className="space-y-2"><Label>Shipping Address</Label><Textarea placeholder="Shipping Address"/></div>
-                    <div className="space-y-2"><Label>Shipping Charges</Label><Input type="number" defaultValue="0.00"/></div>
+                    <div className="space-y-2"><Label>Shipping Details</Label><Textarea placeholder="Shipping Details" value={shippingDetails} onChange={(e) => setShippingDetails(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Shipping Address</Label><Textarea placeholder="Shipping Address" value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Shipping Charges</Label><Input type="number" value={shippingCharges} onChange={(e) => setShippingCharges(e.target.value)} /></div>
                     <div className="space-y-2">
                         <Label>Shipping Status</Label>
-                        <Select>
-                            <SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger>
+                        <Select value={shippingStatus} onValueChange={setShippingStatus}>
+                            <SelectTrigger><SelectValue placeholder="Please Select" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ordered">Ordered</SelectItem>
                                 <SelectItem value="packed">Packed</SelectItem>
@@ -399,30 +485,18 @@ export default function AddDraftPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="space-y-2"><Label>Delivered To</Label><Input placeholder="Delivered To"/></div>
-                    <div className="space-y-2">
-                        <Label>Delivery Person</Label>
-                        <Select>
-                            <SelectTrigger><SelectValue placeholder="Please Select"/></SelectTrigger>
-                            <SelectContent>
-                                {users.map(user => (
-                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2 md:col-span-2"><Label>Shipping Document</Label><Input type="file" /></div>
+                    <div className="space-y-2"><Label>Delivered To</Label><Input placeholder="Delivered To" value={deliveredTo} onChange={(e) => setDeliveredTo(e.target.value)} /></div>
                 </CardContent>
             </Card>
 
             <div className="flex justify-between items-center p-4 border rounded-md">
-                <Button variant="outline" onClick={addAdditionalExpense}><PlusCircle className="mr-2 h-4 w-4" /> Add additional expenses</Button>
-                <div className="text-right font-bold">Total Payable: $0.00</div>
+                <div className="text-right font-bold w-full">Total Payable: {formatCurrency(totalPayable)}</div>
             </div>
 
             <div className="flex justify-end gap-2">
-                <Button size="lg" variant="default" onClick={handleSaveDraft}>Save</Button>
-                <Button size="lg" variant="default" className="bg-green-600 hover:bg-green-700" onClick={handleSaveDraft}>Save and print</Button>
+                <Button size="lg" variant="default" onClick={handleSaveDraft} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Draft"}
+                </Button>
             </div>
 
             <AppFooter />

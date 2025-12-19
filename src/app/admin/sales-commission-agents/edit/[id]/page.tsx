@@ -11,7 +11,8 @@ import { X, PlusCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from '@/components/ui/textarea';
 import { getCommissionProfile, updateCommissionProfile } from '@/services/commissionService';
-import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
+import { getProductCategories } from '@/services/productCategoryService';
+import { type ProductCategory } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseError } from 'firebase/app';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
@@ -22,20 +23,20 @@ export default function EditSalesCommissionAgentPage() {
     const { toast } = useToast();
     const settings = useBusinessSettings();
     const { id } = params;
-    
+
     const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
     const [agentName, setAgentName] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
-    const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    const [categoryCommissions, setCategoryCommissions] = useState<{ id: number, category: string, rate: string, categoryId?: string }[]>([]);
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     useEffect(() => {
         if (typeof id !== 'string') return;
-        
+
         const fetchProfileAndCategories = async () => {
             setIsLoading(true);
             try {
@@ -58,6 +59,7 @@ export default function EditSalesCommissionAgentPage() {
                             id: Date.now() + index,
                             category: c.category,
                             rate: String(c.rate),
+                            categoryId: c.categoryId
                         })) || []
                     );
                 } else {
@@ -69,7 +71,7 @@ export default function EditSalesCommissionAgentPage() {
                     router.push('/admin/sales-commission-agents');
                 }
             } catch (error) {
-                 toast({
+                toast({
                     title: "Error",
                     description: "Failed to load profile data.",
                     variant: "destructive"
@@ -93,9 +95,16 @@ export default function EditSalesCommissionAgentPage() {
 
     const handleCategoryCommissionChange = (id: number, field: 'category' | 'rate', value: string) => {
         setCategoryCommissions(
-            categoryCommissions.map(comm => 
-                comm.id === id ? { ...comm, [field]: value } : comm
-            )
+            categoryCommissions.map(comm => {
+                if (comm.id === id) {
+                    if (field === 'category') {
+                        const selectedCategory = productCategories.find(c => c.name === value);
+                        return { ...comm, category: value, categoryId: selectedCategory?.id };
+                    }
+                    return { ...comm, [field]: value };
+                }
+                return comm;
+            })
         );
     };
 
@@ -124,7 +133,7 @@ export default function EditSalesCommissionAgentPage() {
             });
             return;
         }
-        
+
         const updatedProfileData = {
             name: agentName,
             entityType: entityType as any,
@@ -137,7 +146,8 @@ export default function EditSalesCommissionAgentPage() {
                     .filter(c => c.category && c.rate)
                     .map(c => ({
                         category: c.category,
-                        rate: parseFloat(c.rate) || 0
+                        rate: parseFloat(c.rate) || 0,
+                        categoryId: c.categoryId || productCategories.find(pc => pc.name === c.category)?.id
                     })),
             }
         };
@@ -170,7 +180,7 @@ export default function EditSalesCommissionAgentPage() {
 
     if (isLoading) {
         return (
-             <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
                 <h1 className="font-headline text-3xl font-bold"><Skeleton className="h-9 w-72" /></h1>
                 <Card>
                     <CardHeader><CardTitle><Skeleton className="h-7 w-48" /></CardTitle></CardHeader>
@@ -197,27 +207,27 @@ export default function EditSalesCommissionAgentPage() {
                         <CardContent className="pt-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {settings.modules.advancedCommission && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="entity-type">Entity Type *</Label>
-                                    <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
-                                        <SelectTrigger id="entity-type">
-                                            <SelectValue placeholder="Select an entity type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Agent">Agent</SelectItem>
-                                            <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
-                                            <SelectItem value="Company">Company</SelectItem>
-                                            <SelectItem value="Salesperson">Salesperson</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="entity-type">Entity Type *</Label>
+                                        <Select value={entityType} onValueChange={(value: any) => setEntityType(value)}>
+                                            <SelectTrigger id="entity-type">
+                                                <SelectValue placeholder="Select an entity type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Agent">Agent</SelectItem>
+                                                <SelectItem value="Sub-Agent">Sub-Agent</SelectItem>
+                                                <SelectItem value="Company">Company</SelectItem>
+                                                <SelectItem value="Salesperson">Salesperson</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 )}
                                 <div className="space-y-2">
                                     <Label htmlFor="agent-name">Name *</Label>
                                     <Input id="agent-name" placeholder="Enter entity's full name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />
                                 </div>
                             </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="phone-number">Phone Number *</Label>
                                     <Input id="phone-number" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
@@ -235,11 +245,11 @@ export default function EditSalesCommissionAgentPage() {
                     </Card>
 
                     <Card>
-                         <CardHeader>
+                        <CardHeader>
                             <CardTitle>Commission Rates</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="space-y-2">
+                            <div className="space-y-2">
                                 <Label htmlFor="overall-commission">Overall Commission Rate (%)</Label>
                                 <Input id="overall-commission" type="number" placeholder="e.g. 5" value={overallCommission} onChange={(e) => setOverallCommission(e.target.value)} />
                                 <p className="text-xs text-muted-foreground">Used if no category-specific rate applies.</p>
@@ -285,12 +295,12 @@ export default function EditSalesCommissionAgentPage() {
                     </div>
                 </div>
                 <div className="lg:col-span-1">
-                     <Card className="sticky top-6">
+                    <Card className="sticky top-6">
                         <CardHeader>
                             <CardTitle>Instructions</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6 text-sm text-muted-foreground space-y-4">
-                             <p>Update the commission profile details for the selected entity.</p>
+                            <p>Update the commission profile details for the selected entity.</p>
                             <p>You can set an <span className="font-bold text-foreground">Overall Commission Rate</span> that applies to all sales for this profile.</p>
                             <p>Alternatively, you can set <span className="font-bold text-foreground">Category-Specific Rates</span>. If you set even one category rate, the overall rate will be ignored, and commission will only be calculated for products in the specified categories.</p>
                         </CardContent>

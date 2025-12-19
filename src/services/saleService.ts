@@ -1,6 +1,6 @@
 
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, doc, getDoc, deleteDoc, DocumentData, runTransaction, query, where, orderBy } from 'firebase/firestore';
@@ -39,7 +39,15 @@ export async function addSale(
     const saleDataForDb = {
         ...sale,
         date: new Date(sale.date),
+        paymentReference: sale.paymentReference || null, // Fix for undefined error
     };
+
+    const productCategoriesCollection = collection(db, 'productCategories');
+    const categoriesSnapshot = await getDocs(productCategoriesCollection);
+    const categoriesMap = new Map<string, any>();
+    categoriesSnapshot.docs.forEach(doc => {
+        categoriesMap.set(doc.id, doc.data());
+    });
 
     const saleId = await runTransaction(db, async (transaction) => {
         // --- 1. GENERATE INVOICE NUMBER (SEQ-1) ---
@@ -82,11 +90,15 @@ export async function addSale(
             });
         }
 
+        // (Removed erroneous collection fetch)
+
         let customerRef;
+        let customerDocSnap: DocumentData | undefined;
+
         if (sale.customerId && sale.customerId !== 'walk-in') {
             customerRef = doc(db, 'customers', sale.customerId);
-            const customerDoc = await transaction.get(customerRef);
-            if (!customerDoc.exists()) {
+            customerDocSnap = await transaction.get(customerRef);
+            if (customerDocSnap && !customerDocSnap.exists()) {
                 throw new Error("Customer not found.");
             }
         }
@@ -99,9 +111,9 @@ export async function addSale(
             const productData = productDataMap.get(item.productId);
             if (!productData) throw new Error(`Product ${item.productId} missing.`);
 
-            // SEC-1: Use DB price, not Client price
-            // Note: Logic allows for handling variable products or discounts here if needed in future
-            const actualUnitPrice = productData.sellingPrice || 0;
+            // SEC-1: Preference for the price provided by the POS (cart), allowing for discounts or custom pricing.
+            // Fallback to DB price if not provided.
+            const actualUnitPrice = item.unitPrice || productData.sellingPrice || 0;
 
             // LOG-1: Check for Negative Inventory
             const currentStock = productData.currentStock || 0;
@@ -149,9 +161,8 @@ export async function addSale(
         });
         const createdSaleId = newSaleRef.id;
 
-        if (customerRef) {
-            const customerDoc = await transaction.get(customerRef); // Re-read to be safe
-            const currentDue = customerDoc.data()?.totalSaleDue || 0;
+        if (customerRef && customerDocSnap && customerDocSnap.exists()) {
+            const currentDue = customerDocSnap.data()?.totalSaleDue || 0;
             transaction.update(customerRef, {
                 totalSaleDue: currentDue + trustedSellDue
             });
@@ -186,19 +197,56 @@ export async function addSale(
                 const commissionSettings = agentProfile.commission || {};
                 const categoryRates = Array.isArray(commissionSettings.categories) ? commissionSettings.categories : [];
                 const overallRate = typeof commissionSettings.overall === 'number' ? commissionSettings.overall : 0;
-                const productCategory = typeof productData.category === 'string' ? productData.category.trim().toLowerCase() : null;
+                const productCategoryName = typeof productData.category === 'string' ? productData.category.trim().toLowerCase() : null;
+                const productCategoryId = productData.categoryId || null;
 
                 let applicableRate = overallRate;
 
-                if (productCategory) {
-                    const categoryRule = categoryRates.find(
-                        (c: any) => typeof c.category === 'string' && c.category.trim().toLowerCase() === productCategory
-                    );
-                    if (categoryRule && typeof categoryRule.rate === 'number') {
-                        applicableRate = categoryRule.rate;
-                    } else if (categoryRates.length > 0 && commissionCategoryRule === 'strict') {
-                        applicableRate = 0;
+                // Recursive function to find the most specific rate in the hierarchy
+                const findCategoryRate = (catId: string | null, catName: string | null): number | null => {
+                    if (!catId && !catName) return null;
+
+                    // If ID is missing but name is present, try to find the ID to enable hierarchy traversal
+                    let resolvedId = catId;
+                    if (!resolvedId && catName) {
+                        const normalizedName = catName.trim().toLowerCase();
+                        for (const [id, data] of categoriesMap.entries()) {
+                            if (data.name && data.name.trim().toLowerCase() === normalizedName) {
+                                resolvedId = id;
+                                break;
+                            }
+                        }
                     }
+
+                    // 1. Try direct ID match
+                    if (resolvedId) {
+                        const rule = categoryRates.find((c: any) => c.categoryId === resolvedId);
+                        if (rule && typeof rule.rate === 'number') return rule.rate;
+                    }
+
+                    // 2. Try direct name match
+                    if (catName) {
+                        const normalizedName = catName.trim().toLowerCase();
+                        const rule = categoryRates.find((c: any) => c.category && c.category.trim().toLowerCase() === normalizedName);
+                        if (rule && typeof rule.rate === 'number') return rule.rate;
+                    }
+
+                    // 3. Try matching parent category if ID is available (or resolved)
+                    if (resolvedId) {
+                        const currentCat = categoriesMap.get(resolvedId);
+                        if (currentCat && currentCat.parentId) {
+                            const parentCat = categoriesMap.get(currentCat.parentId);
+                            return findCategoryRate(currentCat.parentId, parentCat ? parentCat.name : null);
+                        }
+                    }
+
+                    return null;
+                };
+
+                const foundRate = findCategoryRate(productCategoryId, productCategoryName);
+
+                if (foundRate !== null) {
+                    applicableRate = foundRate;
                 } else if (categoryRates.length > 0 && commissionCategoryRule === 'strict') {
                     applicableRate = 0;
                 }
@@ -213,12 +261,11 @@ export async function addSale(
                         recipient_entity_type: agentProfile.entityType,
                         calculation_base_amount: saleValue,
                         calculated_rate: applicableRate,
-                        // Fix for product category ID not being available on product object easily without re-fetch/join, 
-                        // but we have productCategory name. Sticking to category name or null for now.
-                        product_category_id: productData.categoryId || null,
+                        product_category_id: productCategoryId,
+                        product_category_name: productData.category || null,
                         commission_amount: commissionAmount,
                         status: 'Pending Approval',
-                        calculation_date: new Date(),
+                        calculation_date: new Date().toISOString(),
                     });
                     const currentTotal = agentCommissionTotals.get(agentId) || 0;
                     agentCommissionTotals.set(agentId, currentTotal + commissionAmount);
@@ -379,9 +426,37 @@ export async function getDrafts(): Promise<Sale[]> {
 }
 
 export async function addDraft(draft: Omit<Sale, 'id'>): Promise<string> {
-    const draftData = { ...draft, date: new Date(draft.date) };
-    const docRef = await addDoc(draftsCollection, draftData);
-    return docRef.id;
+    const saleId = await runTransaction(db, async (transaction) => {
+        // --- 1. GENERATE DRAFT NUMBER ---
+        // Use 'DR' prefix
+        const locationPrefix = 'DR';
+        const counterRef = doc(db, 'counters', `draft_${locationPrefix}`);
+        const counterDoc = await transaction.get(counterRef);
+
+        let nextCount = 1;
+        if (counterDoc.exists()) {
+            nextCount = counterDoc.data().count + 1;
+        }
+
+        // Pad with zeros to 4 digits (e.g., 0001)
+        const sequencePart = nextCount.toString().padStart(4, '0');
+        const finalDraftNo = `${locationPrefix}-${sequencePart}`;
+
+        const draftData = {
+            ...draft,
+            invoiceNo: finalDraftNo,
+            date: new Date(draft.date)
+        };
+
+        const newDraftRef = doc(draftsCollection);
+        transaction.set(newDraftRef, draftData);
+
+        transaction.set(counterRef, { count: nextCount }, { merge: true });
+
+        return newDraftRef.id;
+    });
+
+    return saleId;
 }
 
 export async function deleteDraft(id: string): Promise<void> {
@@ -397,9 +472,37 @@ export async function getQuotations(): Promise<Sale[]> {
 }
 
 export async function addQuotation(quotation: Omit<Sale, 'id'>): Promise<string> {
-    const quoteData = { ...quotation, date: new Date(quotation.date) };
-    const docRef = await addDoc(quotationsCollection, quoteData);
-    return docRef.id;
+    const saleId = await runTransaction(db, async (transaction) => {
+        // --- 1. GENERATE QUOTATION NUMBER ---
+        // Use 'QT' prefix
+        const locationPrefix = 'QT';
+        const counterRef = doc(db, 'counters', `quotation_${locationPrefix}`);
+        const counterDoc = await transaction.get(counterRef);
+
+        let nextCount = 1;
+        if (counterDoc.exists()) {
+            nextCount = counterDoc.data().count + 1;
+        }
+
+        // Pad with zeros to 4 digits (e.g., 0001)
+        const sequencePart = nextCount.toString().padStart(4, '0');
+        const finalQuotationNo = `${locationPrefix}-${sequencePart}`;
+
+        const quoteData = {
+            ...quotation,
+            invoiceNo: finalQuotationNo,
+            date: new Date(quotation.date)
+        };
+
+        const newQuoteRef = doc(quotationsCollection);
+        transaction.set(newQuoteRef, quoteData);
+
+        transaction.set(counterRef, { count: nextCount }, { merge: true });
+
+        return newQuoteRef.id;
+    });
+
+    return saleId;
 }
 
 export async function deleteQuotation(id: string): Promise<void> {

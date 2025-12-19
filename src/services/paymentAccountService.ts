@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, runTransaction, writeBatch, query, where } from 'firebase/firestore';
@@ -39,12 +39,12 @@ export async function setAsDefaultAccount(id: string): Promise<void> {
         // Find the current default account
         const q = query(accountsCollection, where("isDefault", "==", true));
         const currentDefaultDocs = await getDocs(q);
-        
+
         // Unset the current default
         currentDefaultDocs.forEach(docSnap => {
             transaction.update(docSnap.ref, { isDefault: false });
         });
-        
+
         // Set the new default
         const newDefaultRef = doc(db, 'paymentAccounts', id);
         transaction.update(newDefaultRef, { isDefault: true });

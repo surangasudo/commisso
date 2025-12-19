@@ -13,7 +13,8 @@ import { type CommissionProfile } from '@/lib/data';
 import { Textarea } from '@/components/ui/textarea';
 import { addCommissionProfile } from '@/services/commissionService';
 import { FirebaseError } from 'firebase/app';
-import { getProductCategories, type ProductCategory } from '@/services/productCategoryService';
+import { getProductCategories } from '@/services/productCategoryService';
+import { type ProductCategory } from '@/lib/data';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 
 export default function AddSalesCommissionAgentPage() {
@@ -27,9 +28,9 @@ export default function AddSalesCommissionAgentPage() {
     const [email, setEmail] = useState('');
     const [bankDetails, setBankDetails] = useState('');
     const [overallCommission, setOverallCommission] = useState('');
-    const [categoryCommissions, setCategoryCommissions] = useState<{id: number, category: string, rate: string}[]>([]);
+    const [categoryCommissions, setCategoryCommissions] = useState<{ id: number, category: string, rate: string, categoryId?: string }[]>([]);
     const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
-    
+
     useEffect(() => {
         const fetchCategories = async () => {
             try {
@@ -57,9 +58,16 @@ export default function AddSalesCommissionAgentPage() {
 
     const handleCategoryCommissionChange = (id: number, field: 'category' | 'rate', value: string) => {
         setCategoryCommissions(
-            categoryCommissions.map(comm => 
-                comm.id === id ? { ...comm, [field]: value } : comm
-            )
+            categoryCommissions.map(comm => {
+                if (comm.id === id) {
+                    if (field === 'category') {
+                        const selectedCategory = productCategories.find(c => c.name === value);
+                        return { ...comm, category: value, categoryId: selectedCategory?.id };
+                    }
+                    return { ...comm, [field]: value };
+                }
+                return comm;
+            })
         );
     };
 
@@ -101,7 +109,8 @@ export default function AddSalesCommissionAgentPage() {
                     .filter(c => c.category && c.rate)
                     .map(c => ({
                         category: c.category,
-                        rate: parseFloat(c.rate) || 0
+                        rate: parseFloat(c.rate) || 0,
+                        categoryId: c.categoryId
                     })),
             }
         };
@@ -120,7 +129,7 @@ export default function AddSalesCommissionAgentPage() {
             });
             router.push('/admin/sales-commission-agents');
         } catch (error) {
-             console.error("Failed to add profile:", error);
+            console.error("Failed to add profile:", error);
             if (error instanceof FirebaseError && error.code === 'permission-denied') {
                 toast({
                     title: "Permission Error",
@@ -170,7 +179,7 @@ export default function AddSalesCommissionAgentPage() {
                                     <Input id="agent-name" placeholder="Enter entity's full name" value={agentName} onChange={(e) => setAgentName(e.target.value)} />
                                 </div>
                             </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="phone-number">Phone Number *</Label>
                                     <Input id="phone-number" placeholder="Enter phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
@@ -238,12 +247,12 @@ export default function AddSalesCommissionAgentPage() {
                     </div>
                 </div>
                 <div className="lg:col-span-1">
-                     <Card className="sticky top-6">
+                    <Card className="sticky top-6">
                         <CardHeader>
                             <CardTitle>Instructions</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6 text-sm text-muted-foreground space-y-4">
-                             <p>Create commission profiles for different entities like Agents, Companies, or Salespersons.</p>
+                            <p>Create commission profiles for different entities like Agents, Companies, or Salespersons.</p>
                             <p>You can set an <span className="font-bold text-foreground">Overall Commission Rate</span> that applies to all sales for this profile.</p>
                             <p>Alternatively, you can set <span className="font-bold text-foreground">Category-Specific Rates</span>. If you set even one category rate, the overall rate will be ignored, and commission will only be calculated for products in the specified categories.</p>
                         </CardContent>

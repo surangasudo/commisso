@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData, runTransaction } from 'firebase/firestore';

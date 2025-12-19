@@ -38,7 +38,7 @@ export type CommissionProfile = {
   bankDetails?: string;
   commission: {
     overall: number;
-    categories?: { category: string; rate: number }[];
+    categories?: { category: string; rate: number; categoryId?: string }[];
   };
   totalCommissionEarned: number;
   totalCommissionPaid: number;
@@ -51,6 +51,7 @@ export type Commission = {
   recipient_profile_id: string;
   recipient_entity_type: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
   product_category_id?: string;
+  product_category_name?: string;
   calculation_base_amount: number;
   calculated_rate: number;
   commission_amount: number;
@@ -112,6 +113,7 @@ export type DetailedProduct = {
   currentStock: number;
   productType: 'Single' | 'Variable';
   category: string;
+  categoryId?: string;
   brand: string;
   tax: string;
   sku: string;
@@ -281,6 +283,13 @@ export type Expense = {
 };
 
 export type ExpenseCategory = {
+  id: string;
+  name: string;
+  code: string;
+  parentId?: string | null;
+};
+
+export type ProductCategory = {
   id: string;
   name: string;
   code: string;

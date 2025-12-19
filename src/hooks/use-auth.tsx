@@ -2,25 +2,28 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { signInAnonymously, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 
 type User = {
     name: string;
     email: string;
     role: 'Admin' | 'Cashier';
+    uid?: string;
 };
 
 type AuthContextType = {
     user: User | null;
     loading: boolean;
-    login: (role: 'Admin' | 'Cashier') => void;
-    logout: () => void;
+    login: (role: 'Admin' | 'Cashier') => Promise<void>;
+    logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
-    login: () => {},
-    logout: () => {},
+    login: async () => { },
+    logout: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -30,37 +33,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const loadUserFromStorage = useCallback(() => {
-        try {
-            const savedUser = localStorage.getItem('erp-user');
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                // User is signed in.
+                // We still need to recover their "role" from local storage since anonymous auth doesn't store that.
+                try {
+                    const savedUser = localStorage.getItem('erp-user');
+                    if (savedUser) {
+                        const parsedUser = JSON.parse(savedUser);
+                        setUser({
+                            ...parsedUser,
+                            uid: firebaseUser.uid
+                        });
+                    } else {
+                        // Fallback if no local data but firebase session exists (edge case)
+                        setUser({
+                            name: 'Anonymous User',
+                            email: 'anon@example.com',
+                            role: 'Cashier',
+                            uid: firebaseUser.uid
+                        });
+                    }
+                } catch (e) {
+                    console.error("Failed to restore user role", e);
+                }
+            } else {
+                // User is signed out.
+                setUser(null);
             }
-        } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-        } finally {
             setLoading(false);
-        }
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    useEffect(() => {
-        loadUserFromStorage();
-        window.addEventListener('storage', loadUserFromStorage);
-        return () => window.removeEventListener('storage', loadUserFromStorage);
-    }, [loadUserFromStorage]);
+    const login = async (role: 'Admin' | 'Cashier') => {
+        setLoading(true);
+        try {
+            await signInAnonymously(auth);
 
-    const login = (role: 'Admin' | 'Cashier') => {
-        const name = role === 'Admin' ? 'Mr Admin' : 'Mr Cashier';
-        const email = role === 'Admin' ? 'admin@example.com' : 'cashier@example.com';
-        const userData = { name, role, email };
-        localStorage.setItem('erp-user', JSON.stringify(userData));
-        setUser(userData);
+            const name = role === 'Admin' ? 'Mr Admin' : 'Mr Cashier';
+            const email = role === 'Admin' ? 'admin@example.com' : 'cashier@example.com';
+            const userData = { name, role, email };
+
+            // Store role metadata locally used for UI
+            localStorage.setItem('erp-user', JSON.stringify(userData));
+
+            // State update will happen in onAuthStateChanged
+        } catch (error) {
+            console.error("Login failed", error);
+            setLoading(false);
+        }
     };
 
-    const logout = () => {
-        localStorage.removeItem('erp-user');
-        setUser(null);
-        router.push('/login');
+    const logout = async () => {
+        try {
+            await signOut(auth);
+            localStorage.removeItem('erp-user');
+            router.push('/login');
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     const value = { user, loading, login, logout };

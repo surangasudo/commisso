@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, Timestamp, getDocs } from 'firebase/firestore';
@@ -10,11 +10,11 @@ import { unstable_noStore as noStore } from 'next/cache';
 const moneyExchangesCollection = collection(db, 'moneyExchanges');
 
 export async function addMoneyExchange(exchange: Omit<MoneyExchange, 'id'>): Promise<void> {
-    const dataToSave = {
-        ...exchange,
-        date: Timestamp.fromDate(new Date(exchange.date)),
-    };
-    await addDoc(moneyExchangesCollection, dataToSave);
+  const dataToSave = {
+    ...exchange,
+    date: Timestamp.fromDate(new Date(exchange.date)),
+  };
+  await addDoc(moneyExchangesCollection, dataToSave);
 }
 
 export async function getMoneyExchanges(): Promise<MoneyExchange[]> {

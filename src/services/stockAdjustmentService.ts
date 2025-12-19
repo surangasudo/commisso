@@ -1,5 +1,5 @@
 
-'use server';
+// use server removed
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
@@ -13,7 +13,10 @@ type StockAdjustmentItem = {
     unitPrice: number;
 };
 
-type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'totalAmount'> & {
+type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'totalAmount' | 'referenceNo' | 'totalAmountRecovered' | 'reason'> & {
+    referenceNo?: string;
+    totalAmountRecovered?: number;
+    reason?: string;
     items: StockAdjustmentItem[];
 };
 
@@ -21,9 +24,9 @@ type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'totalAmount'> & {
 const stockAdjustmentsCollection = collection(db, 'stockAdjustments');
 
 export async function getStockAdjustments(): Promise<StockAdjustment[]> {
-  noStore();
-  const snapshot = await getDocs(stockAdjustmentsCollection);
-  return snapshot.docs.map(doc => processDoc<StockAdjustment>(doc));
+    noStore();
+    const snapshot = await getDocs(stockAdjustmentsCollection);
+    return snapshot.docs.map(doc => processDoc<StockAdjustment>(doc));
 }
 
 export async function addStockAdjustment(adjustment: StockAdjustmentInput): Promise<DocumentData> {
@@ -39,33 +42,41 @@ export async function addStockAdjustment(adjustment: StockAdjustmentInput): Prom
         reason: adjustment.reason || '',
         addedBy: adjustment.addedBy,
     };
-    
+
     return await runTransaction(db, async (transaction) => {
-        // 1. Add the new stock adjustment document
-        const newAdjustmentRef = doc(collection(db, "stockAdjustments"));
-        transaction.set(newAdjustmentRef, newAdjustmentData);
-        
-        // 2. Update the stock for each product
+        // 1. Perform all reads first
+        const productUpdates = [];
         for (const item of adjustment.items) {
+            if (!item.productId) throw new Error("Invalid product ID in adjustment items");
+            if (typeof item.quantity !== 'number' || isNaN(item.quantity)) throw new Error(`Invalid quantity for product ${item.productId}`);
+
             const productRef = doc(db, 'products', item.productId);
             const productDoc = await transaction.get(productRef);
+
             if (!productDoc.exists()) {
-                throw `Product with ID ${item.productId} does not exist.`;
+                throw new Error(`Product with ID ${item.productId} does not exist.`);
             }
-            
-            const productData = productDoc.data();
-            const currentStock = Number(productData.currentStock) || 0;
-            const currentTotalAdjusted = Number(productData.totalUnitAdjusted) || 0;
-            
-            const newStock = currentStock + item.quantity; 
-            const newTotalAdjusted = currentTotalAdjusted + item.quantity;
-            
-            transaction.update(productRef, { 
+
+            productUpdates.push({ ref: productRef, data: productDoc.data(), quantity: item.quantity });
+        }
+
+        // 2. Perform all writes
+        const newAdjustmentRef = doc(collection(db, "stockAdjustments"));
+        transaction.set(newAdjustmentRef, newAdjustmentData);
+
+        for (const update of productUpdates) {
+            const currentStock = Number(update.data.currentStock) || 0;
+            const currentTotalAdjusted = Number(update.data.totalUnitAdjusted) || 0;
+
+            const newStock = currentStock + update.quantity;
+            const newTotalAdjusted = currentTotalAdjusted + update.quantity;
+
+            transaction.update(update.ref, {
                 currentStock: newStock,
-                totalUnitAdjusted: newTotalAdjusted 
+                totalUnitAdjusted: newTotalAdjusted
             });
         }
-        
+
         return { id: newAdjustmentRef.id, ...newAdjustmentData };
     });
 }
