@@ -20,36 +20,49 @@ export const ModernInvoice = React.forwardRef<HTMLDivElement, Props>(
         return (
             <div ref={ref} className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white p-10 text-sm md:text-base text-gray-800 font-sans leading-relaxed relative">
                 {/* Header Section */}
-                <header className="flex justify-between items-start border-b border-gray-200 pb-8 mb-8">
-                    <div className="flex flex-col gap-2">
-                        {/* Logo & Business Info */}
-                        {layout.showLogo && business.logo && (
-                            <img src={business.logo} alt="Business Logo" className="h-16 w-auto object-contain mb-4" />
-                        )}
+                <header className="flex flex-col items-center border-b border-gray-200 pb-8 mb-8 text-center">
+                    {/* Logo Section */}
+                    {layout.showLogo && business.logo && (
+                        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', textAlign: 'center', marginBottom: '3rem' }}>
+                            <img
+                                src={business.logo}
+                                alt="Business Logo"
+                                style={{
+                                    height: `${(layout.logoSize || 100) * 1.2}px`,
+                                    width: 'auto',
+                                    maxWidth: '100%',
+                                    display: 'inline-block'
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* Business Info Section */}
+                    <div className="flex flex-col gap-2 mb-6">
                         {layout.showBusinessName && (
-                            <h1 className="text-2xl font-bold text-primary">{business.businessName}</h1>
+                            <h1 className="text-3xl font-bold text-primary">{business.businessName}</h1>
                         )}
                         <div className="text-gray-500 text-sm space-y-1">
                             {layout.showLocationName && <p>{sale.location}</p>}
-                            {/* Placeholder for address if available in future settings */}
                             <p>Phone: {layout.showMobileNumber ? '123-456-7890' : ''}</p>
                         </div>
                     </div>
 
-                    <div className="text-right">
+                    {/* Invoice Meta Section (Centered for better balance) */}
+                    <div className="w-full flex flex-col items-center border-t border-gray-100 pt-6 mt-2">
                         <h2 className="text-4xl font-light text-gray-300 uppercase tracking-widest mb-4">
                             {layout.invoiceHeading || "INVOICE"}
                         </h2>
-                        <div className="space-y-1 text-sm">
-                            <div className="flex justify-end gap-4">
+                        <div className="flex flex-wrap justify-center gap-8 text-sm">
+                            <div className="flex gap-2">
                                 <span className="text-gray-500 font-medium">Invoice No:</span>
                                 <span className="font-bold">{sale.invoiceNo}</span>
                             </div>
-                            <div className="flex justify-end gap-4">
+                            <div className="flex gap-2">
                                 <span className="text-gray-500 font-medium">Date:</span>
                                 <span>{new Date(sale.date).toLocaleDateString()}</span>
                             </div>
-                            <div className="flex justify-end gap-4">
+                            <div className="flex gap-2">
                                 <span className="text-gray-500 font-medium">Status:</span>
                                 <span className={`font-bold capitalize ${sale.paymentStatus === 'Paid' ? 'text-green-600' : 'text-red-500'}`}>
                                     {sale.paymentStatus}
@@ -113,10 +126,10 @@ export const ModernInvoice = React.forwardRef<HTMLDivElement, Props>(
                             <span>Subtotal</span>
                             <span>{formatCurrency(sale.totalAmount - (sale.taxAmount || 0))}</span>
                         </div>
-                        {sale.taxAmount > 0 && (
+                        {(sale.taxAmount || 0) > 0 && (
                             <div className="flex justify-between text-gray-600 border-b border-gray-100 pb-2">
                                 <span>Tax</span>
-                                <span>{formatCurrency(sale.taxAmount)}</span>
+                                <span>{formatCurrency(sale.taxAmount || 0)}</span>
                             </div>
                         )}
                         <div className="flex justify-between text-gray-600 border-b border-gray-100 pb-2">

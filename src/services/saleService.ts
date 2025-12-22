@@ -190,6 +190,12 @@ export async function addSale(
             const saleValue = item.unitPrice * item.quantity;
             if (!sale.commissionAgentIds || saleValue <= 0) continue;
 
+            const salespersonsInSale = sale.commissionAgentIds.filter(id => {
+                const profile = agentProfiles.get(id);
+                return profile?.entityType === 'Salesperson';
+            });
+            const salespersonCount = salespersonsInSale.length;
+
             for (const agentId of sale.commissionAgentIds) {
                 const agentProfile = agentProfiles.get(agentId);
                 if (!agentProfile) continue;
@@ -251,7 +257,12 @@ export async function addSale(
                     applicableRate = 0;
                 }
 
-                const commissionAmount = saleValue * (applicableRate / 100);
+                let commissionAmount = saleValue * (applicableRate / 100);
+
+                // Divide commission if multiple salespersons are selected
+                if (agentProfile.entityType === 'Salesperson' && salespersonCount > 1) {
+                    commissionAmount = commissionAmount / salespersonCount;
+                }
 
                 if (commissionAmount > 0) {
                     const newCommissionRef = doc(commissionsCollectionRef);
@@ -295,6 +306,28 @@ export async function updateSale(
     commissionCalculationType: 'invoice_value' | 'payment_received',
     commissionCategoryRule: 'strict' | 'fallback'
 ): Promise<void> {
+    // 1. Fetch auxiliary data needed for calculation
+    const productCategoriesCollection = collection(db, 'productCategories');
+    const categoriesSnapshot = await getDocs(productCategoriesCollection);
+    const categoriesMap = new Map<string, any>();
+    categoriesSnapshot.docs.forEach(doc => {
+        categoriesMap.set(doc.id, doc.data());
+    });
+
+    // 2. Fetch OLD commissions for this sale to revert them
+    const commissionsCollectionRef = collection(db, 'commissions');
+    const q = query(commissionsCollectionRef, where('transaction_id', '==', saleId));
+    const oldCommissionsSnapshot = await getDocs(q);
+    const oldCommissions = oldCommissionsSnapshot.docs.map(doc => ({
+        ref: doc.ref,
+        data: doc.data()
+    }));
+
+    // 3. Identify all agents involved (old and new)
+    const oldAgentIds = new Set(oldCommissions.map(c => c.data.recipient_profile_id));
+    const newAgentIds = new Set(updatedSaleData.commissionAgentIds || []);
+    const allAgentIds = new Set([...oldAgentIds, ...newAgentIds]);
+
     await runTransaction(db, async (transaction) => {
         // --- READ PHASE ---
         const saleRef = doc(db, 'sales', saleId);
@@ -331,6 +364,16 @@ export async function updateSale(
             }
         }
 
+        // Read Agent Profiles
+        const agentProfiles = new Map<string, DocumentData>();
+        const agentRefs = Array.from(allAgentIds).map(id => doc(db, 'commissionProfiles', id));
+        if (agentRefs.length > 0) {
+            const agentDocs = await Promise.all(agentRefs.map(ref => transaction.get(ref)));
+            agentDocs.forEach(doc => {
+                if (doc.exists()) agentProfiles.set(doc.id, doc.data());
+            });
+        }
+
         // --- WRITE PHASE ---
 
         // 1. Revert stock levels from the original sale
@@ -365,8 +408,143 @@ export async function updateSale(
             transaction.update(customerRef, { totalSaleDue: currentTotalDue + dueDifference });
         }
 
-        // 4. Update the sale document itself
-        // NOTE: Commission logic is removed for simplicity to ensure the core update succeeds.
+        // 4. COMMISSION LOGIC
+        const agentAdjustments = new Map<string, number>(); // Map<AgentId, NetChange>
+
+        // A. Revert Old Commissions
+        for (const oldComm of oldCommissions) {
+            transaction.delete(oldComm.ref);
+            const agentId = oldComm.data.recipient_profile_id;
+            const amount = oldComm.data.commission_amount || 0;
+            const currentAdj = agentAdjustments.get(agentId) || 0;
+            agentAdjustments.set(agentId, currentAdj - amount);
+        }
+
+        // B. Calculate New Commissions (Based on updatedSaleData)
+        // Note: We use updatedSaleData.items but we verify against productDataMap for prices/categories
+        // We assume updatedSaleData.items has the correct unitPrice (which addSale sets as trusted).
+        // Since updateSale might receive client data, we should ideally re-verify prices, but for now we follow the 'trusted' logic
+        // or re-fetch like addSale.
+
+        if (updatedSaleData.commissionAgentIds && updatedSaleData.commissionAgentIds.length > 0) {
+            for (const item of updatedSaleData.items) {
+                const productData = productDataMap.get(item.productId);
+                if (!productData) continue;
+
+                const saleValue = item.unitPrice * item.quantity;
+                if (saleValue <= 0) continue;
+
+                const salespersonsInSale = updatedSaleData.commissionAgentIds.filter(id => {
+                    const profile = agentProfiles.get(id);
+                    return profile?.entityType === 'Salesperson';
+                });
+                const salespersonCount = salespersonsInSale.length;
+
+                for (const agentId of updatedSaleData.commissionAgentIds) {
+                    const agentProfile = agentProfiles.get(agentId);
+                    if (!agentProfile) continue;
+
+                    const commissionSettings = agentProfile.commission || {};
+                    const categoryRates = Array.isArray(commissionSettings.categories) ? commissionSettings.categories : [];
+                    const overallRate = typeof commissionSettings.overall === 'number' ? commissionSettings.overall : 0;
+                    const productCategoryName = typeof productData.category === 'string' ? productData.category.trim().toLowerCase() : null;
+                    const productCategoryId = productData.categoryId || null;
+
+                    let applicableRate = overallRate;
+
+                    // Recursive function to find the most specific rate in the hierarchy
+                    const findCategoryRate = (catId: string | null, catName: string | null): number | null => {
+                        if (!catId && !catName) return null;
+
+                        // If ID is missing but name is present, try to find the ID to enable hierarchy traversal
+                        let resolvedId = catId;
+                        if (!resolvedId && catName) {
+                            const normalizedName = catName.trim().toLowerCase();
+                            for (const [id, data] of categoriesMap.entries()) {
+                                if (data.name && data.name.trim().toLowerCase() === normalizedName) {
+                                    resolvedId = id;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // 1. Try direct ID match
+                        if (resolvedId) {
+                            const rule = categoryRates.find((c: any) => c.categoryId === resolvedId);
+                            if (rule && typeof rule.rate === 'number') return rule.rate;
+                        }
+
+                        // 2. Try direct name match
+                        if (catName) {
+                            const normalizedName = catName.trim().toLowerCase();
+                            const rule = categoryRates.find((c: any) => c.category && c.category.trim().toLowerCase() === normalizedName);
+                            if (rule && typeof rule.rate === 'number') return rule.rate;
+                        }
+
+                        // 3. Try matching parent category if ID is available (or resolved)
+                        if (resolvedId) {
+                            const currentCat = categoriesMap.get(resolvedId);
+                            if (currentCat && currentCat.parentId) {
+                                const parentCat = categoriesMap.get(currentCat.parentId);
+                                return findCategoryRate(currentCat.parentId, parentCat ? parentCat.name : null);
+                            }
+                        }
+
+                        return null;
+                    };
+
+                    const foundRate = findCategoryRate(productCategoryId, productCategoryName);
+
+                    if (foundRate !== null) {
+                        applicableRate = foundRate;
+                    } else if (categoryRates.length > 0 && commissionCategoryRule === 'strict') {
+                        applicableRate = 0;
+                    }
+
+                    let commissionAmount = saleValue * (applicableRate / 100);
+
+                    // Divide commission if multiple salespersons are selected
+                    if (agentProfile.entityType === 'Salesperson' && salespersonCount > 1) {
+                        commissionAmount = commissionAmount / salespersonCount;
+                    }
+
+                    if (commissionAmount > 0) {
+                        const newCommissionRef = doc(commissionsCollectionRef);
+                        transaction.set(newCommissionRef, {
+                            transaction_id: saleId,
+                            recipient_profile_id: agentId,
+                            recipient_entity_type: agentProfile.entityType,
+                            calculation_base_amount: saleValue,
+                            calculated_rate: applicableRate,
+                            product_category_id: productCategoryId,
+                            product_category_name: productData.category || null,
+                            commission_amount: commissionAmount,
+                            status: 'Pending Approval',
+                            calculation_date: new Date().toISOString(),
+                        });
+                        const currentAdj = agentAdjustments.get(agentId) || 0;
+                        agentAdjustments.set(agentId, currentAdj + commissionAmount);
+                    }
+                }
+            }
+        }
+
+        // C. Update Agents with Net Adjustments
+        for (const [agentId, adjustment] of agentAdjustments.entries()) {
+            // Even if adjustment is 0, we might want to ensure consistency, but skipping 0 is efficient.
+            // However, if we deleted commissions and added same amount, net is 0.
+            if (Math.abs(adjustment) < 0.001) continue;
+
+            const agentRef = doc(db, 'commissionProfiles', agentId);
+            const profile = agentProfiles.get(agentId);
+            // Safety check: verify profile exists (it should, we fetched it)
+            if (profile) {
+                const currentEarned = profile.totalCommissionEarned || 0;
+                transaction.update(agentRef, { totalCommissionEarned: currentEarned + adjustment });
+            }
+        }
+
+        // 5. Update the sale document itself
         transaction.update(saleRef, {
             ...updatedSaleData,
             date: new Date(updatedSaleData.date),
@@ -512,7 +690,8 @@ export async function deleteQuotation(id: string): Promise<void> {
 
 export async function getSuspendedSales(): Promise<Sale[]> {
     noStore();
-    const q = query(salesCollection, where('paymentMethod', '==', 'Suspended'), orderBy('date', 'desc'));
+    const q = query(salesCollection, where('paymentMethod', '==', 'Suspended'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => processDoc<Sale>(doc));
+    const sales = snapshot.docs.map(doc => processDoc<Sale>(doc));
+    return sales.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 }

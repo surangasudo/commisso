@@ -15,7 +15,7 @@ type User = {
 type AuthContextType = {
     user: User | null;
     loading: boolean;
-    login: (role: 'Admin' | 'Cashier') => Promise<void>;
+    login: (userData: { name: string, email: string, role: 'Admin' | 'Cashier' }) => Promise<void>;
     logout: () => Promise<void>;
 };
 
@@ -68,14 +68,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => unsubscribe();
     }, []);
 
-    const login = async (role: 'Admin' | 'Cashier') => {
+    const login = async (userData: { name: string, email: string, role: 'Admin' | 'Cashier' }) => {
         setLoading(true);
         try {
             await signInAnonymously(auth);
-
-            const name = role === 'Admin' ? 'Mr Admin' : 'Mr Cashier';
-            const email = role === 'Admin' ? 'admin@example.com' : 'cashier@example.com';
-            const userData = { name, role, email };
 
             // Store role metadata locally used for UI
             localStorage.setItem('erp-user', JSON.stringify(userData));

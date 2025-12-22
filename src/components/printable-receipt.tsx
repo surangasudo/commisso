@@ -28,7 +28,7 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
 
         const containerStyle: React.CSSProperties = {
             width: '100%',
-            maxWidth: '288px', // Limit to 80mm
+            maxWidth: '302px', // Approx 80mm at 96 DPI
             margin: '0 auto',
             padding: '8px',
             fontFamily: '"Courier New", Courier, monospace', // Reliable monospace
@@ -58,6 +58,26 @@ export const PrintableReceipt = React.forwardRef<HTMLDivElement, PrintableReceip
             <div ref={ref}>
                 <div style={containerStyle}>
                     <header style={headerStyle}>
+                        {layoutSettings?.showLogo && settings.business.logo && (
+                            <div style={{
+                                marginBottom: '24px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                textAlign: 'center',
+                                width: '100%'
+                            }}>
+                                <img
+                                    src={settings.business.logo}
+                                    alt="Logo"
+                                    style={{
+                                        width: `${layoutSettings.logoSize || 100}%`,
+                                        maxWidth: '100%',
+                                        height: 'auto',
+                                        display: 'inline-block'
+                                    }}
+                                />
+                            </div>
+                        )}
                         {layoutSettings?.showBusinessName !== false && (
                             <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
                                 {settings.business.businessName}

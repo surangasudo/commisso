@@ -62,6 +62,15 @@ const CommissionPayoutDialog = ({
             setIsLoading(true);
             try {
                 const pendingData = await getPendingCommissions(profile.id);
+                // Sort by Date Descending (Newest first), then Invoice No Descending
+                pendingData.sort((a, b) => {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    if (dateA !== dateB) {
+                        return dateB - dateA;
+                    }
+                    return b.invoiceNo.localeCompare(a.invoiceNo);
+                });
                 setPendingCommissions(pendingData);
             } catch (e) {
                 console.error("Failed to fetch pending commissions", e);

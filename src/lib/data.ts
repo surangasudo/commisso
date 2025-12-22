@@ -289,6 +289,18 @@ export type ExpenseCategory = {
   parentId?: string | null;
 };
 
+export type SellingPriceGroup = {
+  id: string;
+  name: string;
+  description: string;
+  agentId?: string;
+  subAgentId?: string;
+  companyId?: string;
+  salespersonId?: string;
+  serviceStaffId?: string;
+  isDefault?: boolean;
+};
+
 export type ProductCategory = {
   id: string;
   name: string;
@@ -505,6 +517,7 @@ export const businessLocations: BusinessLocation[] = [
 export const detailedProducts: DetailedProduct[] = [];
 export const products: Product[] = [];
 export const suppliers: Supplier[] = [];
+export const customers: Customer[] = [];
 export const commissionProfiles: CommissionProfile[] = [];
 export const purchases: Purchase[] = [];
 export const purchaseReturns: PurchaseReturn[] = [];

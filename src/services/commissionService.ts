@@ -175,11 +175,13 @@ export async function getPendingCommissions(profileId: string): Promise<PendingC
 
 
 export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<void> {
-    const dataToSave = {
+    const dataToSave: any = {
         ...profile,
+        email: profile.email || null,
+        bankDetails: profile.bankDetails || null,
         commission: {
             overall: profile.commission.overall,
-            categories: profile.commission.categories?.map(({ category, rate }) => ({ category, rate })) || []
+            categories: profile.commission.categories?.map(({ category, rate, categoryId }) => ({ category, rate, categoryId })) || []
         },
         totalCommissionEarned: 0,
         totalCommissionPaid: 0,
@@ -189,13 +191,17 @@ export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'
 
 export async function updateCommissionProfile(id: string, profile: Partial<Omit<CommissionProfile, 'id'>>): Promise<void> {
     const docRef = doc(db, 'commissionProfiles', id);
-    const dataToSave = {
+    const dataToSave: any = {
         ...profile,
-        commission: {
-            overall: profile.commission?.overall,
-            categories: profile.commission?.categories?.map(({ category, rate }) => ({ category, rate })) || []
-        }
+        email: profile.email === undefined ? undefined : (profile.email || null),
+        bankDetails: profile.bankDetails === undefined ? undefined : (profile.bankDetails || null),
+        commission: profile.commission ? {
+            overall: profile.commission.overall,
+            categories: profile.commission.categories?.map(({ category, rate, categoryId }) => ({ category, rate, categoryId })) || []
+        } : undefined
     };
+    // Remove undefined fields for updateDoc
+    Object.keys(dataToSave).forEach(key => dataToSave[key] === undefined && delete dataToSave[key]);
     await updateDoc(docRef, dataToSave);
 }
 

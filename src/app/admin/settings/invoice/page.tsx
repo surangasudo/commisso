@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Pencil, Trash2, Badge } from "lucide-react";
+import { FileText, Plus, Pencil, Trash2, Badge, Upload, X, Info } from "lucide-react";
 import React, { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { useSettings } from "@/hooks/use-settings";
 
@@ -151,6 +152,27 @@ export default function InvoiceSettingsPage() {
         { id: 'showQrCode', label: 'Show QR code on invoice' },
     ] as const;
 
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 1024 * 1024) {
+                toast({ title: "File too large", description: "Logo must be smaller than 1MB.", variant: "destructive" });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                updateSection('business', { logo: reader.result as string });
+                toast({ title: "Success", description: "Invoice logo updated." });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeLogo = () => {
+        updateSection('business', { logo: null });
+        toast({ title: "Success", description: "Invoice logo removed." });
+    };
+
     // Scheme Handlers
     const handleAddSchemeClick = () => {
         setEditingScheme(null);
@@ -174,7 +196,7 @@ export default function InvoiceSettingsPage() {
             setSchemes(schemes.map(s => s.id === editingScheme.id ? { ...s, ...schemeData as InvoiceScheme } : s));
             toast({ title: "Success", description: "Invoice scheme updated." });
         } else {
-            const newScheme: InvoiceScheme = { id: `scheme-${Date.now()}`, ...schemeData as InvoiceScheme };
+            const newScheme: InvoiceScheme = { ...schemeData as InvoiceScheme, id: `scheme-${Date.now()}` };
             setSchemes([...schemes, newScheme]);
             toast({ title: "Success", description: "Invoice scheme added." });
         }
@@ -209,7 +231,7 @@ export default function InvoiceSettingsPage() {
             setLayouts(layouts.map(l => l.id === editingLayout.id ? { ...l, ...layoutData as InvoiceLayout } : l));
             toast({ title: "Success", description: "Invoice layout updated." });
         } else {
-            const newLayout: InvoiceLayout = { id: `layout-${Date.now()}`, ...layoutData as InvoiceLayout };
+            const newLayout: InvoiceLayout = { ...layoutData as InvoiceLayout, id: `layout-${Date.now()}` };
             setLayouts([...layouts, newLayout]);
             toast({ title: "Success", description: "Invoice layout added." });
         }
@@ -294,12 +316,66 @@ export default function InvoiceSettingsPage() {
                                 <div key={info.id} className="flex items-center space-x-2">
                                     <Checkbox
                                         id={info.id}
-                                        checked={settings.invoice[info.id as keyof typeof settings.invoice] as boolean}
+                                        checked={!!settings.invoice[info.id as keyof typeof settings.invoice]}
                                         onCheckedChange={(checked) => updateSection('invoice', { [info.id]: !!checked })}
                                     />
-                                    <Label htmlFor={info.id} className="font-normal cursor-pointer">{info.label}</Label>
+                                    <Label htmlFor={info.id} className="font-normal cursor-pointer text-sm">{info.label}</Label>
                                 </div>
                             ))}
+                        </div>
+                        <div className="pt-4 border-t space-y-4">
+                            <Label className="text-sm font-medium block">Logo Customization</Label>
+                            <div className="flex items-center gap-6">
+                                {settings.business.logo ? (
+                                    <div className="relative inline-block group shrink-0">
+                                        <img
+                                            src={settings.business.logo}
+                                            alt="Current Logo"
+                                            className="h-20 w-auto object-contain border rounded p-2 bg-white"
+                                        />
+                                        <button
+                                            onClick={removeLogo}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer relative h-24 w-40 shrink-0">
+                                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                                        <span className="text-[10px] text-muted-foreground font-medium text-center">Click to upload logo</span>
+                                        <input
+                                            type="file"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            accept="image/*"
+                                            onChange={handleLogoUpload}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <Label htmlFor="logo-size" className="text-xs text-muted-foreground">Logo Size: {settings.invoice.logoSize}%</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-[10px]"
+                                            onClick={() => updateSection('invoice', { logoSize: 100 })}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </div>
+                                    <Slider
+                                        id="logo-size"
+                                        min={10}
+                                        max={200}
+                                        step={5}
+                                        value={[settings.invoice.logoSize || 100]}
+                                        onValueChange={([val]) => updateSection('invoice', { logoSize: val })}
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground italic">Note: Drag the slider to adjust the logo size on printed invoices. Default is 100%.</p>
                         </div>
                     </div>
                 </CardContent>

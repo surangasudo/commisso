@@ -120,11 +120,12 @@ const initialSettings = {
         enableOn: 'all_screens',
         enableForMethods: '',
         strictCheck: false,
+        cardPaymentMethod: 'manual' as 'manual' | 'manual_entry' | 'stripe' | 'paypal',
         enableStripe: false,
         stripePublicKey: '',
         stripeSecretKey: '',
         enablePaypal: false,
-        paypalMode: 'sandbox',
+        paypalMode: 'sandbox' as 'sandbox' | 'live',
         paypalClientId: '',
         paypalClientSecret: '',
     },
@@ -150,10 +151,14 @@ const initialSettings = {
         showBusinessName: true,
         showLocationName: true,
         invoiceHeading: 'Invoice',
-        footerText: 'Thank you for shopping with us!',
+        footerText: 'Thank you for your business!',
         showLogo: true,
+        logoSize: 100,
         showMobileNumber: true,
-        showQrCode: true,
+        showAlternateContactNumber: false,
+        showEmail: true,
+        showTaxNumber: true,
+        showQrCode: false,
         showTax1: true,
         showTax2: false,
         showLandmark: true,
@@ -161,7 +166,6 @@ const initialSettings = {
         showState: true,
         showZipCode: true,
         showCountry: true,
-        showEmail: true,
         showAlternateNumber: false,
     },
     prefixes: {
@@ -258,26 +262,45 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
-        try {
-            const savedSettings = localStorage.getItem('businessSettings');
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                const mergedSettings = { ...initialSettings };
-                for (const key in initialSettings) {
-                    if (parsed[key]) {
-                        mergedSettings[key as keyof AllSettings] = {
-                            ...initialSettings[key as keyof AllSettings],
-                            ...parsed[key]
-                        };
+        const loadSettings = () => {
+            try {
+                const savedSettings = localStorage.getItem('businessSettings');
+                if (savedSettings) {
+                    const parsed = JSON.parse(savedSettings);
+                    const mergedSettings = { ...initialSettings };
+                    for (const key in initialSettings) {
+                        if (parsed[key]) {
+                            mergedSettings[key as keyof AllSettings] = {
+                                ...initialSettings[key as keyof AllSettings],
+                                ...parsed[key]
+                            };
+                        }
                     }
+                    setSettings(mergedSettings);
                 }
-                setSettings(mergedSettings);
+            } catch (error) {
+                console.error("Failed to parse settings from localStorage", error);
+            } finally {
+                setIsLoaded(true);
             }
-        } catch (error) {
-            console.error("Failed to parse settings from localStorage", error);
-        } finally {
-            setIsLoaded(true);
-        }
+        };
+
+        loadSettings();
+
+        // Cross-tab synchronization
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'businessSettings' && e.newValue) {
+                try {
+                    const parsed = JSON.parse(e.newValue);
+                    setSettings(parsed);
+                } catch (err) {
+                    console.error("Failed to sync settings across tabs", err);
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
     }, []);
 
     useEffect(() => {

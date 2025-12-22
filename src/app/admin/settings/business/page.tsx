@@ -45,6 +45,7 @@ import {
     Search,
     PlusCircle,
     Repeat,
+    X,
 } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,6 +93,30 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
 
     const handleSelectChange = (id: keyof AllSettings['business'], value: string) => {
         setSettings(s => ({ ...s, [id]: value as any }));
+    };
+
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 1024 * 1024) { // 1MB limit for base64
+                toast({
+                    title: "File too large",
+                    description: "Please upload an image smaller than 1MB.",
+                    variant: "destructive"
+                });
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSettings(s => ({ ...s, logo: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeLogo = () => {
+        setSettings(s => ({ ...s, logo: null }));
     };
 
     const handleUpdateSettings = () => {
@@ -255,9 +280,37 @@ const BusinessSettingsForm = ({ settings: initialBusinessSettings, updateSetting
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="logo">Logo URL:</Label>
-                        <Input id="logo" placeholder="https://your-domain.com/logo.png" value={settings.logo || 'https://placehold.co/150x60.png'} onChange={handleInputChange} />
-                        <p className="text-xs text-muted-foreground">Enter a public URL for your business logo.</p>
+                        <Label>Business Logo:</Label>
+                        <div className="flex flex-col gap-4">
+                            {settings.logo ? (
+                                <div className="relative inline-block w-fit group">
+                                    <img
+                                        src={settings.logo}
+                                        alt="Business Logo"
+                                        className="h-24 w-auto object-contain border rounded-md p-2 bg-white"
+                                    />
+                                    <button
+                                        onClick={removeLogo}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remove logo"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer relative">
+                                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                                    <span className="text-sm font-medium">Click to upload logo</span>
+                                    <span className="text-xs text-muted-foreground mt-1">PNG, JPG up to 1MB</span>
+                                    <input
+                                        type="file"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        accept="image/*"
+                                        onChange={handleLogoUpload}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="fyStartMonth" className="flex items-center gap-1">Financial year start month: <Info className="w-3 h-3 text-muted-foreground" /></Label>
@@ -582,7 +635,7 @@ const ProductSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
                                     </Tooltip>
                                 </Label>
                                 <div className="flex items-center gap-2">
-                                    <Select id="onExpiryAction" value={settings.onExpiryAction} onValueChange={(value) => handleSelectChange('onExpiryAction', value)}>
+                                    <Select value={settings.onExpiryAction} onValueChange={(value) => handleSelectChange('onExpiryAction', value)}>
                                         <SelectTrigger className="flex-1">
                                             <SelectValue />
                                         </SelectTrigger>
@@ -863,7 +916,7 @@ const PosSettingsForm = ({ settings: initialSettingsData, updateSettings }: { se
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
                                 {generalToggles.map(toggle => (
                                     <div key={toggle.id} className="flex items-center space-x-2">
-                                        <Checkbox id={toggle.id} checked={settings[toggle.id as keyof typeof settings]} onCheckedChange={(checked) => handleCheckboxChange(toggle.id as keyof AllSettings['pos'], checked)} />
+                                        <Checkbox id={toggle.id} checked={!!settings[toggle.id as keyof typeof settings]} onCheckedChange={(checked) => handleCheckboxChange(toggle.id as keyof AllSettings['pos'], checked)} />
                                         <Label htmlFor={toggle.id} className="font-normal">{toggle.label}</Label>
                                     </div>
                                 ))}
@@ -958,6 +1011,19 @@ const PaymentSettingsForm = ({ settings: initialSettingsData, updateSettings }: 
                                 <TooltipContent><p>If checked, user must enter the exact cash received from customer.</p></TooltipContent>
                             </Tooltip>
                         </Label>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="cardPaymentMethod">Active Card Payment Method</Label>
+                        <Select value={settings.cardPaymentMethod} onValueChange={(value) => handleSelectChange('cardPaymentMethod', value)}>
+                            <SelectTrigger id="cardPaymentMethod"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="manual">Offline (3rd Party Terminal / Reference Only)</SelectItem>
+                                <SelectItem value="manual_entry">Manual Entry (Key in Card Details)</SelectItem>
+                                <SelectItem value="stripe">Stripe Integrated</SelectItem>
+                                <SelectItem value="paypal">PayPal Integrated</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">Select how card payments are processed in the POS.</p>
                     </div>
                 </div>
                 <Separator />

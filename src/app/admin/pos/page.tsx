@@ -38,6 +38,12 @@ import {
     Wallet,
     Trash2,
     CheckCircle,
+    Minus,
+    Package,
+    ShoppingBag,
+    RotateCcw,
+    MinusCircle,
+    User,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
@@ -50,11 +56,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getProducts } from '@/services/productService';
-import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory, type Currency, type MoneyExchange } from '@/lib/data';
+import { type DetailedProduct, type Sale, type Purchase, type CommissionProfile, type Customer, type Expense, type ExpenseCategory, type Currency, type MoneyExchange, type SellingPriceGroup } from '@/lib/data';
 import { addSale, getSales, deleteSale, addDraft, getDrafts, deleteDraft, addQuotation, getQuotations, deleteQuotation, getSuspendedSales } from '@/services/saleService';
 import { getPurchases } from '@/services/purchaseService';
 import { getCommissionProfiles, addCommissionProfile } from '@/services/commissionService';
 import { getCustomers, addCustomer } from '@/services/customerService';
+import { getSellingPriceGroups } from '@/services/sellingPriceGroupService';
+import { getBrands, type Brand } from '@/services/brandService';
+import { getProductCategories } from '@/services/productCategoryService';
+import { type ProductCategory } from '@/lib/data';
 import {
     Select,
     SelectContent,
@@ -88,9 +98,10 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCurrency } from '@/hooks/use-currency';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { useSystemMessages } from '@/services/messageService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrintableReceipt } from '@/components/printable-receipt';
 import { useSettings, type AllSettings } from '@/hooks/use-settings';
@@ -154,7 +165,6 @@ const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
             setDisplay('0');
         } else if (value === '=') {
             try {
-                // Using eval is generally unsafe, but acceptable for this simple, non-production calculator.
                 setDisplay(eval(display.replace(/--/g, '+')).toString());
             } catch {
                 setDisplay('Error');
@@ -168,22 +178,36 @@ const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xs">
-                <DialogHeader>
-                    <DialogTitle>Calculator</DialogTitle>
+            <DialogContent className="sm:max-w-xs p-0 overflow-hidden border-none shadow-2xl rounded-3xl">
+                <DialogHeader className="p-4 bg-primary text-white flex-row items-center justify-between space-y-0">
+                    <DialogTitle className="text-lg font-bold flex items-center gap-2">
+                        <Calculator className="h-5 w-5" /> Smart Calc
+                    </DialogTitle>
+                    <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="h-8 w-8 text-white hover:bg-white/20 rounded-full">
+                        <X className="h-4 w-4" />
+                    </Button>
                 </DialogHeader>
-                <div className="p-4 bg-muted rounded-md text-right text-3xl font-mono mb-4">{display}</div>
-                <div className="grid grid-cols-4 gap-2">
-                    {buttons.map(btn => (
-                        <Button
-                            key={btn}
-                            onClick={() => handleButtonClick(btn)}
-                            variant={btn === '=' || btn === 'C' ? 'destructive' : 'secondary'}
-                            className="text-xl h-14"
-                        >
-                            {btn}
-                        </Button>
-                    ))}
+                <div className="p-6 space-y-4 bg-gray-50/50">
+                    <div className="p-4 bg-white border border-gray-100 rounded-2xl text-right shadow-inner">
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest mb-1">Result</p>
+                        <div className="text-4xl font-black text-primary font-mono truncate">{display}</div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {buttons.map(btn => (
+                            <Button
+                                key={btn}
+                                onClick={() => handleButtonClick(btn)}
+                                variant={btn === '=' ? 'default' : (btn === 'C' ? 'destructive' : 'secondary')}
+                                className={cn(
+                                    "text-xl h-14 font-bold rounded-xl shadow-sm active:scale-90 transition-all",
+                                    btn === '=' && "bg-primary text-white hover:bg-primary/90",
+                                    (btn === '/' || btn === '*' || btn === '-' || btn === '+') && "text-primary bg-primary/10 hover:bg-primary/20"
+                                )}
+                            >
+                                {btn}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
@@ -208,7 +232,7 @@ const CloseRegisterDialog = ({
     settings: AllSettings;
 }) => {
     const { toast } = useToast();
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [closingCash, setClosingCash] = useState('');
     const [cardSlips, setCardSlips] = useState('0');
     const [totalCheques, setTotalCheques] = useState('0');
@@ -220,18 +244,18 @@ const CloseRegisterDialog = ({
     useEffect(() => {
         if (open) {
             const now = new Date();
-            const start = new Date(now.getTime() - Math.random() * 8 * 60 * 60 * 1000); // random time in last 8 hours
+            const start = new Date(now.getTime() - Math.random() * 8 * 60 * 60 * 1000);
             setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
             setCloseTime(format(now, 'dd MMM, yyyy hh:mm a'));
         }
     }, [open]);
 
-    const openingCash = 1000.00; // Mock data
-    const cashPayment = totalPayable; // Simplified for demo
-    const totalRefunds = 0.00; // Mock data
-    const totalExpenses = 0.00; // Mock data for expenses paid from till
-    const creditSales = 0.00; // Mock data
-    const totalSales = cashPayment; // Simplified
+    const openingCash = 1000.00;
+    const cashPayment = totalPayable;
+    const totalRefunds = 0.00;
+    const totalExpenses = 0.00;
+    const creditSales = 0.00;
+    const totalSales = cashPayment;
     const totalPayment = openingCash + totalSales;
 
     const handleCloseRegister = () => {
@@ -243,24 +267,19 @@ const CloseRegisterDialog = ({
     };
 
     const paymentMethods = [
-        { label: 'Cash in hand:', sell: openingCash, expense: null },
-        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00 },
-        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Card Payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00 },
-        { label: 'Advance payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Custom Payment 1:', sell: 0.00, expense: 0.00 },
-        { label: 'Custom Payment 2:', sell: 0.00, expense: 0.00 },
-        { label: 'Custom Payment 3:', sell: 0.00, expense: 0.00 },
-        { label: 'Other Payments:', sell: 0.00, expense: 0.00 },
+        { label: 'Cash in hand:', sell: openingCash, expense: null, icon: Wallet },
+        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00, icon: Banknote },
+        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00, icon: FileText },
+        { label: 'Card Payment:', sell: 0.00, expense: 0.00, icon: CreditCard },
+        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00, icon: Monitor },
+        { label: 'Advance payment:', sell: 0.00, expense: 0.00, icon: History },
     ];
 
-    const summaryRows = [
-        { label: 'Total Sales:', value: totalSales, color: '' },
-        { label: 'Total Refund', value: totalRefunds, color: 'bg-red-100 dark:bg-red-900/20' },
-        { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
-        { label: 'Credit Sales:', value: creditSales, color: '' },
-        { label: 'Total Expense:', value: totalExpenses, color: 'bg-red-100 dark:bg-red-900/20' },
+    const summaryItems = [
+        { label: 'Total Sales', value: totalSales, icon: ShoppingBag, color: 'text-blue-600' },
+        { label: 'Total Refund', value: totalRefunds, icon: RotateCcw, color: 'text-red-500' },
+        { label: 'Credit Sales', value: creditSales, icon: CreditCard, color: 'text-purple-600' },
+        { label: 'Total Expense', value: totalExpenses, icon: MinusCircle, color: 'text-orange-500' },
     ];
 
     const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
@@ -282,121 +301,165 @@ const CloseRegisterDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Current Register ( {openTime} - {closeTime} )</DialogTitle>
+            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                                <Lock className="h-6 w-6" /> Close Register
+                            </DialogTitle>
+                            <DialogDescription className="text-primary-foreground/90 mt-1">
+                                Review your daily summary before closing.
+                            </DialogDescription>
+                        </div>
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[10px] uppercase tracking-widest opacity-70">Shift Duration</p>
+                            <p className="text-xs font-medium">{openTime} - {closeTime}</p>
+                        </div>
+                    </div>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] pr-6">
-                    <div className="space-y-6 py-4 text-sm printable-area">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Payment Method</TableHead>
-                                    <TableHead className="text-right">Sell</TableHead>
-                                    <TableHead className="text-right">Expense</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paymentMethods.map(pm => (
-                                    <TableRow key={pm.label}>
-                                        <TableCell>{pm.label}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(pm.sell)}</TableCell>
-                                        <TableCell className="text-right">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-
-                        <div className="border rounded-md">
-                            {summaryRows.map(row => (
-                                <div key={row.label} className={cn("flex justify-between p-2 font-semibold border-b last:border-b-0", row.color)}>
-                                    <span>{row.label}</span>
-                                    <span>{formatCurrency(row.value)}</span>
-                                </div>
+                <ScrollArea className="max-h-[75vh]">
+                    <div className="p-6 space-y-8">
+                        {/* Summary Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {summaryItems.map((item, i) => (
+                                <Card key={i} className="p-4 bg-gray-50/50 border-none shadow-sm rounded-2xl text-center">
+                                    <item.icon className={`h-5 w-5 mx-auto mb-2 ${item.color}`} />
+                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{item.label}</p>
+                                    <p className={`text-lg font-black mt-1 ${item.color}`}>{formatCurrency(item.value)}</p>
+                                </Card>
                             ))}
                         </div>
 
-                        <div className="text-center font-semibold bg-muted p-2 rounded-md">
-                            Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefunds)} (Refund) - {formatCurrency(totalExpenses)} (Expense) = {formatCurrency(totalPayment)}
+                        {/* Totals Section */}
+                        <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl border-2 border-dashed">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+                                <div>
+                                    <p className="text-xs font-bold text-primary uppercase tracking-widest">Expected Balance</p>
+                                    <h3 className="text-4xl font-black text-primary mt-1">{formatCurrency(totalPayment)}</h3>
+                                </div>
+                                <div className="text-sm space-y-1 text-muted-foreground font-medium">
+                                    <p>Opening: {formatCurrency(openingCash)}</p>
+                                    <p>Sales: +{formatCurrency(totalSales)}</p>
+                                    <p>Expenses: -{formatCurrency(totalExpenses)}</p>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Payments Table */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <Banknote className="h-4 w-4 text-primary" /> Payment Breakdown
+                                </h3>
+                                <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50">
+                                            <TableRow>
+                                                <TableHead className="text-[10px] font-bold uppercase">Method</TableHead>
+                                                <TableHead className="text-right text-[10px] font-bold uppercase">Amount</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {paymentMethods.map(pm => (
+                                                <TableRow key={pm.label} className="hover:bg-transparent">
+                                                    <TableCell className="py-3 flex items-center gap-2">
+                                                        <pm.icon className="h-4 w-4 text-muted-foreground" />
+                                                        <span className="font-medium">{pm.label}</span>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-bold py-3">
+                                                        {formatCurrency(pm.sell)}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+
+                            {/* Product Summary */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+                                    <ShoppingBag className="h-4 w-4 text-primary" /> Sold Products
+                                </h3>
+                                <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50">
+                                            <TableRow>
+                                                <TableHead className="text-[10px] font-bold uppercase">Product</TableHead>
+                                                <TableHead className="text-right text-[10px] font-bold uppercase">Qty</TableHead>
+                                                <TableHead className="text-right text-[10px] font-bold uppercase">Total</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {cart.slice(0, 5).map((item, index) => (
+                                                <TableRow key={index} className="hover:bg-transparent">
+                                                    <TableCell className="py-3 font-medium truncate max-w-[120px]">{item.product.name}</TableCell>
+                                                    <TableCell className="text-right py-3">{item.quantity}</TableCell>
+                                                    <TableCell className="text-right font-bold py-3">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                            {cart.length > 5 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-[10px] text-muted-foreground italic py-2">
+                                                        + {cart.length - 5} more items
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                        <TableFooter className="bg-gray-50">
+                                            <TableRow className="font-bold border-t-2">
+                                                <TableCell className="text-primary uppercase tracking-widest text-[10px]">Grand Total</TableCell>
+                                                <TableCell className="text-right text-primary">{totalQuantity}</TableCell>
+                                                <TableCell className="text-right text-primary">{formatCurrency(totalPayable)}</TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </div>
+                            </div>
                         </div>
 
-                        <h3 className="font-bold text-base pt-4">Details of products sold</h3>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow><TableHead>#</TableHead><TableHead>SKU</TableHead><TableHead>Product</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead className="text-right">Total amount</TableHead></TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {cart.map((item, index) => (
-                                        <TableRow key={item.product.id + index}>
-                                            <TableCell>{index + 1}</TableCell><TableCell>{item.product.sku}</TableCell><TableCell>{item.product.name}</TableCell><TableCell className="text-right">{item.quantity}</TableCell><TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
-                                        <TableCell colSpan={3}>#</TableCell>
-                                        <TableCell className="text-right">{totalQuantity}</TableCell>
-                                        <TableCell className="text-right">
-                                            <p>Discount: (-) {formatCurrency(discount)}</p>
-                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
+                        {/* Inputs Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
+                            <div className="space-y-2">
+                                <Label htmlFor="total-cash" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actual Cash in Till*</Label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
+                                    <Input id="total-cash" type="number" className="h-12 pl-10 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder="0.00" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="total-card-slips" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Terminal Total*</Label>
+                                <Input id="total-card-slips" type="number" className="h-12 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={cardSlips} onChange={(e) => setCardSlips(e.target.value)} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="total-cheques" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cheques Count*</Label>
+                                <Input id="total-cheques" type="number" className="h-12 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={totalCheques} onChange={(e) => setTotalCheques(e.target.value)} />
+                            </div>
                         </div>
 
-                        <h3 className="font-bold text-base pt-4">Details of products sold (By Brand)</h3>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow><TableHead>#</TableHead><TableHead>Brands</TableHead><TableHead className="text-right">Quantity</TableHead><TableHead className="text-right">Total amount</TableHead></TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {salesByBrand.map((brand, index) => (
-                                        <TableRow key={brand.name}>
-                                            <TableCell>{index + 1}</TableCell><TableCell>{brand.name}</TableCell><TableCell className="text-right">{brand.quantity}</TableCell><TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
-                                        <TableCell colSpan={2}>#</TableCell>
-                                        <TableCell className="text-right">{totalBrandQuantity}</TableCell>
-                                        <TableCell className="text-right">
-                                            <p>Discount: (-) {formatCurrency(discount)}</p>
-                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
+                        <div className="space-y-2">
+                            <Label htmlFor="closing-note" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Closing Note</Label>
+                            <Textarea id="closing-note" className="rounded-xl bg-gray-50 border-none shadow-inner min-h-[80px]" value={closingNote} onChange={(e) => setClosingNote(e.target.value)} placeholder="Enter any discrepancies or notes for the manager..." />
                         </div>
 
-                        <div className="pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2"><Label htmlFor="total-cash">Total Cash*</Label><Input id="total-cash" type="number" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder={formatCurrency(cashPayment)} /></div>
-                                <div className="space-y-2"><Label htmlFor="total-card-slips">Total Card Slips*</Label><Input id="total-card-slips" type="number" value={cardSlips} onChange={(e) => setCardSlips(e.target.value)} /></div>
-                                <div className="space-y-2"><Label htmlFor="total-cheques">Total cheques*</Label><Input id="total-cheques" type="number" value={totalCheques} onChange={(e) => setTotalCheques(e.target.value)} /></div>
+                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                <User className="h-5 w-5 text-primary" />
                             </div>
-                            <div className="mt-4">
-                                <h4 className="font-semibold">Cash Denominations</h4>
-                                <p className="text-xs text-muted-foreground">Add denominations in Settings &rarr; Business Settings &rarr; POS &rarr; Cash Denominations</p>
-                            </div>
-                            <div className="mt-4 space-y-2">
-                                <Label htmlFor="closing-note">Closing Note:</Label>
-                                <Textarea id="closing-note" value={closingNote} onChange={(e) => setClosingNote(e.target.value)} />
-                            </div>
-                            <div className="mt-6 border-t pt-4">
-                                <p><strong>User:</strong> {user?.name}</p>
-                                <p><strong>Email:</strong> {user?.email}</p>
-                                <p><strong>Business Location:</strong> {settings.business.businessName}</p>
+                            <div>
+                                <p className="text-xs font-bold text-gray-800">{user?.name} <span className="text-muted-foreground font-normal ml-1">({user?.role})</span></p>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-1">{settings.business.businessName}</p>
                             </div>
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleCloseRegister}>Close Register</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleCloseRegister} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        Confirm & Close Register
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -420,13 +483,13 @@ const RegisterDetailsDialog = ({
     user: { name: string, email: string, role: string } | null,
     settings: AllSettings
 }) => {
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [openTime, setOpenTime] = useState('');
 
     useEffect(() => {
         if (open) {
             const now = new Date();
-            const start = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // random time in last 2 hours
+            const start = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // Random mock time
             setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
         }
     }, [open]);
@@ -439,20 +502,20 @@ const RegisterDetailsDialog = ({
     const totalPayment = openingCash + totalSales;
 
     const paymentMethods = [
-        { label: 'Cash in hand:', sell: openingCash, expense: null },
-        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00 },
-        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Card Payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00 },
-        { label: 'Advance payment:', sell: 0.00, expense: 0.00 },
-        { label: 'Other Payments:', sell: 0.00, expense: 0.00 },
+        { label: 'Cash in hand', sell: openingCash, expense: null, icon: <Wallet className="h-4 w-4" /> },
+        { label: 'Cash Payment', sell: cashPayment, expense: 0.00, icon: <Banknote className="h-4 w-4" /> },
+        { label: 'Cheque Payment', sell: 0.00, expense: 0.00, icon: <FileText className="h-4 w-4" /> },
+        { label: 'Card Payment', sell: 0.00, expense: 0.00, icon: <CreditCard className="h-4 w-4" /> },
+        { label: 'Bank Transfer', sell: 0.00, expense: 0.00, icon: <Monitor className="h-4 w-4" /> },
+        { label: 'Advance payment', sell: 0.00, expense: 0.00, icon: <PlusCircle className="h-4 w-4" /> },
+        { label: 'Other Payments', sell: 0.00, expense: 0.00, icon: <HelpCircle className="h-4 w-4" /> },
     ];
 
     const summaryRows = [
-        { label: 'Total Sales:', value: totalSales, color: '' },
-        { label: 'Total Refund', value: totalRefund, color: 'bg-red-100 dark:bg-red-900/20' },
-        { label: 'Total Payment', value: totalPayment, color: 'bg-green-100 dark:bg-green-900/20' },
-        { label: 'Total Expense:', value: totalExpense, color: 'bg-red-100 dark:bg-red-900/20' },
+        { label: 'Total Sales', value: totalSales, color: 'text-foreground' },
+        { label: 'Total Refund', value: totalRefund, color: 'text-red-600 bg-red-50' },
+        { label: 'Total Payment', value: totalPayment, color: 'text-green-600 bg-green-50 font-bold' },
+        { label: 'Total Expense', value: totalExpense, color: 'text-red-600 bg-red-50' },
     ];
 
     const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
@@ -474,124 +537,146 @@ const RegisterDetailsDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Register Details ({openTime} - Now)</DialogTitle>
+            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <History className="h-6 w-6" /> Register Details
+                    </DialogTitle>
+                    <p className="text-primary-foreground/80 text-sm mt-1">Status: {openTime} - Now</p>
                 </DialogHeader>
-                <ScrollArea className="max-h-[70vh] pr-6">
-                    <div className="space-y-4 py-4 text-sm printable-area">
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Payment Method</TableHead>
-                                        <TableHead className="text-right">Sell</TableHead>
-                                        <TableHead className="text-right">Expense</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {paymentMethods.map(pm => (
-                                        <TableRow key={pm.label}>
-                                            <TableCell>{pm.label}</TableCell>
-                                            <TableCell className="text-right">{formatCurrency(pm.sell)}</TableCell>
-                                            <TableCell className="text-right">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
+                <ScrollArea className="max-h-[70vh] p-6">
+                    <div className="space-y-8 text-sm">
+                        <div className="grid gap-6">
+                            <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                                <Table>
+                                    <TableHeader className="bg-gray-50/50">
+                                        <TableRow>
+                                            <TableHead className="font-bold">Payment Method</TableHead>
+                                            <TableHead className="text-right font-bold">Sell</TableHead>
+                                            <TableHead className="text-right font-bold">Expense</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paymentMethods.map(pm => (
+                                            <TableRow key={pm.label} className="hover:bg-gray-50/30">
+                                                <TableCell className="flex items-center gap-2">
+                                                    <span className="text-muted-foreground">{pm.icon}</span>
+                                                    {pm.label}
+                                                </TableCell>
+                                                <TableCell className="text-right font-medium">{formatCurrency(pm.sell)}</TableCell>
+                                                <TableCell className="text-right text-muted-foreground">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {summaryRows.map(row => (
+                                    <div key={row.label} className={cn("p-4 rounded-xl border border-gray-100 flex flex-col gap-1 shadow-sm transition-all", row.color)}>
+                                        <span className="text-[10px] uppercase tracking-wider opacity-70 font-bold">{row.label}</span>
+                                        <span className="text-lg font-black">{formatCurrency(row.value)}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="border rounded-md">
-                            {summaryRows.map(row => (
-                                <div key={row.label} className={cn("flex justify-between p-2 font-semibold border-b last:border-b-0", row.color)}>
-                                    <span>{row.label}</span>
-                                    <span>{formatCurrency(row.value)}</span>
+                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-center font-bold text-primary text-base">
+                            Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefund)} (Refund) - {formatCurrency(totalExpense)} (Expense) = <span className="text-lg">{formatCurrency(totalPayment)}</span>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="font-bold text-lg flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Products Sold</h3>
+                            <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                                <Table>
+                                    <TableHeader className="bg-gray-50/50">
+                                        <TableRow>
+                                            <TableHead className="w-12">#</TableHead>
+                                            <TableHead>SKU</TableHead>
+                                            <TableHead>Product</TableHead>
+                                            <TableHead className="text-right">Qty</TableHead>
+                                            <TableHead className="text-right font-bold text-primary">Total</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {cart.map((item, index) => (
+                                            <TableRow key={item.product.id + index} className="hover:bg-gray-50/30">
+                                                <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                                                <TableCell className="font-mono text-[10px] uppercase">{item.product.sku}</TableCell>
+                                                <TableCell className="font-medium">{item.product.name}</TableCell>
+                                                <TableCell className="text-right font-bold">{item.quantity}</TableCell>
+                                                <TableCell className="text-right font-bold">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                    <TableFooter className="bg-gray-50/80">
+                                        <TableRow className="font-black text-primary">
+                                            <TableCell colSpan={3}>Totals</TableCell>
+                                            <TableCell className="text-right">{totalQuantity}</TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <span className="text-xs text-muted-foreground font-normal">Discount: (-) {formatCurrency(discount)}</span>
+                                                    <span>{formatCurrency(totalPayable)}</span>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableFooter>
+                                </Table>
+                            </div>
+                        </div>
+
+                        {salesByBrand.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-lg flex items-center gap-2"><LayoutGrid className="h-5 w-5 text-primary" /> Sales by Brand</h3>
+                                <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                                    <Table>
+                                        <TableHeader className="bg-gray-50/50">
+                                            <TableRow>
+                                                <TableHead className="w-12">#</TableHead>
+                                                <TableHead>Brand</TableHead>
+                                                <TableHead className="text-right">Qty</TableHead>
+                                                <TableHead className="text-right font-bold text-primary">Total</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {salesByBrand.map((brand, index) => (
+                                                <TableRow key={brand.name} className="hover:bg-gray-50/30">
+                                                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                                                    <TableCell className="font-medium">{brand.name}</TableCell>
+                                                    <TableCell className="text-right font-bold">{brand.quantity}</TableCell>
+                                                    <TableCell className="text-right font-bold">{formatCurrency(brand.total)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        <TableFooter className="bg-gray-50/80">
+                                            <TableRow className="font-black text-primary">
+                                                <TableCell colSpan={2}>Totals</TableCell>
+                                                <TableCell className="text-right">{totalBrandQuantity}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="text-xs text-muted-foreground font-normal">Discount: (-) {formatCurrency(discount)}</span>
+                                                        <span>{formatCurrency(totalPayable)}</span>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        )}
 
-                        <div className="text-center font-semibold bg-muted p-2 rounded-md">
-                            Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefund)} (Refund) - {formatCurrency(totalExpense)} (Expense) = {formatCurrency(totalPayment)}
-                        </div>
-
-                        <h3 className="font-bold text-lg mt-4">Details of products sold</h3>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>#</TableHead>
-                                        <TableHead>SKU</TableHead>
-                                        <TableHead>Product</TableHead>
-                                        <TableHead className="text-right">Quantity</TableHead>
-                                        <TableHead className="text-right">Total amount</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {cart.map((item, index) => (
-                                        <TableRow key={item.product.id + index}>
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell>{item.product.sku}</TableCell>
-                                            <TableCell>{item.product.name}</TableCell>
-                                            <TableCell className="text-right">{item.quantity}</TableCell>
-                                            <TableCell className="text-right">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
-                                        <TableCell colSpan={3}>#</TableCell>
-                                        <TableCell className="text-right">{totalQuantity}</TableCell>
-                                        <TableCell className="text-right">
-                                            <p>Discount: (-) {formatCurrency(discount)}</p>
-                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
-                        </div>
-
-                        <h3 className="font-bold text-lg mt-6">Details of products sold (By Brand)</h3>
-                        <div className="border rounded-md">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>#</TableHead>
-                                        <TableHead>Brands</TableHead>
-                                        <TableHead className="text-right">Quantity</TableHead>
-                                        <TableHead className="text-right">Total amount</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {salesByBrand.map((brand, index) => (
-                                        <TableRow key={brand.name}>
-                                            <TableCell>{index + 1}</TableCell><TableCell>{brand.name}</TableCell><TableCell className="text-right">{brand.quantity}</TableCell><TableCell className="text-right">{formatCurrency(brand.total)}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                                <TableFooter>
-                                    <TableRow className="bg-green-100 dark:bg-green-900/20 font-bold">
-                                        <TableCell colSpan={2}>#</TableCell>
-                                        <TableCell className="text-right">{totalBrandQuantity}</TableCell>
-                                        <TableCell className="text-right">
-                                            <p>Discount: (-) {formatCurrency(discount)}</p>
-                                            <p>Grand Total: {formatCurrency(totalPayable)}</p>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableFooter>
-                            </Table>
-                        </div>
-
-                        <div className="mt-6 border-t pt-4">
-                            <p><strong>User:</strong> {user?.name}</p>
-                            <p><strong>Email:</strong> {user?.email}</p>
-                            <p><strong>Business Location:</strong> {settings.business.businessName}</p>
+                        <div className="bg-gray-50 p-6 rounded-2xl space-y-2 border border-dashed text-xs text-muted-foreground relative overflow-hidden">
+                            <Monitor className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 opacity-5 pointer-events-none" />
+                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">User:</span> {user?.name}</p>
+                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">Email:</span> {user?.email}</p>
+                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">Location:</span> {settings.business.businessName}</p>
                         </div>
                     </div>
                 </ScrollArea>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => window.print()}>Print Mini</Button>
-                    <Button variant="default" onClick={() => window.print()}>Print Detailed</Button>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="outline" onClick={() => window.print()} className="h-12 rounded-xl flex-1 active:scale-95 transition-all"><Printer className="mr-2 h-4 w-4" /> Print Mini</Button>
+                    <Button variant="outline" onClick={() => window.print()} className="h-12 rounded-xl flex-1 active:scale-95 transition-all"><FileText className="mr-2 h-4 w-4" /> Print Detailed</Button>
+                    <Button variant="secondary" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 active:scale-95 transition-all">Close</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -616,7 +701,7 @@ const RecentTransactionsDialog = ({
     onPrint: (sale: Sale) => void;
     onDelete: (sale: Sale) => void;
 }) => {
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [activeTab, setActiveTab] = useState("final");
     const [drafts, setDrafts] = useState<Sale[]>([]);
     const [quotations, setQuotations] = useState<Sale[]>([]);
@@ -630,92 +715,106 @@ const RecentTransactionsDialog = ({
         }
     }, [open]);
 
-    // Filter recentSales to exclude Suspended ones for the 'Final' tab, 
-    // although getSales() returns all. We might want to filter them here visually or ensure getSales() filters them?
-    // For now, let's just filter 'Suspended' out of 'Final' tab to avoid duplication/confusion
-    // Also ensuring no duplicates if using real-time
     const finalSales = recentSales.filter(s => s.paymentMethod !== 'Suspended' && s.invoiceNo !== 'PENDING');
 
     const renderTable = (items: Sale[], type: 'draft' | 'quotation' | 'final' | 'suspended') => (
         <ScrollArea className="max-h-[60vh]">
-            <Table>
-                <TableBody>
-                    {items.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No records found.</TableCell></TableRow> :
-                        items.map((sale, index) => (
-                            <TableRow key={sale.id} className="hover:bg-muted/50">
-                                <TableCell className="w-8 pr-0">{index + 1}.</TableCell>
-                                <TableCell className="font-medium">
-                                    <div className="flex flex-col">
-                                        <span>{sale.invoiceNo}</span>
-                                        <span className="text-xs text-muted-foreground">{sale.customerName}</span>
-                                        {type === 'final' && <span className="text-xs text-muted-foreground">{sale.paymentMethod}</span>}
+            <div className="p-1">
+                {items.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100 italic text-muted-foreground">
+                        No {type} transactions found.
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {items.map((sale, index) => (
+                            <div key={sale.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all group">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-10 w-10 rounded-full bg-primary/5 flex items-center justify-center font-bold text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                                        {index + 1}
                                     </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex flex-col items-end">
-                                        <span>{formatCurrency(sale.totalAmount)}</span>
-                                        {sale.paymentReference && <span className="text-xs text-blue-600 bg-blue-50 px-1 rounded">Ref: {sale.paymentReference}</span>}
+                                    <div>
+                                        <p className="font-bold text-gray-800">{sale.invoiceNo}</p>
+                                        <div className="flex items-center gap-2 mt-0.5">
+                                            <span className="text-xs font-medium text-muted-foreground">{sale.customerName}</span>
+                                            {type === 'final' && (
+                                                <Badge variant="secondary" className="text-[10px] py-0 px-1.5 opacity-70">
+                                                    {sale.paymentMethod}
+                                                </Badge>
+                                            )}
+                                        </div>
                                     </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex gap-2 justify-end">
+                                </div>
+
+                                <div className="flex flex-row md:flex-col items-center md:items-end justify-between mt-4 md:mt-0 gap-4">
+                                    <div className="text-right">
+                                        <p className="text-lg font-black text-primary">{formatCurrency(sale.totalAmount)}</p>
+                                        {sale.paymentReference && (
+                                            <p className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 rounded inline-block">
+                                                ID: {sale.paymentReference}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-1.5">
                                         {type !== 'final' && (
-                                            <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onLoad(sale)}>
-                                                <Pencil className="mr-1 h-3 w-3" /> {type === 'suspended' ? 'Resume' : 'Load'}
+                                            <Button variant="ghost" size="sm" className="h-9 rounded-lg text-indigo-600 hover:bg-indigo-50 active:scale-95" onClick={() => onLoad(sale)}>
+                                                <Pencil className="mr-1.5 h-3.5 w-3.5" /> {type === 'suspended' ? 'Resume' : 'Load'}
                                             </Button>
                                         )}
                                         {type === 'final' && (
-                                            <Button variant="outline" size="sm" className="h-8 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700" onClick={() => onEdit(sale.id)}>
-                                                <Pencil className="mr-1 h-3 w-3" /> Edit
+                                            <Button variant="ghost" size="sm" className="h-9 rounded-lg text-indigo-600 hover:bg-indigo-50 active:scale-95" onClick={() => onEdit(sale.id)}>
+                                                <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
                                             </Button>
                                         )}
-                                        <Button variant="outline" size="sm" className="h-8 text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700" onClick={() => onPrint(sale)}>
-                                            <Printer className="mr-1 h-3 w-3" /> Print
+                                        <Button variant="ghost" size="sm" className="h-9 rounded-lg text-green-600 hover:bg-green-50 active:scale-95" onClick={() => onPrint(sale)}>
+                                            <Printer className="mr-1.5 h-3.5 w-3.5" /> Print
                                         </Button>
-                                        <Button variant="outline" size="sm" className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" onClick={() => {
+                                        <Button variant="ghost" size="sm" className="h-9 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-95" onClick={() => {
                                             if (type === 'draft') deleteDraft(sale.id).then(() => setDrafts(p => p.filter(i => i.id !== sale.id)));
                                             else if (type === 'quotation') deleteQuotation(sale.id).then(() => setQuotations(p => p.filter(i => i.id !== sale.id)));
                                             else onDelete(sale);
                                         }}>
-                                            <Trash2 className="mr-1 h-3 w-3" /> Delete
+                                            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                                         </Button>
                                     </div>
-                                </TableCell>
-                            </TableRow>
+                                </div>
+                            </div>
                         ))}
-                </TableBody>
-            </Table>
+                    </div>
+                )}
+            </div>
         </ScrollArea>
     );
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
-                    <DialogTitle>Recent Transactions</DialogTitle>
+            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <History className="h-6 w-6" /> Recent Transactions
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90">
+                        View and manage your recent POS activity across all status types.
+                    </DialogDescription>
                 </DialogHeader>
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="final">Final</TabsTrigger>
-                        <TabsTrigger value="quotation">Quotation</TabsTrigger>
-                        <TabsTrigger value="draft">Draft</TabsTrigger>
-                        <TabsTrigger value="suspended">Suspended</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="final" className="pt-4">
-                        {renderTable(finalSales, 'final')}
-                    </TabsContent>
-                    <TabsContent value="quotation" className="pt-4">
-                        {renderTable(quotations, 'quotation')}
-                    </TabsContent>
-                    <TabsContent value="draft" className="pt-4">
-                        {renderTable(drafts, 'draft')}
-                    </TabsContent>
-                    <TabsContent value="suspended" className="pt-4">
-                        {renderTable(suspended, 'suspended')}
-                    </TabsContent>
-                </Tabs>
-                <DialogFooter>
-                    <Button onClick={() => onOpenChange(false)}>Close</Button>
+                <div className="p-6">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-4 h-12 bg-gray-100 rounded-xl p-1 mb-6">
+                            <TabsTrigger value="final" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Finalized</TabsTrigger>
+                            <TabsTrigger value="quotation" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Quotations</TabsTrigger>
+                            <TabsTrigger value="draft" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Drafts</TabsTrigger>
+                            <TabsTrigger value="suspended" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Suspended</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="final">{renderTable(finalSales, 'final')}</TabsContent>
+                        <TabsContent value="quotation">{renderTable(quotations, 'quotation')}</TabsContent>
+                        <TabsContent value="draft">{renderTable(drafts, 'draft')}</TabsContent>
+                        <TabsContent value="suspended">{renderTable(suspended, 'suspended')}</TabsContent>
+                    </Tabs>
+                </div>
+                <DialogFooter className="p-6 bg-gray-50">
+                    <Button onClick={() => onOpenChange(false)} className="h-12 rounded-xl px-12 bg-primary text-white font-bold shadow-lg active:scale-95 transition-all">
+                        Close
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -739,6 +838,7 @@ const EditValueDialog = ({
     setValue: (value: number) => void;
 }) => {
     const [localValue, setLocalValue] = useState(String(value));
+    const { symbol } = useCurrency();
 
     useEffect(() => {
         if (open) {
@@ -753,24 +853,31 @@ const EditValueDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xs">
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
+            <DialogContent className="sm:max-w-xs p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90">
+                        {description}
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
-                    <Label htmlFor="edit-value">Amount</Label>
-                    <Input
-                        id="edit-value"
-                        type="number"
-                        value={localValue}
-                        onChange={(e) => setLocalValue(e.target.value)}
-                        className="mt-2"
-                    />
+                <div className="p-6">
+                    <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
+                        <Input
+                            id="edit-value"
+                            type="number"
+                            value={localValue}
+                            onChange={(e) => setLocalValue(e.target.value)}
+                            className="h-14 pl-10 rounded-xl text-2xl font-black bg-gray-50 border-none shadow-inner"
+                            autoFocus
+                        />
+                    </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>Save</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleSave} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        Apply Changes
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -788,7 +895,7 @@ const CashPaymentDialog = ({
     totalPayable: number;
     onFinalize: (totalPaid: number) => void;
 }) => {
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const { settings } = useSettings();
     const [amountTendered, setAmountTendered] = useState('');
     const [change, setChange] = useState(0);
@@ -840,58 +947,76 @@ const CashPaymentDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Cash Payment</DialogTitle>
-                    <DialogDescription>
-                        Enter the amount received from the customer.
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white dark:bg-gray-950">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <Banknote className="h-6 w-6" /> Cash Payment
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90 font-medium">
+                        Total Amount Due: <span className="text-white font-black underline">{formatCurrency(totalPayable)}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Total Payable</p>
-                        <p className="text-4xl font-bold">{formatCurrency(totalPayable)}</p>
-                    </div>
-
+                <div className="p-6 space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="amount-tendered">Amount Tendered</Label>
-                        <Input
-                            ref={inputRef}
-                            id="amount-tendered"
-                            type="number"
-                            placeholder="0.00"
-                            value={amountTendered}
-                            onChange={(e) => setAmountTendered(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            className="text-center text-2xl h-14"
-                            disabled={isSaving}
-                        />
+                        <Label htmlFor="cash-amount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Amount Received</Label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground text-lg">{symbol}</span>
+                            <Input
+                                id="cash-amount"
+                                ref={inputRef}
+                                type="number"
+                                autoFocus
+                                className="h-16 pl-12 text-2xl font-black rounded-xl bg-gray-50 dark:bg-gray-900 border-none shadow-inner"
+                                value={amountTendered}
+                                onChange={(e) => setAmountTendered(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                disabled={isSaving}
+                            />
+                        </div>
                     </div>
 
                     {denominations.length > 0 && (
                         <div className="grid grid-cols-4 gap-2">
-                            {denominations.map((denom) => (
+                            {denominations.map(amount => (
                                 <Button
-                                    key={denom}
+                                    key={amount}
                                     variant="outline"
-                                    onClick={() => handleDenominationClick(denom)}
-                                    className="h-12 text-lg font-medium"
+                                    className="h-12 rounded-xl font-bold hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-all active:scale-95 bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800"
+                                    onClick={() => handleDenominationClick(amount)}
                                 >
-                                    +{denom}
+                                    +{amount}
                                 </Button>
                             ))}
+                            <Button
+                                variant="outline"
+                                className="h-12 rounded-xl font-bold text-red-500 hover:bg-red-50 border-red-100 bg-white dark:bg-gray-900 dark:border-red-900/30"
+                                onClick={() => setAmountTendered('')}
+                            >
+                                Clear
+                            </Button>
                         </div>
                     )}
 
-                    <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Change Due</p>
-                        <p className="text-3xl font-bold text-green-600">{formatCurrency(change)}</p>
-                    </div>
+                    <Card className="p-4 bg-primary/5 border-primary/10 rounded-2xl overflow-hidden relative">
+                        <div className="relative z-10 flex flex-col items-center gap-1">
+                            <span className="text-xs font-bold uppercase tracking-widest text-primary/60">Change Due</span>
+                            <div className={`text-4xl font-black tracking-tighter ${change < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                {formatCurrency(change)}
+                            </div>
+                        </div>
+                        <div className="absolute -right-4 -bottom-4 opacity-5">
+                            <RotateCcw className="w-24 h-24 text-primary" />
+                        </div>
+                    </Card>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveClick} disabled={isSaving}>
-                        {isSaving ? "Saving..." : "Finalize Payment"}
+                <DialogFooter className="p-6 bg-gray-50 dark:bg-gray-900/50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button
+                        onClick={handleSaveClick}
+                        className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold"
+                        disabled={isSaving || (parseFloat(amountTendered) || 0) < totalPayable}
+                    >
+                        {isSaving ? "Saving..." : (parseFloat(amountTendered) || 0) < totalPayable ? "Insufficient Amount" : "Finalize Sale"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -910,15 +1035,15 @@ const CardPaymentDialog = ({
     totalPayable: number;
     onFinalize: () => void;
 }) => {
-    const { formatCurrency } = useCurrency();
-    const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '' });
+    const { formatCurrency, symbol } = useCurrency();
+    const [cardDetails, setCardDetails] = useState({ number: '', holder: '', month: '', year: '', cvv: '', type: 'visa' });
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
         if (open) {
             setIsSaving(false);
-            setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '' });
+            setCardDetails({ number: '', holder: '', month: '', year: '', cvv: '', type: 'visa' });
         }
     }, [open]);
 
@@ -931,43 +1056,79 @@ const CardPaymentDialog = ({
         onFinalize();
     };
 
+    const cardTypes = [
+        { id: 'visa', label: 'Visa', icon: '💳' },
+        { id: 'mastercard', label: 'Mastercard', icon: '🎴' },
+        { id: 'amex', label: 'Amex', icon: '🏦' },
+    ];
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Card Payment</DialogTitle>
-                    <DialogDescription>
-                        Enter card details for a total of <strong>{formatCurrency(totalPayable)}</strong>.
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white dark:bg-gray-950">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                        <CreditCard className="h-6 w-6" /> Card Payment
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90 font-medium">
+                        Processing settlement for <span className="text-white font-black underline">{formatCurrency(totalPayable)}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
+                <div className="p-6 space-y-6">
+                    <div className="space-y-3">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Select Card Type</Label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {cardTypes.map(type => (
+                                <button
+                                    key={type.id}
+                                    onClick={() => setCardDetails(d => ({ ...d, type: type.id }))}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all active:scale-95 bg-white dark:bg-gray-900",
+                                        cardDetails.type === type.id
+                                            ? "border-primary bg-primary/5 text-primary shadow-sm"
+                                            : "border-gray-100 dark:border-gray-800 text-muted-foreground hover:border-gray-200"
+                                    )}
+                                >
+                                    <span className="text-2xl mb-1">{type.icon}</span>
+                                    <span className="text-[10px] font-bold uppercase">{type.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div className="space-y-2">
-                        <Label htmlFor="card-number">Card Number</Label>
-                        <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({ ...d, number: e.target.value }))} disabled={isSaving} />
+                        <Label htmlFor="card-number" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Number</Label>
+                        <div className="relative">
+                            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input id="card-number" placeholder="XXXX XXXX XXXX XXXX" className="h-12 pl-10 rounded-xl bg-gray-50 dark:bg-gray-900 border-none shadow-inner" value={cardDetails.number} onChange={(e) => setCardDetails(d => ({ ...d, number: e.target.value }))} disabled={isSaving} />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="card-holder">Card Holder Name</Label>
-                        <Input id="card-holder" placeholder="John Doe" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({ ...d, holder: e.target.value }))} disabled={isSaving} />
+                        <Label htmlFor="card-holder" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Holder Name</Label>
+                        <Input id="card-holder" placeholder="John Doe" className="h-12 rounded-xl bg-gray-50 dark:bg-gray-900 border-none shadow-inner" value={cardDetails.holder} onChange={(e) => setCardDetails(d => ({ ...d, holder: e.target.value }))} disabled={isSaving} />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="expiry-month">Expiry Month</Label>
-                            <Input id="expiry-month" placeholder="MM" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({ ...d, month: e.target.value }))} disabled={isSaving} />
+                            <Label htmlFor="expiry-month" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">MM</Label>
+                            <Input id="expiry-month" placeholder="MM" className="h-12 rounded-xl text-center bg-gray-50 dark:bg-gray-900 border-none shadow-inner" value={cardDetails.month} onChange={(e) => setCardDetails(d => ({ ...d, month: e.target.value }))} disabled={isSaving} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="expiry-year">Expiry Year</Label>
-                            <Input id="expiry-year" placeholder="YYYY" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({ ...d, year: e.target.value }))} disabled={isSaving} />
+                            <Label htmlFor="expiry-year" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">YYYY</Label>
+                            <Input id="expiry-year" placeholder="YYYY" className="h-12 rounded-xl text-center bg-gray-50 dark:bg-gray-900 border-none shadow-inner" value={cardDetails.year} onChange={(e) => setCardDetails(d => ({ ...d, year: e.target.value }))} disabled={isSaving} />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="cvv">CVV</Label>
-                            <Input id="cvv" placeholder="123" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({ ...d, cvv: e.target.value }))} disabled={isSaving} />
+                            <Label htmlFor="cvv" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">CVV</Label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="cvv" placeholder="123" className="h-12 pl-10 rounded-xl text-center bg-gray-50 dark:bg-gray-900 border-none shadow-inner" value={cardDetails.cvv} onChange={(e) => setCardDetails(d => ({ ...d, cvv: e.target.value }))} disabled={isSaving} />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveClick} disabled={isSaving}>{isSaving ? "Processing..." : "Finalize Payment"}</Button>
+                <DialogFooter className="p-6 bg-gray-50 dark:bg-gray-900/50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleSaveClick} disabled={isSaving} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        {isSaving ? "Processing..." : "Finalize Payment"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1022,7 +1183,9 @@ const CommissionSelector = ({
         <div className="space-y-2">
             <Label htmlFor={`${entityType || 'all'}-search`}>{label}</Label>
             <div className="relative">
-                <Monitor className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none flex items-center justify-center">
+                    <Search className="h-4 w-4" />
+                </div>
                 <Input
                     id={`${entityType || 'all'}-search`}
                     placeholder={`Search ${label}...`}
@@ -1053,6 +1216,88 @@ const CommissionSelector = ({
     );
 };
 
+const MultiCommissionSelector = ({
+    entityType,
+    label,
+    profiles,
+    selectedProfiles,
+    onSelect,
+    onRemove,
+}: {
+    entityType?: CommissionProfile['entityType'] | 'All';
+    label: string;
+    profiles: CommissionProfile[];
+    selectedProfiles: CommissionProfile[];
+    onSelect: (profile: CommissionProfile) => void;
+    onRemove: (id: string) => void;
+}) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const filteredProfiles = useMemo(() => {
+        if (!searchTerm) return [];
+        const lowercasedTerm = searchTerm.toLowerCase();
+        return profiles.filter(
+            (p) =>
+                (entityType === 'All' || !entityType || p.entityType === entityType) &&
+                !selectedProfiles.some(sp => sp.id === p.id) &&
+                (p.name.toLowerCase().includes(lowercasedTerm) ||
+                    p.phone.includes(searchTerm))
+        ).slice(0, 5);
+    }, [searchTerm, profiles, entityType, selectedProfiles]);
+
+    return (
+        <div className="space-y-2">
+            <Label htmlFor={`${entityType || 'all'}-multi-search`}>{label}</Label>
+            <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none flex items-center justify-center">
+                    <Search className="h-4 w-4" />
+                </div>
+                <Input
+                    id={`${entityType || 'all'}-multi-search`}
+                    placeholder={`Search ${label}...`}
+                    className="pl-10 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    autoComplete="off"
+                />
+                {filteredProfiles.length > 0 && (
+                    <div className="absolute z-20 w-full bg-card border rounded-md shadow-lg mt-1 top-full">
+                        {filteredProfiles.map((profile: CommissionProfile) => (
+                            <div
+                                key={profile.id}
+                                className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                onClick={() => {
+                                    onSelect(profile);
+                                    setSearchTerm('');
+                                }}
+                            >
+                                <div>{profile.name} <Badge variant="secondary">{profile.entityType}</Badge></div>
+                                <div className="text-xs text-muted-foreground">{profile.phone}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            {selectedProfiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedProfiles.map((profile: CommissionProfile) => (
+                        <Badge key={profile.id} variant="secondary" className="flex items-center gap-1 pl-2 pr-1 py-1">
+                            {profile.name}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 hover:bg-transparent"
+                                onClick={() => onRemove(profile.id)}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </Badge>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfileAdded }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -1062,11 +1307,13 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
 
     useEffect(() => {
         if (open) {
             setName('');
             setPhone('');
+            setEmail('');
         }
     }, [open]);
 
@@ -1080,6 +1327,7 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
             name,
             entityType: profileType,
             phone,
+            email: email || undefined,
             commission: { overall: 0 }, // Default commission
             totalCommissionEarned: 0,
             totalCommissionPaid: 0
@@ -1098,23 +1346,29 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Add New {profileType}</DialogTitle>
+            <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-none shadow-xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <UserPlus className="h-5 w-5" /> Add {profileType}
+                    </DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="p-6 grid gap-4">
                     <div className="space-y-2">
-                        <Label htmlFor="profile-name">Name *</Label>
-                        <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={`${profileType} Name`} />
+                        <Label htmlFor="profile-name" className="text-sm font-semibold">Name</Label>
+                        <Input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" className="h-12 rounded-xl" />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="profile-phone">Phone Number *</Label>
-                        <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number" />
+                        <Label htmlFor="profile-phone" className="text-sm font-semibold">Phone</Label>
+                        <Input id="profile-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone Number" className="h-12 rounded-xl" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="profile-email" className="text-sm font-semibold">Email (Optional)</Label>
+                        <Input id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" className="h-12 rounded-xl" />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>Save</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-2">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1">Cancel</Button>
+                    <Button onClick={handleSave} className="bg-primary text-white h-12 rounded-xl flex-1 shadow-md active:scale-95 transition-all">Save Profile</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1124,7 +1378,7 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
 const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
     const { toast } = useToast();
     const settings = useBusinessSettings();
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [categories, setCategories] = useState<ExpenseCategory[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
@@ -1148,7 +1402,6 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
                 }
             };
             fetchCategories();
-            // Reset form
             setFormData({
                 expenseCategory: '',
                 referenceNo: '',
@@ -1185,10 +1438,10 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
                 paymentStatus: 'Paid',
                 tax: 0,
                 totalAmount: total,
-                paymentDue: 0, // Assuming paid from till
+                paymentDue: 0,
                 expenseFor: null,
                 contact: null,
-                addedBy: 'Admin', // Hardcoded from POS
+                addedBy: 'Admin',
                 expenseNote: formData.expenseNote,
             };
 
@@ -1203,19 +1456,23 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add Quick Expense</DialogTitle>
-                    <DialogDescription>Record an expense paid from the register.</DialogDescription>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <PlusCircle className="h-6 w-6" /> Add Quick Expense
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90">
+                        Record a business expense paid from the register.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="p-6 space-y-5">
                     <div className="space-y-2">
-                        <Label htmlFor="expenseCategory">Expense Category *</Label>
+                        <Label htmlFor="expenseCategory" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expense Category *</Label>
                         <Select value={formData.expenseCategory} onValueChange={handleSelectChange} disabled={isLoading}>
-                            <SelectTrigger id="expenseCategory">
+                            <SelectTrigger id="expenseCategory" className="h-12 rounded-xl">
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                                 {isLoading ? (
                                     <SelectItem value="loading" disabled>Loading...</SelectItem>
                                 ) : (
@@ -1227,21 +1484,26 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
                         </Select>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="totalAmount">Total Amount *</Label>
-                        <Input id="totalAmount" type="number" placeholder="0.00" value={formData.totalAmount} onChange={handleInputChange} />
+                        <Label htmlFor="totalAmount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Amount *</Label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
+                            <Input id="totalAmount" type="number" placeholder="0.00" className="h-12 pl-10 rounded-xl" value={formData.totalAmount} onChange={handleInputChange} />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="referenceNo">Reference No.</Label>
-                        <Input id="referenceNo" placeholder="Optional" value={formData.referenceNo} onChange={handleInputChange} />
+                        <Label htmlFor="referenceNo" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reference No.</Label>
+                        <Input id="referenceNo" placeholder="Optional reference" className="h-12 rounded-xl" value={formData.referenceNo} onChange={handleInputChange} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="expenseNote">Expense Note</Label>
-                        <Textarea id="expenseNote" placeholder="Add a note for this expense" value={formData.expenseNote} onChange={handleInputChange} />
+                        <Label htmlFor="expenseNote" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Expense Note</Label>
+                        <Textarea id="expenseNote" placeholder="What was this for?" className="rounded-xl min-h-[100px]" value={formData.expenseNote} onChange={handleInputChange} />
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveExpense}>Save Expense</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleSaveExpense} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        Save Expense
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1252,7 +1514,7 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
     const { toast } = useToast();
     const { user } = useAuth();
     const { settings } = useSettings();
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [currencies, setCurrencies] = useState<Currency[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -1267,7 +1529,6 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
                 try {
                     const currencyData = await getCurrencies();
                     setCurrencies(currencyData);
-                    // Set default currencies if available
                     const base = currencyData.find(c => c.isBaseCurrency);
                     const firstOther = currencyData.find(c => !c.isBaseCurrency);
                     if (base) setFromCurrency(base.code);
@@ -1296,7 +1557,7 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
 
         const rate = (1 / from.exchangeRate) * to.exchangeRate;
         const markup = rate * (markupPercent / 100);
-        const finalRate = rate - markup; // Customer gets fewer units of 'to' currency for their 'from' currency
+        const finalRate = rate - markup;
 
         const finalAmount = parseFloat(amount) * finalRate;
         const profitAmount = parseFloat(amount) * markup;
@@ -1332,58 +1593,69 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
         }
     };
 
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Money Exchange</DialogTitle>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <Repeat className="h-6 w-6" /> Money Exchange
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90">
+                        Convert currency for a customer.
+                    </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="p-6 space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="exchange-amount">Amount</Label>
-                        <Input id="exchange-amount" type="number" placeholder="Enter amount to exchange" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                        <Label htmlFor="exchange-amount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Amount to Exchange</Label>
+                        <Input id="exchange-amount" type="number" placeholder="0.00" className="h-12 rounded-xl text-lg font-bold" value={amount} onChange={(e) => setAmount(e.target.value)} />
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="space-y-2 flex-1">
-                            <Label htmlFor="from-currency">From</Label>
+                            <Label htmlFor="from-currency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">From</Label>
                             <Select value={fromCurrency} onValueChange={setFromCurrency} disabled={isLoading}>
-                                <SelectTrigger id="from-currency"><SelectValue placeholder="From..." /></SelectTrigger>
-                                <SelectContent>
+                                <SelectTrigger id="from-currency" className="h-12 rounded-xl"><SelectValue placeholder="Base..." /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
                                     {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.code} ({c.name})</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
-                        <Repeat className="w-5 h-5 mt-6 shrink-0 text-muted-foreground" />
+                        <div className="mt-6 flex items-center justify-center h-12 w-12 rounded-full bg-gray-50 border border-gray-100 shadow-inner">
+                            <Repeat className="w-5 h-5 text-primary" />
+                        </div>
                         <div className="space-y-2 flex-1">
-                            <Label htmlFor="to-currency">To</Label>
+                            <Label htmlFor="to-currency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">To</Label>
                             <Select value={toCurrency} onValueChange={setToCurrency} disabled={isLoading}>
-                                <SelectTrigger id="to-currency"><SelectValue placeholder="To..." /></SelectTrigger>
-                                <SelectContent>
+                                <SelectTrigger id="to-currency" className="h-12 rounded-xl"><SelectValue placeholder="Convert to..." /></SelectTrigger>
+                                <SelectContent className="rounded-xl">
                                     {currencies.map(c => <SelectItem key={c.code} value={c.code}>{c.code} ({c.name})</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
-                    <Card className="p-4 space-y-3">
-                        <div className="text-xs text-muted-foreground flex justify-between">
-                            <span>Base Rate: 1 {fromCurrency} = {baseRate.toFixed(4)} {toCurrency}</span>
-                            <span>Markup: {settings.exchange.rateMarkupPercent}%</span>
+                    <Card className="p-4 bg-gray-50/50 border-gray-100 rounded-2xl space-y-4">
+                        <div className="flex justify-between items-center px-1">
+                            <div className="space-y-1">
+                                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Exchange Rate</p>
+                                <p className="text-sm font-semibold">1 {fromCurrency} = {offeredRate.toFixed(4)} {toCurrency}</p>
+                            </div>
+                            <Badge variant="outline" className="bg-white text-xs font-mono font-normal border-gray-100">Markup: {settings.exchange.rateMarkupPercent}%</Badge>
                         </div>
-                        <div className="text-sm font-semibold flex justify-between">
-                            <span>Your Rate: 1 {fromCurrency} = {offeredRate.toFixed(4)} {toCurrency}</span>
-                            <span className="text-green-600">Profit: {profit.toFixed(2)} {fromCurrency}</span>
-                        </div>
-                        <Separator />
-                        <div className="text-center">
-                            <p className="text-sm text-muted-foreground">Customer Receives</p>
-                            <p className="text-2xl font-bold mt-1">{convertedAmount.toFixed(2)} {toCurrency}</p>
+                        <Separator className="bg-gray-200/50" />
+                        <div className="text-center py-2">
+                            <p className="text-xs text-muted-foreground font-medium mb-1">Customer Receives</p>
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="text-3xl font-black text-primary">{convertedAmount.toFixed(2)}</span>
+                                <span className="text-lg font-bold text-muted-foreground">{toCurrency}</span>
+                            </div>
+                            <p className="text-[10px] text-green-600 font-bold uppercase mt-2 tracking-wider">Profit: {formatCurrency(profit)}</p>
                         </div>
                     </Card>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleConfirmExchange} disabled={isLoading}>Confirm Exchange</Button>
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleConfirmExchange} disabled={isLoading} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        Confirm & Save
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -1401,7 +1673,7 @@ const TerminalPaymentDialog = ({
     totalPayable: number;
     onFinalize: (reference: string) => void;
 }) => {
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const [reference, setReference] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -1420,29 +1692,179 @@ const TerminalPaymentDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Card Terminal Payment</DialogTitle>
-                    <DialogDescription>
-                        Record a payment processed on an external card terminal. Total Payable: <span className="font-bold text-primary">{formatCurrency(totalPayable)}</span>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                <DialogHeader className="p-6 bg-primary text-white">
+                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <Monitor className="h-6 w-6" /> Card Terminal Payment
+                    </DialogTitle>
+                    <DialogDescription className="text-primary-foreground/90">
+                        Total Payable: <span className="font-bold underline decoration-2 underline-offset-4">{formatCurrency(totalPayable)}</span>
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="reference">Payment Reference (Last 4 Digits / Transaction ID)</Label>
-                        <Input
-                            id="reference"
-                            placeholder="e.g. 1234 or TXN-5678"
-                            value={reference}
-                            onChange={(e) => setReference(e.target.value)}
-                            disabled={isSaving}
-                        />
+                <div className="p-6 grid gap-6">
+                    <div className="space-y-3">
+                        <Label htmlFor="reference" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Reference</Label>
+                        <div className="relative">
+                            <Info className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                id="reference"
+                                placeholder="Last 4 Digits / Transaction ID"
+                                className="h-12 pl-10 rounded-xl"
+                                value={reference}
+                                onChange={(e) => setReference(e.target.value)}
+                                disabled={isSaving}
+                                autoComplete="off"
+                            />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+                            Enter the transaction ID or the last 4 digits from the card terminal receipt for reconciliation.
+                        </p>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSaveClick} disabled={isSaving}>
-                        {isSaving ? "Finalizing..." : "Finalize Payment"}
+                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                    <Button onClick={handleSaveClick} disabled={isSaving} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                        {isSaving ? "Processing..." : "Confirm Payment"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
+const StripePaymentDialog = ({
+    open,
+    onOpenChange,
+    totalPayable,
+    onFinalize,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    totalPayable: number;
+    onFinalize: () => void;
+}) => {
+    const { formatCurrency } = useCurrency();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    const handleStripePay = () => {
+        setIsProcessing(true);
+        // Simulate Stripe processing
+        setTimeout(() => {
+            setIsProcessing(false);
+            onFinalize();
+            toast({ title: 'Stripe Payment Successful', description: 'Transaction processed via Stripe.' });
+        }, 2000);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white dark:bg-gray-950">
+                <DialogHeader className="p-8 bg-[#635bff] text-white">
+                    <DialogTitle className="text-3xl font-black flex items-center gap-3">
+                        <CreditCard className="h-8 w-8" /> Stripe
+                    </DialogTitle>
+                    <DialogDescription className="text-blue-50/90 text-lg font-medium">
+                        Securely processing <span className="text-white font-black underline">{formatCurrency(totalPayable)}</span>
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="p-8 space-y-8 text-center">
+                    <div className="py-10 flex flex-col items-center justify-center space-y-4">
+                        {isProcessing ? (
+                            <div className="flex flex-col items-center space-y-4">
+                                <div className="h-16 w-16 border-4 border-t-transparent border-[#635bff] rounded-full animate-spin" />
+                                <p className="text-xl font-bold text-gray-700 dark:text-gray-300">Connecting to Stripe...</p>
+                                <p className="text-sm text-muted-foreground">Please wait while we authorize the transaction.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 w-full">
+                                <div className="p-6 bg-gray-50 dark:bg-gray-900 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800">
+                                    <p className="text-gray-500 font-medium">Ready to receive payment via Stripe Reader or Card Input.</p>
+                                </div>
+                                <Button
+                                    onClick={handleStripePay}
+                                    className="w-full h-16 bg-[#635bff] hover:bg-[#544dc9] text-white text-xl font-black rounded-2xl shadow-xl active:scale-95 transition-all"
+                                >
+                                    Pay {formatCurrency(totalPayable)} with Stripe
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <DialogFooter className="p-6 bg-gray-50 dark:bg-gray-900/50 justify-center">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing} className="text-gray-400 hover:text-gray-600 font-bold">
+                        Cancel Transaction
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const PayPalPaymentDialog = ({
+    open,
+    onOpenChange,
+    totalPayable,
+    onFinalize,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    totalPayable: number;
+    onFinalize: () => void;
+}) => {
+    const { formatCurrency } = useCurrency();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const { toast } = useToast();
+
+    const handlePayPalPay = () => {
+        setIsProcessing(true);
+        // Simulate PayPal processing
+        setTimeout(() => {
+            setIsProcessing(false);
+            onFinalize();
+            toast({ title: 'PayPal Payment Successful', description: 'Transaction processed via PayPal.' });
+        }, 2000);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white dark:bg-gray-950">
+                <DialogHeader className="p-8 bg-[#0070ba] text-white">
+                    <DialogTitle className="text-3xl font-black flex items-center gap-3">
+                        <Wallet className="h-8 w-8" /> PayPal
+                    </DialogTitle>
+                    <DialogDescription className="text-blue-50/90 text-lg font-medium">
+                        Completing checkout for <span className="text-white font-black underline">{formatCurrency(totalPayable)}</span>
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="p-8 space-y-8 text-center">
+                    <div className="py-10 flex flex-col items-center justify-center space-y-4">
+                        {isProcessing ? (
+                            <div className="flex flex-col items-center space-y-4">
+                                <div className="h-16 w-16 border-4 border-t-transparent border-[#0070ba] rounded-full animate-spin" />
+                                <p className="text-xl font-bold text-gray-700 dark:text-gray-300">Authorizing PayPal...</p>
+                                <p className="text-sm text-muted-foreground">Do not close this window.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 w-full">
+                                <div className="p-6 bg-[#ffc439]/10 rounded-2xl border-2 border-[#ffc439] flex items-center justify-center">
+                                    <span className="text-[#0070ba] font-black italic text-2xl">PayPal</span>
+                                    <span className="text-[#003087] font-black italic text-2xl ml-1">Checkout</span>
+                                </div>
+                                <Button
+                                    onClick={handlePayPalPay}
+                                    className="w-full h-16 bg-[#ffc439] hover:bg-[#f2ba36] text-[#003087] text-xl font-black rounded-full shadow-xl active:scale-95 transition-all border-none"
+                                >
+                                    Complete Pay with PayPal
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <DialogFooter className="p-6 bg-gray-50 dark:bg-gray-900/50 justify-center">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing} className="text-gray-400 hover:text-gray-600 font-bold">
+                        Back to POS
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -1457,9 +1879,30 @@ export default function PosPage() {
     const [time, setTime] = useState('');
     const [activeFilter, setActiveFilter] = useState<'category' | 'brands'>('category');
     const { toast } = useToast();
-    const { formatCurrency } = useCurrency();
+    const { formatCurrency, symbol } = useCurrency();
     const { settings } = useSettings();
     const { user } = useAuth();
+
+    // System Messages Listener
+    const systemMessage = useSystemMessages('pos');
+
+    useEffect(() => {
+        if (systemMessage) {
+            toast({
+                title: systemMessage.type === 'error' ? 'Urgent Alert' : 'System Message',
+                description: systemMessage.content,
+                variant: systemMessage.type === 'error' ? 'destructive' : 'default',
+                duration: 10000,
+                className: systemMessage.type === 'promo'
+                    ? 'bg-purple-600 text-white border-none'
+                    : systemMessage.type === 'success'
+                        ? 'bg-green-600 text-white border-none'
+                        : systemMessage.type === 'warning'
+                            ? 'bg-yellow-500 text-black border-none'
+                            : undefined
+            });
+        }
+    }, [systemMessage, toast]);
 
     // --- Shortcuts ---
     useEffect(() => {
@@ -1507,6 +1950,8 @@ export default function PosPage() {
     const [changeDue, setChangeDue] = useState(0);
 
     const [isCardPaymentOpen, setIsCardPaymentOpen] = useState(false);
+    const [isStripePaymentOpen, setIsStripePaymentOpen] = useState(false);
+    const [isPaypalPaymentOpen, setIsPaypalPaymentOpen] = useState(false);
     const [isTerminalPaymentOpen, setIsTerminalPaymentOpen] = useState(false);
 
     const [discount, setDiscount] = useState(0);
@@ -1531,10 +1976,45 @@ export default function PosPage() {
     const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
     const [selectedSubAgent, setSelectedSubAgent] = useState<CommissionProfile | null>(null);
     const [selectedCompany, setSelectedCompany] = useState<CommissionProfile | null>(null);
-    const [selectedSalesperson, setSelectedSalesperson] = useState<CommissionProfile | null>(null);
+    const [selectedSalespersons, setSelectedSalespersons] = useState<CommissionProfile[]>([]);
 
     const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
     const [isDeleteSaleDialogOpen, setIsDeleteSaleDialogOpen] = useState(false);
+    const [sellingPriceGroups, setSellingPriceGroups] = useState<SellingPriceGroup[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (priceGroup && sellingPriceGroups.length > 0) {
+            const group = sellingPriceGroups.find(g => g.id === priceGroup || (g.isDefault && priceGroup === 'default'));
+            if (group) {
+                if (group.agentId) {
+                    const agent = commissionProfiles.find(p => p.id === group.agentId);
+                    if (agent) setSelectedAgent(agent);
+                }
+                if (group.salespersonId) {
+                    const sp = commissionProfiles.find(p => p.id === group.salespersonId);
+                    if (sp) setSelectedSalespersons([sp]); // Assuming single selection for now, adjust if multi-select is needed here
+                }
+                if (group.subAgentId) {
+                    const sub = commissionProfiles.find(p => p.id === group.subAgentId);
+                    if (sub) setSelectedSubAgent(sub);
+                }
+                if (group.companyId) {
+                    const comp = commissionProfiles.find(p => p.id === group.companyId);
+                    if (comp) setSelectedCompany(comp);
+                }
+            }
+        }
+    }, [priceGroup, sellingPriceGroups, commissionProfiles]);
+
+    const isWholesalePriceGroup = useMemo(() => {
+        const currentGroup = sellingPriceGroups.find(g => g.id === priceGroup || (g.isDefault && priceGroup === 'default'));
+        return priceGroup === 'wholesale' || currentGroup?.name.toLowerCase().includes('wholesale');
+    }, [priceGroup, sellingPriceGroups]);
+
 
     const receiptRef = useRef<HTMLDivElement>(null);
     const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
@@ -1543,6 +2023,17 @@ export default function PosPage() {
 
     const handlePrint = useReactToPrint({
         contentRef: receiptRef,
+        pageStyle: `
+            @page {
+                size: auto;
+                margin: 0mm;
+            }
+            @media print {
+                body {
+                    margin: 0;
+                }
+            }
+        `,
     });
 
     const printReceipt = useCallback(() => {
@@ -1564,7 +2055,7 @@ export default function PosPage() {
             selectedAgent?.id,
             selectedSubAgent?.id,
             selectedCompany?.id,
-            selectedSalesperson?.id
+            ...selectedSalespersons.map(sp => sp.id)
         ].filter((id): id is string => !!id);
 
         const customer = customers.find(c => c.id === selectedCustomer);
@@ -1601,7 +2092,7 @@ export default function PosPage() {
             commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
             paymentReference: (paymentReference || null) as any,
         };
-    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalesperson]);
+    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalespersons]);
 
     const clearCart = useCallback((showToast = true) => {
         setCart([]);
@@ -1611,7 +2102,7 @@ export default function PosPage() {
         setSelectedAgent(null);
         setSelectedSubAgent(null);
         setSelectedCompany(null);
-        setSelectedSalesperson(null);
+        setSelectedSalespersons([]);
         localStorage.removeItem('pos-customer-display-data');
         if (showToast) {
             toast({
@@ -1627,15 +2118,21 @@ export default function PosPage() {
         }
 
         try {
-            const [productsData, salesData, purchasesData, profilesData, customersData] = await Promise.all([
+            const [productsData, salesData, purchasesData, profilesData, customersData, groupsData, categoriesData, brandsData] = await Promise.all([
                 getProducts(),
                 getSales(),
                 getPurchases(),
                 getCommissionProfiles(),
                 getCustomers(),
+                getSellingPriceGroups(),
+                getProductCategories(),
+                getBrands(),
             ]);
 
             setCustomers(customersData);
+            setSellingPriceGroups(groupsData);
+            setCategories(categoriesData);
+            setBrands(brandsData);
             setRecentSales(salesData.filter(s => s.paymentMethod !== 'Suspended').slice(0, 10));
 
             const salesByProduct = salesData.flatMap(s => s.items).reduce((acc, item) => {
@@ -1675,6 +2172,48 @@ export default function PosPage() {
             return;
         }
 
+        if (settings.modules.advancedCommission) {
+            // Check if current price group is Wholesale
+            const currentGroup = sellingPriceGroups.find(g => g.id === priceGroup || (g.isDefault && priceGroup === 'default'));
+            const isWholesale = priceGroup === 'wholesale' || currentGroup?.name.toLowerCase().includes('wholesale');
+
+            if (isWholesale) {
+                if (selectedSalespersons.length === 0) {
+                    toast({
+                        title: 'Validation Error',
+                        description: 'Salesperson is required',
+                        variant: 'destructive',
+                        duration: 5000,
+                    });
+                    return;
+                }
+                // For wholesale, we don't strictly require Agent, Sub-Agent, etc. just Salesperson.
+            } else {
+                // Default strict validation for other price groups
+                const missingAgent = !selectedAgent;
+                const missingSalesperson = selectedSalespersons.length === 0;
+
+                if (missingAgent || missingSalesperson) {
+                    let errorMessage = '';
+                    if (missingAgent && missingSalesperson) {
+                        errorMessage = 'Agent and Salesperson are required';
+                    } else if (missingAgent) {
+                        errorMessage = 'Agent is required';
+                    } else {
+                        errorMessage = 'Salesperson is required';
+                    }
+
+                    toast({
+                        title: 'Validation Error',
+                        description: errorMessage,
+                        variant: 'destructive',
+                        duration: 5000,
+                    });
+                    return;
+                }
+            }
+        }
+
         const saleObject = createSaleObject(paymentMethod, paymentStatus, totalPaid, paymentReference);
         console.log('Finalizing sale:', { paymentMethod, paymentReference, saleObject });
 
@@ -1707,7 +2246,7 @@ export default function PosPage() {
                 variant: "destructive"
             });
         }
-    }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart]);
+    }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart, sellingPriceGroups, priceGroup, selectedAgent, selectedSalespersons]);
 
     useEffect(() => {
         fetchAndCalculateStock();
@@ -1767,13 +2306,51 @@ export default function PosPage() {
         }
     }, [cashAmount, cardAmount, totalPayable, isMultiPayOpen]);
 
+    useEffect(() => {
+        if (priceGroup && sellingPriceGroups.length > 0) {
+            const group = sellingPriceGroups.find(g => g.id === priceGroup || (g.isDefault && priceGroup === 'default'));
+            if (group) {
+                if (group.agentId) {
+                    const agent = commissionProfiles.find(p => p.id === group.agentId);
+                    if (agent) setSelectedAgent(agent);
+                }
+                if (group.salespersonId) {
+                    const sp = commissionProfiles.find(p => p.id === group.salespersonId);
+                    if (sp) setSelectedSalespersons([sp]);
+                }
+                if (group.subAgentId) {
+                    const sub = commissionProfiles.find(p => p.id === group.subAgentId);
+                    if (sub) setSelectedSubAgent(sub);
+                }
+                if (group.companyId) {
+                    const comp = commissionProfiles.find(p => p.id === group.companyId);
+                    if (comp) setSelectedCompany(comp);
+                }
+            }
+        }
+    }, [priceGroup, sellingPriceGroups, commissionProfiles]);
+
 
     const filteredProducts = useMemo(() => {
-        if (!searchTerm) return products;
-        return products.filter((p) =>
-            p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [searchTerm, products]);
+        let filtered = products;
+
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            filtered = filtered.filter((p) =>
+                p.name.toLowerCase().includes(lowerTerm) || p.sku.toLowerCase().includes(lowerTerm)
+            );
+        }
+
+        if (selectedCategory) {
+            filtered = filtered.filter(p => p.categoryId === selectedCategory);
+        }
+
+        if (selectedBrand) {
+            filtered = filtered.filter(p => p.brand === selectedBrand);
+        }
+
+        return filtered;
+    }, [searchTerm, products, selectedCategory, selectedBrand]);
 
     const searchResults = useMemo(() => {
         if (!searchTerm) return [];
@@ -1829,7 +2406,7 @@ export default function PosPage() {
                 toast({ title: 'Validation Error', description: 'Customer is required for credit/partial sales.', variant: 'destructive' });
                 return;
             }
-            if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson) {
+            if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && selectedSalespersons.length === 0) {
                 toast({ title: 'Validation Error', description: 'Commission Agent is required for credit/partial sales.', variant: 'destructive' });
                 return;
             }
@@ -1839,9 +2416,19 @@ export default function PosPage() {
         setIsCashPaymentOpen(false);
     };
 
+    const handleCardClick = () => {
+        const method = settings.payment.cardPaymentMethod;
+        if (method === 'stripe') setIsStripePaymentOpen(true);
+        else if (method === 'paypal') setIsPaypalPaymentOpen(true);
+        else if (method === 'manual_entry') setIsCardPaymentOpen(true); // Manual Key Entry
+        else setIsTerminalPaymentOpen(true); // Default to Terminal (Offline / Manual)
+    };
+
     const handleFinalizeCardPayment = () => {
         finalizeAndShowReceipt('Card', 'Paid', totalPayable);
         setIsCardPaymentOpen(false);
+        setIsStripePaymentOpen(false);
+        setIsPaypalPaymentOpen(false);
     };
 
     const handleFinalizeMultiPay = () => {
@@ -1855,7 +2442,7 @@ export default function PosPage() {
                 toast({ title: 'Validation Error', description: 'Customer is required for credit/partial sales.', variant: 'destructive' });
                 return;
             }
-            if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson) {
+            if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && selectedSalespersons.length === 0) {
                 toast({ title: 'Validation Error', description: 'Commission Agent is required for credit/partial sales.', variant: 'destructive' });
                 return;
             }
@@ -1968,7 +2555,7 @@ export default function PosPage() {
             toast({ title: 'Validation Error', description: 'Customer is required for credit sales.', variant: 'destructive' });
             return;
         }
-        if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && !selectedSalesperson) {
+        if (settings.sale.requireCommissionAgentForCreditSale && !selectedAgent && !selectedSubAgent && !selectedCompany && selectedSalespersons.length === 0) {
             toast({ title: 'Validation Error', description: 'Commission Agent is required for credit sales.', variant: 'destructive' });
             return;
         }
@@ -2095,22 +2682,21 @@ export default function PosPage() {
                                     <Switch checked={autoPrint} onCheckedChange={setAutoPrint} className="data-[state=checked]:bg-white data-[state=checked]:text-primary" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                                 <Link href="/admin/dashboard">
-                                    <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white" title="Go to Dashboard">
+                                    <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90" title="Go to Dashboard">
                                         <Home className="w-5 h-5" />
                                     </Button>
                                 </Link>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white" onClick={() => setIsExchangeOpen(true)} title="Money Exchange"><Repeat className="w-5 h-5" /></Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 className="w-5 h-5" /></Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-red-600/80 text-primary-foreground hover:text-white" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock className="w-5 h-5" /></Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator className="w-5 h-5" /></Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white hidden sm:flex" onClick={handleRefresh}><RefreshCw className="w-5 h-5" /></Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink className="w-5 h-5" /> : <Expand className="w-5 h-5" />}</Button>
-                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white" onClick={handleCustomerDisplay}><Monitor className="w-5 h-5" /></Button>
-                                {/* ThemeToggle hidden for Crimson enforcement or styled appropriately if needed */}
-                                {/* <ThemeToggle className="text-primary-foreground" /> */}
-                                <Button variant="secondary" className="h-9 px-4 ml-2 text-primary font-semibold shadow-sm hover:bg-white" onClick={() => setIsAddExpenseOpen(true)}>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90" onClick={() => setIsExchangeOpen(true)} title="Money Exchange"><Repeat className="w-5 h-5" /></Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90" onClick={() => setIsRegisterDetailsOpen(true)} title="Register Details"><Grid3x3 className="w-5 h-5" /></Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-red-600/80 text-primary-foreground hover:text-white transition-all active:scale-90" title="Close Register" onClick={() => setIsCloseRegisterOpen(true)}><Lock className="w-5 h-5" /></Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90 hidden sm:flex" onClick={() => setIsCalculatorOpen(true)}><Calculator className="w-5 h-5" /></Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90 hidden sm:flex" onClick={handleRefresh}><RefreshCw className="w-5 h-5" /></Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90 hidden sm:flex" onClick={handleToggleFullscreen}>{isFullscreen ? <Shrink className="w-5 h-5" /> : <Expand className="w-5 h-5" />}</Button>
+                                <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10 text-primary-foreground hover:text-white transition-all active:scale-90" onClick={handleCustomerDisplay}><Monitor className="w-5 h-5" /></Button>
+                                <ThemeToggle />
+                                <Button variant="secondary" className="h-10 px-4 ml-2 bg-white text-primary font-bold shadow-sm hover:bg-white/90 active:scale-95 transition-all" onClick={() => setIsAddExpenseOpen(true)}>
                                     <PlusCircle className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Expense</span>
                                 </Button>
                             </div>
@@ -2138,30 +2724,34 @@ export default function PosPage() {
                                             </Select>
                                             <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
                                                 <DialogTrigger asChild>
-                                                    <Button size="icon" className="flex-shrink-0"><Plus /></Button>
+                                                    <Button size="icon" className="flex-shrink-0 bg-primary hover:bg-primary/90 text-white shadow-sm active:scale-90 transition-all rounded-xl"><Plus className="h-5 w-5" /></Button>
                                                 </DialogTrigger>
-                                                <DialogContent>
-                                                    <DialogHeader>
-                                                        <DialogTitle>Add New Customer</DialogTitle>
-                                                        <DialogDescription>Quickly add a new customer to the system.</DialogDescription>
+                                                <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                                                    <DialogHeader className="p-6 bg-primary text-white">
+                                                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                                            <UserPlus className="h-6 w-6" /> Add New Customer
+                                                        </DialogTitle>
+                                                        <DialogDescription className="text-primary-foreground/90">
+                                                            Quickly add a new customer to the system.
+                                                        </DialogDescription>
                                                     </DialogHeader>
-                                                    <div className="space-y-4 py-4">
+                                                    <div className="p-6 space-y-5">
                                                         <div className="space-y-2">
-                                                            <Label htmlFor="name">Name *</Label>
-                                                            <Input id="name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({ ...p, name: e.target.value }))} placeholder="Customer Name" />
+                                                            <Label htmlFor="customer-name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Full Name *</Label>
+                                                            <Input id="customer-name" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({ ...p, name: e.target.value }))} placeholder="Customer Name" className="h-12 rounded-xl" />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <Label htmlFor="mobile">Mobile *</Label>
-                                                            <Input id="mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({ ...p, mobile: e.target.value }))} placeholder="Mobile Number" />
+                                                            <Label htmlFor="customer-mobile" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Mobile Number *</Label>
+                                                            <Input id="customer-mobile" value={newCustomer.mobile} onChange={(e) => setNewCustomer(p => ({ ...p, mobile: e.target.value }))} placeholder="Mobile Number" className="h-12 rounded-xl" />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <Label htmlFor="email">Email</Label>
-                                                            <Input id="email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({ ...p, email: e.target.value }))} placeholder="Email Address" />
+                                                            <Label htmlFor="customer-email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email (Optional)</Label>
+                                                            <Input id="customer-email" type="email" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({ ...p, email: e.target.value }))} placeholder="Email Address" className="h-12 rounded-xl" />
                                                         </div>
                                                     </div>
-                                                    <DialogFooter>
-                                                        <Button variant="secondary" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-                                                        <Button onClick={handleSaveCustomer}>Save Customer</Button>
+                                                    <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                                                        <Button variant="ghost" onClick={() => setIsAddCustomerOpen(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                                                        <Button onClick={handleSaveCustomer} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">Save Customer</Button>
                                                     </DialogFooter>
                                                 </DialogContent>
                                             </Dialog>
@@ -2191,73 +2781,103 @@ export default function PosPage() {
                                             </div>
                                         )}
                                     </div>
-
-                                    {settings.sale.enableCommissionAgent || settings.modules.serviceStaff ? (
+                                    {(settings.sale.enableCommissionAgent || settings.modules.serviceStaff) && settings.modules.advancedCommission ? (
                                         <>
                                             <Separator className="my-4" />
                                             {settings.modules.advancedCommission ? (
-                                                <div className="space-y-4">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex-1">
-                                                                <CommissionSelector entityType="Agent" label="Agent" profiles={commissionProfiles} selectedProfile={selectedAgent} onSelect={setSelectedAgent} onRemove={() => setSelectedAgent(null)} />
+                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                    {/* Agent: Hide if Wholesale */
+                                                        !isWholesalePriceGroup && (
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex-1">
+                                                                    <CommissionSelector
+                                                                        label="Agent"
+                                                                        selectedProfile={selectedAgent}
+                                                                        onSelect={setSelectedAgent}
+                                                                        profiles={commissionProfiles}
+                                                                        entityType="Agent"
+                                                                        onRemove={() => setSelectedAgent(null)}
+                                                                    />
+                                                                </div>
+                                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus /></Button>
                                                             </div>
-                                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus /></Button>
+                                                        )}
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1">
+                                                            <CommissionSelector
+                                                                label="Sub-Agent"
+                                                                selectedProfile={selectedSubAgent}
+                                                                onSelect={setSelectedSubAgent}
+                                                                profiles={commissionProfiles}
+                                                                entityType="Sub-Agent"
+                                                                onRemove={() => setSelectedSubAgent(null)}
+                                                            />
                                                         </div>
+                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus /></Button>
                                                     </div>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex-1">
-                                                                <CommissionSelector entityType="Salesperson" label="Salesperson" profiles={commissionProfiles} selectedProfile={selectedSalesperson} onSelect={setSelectedSalesperson} onRemove={() => setSelectedSalesperson(null)} />
-                                                            </div>
-                                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus /></Button>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1">
+                                                            <CommissionSelector
+                                                                label="Company"
+                                                                selectedProfile={selectedCompany}
+                                                                onSelect={setSelectedCompany}
+                                                                profiles={commissionProfiles}
+                                                                entityType="Company"
+                                                                onRemove={() => setSelectedCompany(null)}
+                                                            />
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex-1">
-                                                                <CommissionSelector entityType="Sub-Agent" label="Sub" profiles={commissionProfiles} selectedProfile={selectedSubAgent} onSelect={setSelectedSubAgent} onRemove={() => setSelectedSubAgent(null)} />
-                                                            </div>
-                                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Sub-Agent')}><Plus /></Button>
+                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus /></Button>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1">
+                                                            <MultiCommissionSelector
+                                                                label="Salesperson"
+                                                                selectedProfiles={selectedSalespersons}
+                                                                onSelect={(p) => setSelectedSalespersons(prev => [...prev, p])}
+                                                                profiles={commissionProfiles}
+                                                                entityType="Salesperson"
+                                                                onRemove={(id) => setSelectedSalespersons(prev => prev.filter(sp => sp.id !== id))}
+                                                            />
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex-1">
-                                                                <CommissionSelector entityType="Company" label="Com" profiles={commissionProfiles} selectedProfile={selectedCompany} onSelect={setSelectedCompany} onRemove={() => setSelectedCompany(null)} />
-                                                            </div>
-                                                            <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus /></Button>
-                                                        </div>
+                                                        <Button size="icon" className="flex-shrink-0 self-start mt-8" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus /></Button>
                                                     </div>
                                                 </div>
-                                            ) : settings.sale.enableCommissionAgent ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1">
-                                                        <CommissionSelector
-                                                            label="Commission Agent"
-                                                            entityType="All"
-                                                            profiles={commissionProfiles}
-                                                            selectedProfile={selectedSalesperson}
-                                                            onSelect={setSelectedSalesperson}
-                                                            onRemove={() => setSelectedSalesperson(null)}
-                                                        />
+                                            ) : (
+                                                <div className="mb-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex-1">
+                                                            <CommissionSelector
+                                                                label="Agent"
+                                                                selectedProfile={selectedAgent}
+                                                                onSelect={setSelectedAgent}
+                                                                profiles={commissionProfiles}
+                                                                entityType="Agent"
+                                                                onRemove={() => setSelectedAgent(null)}
+                                                            />
+                                                        </div>
+                                                        <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus /></Button>
                                                     </div>
-                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus /></Button>
                                                 </div>
-                                            ) : settings.modules.serviceStaff ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1">
-                                                        <CommissionSelector
-                                                            entityType="Salesperson"
-                                                            label="Service Staff"
-                                                            profiles={commissionProfiles}
-                                                            selectedProfile={selectedSalesperson}
-                                                            onSelect={setSelectedSalesperson}
-                                                            onRemove={() => setSelectedSalesperson(null)}
-                                                        />
-                                                    </div>
-                                                    <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Salesperson')}><Plus /></Button>
-                                                </div>
-                                            ) : null}
+                                            )}
+                                            <Separator className="my-4" />
                                         </>
+                                    ) : settings.sale.enableCommissionAgent ? (
+                                        <div className="mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1">
+                                                    <CommissionSelector
+                                                        label="Agent"
+                                                        selectedProfile={selectedAgent}
+                                                        onSelect={setSelectedAgent}
+                                                        profiles={commissionProfiles}
+                                                        entityType="Agent"
+                                                        onRemove={() => setSelectedAgent(null)}
+                                                    />
+                                                </div>
+                                                <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Agent')}><Plus /></Button>
+                                            </div>
+                                        </div>
                                     ) : null}
-
                                     <Separator className="my-4" />
                                     <div className="relative flex items-center">
                                         <Search className="absolute left-3 h-5 w-5 text-muted-foreground" />
@@ -2275,13 +2895,14 @@ export default function PosPage() {
                                                 {searchResults.map((product) => (
                                                     <div
                                                         key={product.id}
-                                                        className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                                        className="p-3 hover:bg-accent active:bg-accent/80 cursor-pointer text-sm transition-colors border-b last:border-b-0 flex justify-between items-center"
                                                         onClick={() => {
                                                             addToCart(product);
                                                             setSearchTerm('');
                                                         }}
                                                     >
-                                                        {product.name} ({product.sku})
+                                                        <span className="font-medium">{product.name}</span>
+                                                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{product.sku}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -2318,8 +2939,14 @@ export default function PosPage() {
                                                                     </Select>
                                                                 </div>
                                                             )}
-                                                            <div className={cn("col-span-2", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
-                                                                <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
+                                                            <div className={cn("col-span-2 flex items-center gap-1", settings.pos.enableServiceStaffInProductLine && "col-span-1")}>
+                                                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full flex-shrink-0 active:scale-90 transition-all border-gray-200 hover:bg-gray-100" onClick={() => updateQuantity(item.product.id, Math.max(0, item.quantity - 1))}>
+                                                                    <Minus className="h-3 w-3" />
+                                                                </Button>
+                                                                <Input type="number" value={item.quantity} onChange={(e) => updateQuantity(item.product.id, parseInt(e.target.value) || 0)} className="h-8 w-12 text-center p-0 border-none bg-transparent font-bold focus-visible:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                                                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full flex-shrink-0 active:scale-90 transition-all text-primary border-primary/20 hover:bg-primary/5 hover:border-primary/40" onClick={() => updateQuantity(item.product.id, item.quantity + 1)}>
+                                                                    <Plus className="h-3 w-3" />
+                                                                </Button>
                                                             </div>
                                                             <div className="col-span-2">{formatCurrency(item.sellingPrice)}</div>
                                                             <div className="col-span-2 font-semibold">{formatCurrency(item.sellingPrice * item.quantity)}</div>
@@ -2367,8 +2994,51 @@ export default function PosPage() {
                             {/* Right Side: Product Selection */}
                             <div className="lg:col-span-7 flex flex-col gap-2">
                                 <div className="grid grid-cols-2 gap-2">
-                                    <Button onClick={() => setActiveFilter('category')} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2" /> Category</Button>
-                                    <Button onClick={() => setActiveFilter('brands')} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2" /> Brands</Button>
+                                    <Button onClick={() => { setActiveFilter('category'); setSelectedCategory(null); setSelectedBrand(null); }} variant={activeFilter === 'category' ? 'default' : 'secondary'} className="text-lg py-6"><LayoutGrid className="mr-2" /> Category</Button>
+                                    <Button onClick={() => { setActiveFilter('brands'); setSelectedCategory(null); setSelectedBrand(null); }} variant={activeFilter === 'brands' ? 'default' : 'secondary'} className="text-lg py-6"><Repeat className="mr-2" /> Brands</Button>
+                                </div>
+
+                                <div className="bg-card border rounded-xl p-2 shadow-sm">
+                                    <ScrollArea className="w-full whitespace-nowrap">
+                                        <div className="flex gap-2 pb-2">
+                                            <Button
+                                                variant={(activeFilter === 'category' ? !selectedCategory : !selectedBrand) ? 'default' : 'outline'}
+                                                size="sm"
+                                                className="rounded-full px-5 h-9 active:scale-95 transition-all"
+                                                onClick={() => {
+                                                    if (activeFilter === 'category') setSelectedCategory(null);
+                                                    else setSelectedBrand(null);
+                                                }}
+                                            >
+                                                All
+                                            </Button>
+                                            {activeFilter === 'category' ? (
+                                                categories.map(cat => (
+                                                    <Button
+                                                        key={cat.id}
+                                                        variant={selectedCategory === cat.id ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        className="rounded-full px-5 h-9 active:scale-95 transition-all"
+                                                        onClick={() => setSelectedCategory(cat.id)}
+                                                    >
+                                                        {cat.name}
+                                                    </Button>
+                                                ))
+                                            ) : (
+                                                brands.map(brand => (
+                                                    <Button
+                                                        key={brand.id}
+                                                        variant={selectedBrand === brand.name ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        className="rounded-full px-5 h-9 active:scale-95 transition-all"
+                                                        onClick={() => setSelectedBrand(brand.name)}
+                                                    >
+                                                        {brand.name}
+                                                    </Button>
+                                                ))
+                                            )}
+                                        </div>
+                                    </ScrollArea>
                                 </div>
                                 <Card className="flex-1 flex flex-col bg-card p-2">
                                     <ScrollArea className="h-full">
@@ -2389,21 +3059,21 @@ export default function PosPage() {
                                                 ))
                                             ) : (
                                                 filteredProducts.map(product => (
-                                                    <Card key={product.id} className="cursor-pointer group overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-200" onClick={() => addToCart(product)}>
+                                                    <Card key={product.id} className="cursor-pointer group overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:border-primary/30 active:scale-[0.97] transition-all duration-200 rounded-xl" onClick={() => addToCart(product)}>
                                                         <div className="relative aspect-square bg-white p-4">
                                                             <Image
                                                                 src={product.image}
                                                                 alt={product.name}
                                                                 fill
-                                                                className="object-contain p-2 transition-transform duration-300 group-hover:scale-110"
+                                                                className="object-contain p-2 transition-transform duration-500 group-hover:scale-110"
                                                             />
-                                                            <Badge className="absolute top-2 right-2 bg-primary text-white font-bold shadow-sm">
+                                                            <Badge className="absolute top-2 right-2 bg-primary/90 text-white font-bold shadow-sm backdrop-blur-sm border-none px-2 py-0.5 text-xs">
                                                                 {formatCurrency(product.sellingPrice)}
                                                             </Badge>
                                                         </div>
-                                                        <div className="p-3 text-center border-t border-gray-50 bg-gray-50/50">
-                                                            <p className="text-sm font-medium truncate text-gray-800" title={product.name}>{product.name}</p>
-                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">{product.sku}</p>
+                                                        <div className="p-3 text-center border-t border-gray-50 bg-gray-50/30 backdrop-blur-sm">
+                                                            <p className="text-sm font-semibold truncate text-gray-800" title={product.name}>{product.name}</p>
+                                                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-medium">{product.sku}</p>
                                                         </div>
                                                     </Card>
                                                 ))
@@ -2412,7 +3082,7 @@ export default function PosPage() {
                                     </ScrollArea>
                                 </Card>
                             </div>
-                        </div>
+                        </div >
 
                         <footer className="bg-card shadow-[0_-2px_5px_-1px_rgba(0,0,0,0.1)] p-2 z-10">
                             <div className="flex items-center justify-between gap-2">
@@ -2424,50 +3094,94 @@ export default function PosPage() {
                                 </div>
 
                                 <div className="flex-1 flex justify-center items-center gap-2">
-                                    <Button className="bg-primary hover:bg-primary/90 text-white h-12 text-base px-6 shadow-md" onClick={() => setIsTerminalPaymentOpen(true)}>
-                                        <CreditCard className="h-5 w-5 mr-2" />Card
-                                    </Button>
-                                    <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
-                                        <DialogTrigger asChild>
-                                            <Button className="bg-primary hover:bg-primary/90 text-white h-12 text-base px-6 shadow-md"><WalletCards className="h-5 w-5 mr-2" />Split Pay</Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Finalize Payment</DialogTitle>
-                                                <DialogDescription>
-                                                    Split the payment across multiple methods. Total payable is <strong>{formatCurrency(totalPayable)}</strong>.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="grid gap-4 py-4">
-                                                <div className="grid grid-cols-4 items-center gap-4">
-                                                    <Label htmlFor="cash-amount" className="text-right">Cash</Label>
-                                                    <Input id="cash-amount" type="number" placeholder="0.00" className="col-span-3" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} />
-                                                </div>
-                                                <div className="grid grid-cols-4 items-center gap-4">
-                                                    <Label htmlFor="card-amount" className="text-right">Card</Label>
-                                                    <Input id="card-amount" type="number" placeholder="0.00" className="col-span-3" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} />
-                                                </div>
-                                                <div className="text-right font-medium">Remaining: {formatCurrency(Math.max(0, totalPayable - (parseFloat(cashAmount) || 0) - (parseFloat(cardAmount) || 0)))}</div>
-                                                <div className="text-right font-medium">Change Due: <span className="font-bold text-green-600">{formatCurrency(changeDue)}</span></div>
-                                            </div>
-                                            <DialogFooter>
-                                                <Button type="button" onClick={handleFinalizeMultiPay}>Finalize Payment</Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                    {!settings.pos.disableExpressCheckout && <Button className="bg-primary hover:bg-primary/90 text-white h-12 text-base px-6 shadow-md" onClick={() => setIsCashPaymentOpen(true)}><Banknote className="h-5 w-5 mr-2" />Cash</Button>}
-                                    <Button variant="outline" className="h-12 text-base px-6 border-red-200 text-red-600 hover:bg-red-50" onClick={() => clearCart()}><X className="h-5 w-5 mr-2" />Cancel</Button>
-                                </div>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <Dialog open={isMultiPayOpen} onOpenChange={setIsMultiPayOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button className="bg-sky-600 hover:bg-sky-700 text-white h-13 text-base px-6 shadow-lg active:scale-95 transition-all rounded-xl border-none"><CreditCard className="h-5 w-5 mr-2" />Multi Pay</Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl bg-white dark:bg-gray-950">
+                                                <DialogHeader className="p-6 bg-primary text-white">
+                                                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                                        <CreditCard className="h-6 w-6" /> Multiple Payment Methods
+                                                    </DialogTitle>
+                                                    <DialogDescription className="text-primary-foreground/90 font-medium">
+                                                        Split the payment between multiple methods.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="p-6 space-y-6">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cash Amount</Label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
+                                                                <Input type="number" value={cashAmount} onChange={(e) => setCashAmount(e.target.value)} className="pl-10 h-12 text-lg font-bold rounded-xl bg-gray-50 dark:bg-gray-900 border-none shadow-inner" placeholder="0.00" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Amount</Label>
+                                                            <div className="relative">
+                                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
+                                                                <Input type="number" value={cardAmount} onChange={(e) => setCardAmount(e.target.value)} className="pl-10 h-12 text-lg font-bold rounded-xl bg-gray-50 dark:bg-gray-900 border-none shadow-inner" placeholder="0.00" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                                <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                        <span className="text-sm text-muted-foreground">Total Payable:</span>
-                                        <h3 className="text-2xl font-bold text-green-600">{formatCurrency(totalPayable)}</h3>
+                                                    <Card className="p-4 bg-primary/5 dark:bg-primary/10 border-primary/20 rounded-2xl space-y-4">
+                                                        <div className="space-y-2">
+                                                            <div className="flex justify-between items-center px-1 text-sm">
+                                                                <span className="text-muted-foreground">Total Payable:</span>
+                                                                <span className="font-bold">{formatCurrency(totalPayable)}</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center px-1 text-sm">
+                                                                <span className="text-muted-foreground">Total Paid:</span>
+                                                                <span className="font-bold text-blue-600">{formatCurrency((parseFloat(cashAmount) || 0) + (parseFloat(cardAmount) || 0))}</span>
+                                                            </div>
+                                                        </div>
+                                                        <Separator className="bg-primary/20" />
+                                                        <div className="text-center py-2 px-1">
+                                                            <p className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-widest">Balance Due / Change</p>
+                                                            <div className={`text-3xl font-black ${changeDue < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                                                {formatCurrency(changeDue)}
+                                                            </div>
+                                                        </div>
+                                                    </Card>
+
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Note (Internal)</Label>
+                                                        <Textarea placeholder="Any internal notes for this payment..." className="rounded-xl resize-none min-h-[80px] bg-gray-50 dark:bg-gray-900 border-none shadow-inner" />
+                                                    </div>
+                                                </div>
+                                                <DialogFooter className="p-6 bg-gray-50 dark:bg-gray-900/50 flex sm:flex-row flex-col gap-3">
+                                                    <Button variant="ghost" onClick={() => setIsMultiPayOpen(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
+                                                    <Button onClick={handleFinalizeMultiPay} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
+                                                        Submit Payment
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
+                                        {!settings.pos.disableExpressCheckout && (
+                                            <div className="flex items-center gap-2">
+                                                <Button className="bg-green-600 hover:bg-green-700 text-white h-13 text-base px-6 shadow-lg active:scale-95 transition-all rounded-xl border-none" onClick={() => setIsCashPaymentOpen(true)}>
+                                                    <Banknote className="h-5 w-5 mr-2" />Cash
+                                                </Button>
+                                                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-13 text-base px-6 shadow-lg active:scale-95 transition-all rounded-xl border-none" onClick={handleCardClick}>
+                                                    <CreditCard className="h-5 w-5 mr-2" />Card
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <Button variant="outline" className="h-13 text-base px-6 border-red-200 text-red-600 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-all rounded-xl" onClick={() => clearCart()}><X className="h-5 w-5 mr-2" />Cancel</Button>
                                     </div>
-                                    <Button variant="default" className="h-12 text-base" onClick={() => setIsRecentTransactionsOpen(true)}>
-                                        <History className="mr-2 h-5 w-5" />
-                                        Recent Transactions
-                                    </Button>
+
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Total Payable</span>
+                                            <h3 className="text-3xl font-black text-green-600 drop-shadow-sm leading-tight">{formatCurrency(totalPayable)}</h3>
+                                        </div>
+                                        <Button variant="default" className="h-13 text-base px-6 rounded-xl shadow-md active:scale-95 transition-all" onClick={() => setIsRecentTransactionsOpen(true)}>
+                                            <History className="mr-2 h-5 w-5" />
+                                            <span className="hidden sm:inline">Recent</span>
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </footer>
@@ -2570,6 +3284,18 @@ export default function PosPage() {
                 totalPayable={totalPayable}
                 onFinalize={handleFinalizeCardPayment}
             />
+            <StripePaymentDialog
+                open={isStripePaymentOpen}
+                onOpenChange={setIsStripePaymentOpen}
+                totalPayable={totalPayable}
+                onFinalize={handleFinalizeCardPayment}
+            />
+            <PayPalPaymentDialog
+                open={isPaypalPaymentOpen}
+                onOpenChange={setIsPaypalPaymentOpen}
+                totalPayable={totalPayable}
+                onFinalize={handleFinalizeCardPayment}
+            />
             <TerminalPaymentDialog
                 open={isTerminalPaymentOpen}
                 onOpenChange={setIsTerminalPaymentOpen}
@@ -2586,31 +3312,49 @@ export default function PosPage() {
                 onProfileAdded={fetchAndCalculateStock}
             />
             <AlertDialog open={isDeleteSaleDialogOpen} onOpenChange={setIsDeleteSaleDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to delete this sale?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete the sale with invoice number "{saleToDelete?.invoiceNo}". This action cannot be undone.
+                <AlertDialogContent className="p-0 overflow-hidden border-none shadow-2xl rounded-2xl max-w-md">
+                    <AlertDialogHeader className="p-6 bg-red-600 text-white">
+                        <AlertDialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <Trash2 className="h-6 w-6" /> Confirm Deletion
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-red-50/90">
+                            This will permanently delete invoice <strong className="text-white">#{saleToDelete?.invoiceNo}</strong>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmDeleteSale} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                    <div className="p-6 bg-white">
+                        <p className="text-sm text-gray-600">
+                            Delete this transaction from the system and restore stock levels if applicable. Please confirm your action.
+                        </p>
+                    </div>
+                    <AlertDialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                        <AlertDialogCancel onClick={() => setIsDeleteSaleDialogOpen(false)} className="h-12 rounded-xl flex-1 border-gray-200">Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmDeleteSale} className="h-12 rounded-xl flex-1 bg-red-600 hover:bg-red-700 text-white font-bold shadow-lg active:scale-95 transition-all">Delete Permanently</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
             <Dialog open={isSuspendedSalesOpen} onOpenChange={setIsSuspendedSalesOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Suspended Sales</DialogTitle>
-                        <DialogDescription>Select a suspended sale to resume.</DialogDescription>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                    <DialogHeader className="p-6 bg-primary text-white">
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <Pause className="h-6 w-6" /> Suspended Sales
+                        </DialogTitle>
+                        <DialogDescription className="text-primary-foreground/90">
+                            Select a suspended sale to resume.
+                        </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-center text-muted-foreground">No suspended sales found.</p>
+                    <div className="p-12 text-center space-y-4">
+                        <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto">
+                            <Pause className="h-8 w-8 text-gray-300" />
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-800">No suspended sales found</p>
+                            <p className="text-sm text-muted-foreground mt-1">Sales you suspend will appear here for later retrieval.</p>
+                        </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="secondary" onClick={() => setIsSuspendedSalesOpen(false)}>Close</Button>
+                    <DialogFooter className="p-6 bg-gray-50">
+                        <Button variant="ghost" onClick={() => setIsSuspendedSalesOpen(false)} className="h-12 rounded-xl w-full text-gray-500 font-bold">
+                            Close
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

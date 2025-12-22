@@ -53,7 +53,7 @@ export default function EditSalesCommissionAgentPage() {
                     setPhoneNumber(profileToEdit.phone);
                     setEmail(profileToEdit.email || '');
                     setBankDetails(profileToEdit.bankDetails || '');
-                    setOverallCommission(String(profileToEdit.commission.overall || ''));
+                    setOverallCommission(String(profileToEdit.commission.overall ?? ''));
                     setCategoryCommissions(
                         profileToEdit.commission.categories?.map((c, index) => ({
                             id: Date.now() + index,

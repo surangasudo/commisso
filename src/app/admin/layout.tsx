@@ -4,51 +4,52 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Bell,
-  CircleUser,
-  Home,
-  Users,
-  Contact,
-  Package,
-  Download,
-  Upload,
-  ArrowRightLeft,
-  SlidersHorizontal,
-  Wallet,
-  Landmark,
-  FileText,
-  Mail,
-  Settings,
-  Briefcase,
-  CheckSquare,
-  ShoppingCart,
-  Grid3x3,
-  CalendarDays,
-  PlusCircle,
-  ChevronDown,
-  Box,
-  HelpCircle,
-  Repeat,
+    Bell,
+    CircleUser,
+    Home,
+    Users,
+    Contact,
+    Package,
+    Download,
+    Upload,
+    ArrowRightLeft,
+    SlidersHorizontal,
+    Wallet,
+    Landmark,
+    FileText,
+    Mail,
+    Settings,
+    Briefcase,
+    CheckSquare,
+    ShoppingCart,
+    Grid3x3,
+    CalendarDays,
+    PlusCircle,
+    ChevronDown,
+    Box,
+    HelpCircle,
+    Repeat,
+    Megaphone,
 } from 'lucide-react';
 
 import {
-  SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarTrigger,
-  SidebarInset,
+    SidebarProvider,
+    Sidebar,
+    SidebarContent,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarTrigger,
+    SidebarInset,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -56,11 +57,12 @@ import { useSettings } from '@/hooks/use-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { BroadcastDialog } from '@/components/broadcast-dialog';
 
 const allSidebarNav = [
     { href: "/admin/dashboard", icon: Home, label: "Home", roles: ['Admin', 'Cashier'] },
-    { 
-        label: "User Management", 
+    {
+        label: "User Management",
         icon: Users,
         roles: ['Admin'],
         children: [
@@ -69,8 +71,8 @@ const allSidebarNav = [
             { href: "/admin/sales-commission-agents", label: "Sales Commission Agents" }
         ]
     },
-    { 
-        label: "Contacts", 
+    {
+        label: "Contacts",
         icon: Contact,
         roles: ['Admin', 'Cashier'],
         children: [
@@ -80,8 +82,8 @@ const allSidebarNav = [
             { href: "/admin/contacts/import", label: "Import Contacts", roles: ['Admin'] },
         ]
     },
-    { 
-        label: "Products", 
+    {
+        label: "Products",
         icon: Package,
         roles: ['Admin', 'Cashier'],
         children: [
@@ -99,8 +101,8 @@ const allSidebarNav = [
             { href: "/admin/products/warranties", label: "Warranties", roles: ['Admin'] },
         ]
     },
-    { 
-        label: "Purchases", 
+    {
+        label: "Purchases",
         icon: Download,
         roles: ['Admin'],
         children: [
@@ -109,8 +111,8 @@ const allSidebarNav = [
             { href: "/admin/purchases/return/list", label: "List Purchase Return" },
         ]
     },
-    { 
-        label: "Sell", 
+    {
+        label: "Sell",
         icon: Upload,
         roles: ['Admin', 'Cashier'],
         children: [
@@ -128,8 +130,8 @@ const allSidebarNav = [
             { href: "/admin/sales/import", label: "Import Sales", roles: ['Admin'] },
         ]
     },
-    { 
-        label: "Stock Transfers", 
+    {
+        label: "Stock Transfers",
         icon: ArrowRightLeft,
         roles: ['Admin'],
         children: [
@@ -137,18 +139,18 @@ const allSidebarNav = [
             { href: "/admin/stock-transfers/add", label: "Add Stock Transfer" },
         ]
     },
-    { 
-        label: "Stock Adjustment", 
-        icon: SlidersHorizontal, 
+    {
+        label: "Stock Adjustment",
+        icon: SlidersHorizontal,
         roles: ['Admin'],
         children: [
             { href: "/admin/stock-adjustment/list", label: "List Stock Adjustments" },
             { href: "/admin/stock-adjustment/add", label: "Add Stock Adjustment" },
         ]
     },
-    { 
-        label: "Expenses", 
-        icon: Wallet, 
+    {
+        label: "Expenses",
+        icon: Wallet,
         roles: ['Admin', 'Cashier'],
         children: [
             { href: "/admin/expenses/list", label: "List Expenses" },
@@ -156,9 +158,9 @@ const allSidebarNav = [
             { href: "/admin/expenses/categories", label: "Expense Categories", roles: ['Admin'] },
         ]
     },
-    { 
-        label: "Payment Accounts", 
-        icon: Landmark, 
+    {
+        label: "Payment Accounts",
+        icon: Landmark,
         roles: ['Admin'],
         children: [
             { href: "/admin/payment-accounts/list", label: "List Accounts" },
@@ -168,8 +170,8 @@ const allSidebarNav = [
             { href: "/admin/payment-accounts/payment-account-report", label: "Payment Account Report" }
         ]
     },
-    { 
-        label: "Reports", 
+    {
+        label: "Reports",
         icon: FileText,
         roles: ['Admin'],
         children: [
@@ -194,8 +196,8 @@ const allSidebarNav = [
         ]
     },
     { href: "/admin/notification-templates", icon: Mail, label: "Notification Templates", roles: ['Admin'] },
-    { 
-        label: "Settings", 
+    {
+        label: "Settings",
         icon: Settings,
         roles: ['Admin'],
         children: [
@@ -213,175 +215,183 @@ const allSidebarNav = [
 
 
 export default function AdminLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { user, loading, logout } = useAuth();
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const { settings } = useSettings();
-  const isPosPage = pathname === '/admin/pos';
-  
-  const sidebarNav = React.useMemo(() => {
-    if (!user) return [];
-    
-    const filterNav = (items: any[]) => {
-      return items.reduce((acc: any[], item) => {
-        if (item.roles && !item.roles.includes(user.role)) {
-          return acc;
+    const pathname = usePathname();
+    const router = useRouter();
+    const { user, loading, logout } = useAuth();
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+    const { settings } = useSettings();
+    const isPosPage = pathname === '/admin/pos';
+
+    const sidebarNav = React.useMemo(() => {
+        if (!user) return [];
+
+        const filterNav = (items: any[]) => {
+            return items.reduce((acc: any[], item) => {
+                if (item.roles && !item.roles.includes(user.role)) {
+                    return acc;
+                }
+                if (item.children) {
+                    const filteredChildren = filterNav(item.children);
+                    if (filteredChildren.length > 0) {
+                        acc.push({ ...item, children: filteredChildren });
+                    }
+                } else {
+                    acc.push(item);
+                }
+                return acc;
+            }, []);
+        };
+
+        return filterNav(allSidebarNav);
+    }, [user]);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
         }
-        if (item.children) {
-          const filteredChildren = filterNav(item.children);
-          if (filteredChildren.length > 0) {
-            acc.push({ ...item, children: filteredChildren });
-          }
-        } else {
-          acc.push(item);
+    }, [user, loading, router]);
+
+
+    useEffect(() => {
+        const activeParent = sidebarNav.find(item =>
+            item.children?.some(child => pathname.startsWith(child.href))
+        );
+        if (activeParent) {
+            setOpenMenu(activeParent.label);
         }
-        return acc;
-      }, []);
+    }, [pathname, sidebarNav]);
+
+    const toggleMenu = (label: string) => {
+        setOpenMenu(openMenu === label ? null : label);
     };
 
-    return filterNav(allSidebarNav);
-  }, [user]);
-
-  useEffect(() => {
-    if (!loading && !user) {
-        router.push('/login');
-    }
-  }, [user, loading, router]);
-
-
-  useEffect(() => {
-    const activeParent = sidebarNav.find(item => 
-      item.children?.some(child => pathname.startsWith(child.href))
-    );
-    if (activeParent) {
-      setOpenMenu(activeParent.label);
-    }
-  }, [pathname, sidebarNav]);
-
-  const toggleMenu = (label: string) => {
-    setOpenMenu(openMenu === label ? null : label);
-  };
-  
-  if (loading || !user) {
-    return (
-        <div className="flex h-screen items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-                <Logo className="h-10 w-10 animate-spin" />
-                <p className="text-muted-foreground">Loading your experience...</p>
-            </div>
-        </div>
-    );
-  }
-
-  return (
-    <SidebarProvider>
-        {!isPosPage && (
-            <Sidebar>
-                <SidebarContent>
-                <SidebarMenu>
-                    {sidebarNav.map((item) => (
-                        <SidebarMenuItem key={item.label}>
-                            {item.children ? (
-                                <>
-                                <SidebarMenuButton
-                                    variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
-                                    className="w-full justify-between"
-                                    onClick={() => toggleMenu(item.label)}
-                                >
-                                    <div className="flex items-center gap-2">
-                                    <item.icon />
-                                    <span>{item.label}</span>
-                                    </div>
-                                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${openMenu === item.label ? 'rotate-180' : ''}`} />
-                                </SidebarMenuButton>
-                                {openMenu === item.label && (
-                                    <ul className="pl-7 pt-2 flex flex-col gap-1">
-                                    {item.children.map((child) => (
-                                        <li key={child.label}>
-                                        <Link href={child.href} className="w-full">
-                                            <SidebarMenuButton 
-                                            tooltip={child.label} 
-                                            variant={pathname === child.href ? 'secondary' : 'ghost'} 
-                                            className="w-full justify-start h-8 text-sm"
-                                            >
-                                            <span>{child.label}</span>
-                                            </SidebarMenuButton>
-                                        </Link>
-                                        </li>
-                                    ))}
-                                    </ul>
-                                )}
-                                </>
-                            ) : (
-                                <Link href={item.href!} className="w-full">
-                                    <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
-                                    <item.icon />
-                                    <span>{item.label}</span>
-                                    </SidebarMenuButton>
-                                </Link>
-                            )}
-                        </SidebarMenuItem>
-                    ))}
-                </SidebarMenu>
-                </SidebarContent>
-            </Sidebar>
-        )}
-      <SidebarInset>
-        {!isPosPage && (
-            <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 print-hidden">
-            <div className="flex items-center gap-4">
-                <SidebarTrigger className="lg:hidden text-primary-foreground" />
-                <div className="hidden items-center gap-2 lg:flex">
-                    <Logo className="size-7" />
-                    <span className="font-headline text-lg">{settings.system.appName}</span>
+    if (loading || !user) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <Logo className="h-10 w-10 animate-spin" />
+                    <p className="text-muted-foreground">Loading your experience...</p>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Download className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><PlusCircle className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" className="rounded-full"><Grid3x3 className="h-5 w-5" /></Button>
-                <Link href="/admin/pos">
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <ShoppingCart className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><CalendarDays className="h-5 w-5" /></Button>
-                <ThemeToggle className="text-primary-foreground" />
-                <Button variant="ghost" size="icon" className="rounded-full">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Toggle notifications</span>
-                </Button>
-                <Button asChild variant="ghost" size="icon" className="rounded-full">
-                <a href={settings.system.helpLink} target="_blank" rel="noopener noreferrer"><HelpCircle className="h-5 w-5" /></a>
-                </Button>
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                    <CircleUser className="h-6 w-6" />
-                    <span className="sr-only">Toggle user menu</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Settings</DropdownMenuItem>
-                    <DropdownMenuItem>Support</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
-            </header>
-        )}
-        <main className={cn(isPosPage ? '' : "flex-1 p-4 sm:p-6 bg-background")}>
-            {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
-  );
+        );
+    }
+
+    return (
+        <SidebarProvider>
+            {!isPosPage && (
+                <Sidebar>
+                    <SidebarContent>
+                        <SidebarMenu>
+                            {sidebarNav.map((item) => (
+                                <SidebarMenuItem key={item.label}>
+                                    {item.children ? (
+                                        <>
+                                            <SidebarMenuButton
+                                                variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
+                                                className="w-full justify-between"
+                                                onClick={() => toggleMenu(item.label)}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <item.icon />
+                                                    <span>{item.label}</span>
+                                                </div>
+                                                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${openMenu === item.label ? 'rotate-180' : ''}`} />
+                                            </SidebarMenuButton>
+                                            {openMenu === item.label && (
+                                                <ul className="pl-7 pt-2 flex flex-col gap-1">
+                                                    {item.children.map((child) => (
+                                                        <li key={child.label}>
+                                                            <Link href={child.href} className="w-full">
+                                                                <SidebarMenuButton
+                                                                    tooltip={child.label}
+                                                                    variant={pathname === child.href ? 'secondary' : 'ghost'}
+                                                                    className="w-full justify-start h-8 text-sm"
+                                                                >
+                                                                    <span>{child.label}</span>
+                                                                </SidebarMenuButton>
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <Link href={item.href!} className="w-full">
+                                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
+                                                <item.icon />
+                                                <span>{item.label}</span>
+                                            </SidebarMenuButton>
+                                        </Link>
+                                    )}
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarContent>
+                </Sidebar>
+            )}
+            <SidebarInset>
+                {!isPosPage && (
+                    <header className="flex h-14 items-center justify-between gap-4 border-b bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 print-hidden">
+                        <div className="flex items-center gap-4">
+                            <SidebarTrigger className="lg:hidden text-primary-foreground" />
+                            <div className="hidden items-center gap-2 lg:flex">
+                                <Logo className="size-7" />
+                                <span className="font-headline text-lg">{settings.system.appName}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><Download className="h-5 w-5" /></Button>
+                            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><PlusCircle className="h-5 w-5" /></Button>
+                            <Button variant="ghost" size="icon" className="rounded-full"><Grid3x3 className="h-5 w-5" /></Button>
+                            <Link href="/admin/pos">
+                                <Button variant="ghost" size="icon" className="rounded-full">
+                                    <ShoppingCart className="h-5 w-5" />
+                                </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex"><CalendarDays className="h-5 w-5" /></Button>
+                            <ThemeToggle className="text-primary-foreground" />
+                            <Button variant="ghost" size="icon" className="rounded-full">
+                                <Bell className="h-5 w-5" />
+                                <span className="sr-only">Toggle notifications</span>
+                            </Button>
+                            {/* Broadcast Button */}
+                            <Button variant="ghost" size="icon" className="rounded-full text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50" onClick={() => setIsBroadcastOpen(true)}>
+                                <Megaphone className="h-5 w-5" />
+                                <span className="sr-only">Broadcast Message</span>
+                            </Button>
+
+                            <Button asChild variant="ghost" size="icon" className="rounded-full">
+                                <a href={settings.system.helpLink} target="_blank" rel="noopener noreferrer"><HelpCircle className="h-5 w-5" /></a>
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="rounded-full">
+                                        <CircleUser className="h-6 w-6" />
+                                        <span className="sr-only">Toggle user menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                                    <DropdownMenuItem>Support</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </header>
+                )}
+                <main className={cn(isPosPage ? '' : "flex-1 p-4 sm:p-6 bg-background")}>
+                    {children}
+                </main>
+            </SidebarInset>
+            <BroadcastDialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen} user={user} />
+        </SidebarProvider>
+    );
 }
