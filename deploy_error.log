@@ -1,0 +1,173 @@
+
+   Thank you for trying our [3mearly preview[23m of Next.js support on Firebase Hosting.
+   [31mDuring the preview, support is best-effort and breaking changes can be expected. Proceed with caution.[39m[33m
+   The integration is known to work with Next.js version [3m12 - 15.0[23m. You may encounter errors.[39m
+
+   [1mDocumentation:[22m https://firebase.google.com/docs/hosting/frameworks/nextjs
+   [1mFile a bug:[22m https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   [1mSubmit a feature request:[22m https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+
+⚠ Invalid next.config.ts options detected: 
+⚠     Unrecognized key(s) in object: 'eslint'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+
+▲ Next.js 16.1.0 (Turbopack)
+
+- Environments: .env
+
+
+  Creating an optimized production build ...
+
+✓ Compiled successfully in 9.5s
+
+  Skipping validation of types
+
+  Collecting page data using 15 workers ...
+
+  Generating static pages using 15 workers (0/99) ...
+
+  Generating static pages using 15 workers (24/99) 
+
+  Generating static pages using 15 workers (49/99) 
+
+  Generating static pages using 15 workers (74/99) 
+
+✓ Generating static pages using 15 workers (99/99) in 2.4s
+
+  Finalizing page optimization ...
+
+
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /admin/contacts/customer-groups
+├ ○ /admin/contacts/customers
+├ ○ /admin/contacts/customers/add
+├ ○ /admin/contacts/import
+├ ○ /admin/contacts/suppliers
+├ ○ /admin/contacts/suppliers/add
+├ ○ /admin/customers
+├ ○ /admin/dashboard
+├ ○ /admin/employees
+├ ○ /admin/expenses
+├ ○ /admin/expenses/add
+├ ○ /admin/expenses/categories
+├ ○ /admin/expenses/list
+├ ○ /admin/notification-templates
+├ ○ /admin/payment-accounts
+├ ○ /admin/payment-accounts/balance-sheet
+├ ○ /admin/payment-accounts/cash-flow
+├ ○ /admin/payment-accounts/list
+├ ○ /admin/payment-accounts/payment-account-report
+├ ○ /admin/payment-accounts/trial-balance
+├ ○ /admin/pos
+├ ○ /admin/products/add
+├ ○ /admin/products/brands
+├ ○ /admin/products/categories
+├ ƒ /admin/products/edit/[id]
+├ ○ /admin/products/import
+├ ○ /admin/products/import-opening-stock
+├ ○ /admin/products/list
+├ ○ /admin/products/print-labels
+├ ○ /admin/products/selling-price-group
+├ ○ /admin/products/units
+├ ○ /admin/products/update-price
+├ ○ /admin/products/variations
+├ ƒ /admin/products/view/[id]
+├ ○ /admin/products/warranties
+├ ○ /admin/purchases
+├ ○ /admin/purchases/add
+├ ƒ /admin/purchases/edit/[id]
+├ ○ /admin/purchases/list
+├ ○ /admin/purchases/return/add
+├ ƒ /admin/purchases/return/edit/[id]
+├ ○ /admin/purchases/return/list
+├ ƒ /admin/purchases/view/[id]
+├ ○ /admin/reports
+├ ○ /admin/reports/activity-log
+├ ○ /admin/reports/customer-groups
+├ ○ /admin/reports/expense
+├ ○ /admin/reports/items
+├ ○ /admin/reports/money-exchange
+├ ○ /admin/reports/product-purchase
+├ ○ /admin/reports/product-sell
+├ ○ /admin/reports/profit-loss
+├ ○ /admin/reports/purchase-payment
+├ ○ /admin/reports/purchase-sale
+├ ○ /admin/reports/register
+├ ○ /admin/reports/sales-representative
+├ ○ /admin/reports/sell-payment
+├ ○ /admin/reports/stock
+├ ○ /admin/reports/stock-adjustment
+├ ○ /admin/reports/supplier-customer
+├ ○ /admin/reports/tax
+├ ○ /admin/reports/trending-products
+├ ○ /admin/roles
+├ ○ /admin/roles/add
+├ ƒ /admin/roles/edit/[id]
+├ ○ /admin/sales
+├ ○ /admin/sales-commission-agents
+├ ○ /admin/sales-commission-agents/add
+├ ƒ /admin/sales-commission-agents/edit/[id]
+├ ƒ /admin/sales-commission-agents/view/[id]
+├ ○ /admin/sales/add
+├ ○ /admin/sales/all
+├ ○ /admin/sales/discounts
+├ ○ /admin/sales/draft/add
+├ ƒ /admin/sales/draft/edit/[id]
+├ ○ /admin/sales/drafts
+├ ƒ /admin/sales/edit/[id]
+├ ○ /admin/sales/import
+├ ○ /admin/sales/list-pos
+├ ○ /admin/sales/quotation/add
+├ ○ /admin/sales/quotations
+├ ○ /admin/sales/return/add
+├ ƒ /admin/sales/return/edit/[id]
+├ ○ /admin/sales/return/list
+├ ○ /admin/sales/shipments
+├ ƒ /admin/sales/view/[id]
+├ ○ /admin/seed
+├ ○ /admin/settings
+├ ○ /admin/settings/barcode
+├ ○ /admin/settings/business
+├ ○ /admin/settings/invoice
+├ ○ /admin/settings/locations
+├ ○ /admin/settings/multi-currency
+├ ○ /admin/settings/package-subscription
+├ ○ /admin/settings/receipt-printers
+├ ○ /admin/settings/tax-rates
+├ ○ /admin/stock-adjustment
+├ ○ /admin/stock-adjustment/add
+├ ○ /admin/stock-adjustment/list
+├ ○ /admin/stock-transfers
+├ ○ /admin/stock-transfers/add
+├ ○ /admin/stock-transfers/list
+├ ○ /admin/users
+├ ○ /admin/users/add
+├ ƒ /admin/users/edit/[id]
+├ ƒ /admin/users/view/[id]
+├ ○ /customer-display
+├ ○ /login
+└ ○ /reports/lookup
+
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+Building a Cloud Function to run this application. This is needed due to:
+ • non-static component /admin/products/edit/[id]/page
+ • non-static component /admin/products/view/[id]/page
+ • non-static component /admin/purchases/edit/[id]/page
+ • non-static component /admin/purchases/return/edit/[id]/page
+ • non-static component /admin/purchases/view/[id]/page
+ • and 9 other reasons, use --debug to see more
+
+
+[1m[31mError:[39m[22m An unexpected error has occurred.
