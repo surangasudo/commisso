@@ -363,8 +363,16 @@ export async function sendPayoutNotification(
 
     const message = `Thank you for visiting ${smsConfig.businessName}. Your commission details: ${detailsString}. Total paid: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaid)}.`;
 
+    console.log('Commission Payout Notification Trace:', {
+        recipient: profile.name,
+        phone: profile.phone,
+        totalPaid,
+        messagePreview: message.substring(0, 50) + '...'
+    });
+
     try {
         const smsResult = await sendSms(profile.phone, message, smsConfig);
+        console.log('Commission Payout SMS Result:', smsResult);
         if (!smsResult.success) {
             return { success: false, error: smsResult.error || 'SMS sending failed for an unknown reason.' };
         }

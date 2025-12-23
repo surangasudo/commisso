@@ -487,15 +487,17 @@ export default function SalesCommissionAgentsPage() {
             toast({ title: 'Success', description: `Payment of ${formatCurrency(result.amount)} recorded.` });
             await fetchProfiles();
 
-            /*
             const paidProfile = profiles.find(p => p.id === profileId);
             if (paidProfile) {
+                console.log('Commission payment successful, triggering SMS for:', paidProfile.name);
                 const smsConfigPayload = {
                     businessName: settings.system.appName,
                     currency: settings.business.currency,
                     ...settings.sms
                 }
                 const smsResult = await sendPayoutNotification(paidProfile, result.commissionIds, smsConfigPayload);
+                console.log('Commission SMS Result:', smsResult);
+
                 setSmsStatuses(prev => ({
                     ...prev,
                     [profileId]: smsResult.success ? 'success' : 'failed'
@@ -503,14 +505,12 @@ export default function SalesCommissionAgentsPage() {
                 if (!smsResult.success) {
                     toast({
                         title: 'SMS Failed',
-                        description: smsResult.error,
+                        description: smsResult.error || 'Check console for details',
                         variant: 'destructive',
                         duration: 9000,
                     });
                 }
             }
-            */
-
         } else {
             toast({
                 title: 'Payment Failed',
