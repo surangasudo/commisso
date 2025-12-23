@@ -361,7 +361,7 @@ export async function sendPayoutNotification(
         })
         .join(', ');
 
-    const message = `Thank you for visiting ${smsConfig.businessName}. Your commission details: ${detailsString}. Total paid: ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaid)}.`;
+    const message = `${smsConfig.businessName}: Commission of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaid)} has been paid. Details: ${detailsString}.`;
 
     console.log('Commission Payout Notification Trace:', {
         recipient: profile.name,
