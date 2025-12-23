@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyBBB5Sl3XmcRjMLBoTkNCeRn9xQgCuj5E0',
-  authDomain: 'commisso.firebaseapp.com',
-  projectId: 'commisso',
-  storageBucket: 'commisso.firebasestorage.app',
-  messagingSenderId: '297541340555',
-  appId: '1:297541340555:web:7130bc6caa8e2d6743f38e'
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyBBB5Sl3XmcRjMLBoTkNCeRn9xQgCuj5E0',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'commisso.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'commisso',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'commisso.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '297541340555',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '1:297541340555:web:7130bc6caa8e2d6743f38e'
 };
 
 // Initialize Firebase

@@ -44,6 +44,7 @@ import {
     RotateCcw,
     MinusCircle,
     User,
+    MessageSquare,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
@@ -108,6 +109,7 @@ import { useSettings, type AllSettings } from '@/hooks/use-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/use-auth';
 import { format } from 'date-fns';
+import { sendSmsNotification } from '@/ai/flows/send-sms-flow';
 import { addExpense } from '@/services/expenseService';
 import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
@@ -1971,6 +1973,7 @@ export default function PosPage() {
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
     const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
     const [isExchangeOpen, setIsExchangeOpen] = useState(false);
+    const [isSmsEnabled, setIsSmsEnabled] = useState(true);
 
     const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
     const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
@@ -2020,6 +2023,22 @@ export default function PosPage() {
     const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
     const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
     const [autoPrint, setAutoPrint] = useState(false);
+
+    useEffect(() => {
+        const savedAutoPrint = localStorage.getItem('pos-auto-print');
+        if (savedAutoPrint !== null) setAutoPrint(savedAutoPrint === 'true');
+
+        const savedSmsEnabled = localStorage.getItem('pos-sms-enabled');
+        if (savedSmsEnabled !== null) setIsSmsEnabled(savedSmsEnabled === 'true');
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('pos-auto-print', autoPrint.toString());
+    }, [autoPrint]);
+
+    useEffect(() => {
+        localStorage.setItem('pos-sms-enabled', isSmsEnabled.toString());
+    }, [isSmsEnabled]);
 
     const handlePrint = useReactToPrint({
         contentRef: receiptRef,
@@ -2221,6 +2240,43 @@ export default function PosPage() {
             const result = await addSale(saleObject, settings.sale.commissionCalculationType as "invoice_value" | "payment_received", settings.sale.commissionCategoryRule);
             saleObject.invoiceNo = result.invoiceNo;
             const completeSale: Sale = { ...saleObject, id: result.id };
+
+            // Send SMS Notification if enabled and customer has a number
+            console.log('Checking SMS trigger:', { isSmsEnabled, contactNumber: completeSale.contactNumber });
+            if (isSmsEnabled && completeSale.contactNumber && completeSale.contactNumber !== 'N/A') {
+                const smsMessage = `Success! Payment of ${formatCurrency(completeSale.totalAmount)} received at ${settings.business.businessName}. Invoice: ${completeSale.invoiceNo}. Thank you!`;
+
+                console.log('Triggering sendSmsNotification...', { to: completeSale.contactNumber, message: smsMessage });
+                sendSmsNotification({
+                    to: completeSale.contactNumber,
+                    message: smsMessage,
+                    smsConfig: settings.sms as any
+                }).then(smsResult => {
+                    console.log('sendSmsNotification Result:', smsResult);
+                    if (smsResult.success) {
+                        toast({ title: 'SMS Sent', description: `Receipt notification sent to ${completeSale.contactNumber}` });
+                    } else {
+                        toast({
+                            title: 'SMS Failed',
+                            description: `Text.lk reported failure: ${smsResult.error || 'Unknown error'}`,
+                            variant: 'destructive'
+                        });
+                    }
+                }).catch(err => {
+                    console.error('Failed to send SMS notification (Exception):', err);
+                    toast({
+                        title: 'SMS Notification Error',
+                        description: `Could not reach SMS service: ${err.message || 'Check connection'}`,
+                        variant: 'destructive'
+                    });
+                });
+            } else {
+                console.log('SMS skipped: conditions not met.', {
+                    isSmsEnabled,
+                    hasNumber: !!completeSale.contactNumber,
+                    isNotNA: completeSale.contactNumber !== 'N/A'
+                });
+            }
 
             setSaleToPrint(completeSale);
             setSaleToPrint(completeSale);
@@ -2680,6 +2736,10 @@ export default function PosPage() {
                                 <div className="flex items-center gap-2 ml-4">
                                     <span className="text-xs font-medium">Auto-Print</span>
                                     <Switch checked={autoPrint} onCheckedChange={setAutoPrint} className="data-[state=checked]:bg-white data-[state=checked]:text-primary" />
+                                </div>
+                                <div className="flex items-center gap-2 ml-4">
+                                    <span className="text-xs font-medium flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> SMS Receipt</span>
+                                    <Switch checked={isSmsEnabled} onCheckedChange={setIsSmsEnabled} className="data-[state=checked]:bg-white data-[state=checked]:text-primary" />
                                 </div>
                             </div>
                             <div className="flex items-center gap-1.5">

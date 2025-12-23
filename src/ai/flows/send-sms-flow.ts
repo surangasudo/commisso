@@ -25,7 +25,7 @@ const SendSmsInputSchema = z.object({
 });
 export type SendSmsInput = z.infer<typeof SendSmsInputSchema>;
 
-export async function sendSmsNotification(input: SendSmsInput): Promise<{ success: boolean }> {
+export async function sendSmsNotification(input: SendSmsInput): Promise<{ success: boolean; error?: string }> {
   return sendSmsFlow(input);
 }
 
@@ -33,15 +33,15 @@ const sendSmsFlow = ai.defineFlow(
   {
     name: 'sendSmsFlow',
     inputSchema: SendSmsInputSchema,
-    outputSchema: z.object({ success: z.boolean() }),
+    outputSchema: z.object({ success: z.boolean(), error: z.string().optional() }),
   },
   async (input) => {
     const result = await sendSms(input.to, input.message, input.smsConfig as AllSettings['sms']);
-    
+
     if (!result.success) {
-      throw new Error(`Failed to send SMS: ${result.error || 'An unknown error occurred.'}`);
+      return { success: false, error: result.error || 'API error from Text.lk' };
     }
-    
+
     return { success: true };
   }
 );

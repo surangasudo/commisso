@@ -4,14 +4,12 @@
 
 /**
  * @fileOverview Service to send SMS messages using Text.lk.
- * This service makes real API calls.
  */
 
-type SmsConfig = {
+export type SmsConfig = {
   smsService: 'textlk';
   textlkApiKey?: string;
   textlkSenderId?: string;
-  // Allow other properties that might be passed from settings
   [key: string]: any;
 };
 
@@ -30,17 +28,18 @@ export async function sendSms(
   const apiKey = process.env.NEXT_PUBLIC_TEXTLK_API_KEY || process.env.TEXTLK_API_KEY || config.textlkApiKey;
   const senderId = process.env.NEXT_PUBLIC_TEXTLK_SENDER_ID || process.env.TEXTLK_SENDER_ID || config.textlkSenderId;
 
-  console.log('Attempting to send SMS via Text.lk...');
-  console.log('Config Source:', {
-    hasEnvKey: !!process.env.TEXTLK_API_KEY,
-    hasConfigKey: !!config.textlkApiKey,
-    senderId: senderId,
+  console.log('SMS Config Trace:', {
+    envPublic: !!process.env.NEXT_PUBLIC_TEXTLK_API_KEY,
+    envSecret: !!process.env.TEXTLK_API_KEY,
+    configKey: !!config.textlkApiKey,
+    finalApiKeySet: !!apiKey,
+    finalSenderId: senderId,
     recipient: recipient
   });
 
   if (!apiKey || !senderId) {
     const errorMsg = 'SMS Service: Text.lk credentials not found. SMS notification skipped.';
-    console.warn(errorMsg); // Changed to warn to prevent runtime error overlay in development
+    console.warn(errorMsg);
     return { success: false, error: 'SMS service is not configured. (Credentials missing in Settings/Env)' };
   }
 
