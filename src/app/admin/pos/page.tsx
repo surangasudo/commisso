@@ -45,6 +45,7 @@ import {
     MinusCircle,
     User,
     MessageSquare,
+    Building2,
 } from 'lucide-react';
 import { Switch } from "@/components/ui/switch";
 import {
@@ -1979,6 +1980,8 @@ export default function PosPage() {
     const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
     const [selectedSubAgent, setSelectedSubAgent] = useState<CommissionProfile | null>(null);
     const [selectedCompany, setSelectedCompany] = useState<CommissionProfile | null>(null);
+    const [companyReference, setCompanyReference] = useState('');
+    const [isCompanyRefDialogOpen, setIsCompanyRefDialogOpen] = useState(false);
     const [selectedSalespersons, setSelectedSalespersons] = useState<CommissionProfile[]>([]);
 
     const [saleToDelete, setSaleToDelete] = useState<Sale | null>(null);
@@ -2098,7 +2101,6 @@ export default function PosPage() {
             shippingStatus: null,
             totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
             addedBy: 'Admin', // Mocked
-            sellNote: null,
             staffNote: null,
             shippingDetails: null,
             items: cart.map(item => ({
@@ -2110,8 +2112,9 @@ export default function PosPage() {
             taxAmount: orderTax,
             commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
             paymentReference: (paymentReference || null) as any,
+            sellNote: companyReference ? `Company Ref: ${companyReference}` : null,
         };
-    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalespersons]);
+    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalespersons, companyReference]);
 
     const clearCart = useCallback((showToast = true) => {
         setCart([]);
@@ -2880,10 +2883,16 @@ export default function PosPage() {
                                                             <CommissionSelector
                                                                 label="Company"
                                                                 selectedProfile={selectedCompany}
-                                                                onSelect={setSelectedCompany}
+                                                                onSelect={(p) => {
+                                                                    setSelectedCompany(p);
+                                                                    setIsCompanyRefDialogOpen(true);
+                                                                }}
                                                                 profiles={commissionProfiles}
                                                                 entityType="Company"
-                                                                onRemove={() => setSelectedCompany(null)}
+                                                                onRemove={() => {
+                                                                    setSelectedCompany(null);
+                                                                    setCompanyReference('');
+                                                                }}
                                                             />
                                                         </div>
                                                         <Button size="icon" className="flex-shrink-0 self-end mb-1" onClick={() => handleOpenAddProfileDialog('Company')}><Plus /></Button>
@@ -3419,6 +3428,36 @@ export default function PosPage() {
                 </DialogContent>
             </Dialog>
             <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
+
+            <Dialog open={isCompanyRefDialogOpen} onOpenChange={setIsCompanyRefDialogOpen}>
+                <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
+                    <DialogHeader className="p-6 bg-primary text-white">
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <Building2 className="h-6 w-6" /> Company Reference
+                        </DialogTitle>
+                        <DialogDescription className="text-primary-foreground/90">
+                            Enter Client Reference Number / Group Name for {selectedCompany?.name}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="p-6 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="company-ref" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reference / Group Name</Label>
+                            <Input
+                                id="company-ref"
+                                value={companyReference}
+                                onChange={(e) => setCompanyReference(e.target.value)}
+                                placeholder="Enter reference or group name..."
+                                className="h-12 rounded-xl"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
+                        <Button variant="ghost" onClick={() => setIsCompanyRefDialogOpen(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Skip</Button>
+                        <Button onClick={() => setIsCompanyRefDialogOpen(false)} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">Confirm</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog >
         </>
     );
 }

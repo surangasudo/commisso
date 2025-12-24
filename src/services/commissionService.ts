@@ -321,10 +321,11 @@ export async function payCommission(
 export async function sendPayoutNotification(
     profile: CommissionProfile,
     commissionIds: string[],
-    smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string }
+    smsConfig: AllSettings['sms'] & { currency?: string; businessName?: string },
+    templates?: AllSettings['notificationTemplates']
 ): Promise<{ success: boolean; error?: string }> {
-    if (!profile.phone || profile.phone.trim() === '') {
-        return { success: false, error: "Profile does not have a phone number." };
+    if (!profile.phone || profile.phone.trim() === '' || profile.phone === 'N/A') {
+        return { success: false, error: 'Recipient has no valid mobile number.' };
     }
 
     // Fetch details for the paid commissions
@@ -333,48 +334,119 @@ export async function sendPayoutNotification(
         return { success: false, error: "Could not find paid commission details to generate notification." };
     }
 
-    const categoriesSnapshot = await getDocs(productCategoriesCollection);
-    const categoryMap = new Map<string, string>();
-    categoriesSnapshot.docs.forEach(doc => {
-        categoryMap.set(doc.id, doc.data().name);
-    });
-
-    const breakdown: { [categoryName: string]: { amount: number, invoices: Set<string> } } = {};
-    let totalPaid = 0;
-
-    paidCommissions.forEach(commission => {
-        const categoryName = commission.product_category_id ? categoryMap.get(commission.product_category_id) || 'Uncategorized' : 'Uncategorized';
-
-        if (!breakdown[categoryName]) {
-            breakdown[categoryName] = { amount: 0, invoices: new Set() };
+    // Identfy related sales and other agents
+    const relatedSalesIds = Array.from(new Set(paidCommissions.map(c => c.transaction_id)));
+    const sales: Sale[] = [];
+    if (relatedSalesIds.length > 0) {
+        for (let i = 0; i < relatedSalesIds.length; i += 30) {
+            const chunk = relatedSalesIds.slice(i, i + 30);
+            const q = query(collection(db, 'sales'), where('__name__', 'in', chunk));
+            const snapshot = await getDocs(q);
+            snapshot.docs.forEach(doc => sales.push(processDoc<Sale>(doc)));
         }
+    }
 
-        breakdown[categoryName].amount += commission.commission_amount;
-        breakdown[categoryName].invoices.add(commission.transaction_id);
-        totalPaid += commission.commission_amount;
+    // Gather all agent IDs from these sales to identify relationships
+    const allAgentIds = new Set<string>();
+    sales.forEach(sale => {
+        if (sale.commissionAgentIds) {
+            sale.commissionAgentIds.forEach(id => allAgentIds.add(id));
+        }
     });
+    allAgentIds.delete(profile.id);
 
-    const detailsString = Object.entries(breakdown)
-        .map(([category, data]) => {
-            const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(data.amount);
-            return `${category} (${data.invoices.size} invoices): ${formattedAmount}`;
-        })
-        .join(', ');
+    // Fetch related agent profiles
+    const relatedAgentProfiles: Record<string, CommissionProfile> = {};
+    if (allAgentIds.size > 0) {
+        const ids = Array.from(allAgentIds);
+        for (let i = 0; i < ids.length; i += 30) {
+            const chunk = ids.slice(i, i + 30);
+            const q = query(collection(db, 'commissionProfiles'), where('__name__', 'in', chunk));
+            const snapshot = await getDocs(q);
+            snapshot.docs.forEach(doc => {
+                const p = processDoc<CommissionProfile>(doc);
+                relatedAgentProfiles[p.id] = p;
+            });
+        }
+    }
 
-    const message = `${smsConfig.businessName}: Commission of ${new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(totalPaid)} has been paid. Details: ${detailsString}.`;
+    let messageTemplate = '';
+    const totalPaidVal = paidCommissions.reduce((sum, c) => sum + c.commission_amount, 0);
+    const totalSaleAmount = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+
+    const minTime = Math.min(...paidCommissions.map(c => new Date(c.calculation_date).getTime()));
+    const maxTime = Math.max(...paidCommissions.map(c => new Date(c.calculation_date).getTime()));
+    const minDateVal = new Date(minTime);
+    const maxDateVal = new Date(maxTime);
+
+    // Scenario Logic
+    if (templates?.salesRepresentative) {
+        const hasSubAgent = Object.values(relatedAgentProfiles).some(p => p.entityType === 'Sub-Agent');
+        const hasCompany = Object.values(relatedAgentProfiles).some(p => p.entityType === 'Company');
+
+        if (profile.entityType === 'Agent') {
+            if (hasSubAgent && templates.salesRepresentative.subAgentCommission?.smsBody) {
+                messageTemplate = templates.salesRepresentative.agentCommission?.smsBody || '';
+            } else if (hasCompany && templates.salesRepresentative.companyCommission?.smsBody) {
+                // Could use company-related template logic if needed, but the user requested subAgentCommission for sub-agent scenario.
+                messageTemplate = templates.salesRepresentative.agentCommission?.smsBody || '';
+            } else {
+                messageTemplate = templates.salesRepresentative.agentCommission?.smsBody || '';
+            }
+        } else if (profile.entityType === 'Sub-Agent') {
+            messageTemplate = templates.salesRepresentative.subAgentCommission?.smsBody || templates.salesRepresentative.agentCommission?.smsBody || '';
+        } else if (profile.entityType === 'Company') {
+            messageTemplate = templates.salesRepresentative.companyCommission?.smsBody || templates.salesRepresentative.agentCommission?.smsBody || '';
+        } else if (profile.entityType === 'Salesperson') {
+            messageTemplate = templates.salesRepresentative.agentCommission?.smsBody || ''; // Default for salesperson
+        }
+    }
+
+    // Default Fallback
+    if (!messageTemplate) {
+        messageTemplate = `${smsConfig.businessName}: Commission of {commission_amount} has been paid. Details: {commission_details}.`;
+    }
+
+    const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: smsConfig.currency || 'USD' }).format(amount);
+
+    // Find "Related Agent" (e.g. Sub-Agent's Agent, or Agent's Sub-Agent)
+    const relatedAgent = Object.values(relatedAgentProfiles).find(p =>
+        (profile.entityType === 'Agent' && (p.entityType === 'Sub-Agent' || p.entityType === 'Company')) ||
+        (profile.entityType === 'Sub-Agent' && p.entityType === 'Agent') ||
+        (profile.entityType === 'Company' && p.entityType === 'Agent')
+    );
+
+    const salesperson = Object.values(relatedAgentProfiles).find(p => p.entityType === 'Salesperson');
+
+    const replacements: Record<string, string> = {
+        '{representative_name}': profile.name,
+        '{business_name}': smsConfig.businessName || 'Business',
+        '{commission_amount}': formatCurrency(totalPaidVal),
+        '{commission_details}': `${paidCommissions.length} commissions`,
+        '{total_sale_amount}': formatCurrency(totalSaleAmount),
+        '{reporting_period_start}': minDateVal.toLocaleDateString(),
+        '{reporting_period_end}': maxDateVal.toLocaleDateString(),
+        '{related_agent_name}': relatedAgent?.name || 'N/A',
+        '{salesperson_name}': salesperson?.name || 'N/A',
+        '{location_name}': smsConfig.businessName || 'Business',
+    };
+
+    let finalMessage = messageTemplate;
+    Object.entries(replacements).forEach(([key, value]) => {
+        finalMessage = finalMessage.replace(new RegExp(key, 'g'), value);
+    });
 
     console.log('Commission Payout Notification Trace:', {
         recipient: profile.name,
         phone: profile.phone,
-        totalPaid,
-        messagePreview: message.substring(0, 50) + '...'
+        entityType: profile.entityType,
+        finalMessage: finalMessage
     });
 
     try {
-        const smsResult = await sendSms(profile.phone, message, smsConfig);
-        console.log('Commission Payout SMS Result:', smsResult);
+        const smsResult = await sendSms(profile.phone, finalMessage, smsConfig);
         if (!smsResult.success) {
-            return { success: false, error: smsResult.error || 'SMS sending failed for an unknown reason.' };
+            return { success: false, error: smsResult.error || 'SMS sending failed.' };
         }
         return { success: true };
     } catch (error: any) {

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Mail, AlertTriangle } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { AppFooter } from '@/components/app-footer';
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from '@/hooks/use-settings';
 
 const availableTags = {
   sendLedger: ["{business_name}", "{business_logo}"],
@@ -67,63 +68,64 @@ const TemplateForm = ({
   templateData: TemplateData;
   onFieldChange: (field: keyof TemplateData, value: string) => void;
 }) => {
-    return (
-        <div className="space-y-4">
-            <div>
-                <Label>Available Tags:</Label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                    {tags.map(tag => <Badge key={tag} variant="outline" className="font-mono">{tag}</Badge>)}
-                </div>
-            </div>
-            <Tabs defaultValue="email" className="w-full">
-                <TabsList>
-                    <TabsTrigger value="email">Email</TabsTrigger>
-                    <TabsTrigger value="sms">SMS</TabsTrigger>
-                    <TabsTrigger value="whatsapp">Whatsapp</TabsTrigger>
-                </TabsList>
-                <TabsContent value="email" className="pt-4 space-y-4">
-                    {templateData.emailSubject !== undefined && (
-                        <div className="space-y-2">
-                            <Label htmlFor="subject">Email Subject:</Label>
-                            <Input id="subject" value={templateData.emailSubject} onChange={(e) => onFieldChange('emailSubject', e.target.value)} />
-                        </div>
-                    )}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="cc">CC:</Label>
-                            <Input id="cc" placeholder="Comma separated emails" value={templateData.cc || ''} onChange={(e) => onFieldChange('cc', e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="bcc">BCC:</Label>
-                            <Input id="bcc" placeholder="Comma separated emails" value={templateData.bcc || ''} onChange={(e) => onFieldChange('bcc', e.target.value)} />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Email Body:</Label>
-                        <Textarea value={templateData.emailBody} rows={8} onChange={(e) => onFieldChange('emailBody', e.target.value)} />
-                    </div>
-                </TabsContent>
-                <TabsContent value="sms" className="pt-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label>SMS Body:</Label>
-                        <Textarea value={templateData.smsBody} rows={4} onChange={(e) => onFieldChange('smsBody', e.target.value)} />
-                    </div>
-                </TabsContent>
-                <TabsContent value="whatsapp" className="pt-4 space-y-4">
-                    <div className="space-y-2">
-                        <Label>Whatsapp Text:</Label>
-                        <Textarea value={templateData.whatsappText} rows={4} onChange={(e) => onFieldChange('whatsappText', e.target.value)} />
-                    </div>
-                </TabsContent>
-            </Tabs>
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Available Tags:</Label>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {tags.map(tag => <Badge key={tag} variant="outline" className="font-mono">{tag}</Badge>)}
         </div>
-    )
+      </div>
+      <Tabs defaultValue="email" className="w-full">
+        <TabsList>
+          <TabsTrigger value="email">Email</TabsTrigger>
+          <TabsTrigger value="sms">SMS</TabsTrigger>
+          <TabsTrigger value="whatsapp">Whatsapp</TabsTrigger>
+        </TabsList>
+        <TabsContent value="email" className="pt-4 space-y-4">
+          {templateData.emailSubject !== undefined && (
+            <div className="space-y-2">
+              <Label htmlFor="subject">Email Subject:</Label>
+              <Input id="subject" value={templateData.emailSubject} onChange={(e) => onFieldChange('emailSubject', e.target.value)} />
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="cc">CC:</Label>
+              <Input id="cc" placeholder="Comma separated emails" value={templateData.cc || ''} onChange={(e) => onFieldChange('cc', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bcc">BCC:</Label>
+              <Input id="bcc" placeholder="Comma separated emails" value={templateData.bcc || ''} onChange={(e) => onFieldChange('bcc', e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Email Body:</Label>
+            <Textarea value={templateData.emailBody} rows={8} onChange={(e) => onFieldChange('emailBody', e.target.value)} />
+          </div>
+        </TabsContent>
+        <TabsContent value="sms" className="pt-4 space-y-4">
+          <div className="space-y-2">
+            <Label>SMS Body:</Label>
+            <Textarea value={templateData.smsBody} rows={4} onChange={(e) => onFieldChange('smsBody', e.target.value)} />
+          </div>
+        </TabsContent>
+        <TabsContent value="whatsapp" className="pt-4 space-y-4">
+          <div className="space-y-2">
+            <Label>Whatsapp Text:</Label>
+            <Textarea value={templateData.whatsappText} rows={4} onChange={(e) => onFieldChange('whatsappText', e.target.value)} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
 }
 
 export default function NotificationTemplatesPage() {
   const { toast } = useToast();
 
-  const [templates, setTemplates] = useState({
+  const { settings, updateSection } = useSettings();
+  const [templates, setTemplates] = useState(settings.notificationTemplates || {
     notifications: {
       sendLedger: {
         emailSubject: "Ledger from {business_name}",
@@ -143,10 +145,10 @@ export default function NotificationTemplatesPage() {
         cc: '',
         bcc: '',
       },
-      paymentReceived: { emailSubject: "Payment Received", emailBody: "Dear {contact_name}, We have received a payment of {paid_amount} against invoice {invoice_number}. Thank you.", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      paymentReminder: { emailSubject: "Payment Reminder", emailBody: "Dear {contact_name}, This is a reminder for your due payment of {due_amount} for invoice {invoice_number}.", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      newBooking: { emailSubject: "New Booking Confirmation", emailBody: "Dear {contact_name}, Your booking for invoice {invoice_number} is confirmed.", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      newQuotation: { emailSubject: "New Quotation", emailBody: "Dear {contact_name}, Here is your quotation for invoice {invoice_number}.", smsBody: "", whatsappText: "", cc: '', bcc: ''},
+      paymentReceived: { emailSubject: "Payment Received", emailBody: "Dear {contact_name}, We have received a payment of {paid_amount} against invoice {invoice_number}. Thank you.", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      paymentReminder: { emailSubject: "Payment Reminder", emailBody: "Dear {contact_name}, This is a reminder for your due payment of {due_amount} for invoice {invoice_number}.", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      newBooking: { emailSubject: "New Booking Confirmation", emailBody: "Dear {contact_name}, Your booking for invoice {invoice_number} is confirmed.", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      newQuotation: { emailSubject: "New Quotation", emailBody: "Dear {contact_name}, Here is your quotation for invoice {invoice_number}.", smsBody: "", whatsappText: "", cc: '', bcc: '' },
       autoEmail: false,
       autoSms: false,
       autoWhatsapp: false,
@@ -160,10 +162,10 @@ export default function NotificationTemplatesPage() {
         cc: '',
         bcc: '',
       },
-      paymentPaid: { emailSubject: "Payment Paid", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      itemsReceived: { emailSubject: "Items Received", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      itemsPending: { emailSubject: "Items Pending", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: ''},
-      purchaseOrder: { emailSubject: "Purchase Order", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: ''},
+      paymentPaid: { emailSubject: "Payment Paid", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      itemsReceived: { emailSubject: "Items Received", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      itemsPending: { emailSubject: "Items Pending", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: '' },
+      purchaseOrder: { emailSubject: "Purchase Order", emailBody: "", smsBody: "", whatsappText: "", cc: '', bcc: '' },
       autoEmail: false,
       autoSms: false,
       autoWhatsapp: false,
@@ -198,7 +200,20 @@ export default function NotificationTemplatesPage() {
       autoWhatsapp: false,
     },
   });
-  
+
+  // Ensure state updates if settings load late
+  useEffect(() => {
+    if (settings.notificationTemplates) {
+      setTemplates(prev => {
+        // Basic comparison to avoid infinite loops if objects are new refs but same content
+        if (JSON.stringify(prev) !== JSON.stringify(settings.notificationTemplates)) {
+          return settings.notificationTemplates!;
+        }
+        return prev;
+      });
+    }
+  }, [settings.notificationTemplates]);
+
   const handleTemplateChange = (section: keyof typeof templates, templateKey: string, field: string, value: string) => {
     setTemplates(prev => {
       const sectionObject = prev[section] as any;
@@ -226,8 +241,7 @@ export default function NotificationTemplatesPage() {
   };
 
   const handleSave = () => {
-    // In a real app, you would save the `templates` state to your database.
-    console.log("Saving templates:", templates);
+    updateSection('notificationTemplates', templates);
     toast({
       title: "Settings Saved",
       description: "Your notification templates have been updated.",
@@ -260,7 +274,7 @@ export default function NotificationTemplatesPage() {
           </Tabs>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Customer Notifications</CardTitle>
@@ -281,53 +295,53 @@ export default function NotificationTemplatesPage() {
                 onFieldChange={(field, value) => handleTemplateChange('customer', 'newSale', field, value)}
               />
             </TabsContent>
-             <TabsContent value="payment-received" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.customer}
-                  templateData={templates.customer.paymentReceived}
-                  onFieldChange={(field, value) => handleTemplateChange('customer', 'paymentReceived', field, value)}
-                />
+            <TabsContent value="payment-received" className="pt-4">
+              <TemplateForm
+                tags={availableTags.customer}
+                templateData={templates.customer.paymentReceived}
+                onFieldChange={(field, value) => handleTemplateChange('customer', 'paymentReceived', field, value)}
+              />
             </TabsContent>
             <TabsContent value="payment-reminder" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.customer}
-                  templateData={templates.customer.paymentReminder}
-                  onFieldChange={(field, value) => handleTemplateChange('customer', 'paymentReminder', field, value)}
-                />
+              <TemplateForm
+                tags={availableTags.customer}
+                templateData={templates.customer.paymentReminder}
+                onFieldChange={(field, value) => handleTemplateChange('customer', 'paymentReminder', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="new-booking" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.customer}
-                  templateData={templates.customer.newBooking}
-                  onFieldChange={(field, value) => handleTemplateChange('customer', 'newBooking', field, value)}
-                />
+            <TabsContent value="new-booking" className="pt-4">
+              <TemplateForm
+                tags={availableTags.customer}
+                templateData={templates.customer.newBooking}
+                onFieldChange={(field, value) => handleTemplateChange('customer', 'newBooking', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="new-quotation" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.customer}
-                  templateData={templates.customer.newQuotation}
-                  onFieldChange={(field, value) => handleTemplateChange('customer', 'newQuotation', field, value)}
-                />
+            <TabsContent value="new-quotation" className="pt-4">
+              <TemplateForm
+                tags={availableTags.customer}
+                templateData={templates.customer.newQuotation}
+                onFieldChange={(field, value) => handleTemplateChange('customer', 'newQuotation', field, value)}
+              />
             </TabsContent>
           </Tabs>
-           <div className="mt-4 flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-email-customer" checked={templates.customer.autoEmail} onCheckedChange={(checked) => handleToggleChange('customer', 'autoEmail', !!checked)} />
-                <Label htmlFor="auto-email-customer" className="font-normal">Auto Email</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-sms-customer" checked={templates.customer.autoSms} onCheckedChange={(checked) => handleToggleChange('customer', 'autoSms', !!checked)} />
-                <Label htmlFor="auto-sms-customer" className="font-normal">Auto Send SMS</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-whatsapp-customer" checked={templates.customer.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('customer', 'autoWhatsapp', !!checked)} />
-                <Label htmlFor="auto-whatsapp-customer" className="font-normal">Auto send Whatsapp notification</Label>
-              </div>
+          <div className="mt-4 flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-email-customer" checked={templates.customer.autoEmail} onCheckedChange={(checked) => handleToggleChange('customer', 'autoEmail', !!checked)} />
+              <Label htmlFor="auto-email-customer" className="font-normal">Auto Email</Label>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">If enabled, set notification will be automatically sent to customer on creating new sale.</p>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-sms-customer" checked={templates.customer.autoSms} onCheckedChange={(checked) => handleToggleChange('customer', 'autoSms', !!checked)} />
+              <Label htmlFor="auto-sms-customer" className="font-normal">Auto Send SMS</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-whatsapp-customer" checked={templates.customer.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('customer', 'autoWhatsapp', !!checked)} />
+              <Label htmlFor="auto-whatsapp-customer" className="font-normal">Auto send Whatsapp notification</Label>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">If enabled, set notification will be automatically sent to customer on creating new sale.</p>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Supplier Notifications</CardTitle>
@@ -342,58 +356,58 @@ export default function NotificationTemplatesPage() {
               <TabsTrigger value="purchase-order">Purchase Order</TabsTrigger>
             </TabsList>
             <TabsContent value="new-order" className="pt-4">
-                <TemplateForm
-                    tags={availableTags.supplier}
-                    templateData={templates.supplier.newOrder}
-                    onFieldChange={(field, value) => handleTemplateChange('supplier', 'newOrder', field, value)}
-                />
+              <TemplateForm
+                tags={availableTags.supplier}
+                templateData={templates.supplier.newOrder}
+                onFieldChange={(field, value) => handleTemplateChange('supplier', 'newOrder', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="payment-paid" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.supplier}
-                  templateData={templates.supplier.paymentPaid}
-                  onFieldChange={(field, value) => handleTemplateChange('supplier', 'paymentPaid', field, value)}
-                />
+            <TabsContent value="payment-paid" className="pt-4">
+              <TemplateForm
+                tags={availableTags.supplier}
+                templateData={templates.supplier.paymentPaid}
+                onFieldChange={(field, value) => handleTemplateChange('supplier', 'paymentPaid', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="items-received" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.supplier}
-                  templateData={templates.supplier.itemsReceived}
-                  onFieldChange={(field, value) => handleTemplateChange('supplier', 'itemsReceived', field, value)}
-                />
+            <TabsContent value="items-received" className="pt-4">
+              <TemplateForm
+                tags={availableTags.supplier}
+                templateData={templates.supplier.itemsReceived}
+                onFieldChange={(field, value) => handleTemplateChange('supplier', 'itemsReceived', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="items-pending" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.supplier}
-                  templateData={templates.supplier.itemsPending}
-                  onFieldChange={(field, value) => handleTemplateChange('supplier', 'itemsPending', field, value)}
-                />
+            <TabsContent value="items-pending" className="pt-4">
+              <TemplateForm
+                tags={availableTags.supplier}
+                templateData={templates.supplier.itemsPending}
+                onFieldChange={(field, value) => handleTemplateChange('supplier', 'itemsPending', field, value)}
+              />
             </TabsContent>
-             <TabsContent value="purchase-order" className="pt-4">
-                <TemplateForm
-                  tags={availableTags.supplier}
-                  templateData={templates.supplier.purchaseOrder}
-                  onFieldChange={(field, value) => handleTemplateChange('supplier', 'purchaseOrder', field, value)}
-                />
+            <TabsContent value="purchase-order" className="pt-4">
+              <TemplateForm
+                tags={availableTags.supplier}
+                templateData={templates.supplier.purchaseOrder}
+                onFieldChange={(field, value) => handleTemplateChange('supplier', 'purchaseOrder', field, value)}
+              />
             </TabsContent>
           </Tabs>
-           <div className="mt-4 flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-email-supplier" checked={templates.supplier.autoEmail} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoEmail', !!checked)} />
-                <Label htmlFor="auto-email-supplier" className="font-normal">Auto Email</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-sms-supplier" checked={templates.supplier.autoSms} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoSms', !!checked)} />
-                <Label htmlFor="auto-sms-supplier" className="font-normal">Auto Send SMS</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-whatsapp-supplier" checked={templates.supplier.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoWhatsapp', !!checked)} />
-                <Label htmlFor="auto-whatsapp-supplier" className="font-normal">Auto send Whatsapp notification</Label>
-              </div>
+          <div className="mt-4 flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-email-supplier" checked={templates.supplier.autoEmail} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoEmail', !!checked)} />
+              <Label htmlFor="auto-email-supplier" className="font-normal">Auto Email</Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-sms-supplier" checked={templates.supplier.autoSms} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoSms', !!checked)} />
+              <Label htmlFor="auto-sms-supplier" className="font-normal">Auto Send SMS</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-whatsapp-supplier" checked={templates.supplier.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('supplier', 'autoWhatsapp', !!checked)} />
+              <Label htmlFor="auto-whatsapp-supplier" className="font-normal">Auto send Whatsapp notification</Label>
+            </div>
+          </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Sales Representative Notifications</CardTitle>
@@ -413,34 +427,34 @@ export default function NotificationTemplatesPage() {
               />
             </TabsContent>
             <TabsContent value="subagent-commission" className="pt-4">
-               <TemplateForm
+              <TemplateForm
                 tags={availableTags.salesRepresentative}
                 templateData={templates.salesRepresentative.subAgentCommission}
                 onFieldChange={(field, value) => handleTemplateChange('salesRepresentative', 'subAgentCommission', field, value)}
               />
             </TabsContent>
             <TabsContent value="company-commission" className="pt-4">
-               <TemplateForm
+              <TemplateForm
                 tags={availableTags.salesRepresentative}
                 templateData={templates.salesRepresentative.companyCommission}
                 onFieldChange={(field, value) => handleTemplateChange('salesRepresentative', 'companyCommission', field, value)}
               />
             </TabsContent>
           </Tabs>
-           <div className="mt-4 flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-email-representative" checked={templates.salesRepresentative.autoEmail} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoEmail', !!checked)} />
-                <Label htmlFor="auto-email-representative" className="font-normal">Auto Email</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-sms-representative" checked={templates.salesRepresentative.autoSms} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoSms', !!checked)} />
-                <Label htmlFor="auto-sms-representative" className="font-normal">Auto Send SMS</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="auto-whatsapp-representative" checked={templates.salesRepresentative.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoWhatsapp', !!checked)} />
-                <Label htmlFor="auto-whatsapp-representative" className="font-normal">Auto send Whatsapp notification</Label>
-              </div>
+          <div className="mt-4 flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-email-representative" checked={templates.salesRepresentative.autoEmail} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoEmail', !!checked)} />
+              <Label htmlFor="auto-email-representative" className="font-normal">Auto Email</Label>
             </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-sms-representative" checked={templates.salesRepresentative.autoSms} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoSms', !!checked)} />
+              <Label htmlFor="auto-sms-representative" className="font-normal">Auto Send SMS</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="auto-whatsapp-representative" checked={templates.salesRepresentative.autoWhatsapp} onCheckedChange={(checked) => handleToggleChange('salesRepresentative', 'autoWhatsapp', !!checked)} />
+              <Label htmlFor="auto-whatsapp-representative" className="font-normal">Auto send Whatsapp notification</Label>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

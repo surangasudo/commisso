@@ -27,6 +27,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { useSettings } from '@/hooks/use-settings';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from "@/lib/utils";
 import { useReactToPrint } from 'react-to-print';
@@ -364,6 +365,7 @@ export default function SalesCommissionAgentsPage() {
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
     const settings = useBusinessSettings();
+    const { settings: globalSettings } = useSettings();
     const [profiles, setProfiles] = useState<CommissionProfileWithSummary[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -495,7 +497,12 @@ export default function SalesCommissionAgentsPage() {
                     currency: settings.business.currency,
                     ...settings.sms
                 }
-                const smsResult = await sendPayoutNotification(paidProfile, result.commissionIds, smsConfigPayload);
+                const smsResult = await sendPayoutNotification(
+                    paidProfile,
+                    result.commissionIds,
+                    smsConfigPayload,
+                    globalSettings.notificationTemplates
+                );
                 console.log('Commission SMS Result:', smsResult);
 
                 setSmsStatuses(prev => ({
