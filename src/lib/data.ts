@@ -7,6 +7,9 @@ export type User = {
   role: 'Admin' | 'Cashier';
   email: string;
   status: 'Active' | 'Inactive';
+  privileges?: {
+    canManageRegister: boolean;
+  };
 };
 
 export const users: User[] = [
@@ -349,10 +352,11 @@ export type CompanyProfit = { company: string; profit: number; };
 
 export type RegisterLog = {
   id: string;
-  openTime: string;
-  closeTime: string | null;
+  openTime: string; // ISO format
+  closeTime: string | null; // ISO format
   location: string;
   user: string;
+  userId: string;
   closingNote: string | null;
   status: 'Open' | 'Closed';
   totalCardSlips: number;
@@ -362,6 +366,8 @@ export type RegisterLog = {
   totalExpenses: number;
   closingCash: number;
   openingCash: number;
+  expectedCash?: number;
+  difference?: number;
 };
 
 export type ActivityLog = {

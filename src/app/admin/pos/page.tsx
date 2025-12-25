@@ -116,6 +116,13 @@ import { getExpenseCategories } from '@/services/expenseCategoryService';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
 import { getCurrencies } from '@/services/currencyService';
 import { addMoneyExchange } from '@/services/moneyExchangeService';
+import { OpenRegisterDialog } from '@/components/admin/pos/OpenRegisterDialog';
+import { CloseRegisterDialog } from '@/components/admin/pos/CloseRegisterDialog';
+import { RegisterDetailsDialog } from '@/components/admin/pos/RegisterDetailsDialog';
+import { getActiveRegister } from '@/services/registerLogService';
+import { type RegisterLog } from '@/lib/data';
+import { updateDoc, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 type CartItem = {
     product: DetailedProduct;
@@ -217,474 +224,7 @@ const CalculatorDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
     );
 };
 
-const CloseRegisterDialog = ({
-    open,
-    onOpenChange,
-    cart,
-    totalPayable,
-    discount,
-    user,
-    settings,
-}: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    cart: CartItem[];
-    totalPayable: number;
-    discount: number;
-    user: { name: string; email: string; role: string } | null;
-    settings: AllSettings;
-}) => {
-    const { toast } = useToast();
-    const { formatCurrency, symbol } = useCurrency();
-    const [closingCash, setClosingCash] = useState('');
-    const [cardSlips, setCardSlips] = useState('0');
-    const [totalCheques, setTotalCheques] = useState('0');
-    const [closingNote, setClosingNote] = useState('');
-
-    const [openTime, setOpenTime] = useState('');
-    const [closeTime, setCloseTime] = useState('');
-
-    useEffect(() => {
-        if (open) {
-            const now = new Date();
-            const start = new Date(now.getTime() - Math.random() * 8 * 60 * 60 * 1000);
-            setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
-            setCloseTime(format(now, 'dd MMM, yyyy hh:mm a'));
-        }
-    }, [open]);
-
-    const openingCash = 1000.00;
-    const cashPayment = totalPayable;
-    const totalRefunds = 0.00;
-    const totalExpenses = 0.00;
-    const creditSales = 0.00;
-    const totalSales = cashPayment;
-    const totalPayment = openingCash + totalSales;
-
-    const handleCloseRegister = () => {
-        toast({
-            title: "Register Closed",
-            description: `Register closed successfully.`,
-        });
-        onOpenChange(false);
-    };
-
-    const paymentMethods = [
-        { label: 'Cash in hand:', sell: openingCash, expense: null, icon: Wallet },
-        { label: 'Cash Payment:', sell: cashPayment, expense: 0.00, icon: Banknote },
-        { label: 'Cheque Payment:', sell: 0.00, expense: 0.00, icon: FileText },
-        { label: 'Card Payment:', sell: 0.00, expense: 0.00, icon: CreditCard },
-        { label: 'Bank Transfer:', sell: 0.00, expense: 0.00, icon: Monitor },
-        { label: 'Advance payment:', sell: 0.00, expense: 0.00, icon: History },
-    ];
-
-    const summaryItems = [
-        { label: 'Total Sales', value: totalSales, icon: ShoppingBag, color: 'text-blue-600' },
-        { label: 'Total Refund', value: totalRefunds, icon: RotateCcw, color: 'text-red-500' },
-        { label: 'Credit Sales', value: creditSales, icon: CreditCard, color: 'text-purple-600' },
-        { label: 'Total Expense', value: totalExpenses, icon: MinusCircle, color: 'text-orange-500' },
-    ];
-
-    const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
-
-    const salesByBrand = useMemo(() => {
-        const brands: { [key: string]: { quantity: number; total: number } } = {};
-        cart.forEach(item => {
-            const brandName = item.product.brand || 'Unbranded';
-            if (!brands[brandName]) {
-                brands[brandName] = { quantity: 0, total: 0 };
-            }
-            brands[brandName].quantity += item.quantity;
-            brands[brandName].total += item.quantity * item.sellingPrice;
-        });
-        return Object.entries(brands).map(([name, data]) => ({ name, ...data }));
-    }, [cart]);
-
-    const totalBrandQuantity = useMemo(() => salesByBrand.reduce((acc, item) => acc + item.quantity, 0), [salesByBrand]);
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
-                <DialogHeader className="p-6 bg-primary text-white">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                                <Lock className="h-6 w-6" /> Close Register
-                            </DialogTitle>
-                            <DialogDescription className="text-primary-foreground/90 mt-1">
-                                Review your daily summary before closing.
-                            </DialogDescription>
-                        </div>
-                        <div className="text-right hidden sm:block">
-                            <p className="text-[10px] uppercase tracking-widest opacity-70">Shift Duration</p>
-                            <p className="text-xs font-medium">{openTime} - {closeTime}</p>
-                        </div>
-                    </div>
-                </DialogHeader>
-                <ScrollArea className="max-h-[75vh]">
-                    <div className="p-6 space-y-8">
-                        {/* Summary Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {summaryItems.map((item, i) => (
-                                <Card key={i} className="p-4 bg-gray-50/50 border-none shadow-sm rounded-2xl text-center">
-                                    <item.icon className={`h-5 w-5 mx-auto mb-2 ${item.color}`} />
-                                    <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{item.label}</p>
-                                    <p className={`text-lg font-black mt-1 ${item.color}`}>{formatCurrency(item.value)}</p>
-                                </Card>
-                            ))}
-                        </div>
-
-                        {/* Totals Section */}
-                        <Card className="p-6 bg-primary/5 border-primary/10 rounded-2xl border-2 border-dashed">
-                            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-                                <div>
-                                    <p className="text-xs font-bold text-primary uppercase tracking-widest">Expected Balance</p>
-                                    <h3 className="text-4xl font-black text-primary mt-1">{formatCurrency(totalPayment)}</h3>
-                                </div>
-                                <div className="text-sm space-y-1 text-muted-foreground font-medium">
-                                    <p>Opening: {formatCurrency(openingCash)}</p>
-                                    <p>Sales: +{formatCurrency(totalSales)}</p>
-                                    <p>Expenses: -{formatCurrency(totalExpenses)}</p>
-                                </div>
-                            </div>
-                        </Card>
-
-                        {/* Details Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Payments Table */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                                    <Banknote className="h-4 w-4 text-primary" /> Payment Breakdown
-                                </h3>
-                                <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                                    <Table>
-                                        <TableHeader className="bg-gray-50">
-                                            <TableRow>
-                                                <TableHead className="text-[10px] font-bold uppercase">Method</TableHead>
-                                                <TableHead className="text-right text-[10px] font-bold uppercase">Amount</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {paymentMethods.map(pm => (
-                                                <TableRow key={pm.label} className="hover:bg-transparent">
-                                                    <TableCell className="py-3 flex items-center gap-2">
-                                                        <pm.icon className="h-4 w-4 text-muted-foreground" />
-                                                        <span className="font-medium">{pm.label}</span>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-bold py-3">
-                                                        {formatCurrency(pm.sell)}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
-
-                            {/* Product Summary */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-                                    <ShoppingBag className="h-4 w-4 text-primary" /> Sold Products
-                                </h3>
-                                <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-                                    <Table>
-                                        <TableHeader className="bg-gray-50">
-                                            <TableRow>
-                                                <TableHead className="text-[10px] font-bold uppercase">Product</TableHead>
-                                                <TableHead className="text-right text-[10px] font-bold uppercase">Qty</TableHead>
-                                                <TableHead className="text-right text-[10px] font-bold uppercase">Total</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {cart.slice(0, 5).map((item, index) => (
-                                                <TableRow key={index} className="hover:bg-transparent">
-                                                    <TableCell className="py-3 font-medium truncate max-w-[120px]">{item.product.name}</TableCell>
-                                                    <TableCell className="text-right py-3">{item.quantity}</TableCell>
-                                                    <TableCell className="text-right font-bold py-3">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {cart.length > 5 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center text-[10px] text-muted-foreground italic py-2">
-                                                        + {cart.length - 5} more items
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                        <TableFooter className="bg-gray-50">
-                                            <TableRow className="font-bold border-t-2">
-                                                <TableCell className="text-primary uppercase tracking-widest text-[10px]">Grand Total</TableCell>
-                                                <TableCell className="text-right text-primary">{totalQuantity}</TableCell>
-                                                <TableCell className="text-right text-primary">{formatCurrency(totalPayable)}</TableCell>
-                                            </TableRow>
-                                        </TableFooter>
-                                    </Table>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Inputs Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-gray-100">
-                            <div className="space-y-2">
-                                <Label htmlFor="total-cash" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actual Cash in Till*</Label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">{symbol}</span>
-                                    <Input id="total-cash" type="number" className="h-12 pl-10 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={closingCash} onChange={(e) => setClosingCash(e.target.value)} placeholder="0.00" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="total-card-slips" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Card Terminal Total*</Label>
-                                <Input id="total-card-slips" type="number" className="h-12 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={cardSlips} onChange={(e) => setCardSlips(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="total-cheques" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cheques Count*</Label>
-                                <Input id="total-cheques" type="number" className="h-12 rounded-xl bg-gray-50 border-none shadow-inner font-bold" value={totalCheques} onChange={(e) => setTotalCheques(e.target.value)} />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="closing-note" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Closing Note</Label>
-                            <Textarea id="closing-note" className="rounded-xl bg-gray-50 border-none shadow-inner min-h-[80px]" value={closingNote} onChange={(e) => setClosingNote(e.target.value)} placeholder="Enter any discrepancies or notes for the manager..." />
-                        </div>
-
-                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                            <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-gray-800">{user?.name} <span className="text-muted-foreground font-normal ml-1">({user?.role})</span></p>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-none mt-1">{settings.business.businessName}</p>
-                            </div>
-                        </div>
-                    </div>
-                </ScrollArea>
-                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 text-gray-500 hover:text-gray-700">Cancel</Button>
-                    <Button onClick={handleCloseRegister} className="bg-primary text-white h-12 rounded-xl flex-[2] shadow-lg active:scale-95 transition-all text-lg font-bold">
-                        Confirm & Close Register
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const RegisterDetailsDialog = ({
-    open,
-    onOpenChange,
-    cart,
-    totalPayable,
-    discount,
-    user,
-    settings
-}: {
-    open: boolean,
-    onOpenChange: (open: boolean) => void,
-    cart: CartItem[],
-    totalPayable: number,
-    discount: number,
-    user: { name: string, email: string, role: string } | null,
-    settings: AllSettings
-}) => {
-    const { formatCurrency, symbol } = useCurrency();
-    const [openTime, setOpenTime] = useState('');
-
-    useEffect(() => {
-        if (open) {
-            const now = new Date();
-            const start = new Date(now.getTime() - Math.random() * 2 * 60 * 60 * 1000); // Random mock time
-            setOpenTime(format(start, 'dd MMM, yyyy hh:mm a'));
-        }
-    }, [open]);
-
-    const openingCash = 1000.00;
-    const cashPayment = totalPayable;
-    const totalSales = cashPayment;
-    const totalRefund = 0.00;
-    const totalExpense = 0.00;
-    const totalPayment = openingCash + totalSales;
-
-    const paymentMethods = [
-        { label: 'Cash in hand', sell: openingCash, expense: null, icon: <Wallet className="h-4 w-4" /> },
-        { label: 'Cash Payment', sell: cashPayment, expense: 0.00, icon: <Banknote className="h-4 w-4" /> },
-        { label: 'Cheque Payment', sell: 0.00, expense: 0.00, icon: <FileText className="h-4 w-4" /> },
-        { label: 'Card Payment', sell: 0.00, expense: 0.00, icon: <CreditCard className="h-4 w-4" /> },
-        { label: 'Bank Transfer', sell: 0.00, expense: 0.00, icon: <Monitor className="h-4 w-4" /> },
-        { label: 'Advance payment', sell: 0.00, expense: 0.00, icon: <PlusCircle className="h-4 w-4" /> },
-        { label: 'Other Payments', sell: 0.00, expense: 0.00, icon: <HelpCircle className="h-4 w-4" /> },
-    ];
-
-    const summaryRows = [
-        { label: 'Total Sales', value: totalSales, color: 'text-foreground' },
-        { label: 'Total Refund', value: totalRefund, color: 'text-red-600 bg-red-50' },
-        { label: 'Total Payment', value: totalPayment, color: 'text-green-600 bg-green-50 font-bold' },
-        { label: 'Total Expense', value: totalExpense, color: 'text-red-600 bg-red-50' },
-    ];
-
-    const totalQuantity = useMemo(() => cart.reduce((acc, item) => acc + item.quantity, 0), [cart]);
-
-    const salesByBrand = useMemo(() => {
-        const brands: { [key: string]: { quantity: number; total: number } } = {};
-        cart.forEach(item => {
-            const brandName = item.product.brand || 'Unbranded';
-            if (!brands[brandName]) {
-                brands[brandName] = { quantity: 0, total: 0 };
-            }
-            brands[brandName].quantity += item.quantity;
-            brands[brandName].total += item.quantity * item.sellingPrice;
-        });
-        return Object.entries(brands).map(([name, data]) => ({ name, ...data }));
-    }, [cart]);
-
-    const totalBrandQuantity = useMemo(() => salesByBrand.reduce((acc, item) => acc + item.quantity, 0), [salesByBrand]);
-
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
-                <DialogHeader className="p-6 bg-primary text-white">
-                    <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                        <History className="h-6 w-6" /> Register Details
-                    </DialogTitle>
-                    <p className="text-primary-foreground/80 text-sm mt-1">Status: {openTime} - Now</p>
-                </DialogHeader>
-                <ScrollArea className="max-h-[70vh] p-6">
-                    <div className="space-y-8 text-sm">
-                        <div className="grid gap-6">
-                            <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-                                <Table>
-                                    <TableHeader className="bg-gray-50/50">
-                                        <TableRow>
-                                            <TableHead className="font-bold">Payment Method</TableHead>
-                                            <TableHead className="text-right font-bold">Sell</TableHead>
-                                            <TableHead className="text-right font-bold">Expense</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {paymentMethods.map(pm => (
-                                            <TableRow key={pm.label} className="hover:bg-gray-50/30">
-                                                <TableCell className="flex items-center gap-2">
-                                                    <span className="text-muted-foreground">{pm.icon}</span>
-                                                    {pm.label}
-                                                </TableCell>
-                                                <TableCell className="text-right font-medium">{formatCurrency(pm.sell)}</TableCell>
-                                                <TableCell className="text-right text-muted-foreground">{pm.expense !== null ? formatCurrency(pm.expense) : '--'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {summaryRows.map(row => (
-                                    <div key={row.label} className={cn("p-4 rounded-xl border border-gray-100 flex flex-col gap-1 shadow-sm transition-all", row.color)}>
-                                        <span className="text-[10px] uppercase tracking-wider opacity-70 font-bold">{row.label}</span>
-                                        <span className="text-lg font-black">{formatCurrency(row.value)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 text-center font-bold text-primary text-base">
-                            Total = {formatCurrency(openingCash)} (opening) + {formatCurrency(totalSales)} (Sale) - {formatCurrency(totalRefund)} (Refund) - {formatCurrency(totalExpense)} (Expense) = <span className="text-lg">{formatCurrency(totalPayment)}</span>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-lg flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> Products Sold</h3>
-                            <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-                                <Table>
-                                    <TableHeader className="bg-gray-50/50">
-                                        <TableRow>
-                                            <TableHead className="w-12">#</TableHead>
-                                            <TableHead>SKU</TableHead>
-                                            <TableHead>Product</TableHead>
-                                            <TableHead className="text-right">Qty</TableHead>
-                                            <TableHead className="text-right font-bold text-primary">Total</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {cart.map((item, index) => (
-                                            <TableRow key={item.product.id + index} className="hover:bg-gray-50/30">
-                                                <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                                                <TableCell className="font-mono text-[10px] uppercase">{item.product.sku}</TableCell>
-                                                <TableCell className="font-medium">{item.product.name}</TableCell>
-                                                <TableCell className="text-right font-bold">{item.quantity}</TableCell>
-                                                <TableCell className="text-right font-bold">{formatCurrency(item.quantity * item.sellingPrice)}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                    <TableFooter className="bg-gray-50/80">
-                                        <TableRow className="font-black text-primary">
-                                            <TableCell colSpan={3}>Totals</TableCell>
-                                            <TableCell className="text-right">{totalQuantity}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className="text-xs text-muted-foreground font-normal">Discount: (-) {formatCurrency(discount)}</span>
-                                                    <span>{formatCurrency(totalPayable)}</span>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableFooter>
-                                </Table>
-                            </div>
-                        </div>
-
-                        {salesByBrand.length > 0 && (
-                            <div className="space-y-4">
-                                <h3 className="font-bold text-lg flex items-center gap-2"><LayoutGrid className="h-5 w-5 text-primary" /> Sales by Brand</h3>
-                                <div className="rounded-xl border border-gray-100 overflow-hidden shadow-sm">
-                                    <Table>
-                                        <TableHeader className="bg-gray-50/50">
-                                            <TableRow>
-                                                <TableHead className="w-12">#</TableHead>
-                                                <TableHead>Brand</TableHead>
-                                                <TableHead className="text-right">Qty</TableHead>
-                                                <TableHead className="text-right font-bold text-primary">Total</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {salesByBrand.map((brand, index) => (
-                                                <TableRow key={brand.name} className="hover:bg-gray-50/30">
-                                                    <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                                                    <TableCell className="font-medium">{brand.name}</TableCell>
-                                                    <TableCell className="text-right font-bold">{brand.quantity}</TableCell>
-                                                    <TableCell className="text-right font-bold">{formatCurrency(brand.total)}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                        <TableFooter className="bg-gray-50/80">
-                                            <TableRow className="font-black text-primary">
-                                                <TableCell colSpan={2}>Totals</TableCell>
-                                                <TableCell className="text-right">{totalBrandQuantity}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex flex-col items-end gap-1">
-                                                        <span className="text-xs text-muted-foreground font-normal">Discount: (-) {formatCurrency(discount)}</span>
-                                                        <span>{formatCurrency(totalPayable)}</span>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        </TableFooter>
-                                    </Table>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-gray-50 p-6 rounded-2xl space-y-2 border border-dashed text-xs text-muted-foreground relative overflow-hidden">
-                            <Monitor className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 opacity-5 pointer-events-none" />
-                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">User:</span> {user?.name}</p>
-                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">Email:</span> {user?.email}</p>
-                            <p className="flex items-center gap-2"><span className="font-bold text-foreground">Location:</span> {settings.business.businessName}</p>
-                        </div>
-                    </div>
-                </ScrollArea>
-                <DialogFooter className="p-6 bg-gray-50 flex sm:flex-row flex-col gap-3">
-                    <Button variant="outline" onClick={() => window.print()} className="h-12 rounded-xl flex-1 active:scale-95 transition-all"><Printer className="mr-2 h-4 w-4" /> Print Mini</Button>
-                    <Button variant="outline" onClick={() => window.print()} className="h-12 rounded-xl flex-1 active:scale-95 transition-all"><FileText className="mr-2 h-4 w-4" /> Print Detailed</Button>
-                    <Button variant="secondary" onClick={() => onOpenChange(false)} className="h-12 rounded-xl flex-1 active:scale-95 transition-all">Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
+// Register dialogs moved to separate components
 
 
 const RecentTransactionsDialog = ({
@@ -980,6 +520,16 @@ const CashPaymentDialog = ({
 
                     {denominations.length > 0 && (
                         <div className="grid grid-cols-4 gap-2">
+                            <Button
+                                variant="outline"
+                                className="h-12 rounded-xl font-bold bg-primary/5 text-primary border-primary/20 hover:bg-primary hover:text-white transition-all active:scale-95"
+                                onClick={() => {
+                                    setAmountTendered(totalPayable.toString());
+                                    inputRef.current?.focus();
+                                }}
+                            >
+                                Exact
+                            </Button>
                             {denominations.map(amount => (
                                 <Button
                                     key={amount}
@@ -1937,6 +1487,58 @@ export default function PosPage() {
     const [recentSales, setRecentSales] = useState<Sale[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [activeRegister, setActiveRegister] = useState<RegisterLog | null>(null);
+
+    const [isOpenRegisterOpen, setIsOpenRegisterOpen] = useState(false);
+    const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
+    const [isRegisterDetailsOpen, setIsRegisterDetailsOpen] = useState(false);
+
+    const fetchActiveRegister = useCallback(async () => {
+        if (user?.uid) {
+            try {
+                const register = await getActiveRegister(user.uid);
+                setActiveRegister(register);
+            } catch (error) {
+                console.error("Error fetching active register:", error);
+            }
+        }
+    }, [user?.uid]);
+
+    useEffect(() => {
+        fetchActiveRegister();
+    }, [fetchActiveRegister]);
+
+    // Auto-open register dialog if no active register exists
+    useEffect(() => {
+        if (!isLoading && !activeRegister && user?.uid) {
+            setIsOpenRegisterOpen(true);
+        }
+    }, [activeRegister, isLoading, user?.uid]);
+
+
+    const updateActiveRegisterTotals = useCallback(async (paymentMethod: string, amount: number) => {
+        if (!activeRegister) return;
+
+        const registerRef = doc(db, 'registerLogs', activeRegister.id);
+        const updates: any = {};
+
+        if (paymentMethod === 'Cash') {
+            updates.totalCash = (activeRegister.totalCash || 0) + amount;
+        } else if (paymentMethod === 'Card') {
+            updates.totalCardSlips = (activeRegister.totalCardSlips || 0) + amount;
+        } else if (paymentMethod === 'Cheque') {
+            updates.totalCheques = (activeRegister.totalCheques || 0) + amount;
+        }
+
+        try {
+            await updateDoc(registerRef, updates);
+            // Update local state
+            setActiveRegister(prev => prev ? { ...prev, ...updates } : null);
+        } catch (error) {
+            console.error("Error updating register totals:", error);
+        }
+    }, [activeRegister]);
+
     const [selectedCustomer, setSelectedCustomer] = useState('walk-in');
 
     const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -1966,8 +1568,6 @@ export default function PosPage() {
 
     // States for new header functions
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [isCloseRegisterOpen, setIsCloseRegisterOpen] = useState(false);
-    const [isRegisterDetailsOpen, setIsRegisterDetailsOpen] = useState(false);
     const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
     const [isRecentTransactionsOpen, setIsRecentTransactionsOpen] = useState(false);
     const [isCashPaymentOpen, setIsCashPaymentOpen] = useState(false);
@@ -2281,9 +1881,11 @@ export default function PosPage() {
                 });
             }
 
-            setSaleToPrint(completeSale);
-            setSaleToPrint(completeSale);
+            if (activeRegister) {
+                await updateActiveRegisterTotals(paymentMethod, totalPaid);
+            }
 
+            setSaleToPrint(completeSale);
             if (autoPrint) {
                 // Small delay to ensure state update
                 setTimeout(() => {
@@ -2305,7 +1907,7 @@ export default function PosPage() {
                 variant: "destructive"
             });
         }
-    }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart, sellingPriceGroups, priceGroup, selectedAgent, selectedSalespersons]);
+    }, [cart, settings.sale, createSaleObject, toast, fetchAndCalculateStock, clearCart, sellingPriceGroups, priceGroup, selectedAgent, selectedSalespersons, activeRegister, updateActiveRegisterTotals]);
 
     useEffect(() => {
         fetchAndCalculateStock();
@@ -3090,7 +2692,7 @@ export default function PosPage() {
                                                         className="rounded-full px-5 h-9 active:scale-95 transition-all"
                                                         onClick={() => setSelectedCategory(cat.id)}
                                                     >
-                                                        {cat.name}
+                                                        {cat.name === 'cosmwtics' ? 'Cosmetics' : cat.name}
                                                     </Button>
                                                 ))
                                             ) : (
@@ -3139,6 +2741,21 @@ export default function PosPage() {
                                                             <Badge className="absolute top-2 right-2 bg-primary/90 text-white font-bold shadow-sm backdrop-blur-sm border-none px-2 py-0.5 text-xs">
                                                                 {formatCurrency(product.sellingPrice)}
                                                             </Badge>
+                                                            {product.currentStock <= 0 && (
+                                                                <Badge className="absolute bottom-2 left-2 bg-slate-600 text-white font-bold shadow-sm border-none px-2 py-0.5 text-[9px] uppercase tracking-tighter">
+                                                                    Out of Stock
+                                                                </Badge>
+                                                            )}
+                                                            {product.currentStock > 0 && product.currentStock <= 5 && (
+                                                                <Badge className="absolute bottom-2 left-2 bg-red-600 text-white font-bold shadow-sm border-none px-2 py-0.5 text-[9px] uppercase tracking-tighter animate-pulse">
+                                                                    Low Stock: {product.currentStock}
+                                                                </Badge>
+                                                            )}
+                                                            {product.currentStock > 5 && product.currentStock <= 20 && (
+                                                                <Badge className="absolute bottom-2 left-2 bg-amber-500 text-white font-bold shadow-sm border-none px-2 py-0.5 text-[9px] uppercase tracking-tighter">
+                                                                    Stock: {product.currentStock}
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                         <div className="p-3 text-center border-t border-gray-50 bg-gray-50/30 backdrop-blur-sm">
                                                             <p className="text-sm font-semibold truncate text-gray-800" title={product.name}>{product.name}</p>
@@ -3271,15 +2888,6 @@ export default function PosPage() {
 
             {/* Other Dialogs */}
             <CalculatorDialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen} />
-            <CloseRegisterDialog
-                open={isCloseRegisterOpen}
-                onOpenChange={setIsCloseRegisterOpen}
-                cart={cart}
-                totalPayable={totalPayable}
-                discount={discount}
-                user={user}
-                settings={settings}
-            />
             <RecentTransactionsDialog
                 open={isRecentTransactionsOpen}
                 onOpenChange={setIsRecentTransactionsOpen}
@@ -3307,15 +2915,6 @@ export default function PosPage() {
                     setTimeout(() => printReceipt(), 100);
                 }}
                 onDelete={handleDeleteSaleClick}
-            />
-            <RegisterDetailsDialog
-                open={isRegisterDetailsOpen}
-                onOpenChange={setIsRegisterDetailsOpen}
-                cart={cart}
-                totalPayable={totalPayable}
-                discount={discount}
-                user={user}
-                settings={settings}
             />
             <EditValueDialog
                 open={isDiscountModalOpen}
@@ -3428,6 +3027,7 @@ export default function PosPage() {
                 </DialogContent>
             </Dialog>
             <MoneyExchangeDialog open={isExchangeOpen} onOpenChange={setIsExchangeOpen} />
+            <AddExpenseDialog open={isAddExpenseOpen} onOpenChange={setIsAddExpenseOpen} />
 
             <Dialog open={isCompanyRefDialogOpen} onOpenChange={setIsCompanyRefDialogOpen}>
                 <DialogContent className="sm:max-w-md p-0 overflow-hidden border-none shadow-2xl rounded-2xl">
@@ -3458,6 +3058,39 @@ export default function PosPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog >
+
+            <OpenRegisterDialog
+                isOpen={isOpenRegisterOpen}
+                onClose={() => setIsOpenRegisterOpen(false)}
+                userId={user?.uid || ''}
+                userName={user?.name || ''}
+                isAutoOpened={!activeRegister}
+                onSuccess={() => {
+                    fetchActiveRegister();
+                    setIsOpenRegisterOpen(false);
+                }}
+            />
+
+            {activeRegister && (
+                <>
+                    <CloseRegisterDialog
+                        isOpen={isCloseRegisterOpen}
+                        onClose={() => setIsCloseRegisterOpen(false)}
+                        activeRegister={activeRegister}
+                        onSuccess={() => {
+                            setActiveRegister(null);
+                            setIsCloseRegisterOpen(false);
+                            toast({ title: 'Register Closed', description: 'Session ended successfully' });
+                        }}
+                    />
+
+                    <RegisterDetailsDialog
+                        isOpen={isRegisterDetailsOpen}
+                        onClose={() => setIsRegisterDetailsOpen(false)}
+                        activeRegister={activeRegister}
+                    />
+                </>
+            )}
         </>
     );
 }

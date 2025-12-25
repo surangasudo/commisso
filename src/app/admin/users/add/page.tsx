@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Info } from "lucide-react";
 import { addUser } from '@/services/userService';
 import { useToast } from "@/hooks/use-toast";
@@ -26,9 +25,10 @@ export default function AddUserPage() {
         password: '',
         confirmPassword: '',
         role: '' as 'Admin' | 'Cashier' | '',
+        canManageRegister: false,
     });
 
-    const handleChange = (field: string, value: string) => {
+    const handleChange = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -45,11 +45,14 @@ export default function AddUserPage() {
         setLoading(true);
         try {
             await addUser({
-                username: formData.username || formData.email.split('@')[0], // Fallback username
+                username: formData.username || formData.email.split('@')[0],
                 name: `${formData.prefix ? formData.prefix + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim(),
                 email: formData.email,
                 role: formData.role as 'Admin' | 'Cashier',
-                status: 'Active'
+                status: 'Active',
+                privileges: {
+                    canManageRegister: formData.canManageRegister
+                }
             });
             toast({
                 title: "Success",
@@ -93,16 +96,6 @@ export default function AddUserPage() {
                                 <Input id="email" type="email" placeholder="Email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} />
                             </div>
                         </div>
-                        <div className="flex items-center gap-8 mt-6">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="is-active" defaultChecked />
-                                <Label htmlFor="is-active" className="flex items-center gap-1 font-normal">Is active? <Info className="w-4 h-4 text-muted-foreground" /></Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox id="enable-pin" />
-                                <Label htmlFor="enable-pin" className="flex items-center gap-1 font-normal">Enable service staff pin <Info className="w-4 h-4 text-muted-foreground" /></Label>
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
 
@@ -111,10 +104,6 @@ export default function AddUserPage() {
                         <CardTitle className="text-xl font-semibold">Roles and Permissions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center space-x-2 mb-6">
-                            <Checkbox id="allow-login" defaultChecked />
-                            <Label htmlFor="allow-login" className="font-normal">Allow login</Label>
-                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="username">Username:</Label>
@@ -142,15 +131,22 @@ export default function AddUserPage() {
                                 </Select>
                             </div>
                         </div>
-                        {/* Other fields omitted/truncated to keep focus on functional parts but keeping layout structure implies we should ideally keep them. 
-                            For this task, I am replacing the file, so I should ideally keep the REST of the UI or the user will lose fields.
-                            I will try to keep the rest as static/uncontrolled for now to save tokens and time, focusing on the ones above.
-                        */}
+                        <div className="flex items-center space-x-2 mt-6">
+                            <Checkbox
+                                id="can-manage-register"
+                                checked={formData.canManageRegister}
+                                onCheckedChange={(checked) => handleChange('canManageRegister', !!checked)}
+                            />
+                            <Label htmlFor="can-manage-register" className="font-normal flex items-center gap-1 cursor-pointer">
+                                Can manage cash register
+                                <Info className="w-4 h-4 text-muted-foreground" />
+                            </Label>
+                        </div>
                     </CardContent>
                 </Card>
 
-                {/* Keeping the Save button */}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-4">
+                    <Button variant="outline" onClick={() => router.push('/admin/users')}>Cancel</Button>
                     <Button size="lg" onClick={handleSave} disabled={loading}>
                         {loading ? 'Saving...' : 'Save'}
                     </Button>

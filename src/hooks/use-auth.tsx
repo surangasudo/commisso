@@ -31,41 +31,79 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            if (firebaseUser) {
-                // User is signed in.
-                // We still need to recover their "role" from local storage since anonymous auth doesn't store that.
-                try {
-                    const savedUser = localStorage.getItem('erp-user');
-                    if (savedUser) {
-                        const parsedUser = JSON.parse(savedUser);
-                        setUser({
-                            ...parsedUser,
-                            uid: firebaseUser.uid
-                        });
-                    } else {
-                        // Fallback if no local data but firebase session exists (edge case)
-                        setUser({
-                            name: 'Anonymous User',
-                            email: 'anon@example.com',
-                            role: 'Cashier',
-                            uid: firebaseUser.uid
-                        });
-                    }
-                } catch (e) {
-                    console.error("Failed to restore user role", e);
-                }
-            } else {
-                // User is signed out.
-                setUser(null);
-            }
-            setLoading(false);
-        });
+        console.log('[AuthProvider] Initializing Firebase Auth...');
 
-        return () => unsubscribe();
+        // Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+            console.warn('[AuthProvider] Auth initialization timeout after 5 seconds');
+            if (loading) {
+                setLoading(false);
+                setAuthError('Authentication initialization timed out. Please refresh the page.');
+            }
+        }, 5000);
+
+        let unsubscribe: (() => void) | null = null;
+
+        try {
+            unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+                console.log('[AuthProvider] Auth state changed:', firebaseUser ? 'User signed in' : 'User signed out');
+                clearTimeout(timeoutId);
+
+                if (firebaseUser) {
+                    // User is signed in.
+                    // We still need to recover their "role" from local storage since anonymous auth doesn't store that.
+                    try {
+                        const savedUser = localStorage.getItem('erp-user');
+                        if (savedUser) {
+                            const parsedUser = JSON.parse(savedUser);
+                            setUser({
+                                ...parsedUser,
+                                uid: firebaseUser.uid
+                            });
+                            console.log('[AuthProvider] User restored from localStorage:', parsedUser.email);
+                        } else {
+                            // Fallback if no local data but firebase session exists (edge case)
+                            console.warn('[AuthProvider] No saved user in localStorage, using fallback');
+                            setUser({
+                                name: 'Anonymous User',
+                                email: 'anon@example.com',
+                                role: 'Cashier',
+                                uid: firebaseUser.uid
+                            });
+                        }
+                    } catch (e) {
+                        console.error('[AuthProvider] Failed to restore user role', e);
+                        setAuthError('Failed to restore user session');
+                    }
+                } else {
+                    // User is signed out.
+                    console.log('[AuthProvider] User signed out');
+                    setUser(null);
+                }
+                setLoading(false);
+            }, (error) => {
+                console.error('[AuthProvider] Auth state listener error:', error);
+                clearTimeout(timeoutId);
+                setLoading(false);
+                setAuthError(`Authentication error: ${error.message}`);
+            });
+        } catch (error) {
+            console.error('[AuthProvider] Failed to initialize auth listener:', error);
+            clearTimeout(timeoutId);
+            setLoading(false);
+            setAuthError('Failed to initialize authentication');
+        }
+
+        return () => {
+            clearTimeout(timeoutId);
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, []);
 
     const login = async (userData: { name: string, email: string, role: 'Admin' | 'Cashier' }) => {
