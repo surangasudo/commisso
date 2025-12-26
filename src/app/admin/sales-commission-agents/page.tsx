@@ -360,9 +360,12 @@ const PayoutsTable = ({
 };
 
 
+import { useAuth } from '@/hooks/use-auth';
+
 export default function SalesCommissionAgentsPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user: currentUser } = useAuth();
     const { formatCurrency } = useCurrency();
     const settings = useBusinessSettings();
     const { settings: globalSettings } = useSettings();
@@ -388,7 +391,7 @@ export default function SalesCommissionAgentsPage() {
     const fetchProfiles = useCallback(async () => {
         setIsLoading(true);
         try {
-            const profilesData = await getCommissionProfiles();
+            const profilesData = await getCommissionProfiles(currentUser?.businessId);
             setProfiles(profilesData);
         } catch (error) {
             console.error("Error fetching commission profiles:", error);
@@ -396,11 +399,13 @@ export default function SalesCommissionAgentsPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, currentUser?.businessId]);
 
     useEffect(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
+        if (currentUser) {
+            fetchProfiles();
+        }
+    }, [fetchProfiles, currentUser]);
 
     const filteredProfiles = useMemo(() => {
         return profiles.filter(p => {

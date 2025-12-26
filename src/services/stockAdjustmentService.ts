@@ -1,8 +1,5 @@
-
-// use server removed
-
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData, query, where } from 'firebase/firestore';
 import { type StockAdjustment } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -23,17 +20,22 @@ type StockAdjustmentInput = Omit<StockAdjustment, 'id' | 'totalAmount' | 'refere
 
 const stockAdjustmentsCollection = collection(db, 'stockAdjustments');
 
-export async function getStockAdjustments(): Promise<StockAdjustment[]> {
+export async function getStockAdjustments(businessId?: string): Promise<StockAdjustment[]> {
     noStore();
-    const snapshot = await getDocs(stockAdjustmentsCollection);
+    let q = query(stockAdjustmentsCollection);
+    if (businessId) {
+        q = query(stockAdjustmentsCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<StockAdjustment>(doc));
 }
 
-export async function addStockAdjustment(adjustment: StockAdjustmentInput): Promise<DocumentData> {
+export async function addStockAdjustment(adjustment: StockAdjustmentInput, businessId?: string): Promise<DocumentData> {
     const totalAmount = adjustment.items.reduce((sum, item) => sum + (Math.abs(item.quantity) * item.unitPrice), 0);
 
     const newAdjustmentData = {
         date: new Date(adjustment.date),
+        businessId: businessId || null,
         referenceNo: adjustment.referenceNo || `SA-${Date.now()}`,
         location: adjustment.location,
         adjustmentType: adjustment.adjustmentType,

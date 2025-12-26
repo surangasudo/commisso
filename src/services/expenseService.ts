@@ -2,22 +2,27 @@
 // use server removed
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData, Timestamp, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, DocumentData, Timestamp, runTransaction, query, where } from 'firebase/firestore';
 import { type Expense } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const expensesCollection = collection(db, 'expenses');
 
-export async function getExpenses(): Promise<Expense[]> {
+export async function getExpenses(businessId?: string): Promise<Expense[]> {
     noStore();
-    const snapshot = await getDocs(expensesCollection);
+    let q = query(expensesCollection);
+    if (businessId) {
+        q = query(expensesCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Expense>(doc));
 }
 
-export async function addExpense(expense: Omit<Expense, 'id'>, prefix?: string): Promise<void> {
+export async function addExpense(expense: Omit<Expense, 'id'>, businessId?: string, prefix?: string): Promise<void> {
     const dataToSave = {
         ...expense,
+        businessId: businessId || null,
         date: Timestamp.fromDate(new Date(expense.date)),
     };
 

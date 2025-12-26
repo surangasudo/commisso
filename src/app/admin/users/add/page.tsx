@@ -11,10 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Info } from "lucide-react";
 import { addUser } from '@/services/userService';
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/use-auth';
+import { type UserRole } from '@/lib/data';
 
 export default function AddUserPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user: currentUser, register } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         prefix: '',
@@ -24,7 +27,7 @@ export default function AddUserPage() {
         username: '',
         password: '',
         confirmPassword: '',
-        role: '' as 'Admin' | 'Cashier' | '',
+        role: '' as UserRole | '',
         canManageRegister: false,
     });
 
@@ -42,28 +45,48 @@ export default function AddUserPage() {
             return;
         }
 
+        if (formData.password && formData.password !== formData.confirmPassword) {
+            toast({
+                title: "Password Error",
+                description: "Passwords do not match.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setLoading(true);
         try {
-            await addUser({
+            const userData = {
                 username: formData.username || formData.email.split('@')[0],
                 name: `${formData.prefix ? formData.prefix + ' ' : ''}${formData.firstName} ${formData.lastName}`.trim(),
                 email: formData.email,
-                role: formData.role as 'Admin' | 'Cashier',
-                status: 'Active',
+                role: formData.role as UserRole,
+                status: 'Active' as const,
+                businessId: currentUser?.businessId || null,
                 privileges: {
-                    canManageRegister: formData.canManageRegister
+                    canManageRegister: formData.canManageRegister,
+                    modules: currentUser?.privileges?.modules || [] // Inherit modules from business
                 }
-            });
+            };
+
+            if (formData.password) {
+                // Create with Firebase Auth
+                await register(formData.email, formData.password, userData);
+            } else {
+                // Just create Firestore record (for POS user selection fallback)
+                await addUser(userData);
+            }
+
             toast({
                 title: "Success",
                 description: "User added successfully.",
             });
             router.push('/admin/users');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 title: "Error",
-                description: "Failed to add user.",
+                description: error.message || "Failed to add user.",
                 variant: "destructive"
             });
         } finally {
@@ -125,7 +148,12 @@ export default function AddUserPage() {
                                         <SelectValue placeholder="Select Role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Admin">Admin</SelectItem>
+                                        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Admin') && (
+                                            <SelectItem value="Admin">Admin</SelectItem>
+                                        )}
+                                        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                                            <SelectItem value="Manager">Manager</SelectItem>
+                                        )}
                                         <SelectItem value="Cashier">Cashier</SelectItem>
                                     </SelectContent>
                                 </Select>

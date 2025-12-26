@@ -1,24 +1,49 @@
 
 
+export type UserRole = 'SuperAdmin' | 'Admin' | 'Manager' | 'Cashier';
+
 export type User = {
   id: string;
   username: string;
   name: string;
-  role: 'Admin' | 'Cashier';
+  role: UserRole;
   email: string;
   status: 'Active' | 'Inactive';
+  businessId: string | null; // null for SuperAdmin
   privileges?: {
     canManageRegister: boolean;
+    modules?: string[]; // List of accessible modules for this business/user
   };
 };
 
+export type Business = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  status: 'Active' | 'Inactive' | 'Suspended';
+  createdAt: string;
+  modules: string[]; // Enabled modules for this business (e.g., ['commission'])
+};
+
+export const AVAILABLE_MODULES = [
+  'commission',
+  'reports',
+  'stock-transfers',
+  'stock-adjustment',
+  'multi-currency',
+  'expenses',
+  'payment-accounts',
+] as const;
+
 export const users: User[] = [
-  { id: 'user-001', username: 'admin', name: 'Mr Admin', role: 'Admin', email: 'admin@example.com', status: 'Active' },
-  { id: 'user-002', username: 'admin-essentials', name: 'Mr Admin Essential', role: 'Admin', email: 'admin_essentials@example.com', status: 'Active' },
-  { id: 'user-003', username: 'cashier', name: 'Mr Demo Cashier', role: 'Cashier', email: 'cashier@example.com', status: 'Active' },
-  { id: 'user-004', username: 'demo-admin', name: 'Mr. Demo Admin', role: 'Admin', email: 'demoadmin@example.com', status: 'Active' },
-  { id: 'user-005', username: 'superadmin', name: 'Mr. Super Admin', role: 'Admin', email: 'superadmin@example.com', status: 'Active' },
-  { id: 'user-006', username: 'woocommerce_user', name: 'Mr. WooCommerce User', role: 'Admin', email: 'woo@example.com', status: 'Active' },
+  { id: 'user-001', username: 'admin', name: 'Mr Admin', role: 'Admin', email: 'admin@example.com', status: 'Active', businessId: null },
+  { id: 'user-002', username: 'admin-essentials', name: 'Mr Admin Essential', role: 'Admin', email: 'admin_essentials@example.com', status: 'Active', businessId: null },
+  { id: 'user-003', username: 'cashier', name: 'Mr Demo Cashier', role: 'Cashier', email: 'cashier@example.com', status: 'Active', businessId: null },
+  { id: 'user-004', username: 'demo-admin', name: 'Mr. Demo Admin', role: 'Admin', email: 'demoadmin@example.com', status: 'Active', businessId: null },
+  { id: 'user-005', username: 'superadmin', name: 'Mr. Super Admin', role: 'Admin', email: 'superadmin@example.com', status: 'Active', businessId: null },
+  { id: 'user-006', username: 'woocommerce_user', name: 'Mr. WooCommerce User', role: 'Admin', email: 'woo@example.com', status: 'Active', businessId: null },
 ];
 
 
@@ -35,6 +60,7 @@ export type Product = {
 export type CommissionProfile = {
   id: string;
   name: string;
+  businessId: string | null;
   entityType: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson';
   phone: string;
   email?: string;
@@ -49,6 +75,7 @@ export type CommissionProfile = {
 
 export type Commission = {
   id: string;
+  businessId: string | null;
   transaction_id: string;
   transaction_sell_line_id?: string;
   recipient_profile_id: string;
@@ -73,6 +100,7 @@ export type CommissionProfileWithSummary = CommissionProfile;
 
 export type Supplier = {
   id: string;
+  businessId: string | null;
   contactId: string;
   businessName: string;
   name: string;
@@ -91,6 +119,7 @@ export type Supplier = {
 
 export type Customer = {
   id: string;
+  businessId: string | null;
   contactId: string;
   customerId?: string;
   name: string;
@@ -108,6 +137,7 @@ export type Customer = {
 
 export type DetailedProduct = {
   id: string;
+  businessId: string | null;
   image: string;
   name: string;
   businessLocation: string;
@@ -147,6 +177,7 @@ export type PurchaseItem = {
 
 export type Purchase = {
   id: string;
+  businessId: string | null;
   referenceNo: string;
   date: string;
   location: string;
@@ -182,6 +213,7 @@ export type SaleItem = {
 
 export type Sale = {
   id: string;
+  businessId: string | null;
   date: string;
   invoiceNo: string;
   customerId: string | null;
@@ -208,6 +240,7 @@ export type Sale = {
 
 export type Draft = {
   id: string;
+  businessId: string | null;
   date: string;
   draftNo: string;
   customerName: string;
@@ -246,6 +279,7 @@ export type Discount = {
 
 export type StockTransfer = {
   id: string;
+  businessId: string | null;
   date: string;
   referenceNo: string;
   locationFrom: string;
@@ -258,6 +292,7 @@ export type StockTransfer = {
 
 export type StockAdjustment = {
   id: string;
+  businessId: string | null;
   date: string;
   referenceNo: string;
   location: string;
@@ -270,6 +305,7 @@ export type StockAdjustment = {
 
 export type Expense = {
   id: string;
+  businessId: string | null;
   date: string;
   referenceNo: string;
   location: string;
@@ -287,6 +323,7 @@ export type Expense = {
 
 export type ExpenseCategory = {
   id: string;
+  businessId: string | null;
   name: string;
   code: string;
   parentId?: string | null;
@@ -294,6 +331,7 @@ export type ExpenseCategory = {
 
 export type SellingPriceGroup = {
   id: string;
+  businessId: string | null;
   name: string;
   description: string;
   agentId?: string;
@@ -306,6 +344,7 @@ export type SellingPriceGroup = {
 
 export type ProductCategory = {
   id: string;
+  businessId: string | null;
   name: string;
   code: string;
   parentId?: string | null;
@@ -352,6 +391,7 @@ export type CompanyProfit = { company: string; profit: number; };
 
 export type RegisterLog = {
   id: string;
+  businessId: string | null;
   openTime: string; // ISO format
   closeTime: string | null; // ISO format
   location: string;
@@ -372,6 +412,7 @@ export type RegisterLog = {
 
 export type ActivityLog = {
   id: string;
+  businessId: string | null;
   date: string;
   user: string;
   action: string;
@@ -394,6 +435,7 @@ export const initialTaxRates: TaxRate[] = [
 
 export type PaymentAccount = {
   id: string;
+  businessId: string | null;
   name: string;
   accountNumber?: string;
   accountType: 'Savings' | 'Checking' | 'Credit Card' | 'Cash';
@@ -442,10 +484,12 @@ export type Currency = {
   symbol: string;
   exchangeRate: number;
   isBaseCurrency?: boolean;
+  businessId?: string | null;
 };
 
 export type MoneyExchange = {
   id: string;
+  businessId: string | null;
   date: string;
   fromCurrency: string;
   toCurrency: string;
@@ -575,3 +619,29 @@ export const companyProfitData: CompanyProfit[] = [];
 export const registerLogs: RegisterLog[] = [];
 export const activityLogs: ActivityLog[] = [];
 export const paymentAccounts: PaymentAccount[] = [];
+
+export type SuperadminActivityLog = {
+  id: string;
+  timestamp: Date;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  action: 'Create' | 'Update' | 'Delete' | 'Activate' | 'Deactivate' | 'Approve' | 'Decline';
+  logType: 'Packages' | 'Businesses' | 'Payments' | 'Settings' | 'Emails';
+  entity: string;
+  entityId: string;
+  status: 'Success' | 'Failed' | 'Pending' | 'Info';
+  details: string;
+  metadata?: {
+    beforeState?: Record<string, unknown>;
+    afterState?: Record<string, unknown>;
+    ipAddress?: string;
+    userAgent?: string;
+  };
+};
+
+// Superadmin email whitelist
+export const SUPERADMIN_EMAILS = [
+  'surangasudo@gmail.com',
+  'superadmin@example.com',
+];

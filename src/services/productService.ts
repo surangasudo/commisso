@@ -2,16 +2,20 @@
 // use server removed
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, DocumentData, query, where } from 'firebase/firestore';
 import { type DetailedProduct } from '@/lib/data';
 import { unstable_noStore as noStore } from 'next/cache';
 import { processDoc } from '@/lib/firestore-utils';
 
 const productsCollection = collection(db, 'products');
 
-export async function getProducts(): Promise<DetailedProduct[]> {
+export async function getProducts(businessId?: string): Promise<DetailedProduct[]> {
     noStore();
-    const snapshot = await getDocs(productsCollection);
+    let q = query(productsCollection);
+    if (businessId) {
+        q = query(productsCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     const data = snapshot.docs.map(doc => processDoc<DetailedProduct>(doc));
     return data;
 }
@@ -29,8 +33,11 @@ export async function getProduct(id: string): Promise<DetailedProduct | null> {
     }
 }
 
-export async function addProduct(product: Omit<DetailedProduct, 'id'>): Promise<void> {
-    await addDoc(productsCollection, product);
+export async function addProduct(product: Omit<DetailedProduct, 'id'>, businessId?: string): Promise<void> {
+    await addDoc(productsCollection, {
+        ...product,
+        businessId: businessId || null
+    });
 }
 
 export async function updateProduct(id: string, product: Partial<Omit<DetailedProduct, 'id'>>): Promise<void> {

@@ -9,16 +9,21 @@ import { processDoc } from '@/lib/firestore-utils';
 
 const accountsCollection = collection(db, 'paymentAccounts');
 
-export async function getAccounts(): Promise<PaymentAccount[]> {
+export async function getAccounts(businessId?: string): Promise<PaymentAccount[]> {
     noStore();
-    const snapshot = await getDocs(accountsCollection);
+    let q = query(accountsCollection);
+    if (businessId) {
+        q = query(accountsCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     const data = snapshot.docs.map(doc => processDoc<PaymentAccount>(doc));
     return data;
 }
 
-export async function addAccount(account: Omit<PaymentAccount, 'id' | 'balance'>): Promise<void> {
+export async function addAccount(account: Omit<PaymentAccount, 'id' | 'balance'>, businessId?: string): Promise<void> {
     const newAccount = {
         ...account,
+        businessId: businessId || null,
         balance: account.openingBalance || 0,
     };
     await addDoc(accountsCollection, newAccount);
@@ -34,10 +39,14 @@ export async function deleteAccount(id: string): Promise<void> {
     await deleteDoc(docRef);
 }
 
-export async function setAsDefaultAccount(id: string): Promise<void> {
+export async function setAsDefaultAccount(id: string, businessId: string): Promise<void> {
     await runTransaction(db, async (transaction) => {
-        // Find the current default account
-        const q = query(accountsCollection, where("isDefault", "==", true));
+        // Find the current default account for this specific business
+        const q = query(
+            accountsCollection,
+            where("isDefault", "==", true),
+            where("businessId", "==", businessId)
+        );
         const currentDefaultDocs = await getDocs(q);
 
         // Unset the current default

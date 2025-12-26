@@ -3,16 +3,20 @@
 // use server removed
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc, addDoc, deleteDoc, DocumentData, runTransaction } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, addDoc, deleteDoc, DocumentData, runTransaction, query, where } from 'firebase/firestore';
 import { type Purchase } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
 import { unstable_noStore as noStore } from 'next/cache';
 
 const purchasesCollection = collection(db, 'purchases');
 
-export async function getPurchases(): Promise<Purchase[]> {
+export async function getPurchases(businessId?: string): Promise<Purchase[]> {
     noStore();
-    const snapshot = await getDocs(purchasesCollection);
+    let q = query(purchasesCollection);
+    if (businessId) {
+        q = query(purchasesCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Purchase>(doc));
 }
 
@@ -28,9 +32,10 @@ export async function getPurchase(id: string): Promise<Purchase | null> {
     }
 }
 
-export async function addPurchase(purchase: Omit<Purchase, 'id'>): Promise<void> {
+export async function addPurchase(purchase: Omit<Purchase, 'id'>, businessId?: string): Promise<void> {
     const dataToSave = {
         ...purchase,
+        businessId: businessId || null,
         date: new Date(purchase.date),
     };
 

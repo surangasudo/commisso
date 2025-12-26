@@ -10,11 +10,13 @@ import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getUsers } from '@/services/userService';
 import { type User } from '@/lib/data';
+import { ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
-    const { login } = useAuth();
+    const { loginAsUser } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
@@ -25,29 +27,35 @@ export default function LoginPage() {
                 } else {
                     // Force fallback if service returns empty
                     setUsers([
-                        { id: 'force-admin', name: 'System Admin', email: 'admin@crimson.pos', role: 'Admin', status: 'Active', username: 'admin' },
-                        { id: 'force-cashier', name: 'Test Cashier', email: 'cashier@crimson.pos', role: 'Cashier', status: 'Active', username: 'cashier' }
+                        { id: 'force-admin', name: 'System Admin', email: 'admin@crimson.pos', role: 'Admin', status: 'Active', username: 'admin', businessId: 'default' },
+                        { id: 'force-cashier', name: 'Test Cashier', email: 'cashier@crimson.pos', role: 'Cashier', status: 'Active', username: 'cashier', businessId: 'default' }
                     ]);
                 }
             })
             .catch(err => {
                 console.error("Login page failed load", err);
                 setUsers([
-                    { id: 'error-admin', name: 'System Admin (Error)', email: 'admin@crimson.pos', role: 'Admin', status: 'Active', username: 'admin' },
-                    { id: 'error-cashier', name: 'Test Cashier (Error)', email: 'cashier@crimson.pos', role: 'Cashier', status: 'Active', username: 'cashier' }
+                    { id: 'error-admin', name: 'System Admin (Error)', email: 'admin@crimson.pos', role: 'Admin', status: 'Active', username: 'admin', businessId: 'default' },
+                    { id: 'error-cashier', name: 'Test Cashier (Error)', email: 'cashier@crimson.pos', role: 'Cashier', status: 'Active', username: 'cashier', businessId: 'default' }
                 ]);
             });
     }, []);
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         const user = users.find(u => u.id === selectedUserId);
         if (user) {
-            login({
-                name: user.name,
-                email: user.email,
-                role: user.role
-            });
-            router.push('/admin/dashboard');
+            try {
+                await loginAsUser({
+                    id: user.id,
+                    name: user.name || user.email?.split('@')[0] || 'User',
+                    email: user.email,
+                    role: user.role || 'Cashier',
+                    businessId: user.businessId || undefined
+                });
+                router.push('/admin/dashboard');
+            } catch (err) {
+                console.error("Login failed", err);
+            }
         }
     };
 
@@ -57,7 +65,13 @@ export default function LoginPage() {
                 <Logo className="h-6 w-6" />
                 <span className="font-headline text-lg">Crimson POS</span>
             </div>
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+                <Link href="/superadmin-login">
+                    <Button variant="outline" size="sm" className="gap-2 border-primary/20 text-primary hover:bg-primary/5">
+                        <ShieldCheck className="h-4 w-4" />
+                        Superadmin
+                    </Button>
+                </Link>
                 <ThemeToggle />
             </div>
             <Card className="w-full max-w-sm">
@@ -73,11 +87,15 @@ export default function LoginPage() {
                                 <SelectValue placeholder={users.length > 0 ? "Choose a user to simulate login" : "Loading users..."} />
                             </SelectTrigger>
                             <SelectContent>
-                                {users.map(user => (
-                                    <SelectItem key={user.id} value={user.id}>
-                                        {user.name} ({user.role})
-                                    </SelectItem>
-                                ))}
+                                {users.map(user => {
+                                    const displayName = user.name || user.email?.split('@')[0] || 'Unknown User';
+                                    const displayRole = user.role || 'User';
+                                    return (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {displayName} ({displayRole})
+                                        </SelectItem>
+                                    );
+                                })}
                             </SelectContent>
                         </Select>
                     </div>

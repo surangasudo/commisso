@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Info, User as UserIcon, Loader2 } from "lucide-react";
 import { type User } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 import { getUser, updateUser } from '@/services/userService';
 
 export default function EditUserPage() {
@@ -18,6 +19,7 @@ export default function EditUserPage() {
     const params = useParams();
     const id = params.id as string;
     const { toast } = useToast();
+    const { user: currentUser } = useAuth();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -26,7 +28,7 @@ export default function EditUserPage() {
         async function fetchUser() {
             if (id) {
                 try {
-                    const fetchedUser = await getUser(id);
+                    const fetchedUser = await getUser(id, currentUser?.businessId || undefined);
                     if (fetchedUser) {
                         setUser(fetchedUser);
                     } else {
@@ -80,7 +82,7 @@ export default function EditUserPage() {
         if (user) {
             setUpdating(true);
             try {
-                await updateUser(user);
+                await updateUser(user, currentUser?.businessId || undefined);
                 toast({
                     title: "User Updated",
                     description: `Details for ${user.name} have been updated.`,
@@ -161,7 +163,12 @@ export default function EditUserPage() {
                                         <SelectValue placeholder="Select Role" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Admin">Admin</SelectItem>
+                                        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Admin') && (
+                                            <SelectItem value="Admin">Admin</SelectItem>
+                                        )}
+                                        {(currentUser?.role === 'SuperAdmin' || currentUser?.role === 'Admin' || currentUser?.role === 'Manager') && (
+                                            <SelectItem value="Manager">Manager</SelectItem>
+                                        )}
                                         <SelectItem value="Cashier">Cashier</SelectItem>
                                     </SelectContent>
                                 </Select>

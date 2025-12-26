@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { type PaymentAccount } from '@/lib/data';
 import { getAccounts, addAccount, updateAccount, deleteAccount, setAsDefaultAccount } from '@/services/paymentAccountService';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from '@/hooks/use-currency';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,9 +28,11 @@ const initialFormState: Omit<PaymentAccount, 'id' | 'balance'> = {
     accountType: 'Savings',
     openingBalance: 0,
     note: '',
+    businessId: null,
 };
 
 export default function ListAccountsPage() {
+    const { user } = useAuth();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
     const [accounts, setAccounts] = useState<PaymentAccount[]>([]);
@@ -39,7 +42,7 @@ export default function ListAccountsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     // Data states
     const [editingAccount, setEditingAccount] = useState<PaymentAccount | null>(null);
     const [formData, setFormData] = useState<Omit<PaymentAccount, 'id' | 'balance'>>(initialFormState);
@@ -48,7 +51,7 @@ export default function ListAccountsPage() {
     const fetchAccounts = async () => {
         try {
             setIsLoading(true);
-            const data = await getAccounts();
+            const data = await getAccounts(user?.businessId || undefined);
             setAccounts(data);
         } catch (error) {
             toast({ title: "Error", description: "Could not fetch accounts.", variant: "destructive" });
@@ -58,18 +61,20 @@ export default function ListAccountsPage() {
     };
 
     useEffect(() => {
-        fetchAccounts();
-    }, []);
+        if (user?.businessId) {
+            fetchAccounts();
+        }
+    }, [user?.businessId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { id, value, type } = e.target;
-        setFormData(prev => ({...prev, [id]: type === 'number' ? parseFloat(value) || 0 : value }));
+        setFormData(prev => ({ ...prev, [id]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
 
     const handleSelectChange = (value: 'Savings' | 'Checking' | 'Credit Card' | 'Cash') => {
-        setFormData(prev => ({...prev, accountType: value}));
+        setFormData(prev => ({ ...prev, accountType: value }));
     };
-    
+
     const handleAddClick = () => {
         setEditingAccount(null);
         setFormData(initialFormState);
@@ -84,6 +89,7 @@ export default function ListAccountsPage() {
             accountType: account.accountType,
             openingBalance: account.openingBalance,
             note: account.note,
+            businessId: account.businessId,
         });
         setIsDialogOpen(true);
     };
@@ -92,10 +98,11 @@ export default function ListAccountsPage() {
         setAccountToDelete(account);
         setIsDeleteOpen(true);
     };
-    
+
     const handleSetAsDefault = async (id: string) => {
         try {
-            await setAsDefaultAccount(id);
+            if (!user?.businessId) return;
+            await setAsDefaultAccount(id, user.businessId);
             toast({ title: "Success", description: "Default account has been updated." });
             fetchAccounts();
         } catch (error) {
@@ -105,7 +112,7 @@ export default function ListAccountsPage() {
 
     const handleSave = async () => {
         if (!formData.name) {
-            toast({ title: "Validation Error", description: "Account Name is required.", variant: "destructive"});
+            toast({ title: "Validation Error", description: "Account Name is required.", variant: "destructive" });
             return;
         }
         setIsSubmitting(true);
@@ -114,13 +121,13 @@ export default function ListAccountsPage() {
                 await updateAccount(editingAccount.id, formData);
                 toast({ title: "Success", description: "Account updated successfully." });
             } else {
-                await addAccount(formData);
+                await addAccount(formData, user?.businessId || undefined);
                 toast({ title: "Success", description: "Account created successfully." });
             }
             setIsDialogOpen(false);
             fetchAccounts();
         } catch (error) {
-             toast({ title: "Error", description: "Failed to save account.", variant: "destructive"});
+            toast({ title: "Error", description: "Failed to save account.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
         }
@@ -133,7 +140,7 @@ export default function ListAccountsPage() {
                 toast({ title: "Success", description: "Account deleted." });
                 fetchAccounts();
             } catch (error) {
-                 toast({ title: "Error", description: "Failed to delete account.", variant: "destructive"});
+                toast({ title: "Error", description: "Failed to delete account.", variant: "destructive" });
             } finally {
                 setIsDeleteOpen(false);
                 setAccountToDelete(null);
@@ -159,7 +166,7 @@ export default function ListAccountsPage() {
                                 <span>Add Account</span>
                             </Button>
                         </div>
-                         <CardDescription>
+                        <CardDescription>
                             Manage all your business payment accounts.
                         </CardDescription>
                     </CardHeader>
@@ -177,13 +184,13 @@ export default function ListAccountsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {isLoading ? (
-                                        Array.from({length: 3}).map((_, i) => (
+                                        Array.from({ length: 3 }).map((_, i) => (
                                             <TableRow key={i}>
-                                                <TableCell><Skeleton className="h-5 w-32"/></TableCell>
-                                                <TableCell><Skeleton className="h-5 w-24"/></TableCell>
-                                                <TableCell><Skeleton className="h-5 w-40"/></TableCell>
-                                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
-                                                <TableCell><div className="flex justify-center gap-2"><Skeleton className="h-8 w-[100px]"/></div></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                                <TableCell><div className="flex justify-center gap-2"><Skeleton className="h-8 w-[100px]" /></div></TableCell>
                                             </TableRow>
                                         ))
                                     ) : accounts.map((account) => (
@@ -201,15 +208,15 @@ export default function ListAccountsPage() {
                                                         <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="w-4 h-4" /></Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onSelect={() => handleEditClick(account)}><Pencil className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
-                                                        <DropdownMenuItem onSelect={() => handleDeleteClick(account)} className="text-red-500 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4"/>Delete</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => handleEditClick(account)}><Pencil className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => handleDeleteClick(account)} className="text-red-500 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                                                         {!account.isDefault && (
                                                             <>
-                                                            <DropdownMenuItem onSelect={() => handleSetAsDefault(account.id)}><CheckCircle className="mr-2 h-4 w-4"/>Set as Default</DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => handleSetAsDefault(account.id)}><CheckCircle className="mr-2 h-4 w-4" />Set as Default</DropdownMenuItem>
                                                             </>
                                                         )}
-                                                         <DropdownMenuItem disabled><Banknote className="mr-2 h-4 w-4"/>Deposit</DropdownMenuItem>
-                                                         <DropdownMenuItem disabled><ArrowRightLeft className="mr-2 h-4 w-4"/>Fund Transfer</DropdownMenuItem>
+                                                        <DropdownMenuItem disabled><Banknote className="mr-2 h-4 w-4" />Deposit</DropdownMenuItem>
+                                                        <DropdownMenuItem disabled><ArrowRightLeft className="mr-2 h-4 w-4" />Fund Transfer</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>

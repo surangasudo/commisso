@@ -1,8 +1,5 @@
-
-// use server removed
-
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, runTransaction, DocumentData, query, where } from 'firebase/firestore';
 import { type StockTransfer } from '@/lib/data';
 import { processDoc } from '@/lib/firestore-utils';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -20,17 +17,22 @@ type StockTransferInput = Omit<StockTransfer, 'id' | 'totalAmount'> & {
 
 const stockTransfersCollection = collection(db, 'stockTransfers');
 
-export async function getStockTransfers(): Promise<StockTransfer[]> {
+export async function getStockTransfers(businessId?: string): Promise<StockTransfer[]> {
     noStore();
-    const snapshot = await getDocs(stockTransfersCollection);
+    let q = query(stockTransfersCollection);
+    if (businessId) {
+        q = query(stockTransfersCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<StockTransfer>(doc));
 }
 
-export async function addStockTransfer(transfer: StockTransferInput): Promise<DocumentData> {
+export async function addStockTransfer(transfer: StockTransferInput, businessId?: string): Promise<DocumentData> {
     const totalAmount = transfer.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) + (transfer.shippingCharges || 0);
 
     const newTransferData = {
         date: new Date(transfer.date),
+        businessId: businessId || null,
         referenceNo: transfer.referenceNo || `ST-${Date.now()}`,
         locationFrom: transfer.locationFrom,
         locationTo: transfer.locationTo,

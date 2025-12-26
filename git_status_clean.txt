@@ -1,0 +1,46 @@
+﻿ M firestore.indexes.json
+ M src/app/admin/layout.tsx
+ M src/app/admin/payment-accounts/list/page.tsx
+ M src/app/admin/pos/page.tsx
+ M src/app/admin/roles/page.tsx
+ M src/app/admin/sales-commission-agents/add/page.tsx
+ M src/app/admin/sales-commission-agents/page.tsx
+ M src/app/admin/settings/multi-currency/page.tsx
+ M src/app/admin/users/add/page.tsx
+ M src/app/admin/users/edit/[id]/page.tsx
+ M src/app/admin/users/page.tsx
+ M src/app/admin/users/view/[id]/page.tsx
+ M src/app/login/page.tsx
+ M src/hooks/use-auth.tsx
+ M src/hooks/use-settings.ts
+ M src/lib/data.ts
+ M src/services/brandService.ts
+ M src/services/commissionService.ts
+ M src/services/currencyService.ts
+ M src/services/customerService.ts
+ M src/services/expenseCategoryService.ts
+ M src/services/expenseService.ts
+ M src/services/moneyExchangeService.ts
+ M src/services/paymentAccountService.ts
+ M src/services/productCategoryService.ts
+ M src/services/productService.ts
+ M src/services/purchaseService.ts
+ M src/services/registerLogService.ts
+ M src/services/saleService.ts
+ M src/services/sellingPriceGroupService.ts
+ M src/services/stockAdjustmentService.ts
+ M src/services/stockTransferService.ts
+ M src/services/supplierService.ts
+ M src/services/userService.ts
+?? git_diff.txt
+?? git_porcelain.txt
+?? git_remote.txt
+?? git_status.txt
+?? git_status_clean.txt
+?? git_status_full.txt
+?? scripts/
+?? src/app/superadmin-login/
+?? src/app/superadmin/
+?? src/components/superadmin/
+?? src/services/activityLogService.ts
+?? src/services/businessService.ts

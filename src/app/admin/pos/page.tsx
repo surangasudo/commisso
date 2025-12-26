@@ -246,17 +246,20 @@ const RecentTransactionsDialog = ({
 }) => {
     const { formatCurrency, symbol } = useCurrency();
     const [activeTab, setActiveTab] = useState("final");
+    const { user } = useAuth();
+
     const [drafts, setDrafts] = useState<Sale[]>([]);
     const [quotations, setQuotations] = useState<Sale[]>([]);
     const [suspended, setSuspended] = useState<Sale[]>([]);
 
     useEffect(() => {
-        if (open) {
-            getDrafts().then(setDrafts);
-            getQuotations().then(setQuotations);
-            getSuspendedSales().then(setSuspended);
+        if (open && user) {
+            const bizId = user.businessId || undefined;
+            getDrafts(bizId).then(setDrafts);
+            getQuotations(bizId).then(setQuotations);
+            getSuspendedSales(bizId).then(setSuspended);
         }
-    }, [open]);
+    }, [open, user]);
 
     const finalSales = recentSales.filter(s => s.paymentMethod !== 'Suspended' && s.invoiceNo !== 'PENDING');
 
@@ -857,6 +860,7 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
     profileType: 'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | '';
     onProfileAdded: () => void;
 }) => {
+    const { user } = useAuth();
     const { toast } = useToast();
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
@@ -883,11 +887,15 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
             email: email || undefined,
             commission: { overall: 0 }, // Default commission
             totalCommissionEarned: 0,
-            totalCommissionPaid: 0
+            totalCommissionPaid: 0,
+            businessId: user?.businessId || null
         };
 
         try {
-            await addCommissionProfile(newProfile);
+            await addCommissionProfile({
+                ...newProfile,
+                businessId: user?.businessId || null
+            });
             toast({ title: 'Success', description: `${profileType} has been added.` });
             onProfileAdded();
             onOpenChange(false);
@@ -929,6 +937,7 @@ const AddCommissionProfileDialog = ({ open, onOpenChange, profileType, onProfile
 };
 
 const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { user } = useAuth();
     const { toast } = useToast();
     const settings = useBusinessSettings();
     const { formatCurrency, symbol } = useCurrency();
@@ -946,7 +955,7 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
             const fetchCategories = async () => {
                 setIsLoading(true);
                 try {
-                    const cats = await getExpenseCategories();
+                    const cats = await getExpenseCategories(user?.businessId || undefined);
                     setCategories(cats.filter(c => !c.parentId));
                 } catch (error) {
                     toast({ title: "Error", description: "Could not load expense categories.", variant: "destructive" });
@@ -994,11 +1003,12 @@ const AddExpenseDialog = ({ open, onOpenChange }: { open: boolean, onOpenChange:
                 paymentDue: 0,
                 expenseFor: null,
                 contact: null,
-                addedBy: 'Admin',
+                addedBy: user?.name || 'Admin',
                 expenseNote: formData.expenseNote,
+                businessId: user?.businessId || null
             };
 
-            await addExpense(expenseData, settings.prefixes.expenses);
+            await addExpense(expenseData, user?.businessId || undefined, settings.prefixes.expenses);
             toast({ title: "Expense Added", description: `Expense of ${formatCurrency(total)} has been recorded.` });
             onOpenChange(false);
         } catch (error) {
@@ -1080,7 +1090,7 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
             const fetchCurrencies = async () => {
                 setIsLoading(true);
                 try {
-                    const currencyData = await getCurrencies();
+                    const currencyData = await getCurrencies(user?.businessId || undefined);
                     setCurrencies(currencyData);
                     const base = currencyData.find(c => c.isBaseCurrency);
                     const firstOther = currencyData.find(c => !c.isBaseCurrency);
@@ -1137,6 +1147,7 @@ const MoneyExchangeDialog = ({ open, onOpenChange }: { open: boolean, onOpenChan
                 profit: profit,
                 convertedAmount: convertedAmount,
                 addedBy: user?.name || 'Unknown',
+                businessId: user?.businessId || null
             });
             toast({ title: 'Success', description: `Exchanged ${amount} ${fromCurrency} to ${convertedAmount.toFixed(2)} ${toCurrency}.` });
             onOpenChange(false);
@@ -1494,15 +1505,15 @@ export default function PosPage() {
     const [isRegisterDetailsOpen, setIsRegisterDetailsOpen] = useState(false);
 
     const fetchActiveRegister = useCallback(async () => {
-        if (user?.uid) {
+        if (user?.id) {
             try {
-                const register = await getActiveRegister(user.uid);
+                const register = await getActiveRegister(user.id, user.businessId || undefined);
                 setActiveRegister(register);
             } catch (error) {
                 console.error("Error fetching active register:", error);
             }
         }
-    }, [user?.uid]);
+    }, [user?.id, user?.businessId]);
 
     useEffect(() => {
         fetchActiveRegister();
@@ -1510,10 +1521,10 @@ export default function PosPage() {
 
     // Auto-open register dialog if no active register exists
     useEffect(() => {
-        if (!isLoading && !activeRegister && user?.uid) {
+        if (!isLoading && !activeRegister && user?.id) {
             setIsOpenRegisterOpen(true);
         }
-    }, [activeRegister, isLoading, user?.uid]);
+    }, [activeRegister, isLoading, user?.id]);
 
 
     const updateActiveRegisterTotals = useCallback(async (paymentMethod: string, amount: number) => {
@@ -1575,6 +1586,7 @@ export default function PosPage() {
     const [isSuspendedSalesOpen, setIsSuspendedSalesOpen] = useState(false);
     const [isExchangeOpen, setIsExchangeOpen] = useState(false);
     const [isSmsEnabled, setIsSmsEnabled] = useState(true);
+    const [customerDisplayData, setCustomerDisplayData] = useState<any>(null);
 
     const [commissionProfiles, setCommissionProfiles] = useState<CommissionProfile[]>([]);
     const [selectedAgent, setSelectedAgent] = useState<CommissionProfile | null>(null);
@@ -1627,21 +1639,31 @@ export default function PosPage() {
     const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
     const [autoPrint, setAutoPrint] = useState(false);
 
-    useEffect(() => {
-        const savedAutoPrint = localStorage.getItem('pos-auto-print');
-        if (savedAutoPrint !== null) setAutoPrint(savedAutoPrint === 'true');
-
-        const savedSmsEnabled = localStorage.getItem('pos-sms-enabled');
-        if (savedSmsEnabled !== null) setIsSmsEnabled(savedSmsEnabled === 'true');
-    }, []);
+    const updateCustomerDisplay = useCallback((data: any) => {
+        if (!user?.businessId) return;
+        localStorage.setItem(`pos-customer-display-data-${user.businessId}`, JSON.stringify(data));
+        setCustomerDisplayData(data);
+    }, [user?.businessId]);
 
     useEffect(() => {
-        localStorage.setItem('pos-auto-print', autoPrint.toString());
-    }, [autoPrint]);
+        if (user?.businessId) {
+            const savedAutoPrint = localStorage.getItem(`pos-auto-print-${user.businessId}`);
+            if (savedAutoPrint !== null) setAutoPrint(savedAutoPrint === 'true');
+
+            const savedSmsEnabled = localStorage.getItem(`pos-sms-enabled-${user.businessId}`);
+            if (savedSmsEnabled !== null) setIsSmsEnabled(savedSmsEnabled === 'true');
+        }
+    }, [user?.businessId]);
 
     useEffect(() => {
-        localStorage.setItem('pos-sms-enabled', isSmsEnabled.toString());
-    }, [isSmsEnabled]);
+        if (!user?.businessId) return;
+        localStorage.setItem(`pos-auto-print-${user.businessId}`, autoPrint.toString());
+    }, [autoPrint, user?.businessId]);
+
+    useEffect(() => {
+        if (!user?.businessId) return;
+        localStorage.setItem(`pos-sms-enabled-${user.businessId}`, isSmsEnabled.toString());
+    }, [isSmsEnabled, user?.businessId]);
 
     const handlePrint = useReactToPrint({
         contentRef: receiptRef,
@@ -1713,8 +1735,9 @@ export default function PosPage() {
             commissionAgentIds: commissionAgentIds.length > 0 ? commissionAgentIds : null,
             paymentReference: (paymentReference || null) as any,
             sellNote: companyReference ? `Company Ref: ${companyReference}` : null,
+            businessId: user?.businessId || null,
         };
-    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalespersons, companyReference]);
+    }, [customers, selectedCustomer, settings.business.businessName, totalPayable, cart, orderTax, selectedAgent, selectedSubAgent, selectedCompany, selectedSalespersons, companyReference, user?.businessId]);
 
     const clearCart = useCallback((showToast = true) => {
         setCart([]);
@@ -1740,15 +1763,16 @@ export default function PosPage() {
         }
 
         try {
+            const bizId = user?.businessId || undefined;
             const [productsData, salesData, purchasesData, profilesData, customersData, groupsData, categoriesData, brandsData] = await Promise.all([
-                getProducts(),
-                getSales(),
-                getPurchases(),
-                getCommissionProfiles(),
-                getCustomers(),
-                getSellingPriceGroups(),
-                getProductCategories(),
-                getBrands(),
+                getProducts(bizId),
+                getSales(bizId),
+                getPurchases(bizId),
+                getCommissionProfiles(bizId),
+                getCustomers(bizId),
+                getSellingPriceGroups(bizId),
+                getProductCategories(bizId),
+                getBrands(bizId),
             ]);
 
             setCustomers(customersData);
@@ -1950,8 +1974,8 @@ export default function PosPage() {
             shipping,
             totalPayable,
         };
-        localStorage.setItem('pos-customer-display-data', JSON.stringify(customerDisplayData));
-    }, [cart, subtotal, discount, orderTax, shipping, totalPayable]);
+        updateCustomerDisplay(customerDisplayData);
+    }, [cart, subtotal, discount, orderTax, shipping, totalPayable, updateCustomerDisplay]);
 
 
     useEffect(() => {
@@ -2262,15 +2286,16 @@ export default function PosPage() {
                 mobile: newCustomer.mobile,
                 totalSaleDue: 0,
                 totalSaleReturnDue: 0,
+                businessId: user?.businessId || null,
             };
-            await addCustomer(customerToAdd, settings.prefixes.contacts);
+            await addCustomer(customerToAdd, user?.businessId || undefined, settings.prefixes.contacts);
             toast({
                 title: "Success",
                 description: "Customer has been added successfully."
             });
 
             // Re-fetch customers to update the list
-            const updatedCustomers = await getCustomers();
+            const updatedCustomers = await getCustomers(user?.businessId || undefined);
             setCustomers(updatedCustomers);
 
             setIsAddCustomerOpen(false);
@@ -3062,7 +3087,7 @@ export default function PosPage() {
             <OpenRegisterDialog
                 isOpen={isOpenRegisterOpen}
                 onClose={() => setIsOpenRegisterOpen(false)}
-                userId={user?.uid || ''}
+                userId={user?.id || ''}
                 userName={user?.name || ''}
                 isAutoOpened={!activeRegister}
                 onSuccess={() => {

@@ -48,7 +48,8 @@ import { AppFooter } from '@/components/app-footer';
 
 const initialRoles = [
   { id: 'role-1', name: 'Admin' },
-  { id: 'role-2', name: 'Cashier' },
+  { id: 'role-2', name: 'Manager' },
+  { id: 'role-3', name: 'Cashier' },
 ];
 
 export default function RolesPage() {
@@ -60,7 +61,7 @@ export default function RolesPage() {
     setRoleToDelete(role);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const confirmDelete = () => {
     if (roleToDelete) {
       setRoles(roles.filter(r => r.id !== roleToDelete.id));
@@ -82,8 +83,8 @@ export default function RolesPage() {
             <CardTitle>All roles</CardTitle>
             <Link href="/admin/roles/add">
               <Button size="sm" className="h-9 gap-1.5">
-                  <Plus className="h-4 w-4" />
-                  <span>Add</span>
+                <Plus className="h-4 w-4" />
+                <span>Add</span>
               </Button>
             </Link>
           </CardHeader>
@@ -115,7 +116,7 @@ export default function RolesPage() {
                     <TableHead>Roles</TableHead>
                     <TableHead>
                       <div className="flex items-center gap-1">
-                          <ArrowUpDown className="h-4 w-4" /> Action
+                        <ArrowUpDown className="h-4 w-4" /> Action
                       </div>
                     </TableHead>
                   </TableRow>

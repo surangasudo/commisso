@@ -12,9 +12,12 @@ const salesCollection = collection(db, 'sales');
 const draftsCollection = collection(db, 'drafts');
 const quotationsCollection = collection(db, 'quotations');
 
-export async function getSales(): Promise<Sale[]> {
+export async function getSales(businessId?: string): Promise<Sale[]> {
     noStore();
-    const q = query(salesCollection, orderBy('date', 'desc'));
+    let q = query(salesCollection, orderBy('date', 'desc'));
+    if (businessId) {
+        q = query(salesCollection, where('businessId', '==', businessId), orderBy('date', 'desc'));
+    }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Sale>(doc));
 }
@@ -34,7 +37,8 @@ export async function getSale(id: string): Promise<Sale | null> {
 export async function addSale(
     sale: Omit<Sale, 'id'>,
     commissionCalculationType: 'invoice_value' | 'payment_received',
-    commissionCategoryRule: 'strict' | 'fallback'
+    commissionCategoryRule: 'strict' | 'fallback',
+    businessId?: string
 ): Promise<{ id: string, invoiceNo: string }> {
     const saleDataForDb = {
         ...sale,
@@ -596,14 +600,17 @@ export async function deleteSale(id: string): Promise<void> {
     });
 }
 
-export async function getDrafts(): Promise<Sale[]> {
+export async function getDrafts(businessId?: string): Promise<Sale[]> {
     noStore();
-    const q = query(draftsCollection, orderBy('date', 'desc'));
+    let q = query(draftsCollection, orderBy('date', 'desc'));
+    if (businessId) {
+        q = query(draftsCollection, where('businessId', '==', businessId), orderBy('date', 'desc'));
+    }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Sale>(doc));
 }
 
-export async function addDraft(draft: Omit<Sale, 'id'>): Promise<string> {
+export async function addDraft(draft: Omit<Sale, 'id'>, businessId?: string): Promise<string> {
     const saleId = await runTransaction(db, async (transaction) => {
         // --- 1. GENERATE DRAFT NUMBER ---
         // Use 'DR' prefix
@@ -623,7 +630,8 @@ export async function addDraft(draft: Omit<Sale, 'id'>): Promise<string> {
         const draftData = {
             ...draft,
             invoiceNo: finalDraftNo,
-            date: new Date(draft.date)
+            date: new Date(draft.date),
+            businessId: businessId || draft.businessId || null
         };
 
         const newDraftRef = doc(draftsCollection);
@@ -642,14 +650,17 @@ export async function deleteDraft(id: string): Promise<void> {
     await deleteDoc(docRef);
 }
 
-export async function getQuotations(): Promise<Sale[]> {
+export async function getQuotations(businessId?: string): Promise<Sale[]> {
     noStore();
-    const q = query(quotationsCollection, orderBy('date', 'desc'));
+    let q = query(quotationsCollection, orderBy('date', 'desc'));
+    if (businessId) {
+        q = query(quotationsCollection, where('businessId', '==', businessId), orderBy('date', 'desc'));
+    }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Sale>(doc));
 }
 
-export async function addQuotation(quotation: Omit<Sale, 'id'>): Promise<string> {
+export async function addQuotation(quotation: Omit<Sale, 'id'>, businessId?: string): Promise<string> {
     const saleId = await runTransaction(db, async (transaction) => {
         // --- 1. GENERATE QUOTATION NUMBER ---
         // Use 'QT' prefix
@@ -669,7 +680,8 @@ export async function addQuotation(quotation: Omit<Sale, 'id'>): Promise<string>
         const quoteData = {
             ...quotation,
             invoiceNo: finalQuotationNo,
-            date: new Date(quotation.date)
+            date: new Date(quotation.date),
+            businessId: businessId || quotation.businessId || null
         };
 
         const newQuoteRef = doc(quotationsCollection);
@@ -688,9 +700,12 @@ export async function deleteQuotation(id: string): Promise<void> {
     await deleteDoc(docRef);
 }
 
-export async function getSuspendedSales(): Promise<Sale[]> {
+export async function getSuspendedSales(businessId?: string): Promise<Sale[]> {
     noStore();
-    const q = query(salesCollection, where('paymentMethod', '==', 'Suspended'));
+    let q = query(salesCollection, where('paymentMethod', '==', 'Suspended'));
+    if (businessId) {
+        q = query(salesCollection, where('businessId', '==', businessId), where('paymentMethod', '==', 'Suspended'));
+    }
     const snapshot = await getDocs(q);
     const sales = snapshot.docs.map(doc => processDoc<Sale>(doc));
     return sales.sort((a, b) => (b.date || "").localeCompare(a.date || ""));

@@ -16,10 +16,12 @@ import { FirebaseError } from 'firebase/app';
 import { getProductCategories } from '@/services/productCategoryService';
 import { type ProductCategory } from '@/lib/data';
 import { useBusinessSettings } from '@/hooks/use-business-settings';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function AddSalesCommissionAgentPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { user: currentUser } = useAuth();
     const settings = useBusinessSettings();
 
     const [entityType, setEntityType] = useState<'Agent' | 'Sub-Agent' | 'Company' | 'Salesperson' | ''>('');
@@ -122,7 +124,7 @@ export default function AddSalesCommissionAgentPage() {
         };
 
         try {
-            await addCommissionProfile(newProfile as any);
+            await addCommissionProfile(newProfile as any, currentUser?.businessId);
             toast({
                 title: "Profile Saved!",
                 description: `The commission profile for ${agentName} has been created.`,

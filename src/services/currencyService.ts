@@ -12,15 +12,19 @@ const currencyCollection = collection(db, 'currencies');
 // It's recommended to store this key in an environment variable (e.g., in your .env file)
 const EXCHANGE_RATE_API_KEY = process.env.EXCHANGE_RATE_API_KEY;
 
-export async function getCurrencies(): Promise<Currency[]> {
+export async function getCurrencies(businessId?: string): Promise<Currency[]> {
   noStore();
-  const snapshot = await getDocs(currencyCollection);
-  if (snapshot.empty) {
-    // Seed initial data if the collection is empty
+  let q = query(currencyCollection);
+  if (businessId) {
+    q = query(currencyCollection, where('businessId', '==', businessId));
+  }
+  const snapshot = await getDocs(q);
+  if (snapshot.empty && businessId) {
+    // Seed initial data if the collection is empty for this business
     const initialCurrencies: Omit<Currency, 'id'>[] = [
-      { name: 'US Dollar', code: 'USD', symbol: '$', exchangeRate: 1, isBaseCurrency: true },
-      { name: 'Euro', code: 'EUR', symbol: '€', exchangeRate: 0.92 },
-      { name: 'British Pound', code: 'GBP', symbol: '£', exchangeRate: 0.79 },
+      { name: 'US Dollar', code: 'USD', symbol: '$', exchangeRate: 1, isBaseCurrency: true, businessId },
+      { name: 'Euro', code: 'EUR', symbol: '€', exchangeRate: 0.92, businessId },
+      { name: 'British Pound', code: 'GBP', symbol: '£', exchangeRate: 0.79, businessId },
     ];
     const batch = writeBatch(db);
     initialCurrencies.forEach(currency => {
@@ -28,14 +32,18 @@ export async function getCurrencies(): Promise<Currency[]> {
       batch.set(docRef, currency);
     });
     await batch.commit();
-    const newSnapshot = await getDocs(currencyCollection);
+    const newSnapshot = await getDocs(q);
     return newSnapshot.docs.map(doc => processDoc<Currency>(doc));
   }
   return snapshot.docs.map(doc => processDoc<Currency>(doc));
 }
 
-export async function addCurrency(currency: Omit<Currency, 'id' | 'isBaseCurrency'>): Promise<void> {
-  await addDoc(currencyCollection, { ...currency, isBaseCurrency: false });
+export async function addCurrency(currency: Omit<Currency, 'id' | 'isBaseCurrency'>, businessId?: string): Promise<void> {
+  await addDoc(currencyCollection, {
+    ...currency,
+    businessId: businessId || currency.businessId || null,
+    isBaseCurrency: false
+  });
 }
 
 export async function updateCurrency(id: string, currency: Partial<Omit<Currency, 'id'>>): Promise<void> {
@@ -48,10 +56,14 @@ export async function deleteCurrency(id: string): Promise<void> {
   await deleteDoc(docRef);
 }
 
-export async function setBaseCurrency(id: string): Promise<void> {
+export async function setBaseCurrency(id: string, businessId: string): Promise<void> {
   await runTransaction(db, async (transaction) => {
-    // 1. Find the current default currency
-    const currentDefaultQuery = query(currencyCollection, where("isBaseCurrency", "==", true));
+    // 1. Find the current default currency for THIS business
+    const currentDefaultQuery = query(
+      currencyCollection,
+      where("businessId", "==", businessId),
+      where("isBaseCurrency", "==", true)
+    );
     const currentDefaultDocs = await getDocs(currentDefaultQuery);
 
     // 2. Unset the current default
@@ -65,18 +77,18 @@ export async function setBaseCurrency(id: string): Promise<void> {
   });
 }
 
-export async function updateAllExchangeRates(): Promise<{ success: boolean, message: string }> {
+export async function updateAllExchangeRates(businessId: string): Promise<{ success: boolean, message: string }> {
   if (!EXCHANGE_RATE_API_KEY || EXCHANGE_RATE_API_KEY === 'YOUR_API_KEY_HERE') {
     const errorMsg = 'ExchangeRate-API key is not configured. Please add it to your .env file.';
     console.error(errorMsg);
     return { success: false, message: errorMsg };
   }
 
-  const allCurrencies = await getCurrencies();
+  const allCurrencies = await getCurrencies(businessId);
   const baseCurrency = allCurrencies.find(c => c.isBaseCurrency);
 
   if (!baseCurrency) {
-    return { success: false, message: 'No base currency found.' };
+    return { success: false, message: 'No base currency found for this business.' };
   }
 
   try {

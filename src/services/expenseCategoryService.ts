@@ -2,16 +2,20 @@
 // use server removed
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, DocumentData, query, where } from 'firebase/firestore';
 import { type ExpenseCategory } from '@/lib/data';
 import { unstable_noStore as noStore } from 'next/cache';
 import { processDoc } from '@/lib/firestore-utils';
 
 const expenseCategoriesCollection = collection(db, 'expenseCategories');
 
-export async function getExpenseCategories(): Promise<ExpenseCategory[]> {
+export async function getExpenseCategories(businessId?: string): Promise<ExpenseCategory[]> {
     noStore();
-    const snapshot = await getDocs(expenseCategoriesCollection);
+    let q = query(expenseCategoriesCollection);
+    if (businessId) {
+        q = query(expenseCategoriesCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     const data = snapshot.docs.map(doc => processDoc<ExpenseCategory>(doc));
     return data;
 }

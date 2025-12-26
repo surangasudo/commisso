@@ -14,6 +14,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -73,14 +74,19 @@ export default function UsersPage() {
     action: true,
   });
 
+  const { user: currentUser } = useAuth();
+
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (currentUser) {
+      loadUsers();
+    }
+  }, [currentUser]);
 
   const loadUsers = async () => {
+    if (!currentUser) return;
     setIsLoading(true);
     try {
-      const data = await getUsers();
+      const data = await getUsers(currentUser.businessId || undefined);
       setUsers(data);
     } catch (error) {
       console.error("Failed to load users", error);
@@ -107,9 +113,9 @@ export default function UsersPage() {
   };
 
   const confirmDelete = async () => {
-    if (userToDelete) {
+    if (userToDelete && currentUser) {
       try {
-        await deleteUser(userToDelete.id);
+        await deleteUser(userToDelete.id, currentUser.businessId || undefined);
         setUsers(users.filter(u => u.id !== userToDelete.id));
         setIsDeleteDialogOpen(false);
         setUserToDelete(null);

@@ -332,55 +332,57 @@ const SettingsContext = createContext<SettingsContextType>({
 
 export const useSettings = () => useContext(SettingsContext);
 
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { useAuth } from '@/hooks/use-auth';
+
+// ... (initialSettings and types remain the same)
+
 export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
     const [settings, setSettings] = useState<AllSettings>(initialSettings);
     const [isLoaded, setIsLoaded] = useState(false);
+    const { user: currentUser } = useAuth();
 
     useEffect(() => {
-        const loadSettings = () => {
-            try {
-                const savedSettings = localStorage.getItem('businessSettings');
-                if (savedSettings) {
-                    const parsed = JSON.parse(savedSettings);
-                    const mergedSettings = { ...initialSettings };
-                    for (const key in initialSettings) {
-                        if (parsed[key]) {
-                            mergedSettings[key as keyof AllSettings] = {
-                                ...initialSettings[key as keyof AllSettings],
-                                ...parsed[key]
-                            };
-                        }
+        if (!currentUser?.businessId) {
+            setSettings(initialSettings);
+            setIsLoaded(true);
+            return;
+        }
+
+        setIsLoaded(false);
+        const settingsRef = doc(db, 'businessSettings', currentUser.businessId);
+
+        // Use onSnapshot for real-time updates and multi-tab sync
+        const unsubscribe = onSnapshot(settingsRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                const mergedSettings = { ...initialSettings };
+                for (const key in initialSettings) {
+                    if (data[key]) {
+                        mergedSettings[key as keyof AllSettings] = {
+                            ...initialSettings[key as keyof AllSettings],
+                            ...data[key]
+                        };
                     }
-                    setSettings(mergedSettings);
                 }
-            } catch (error) {
-                console.error("Failed to parse settings from localStorage", error);
-            } finally {
-                setIsLoaded(true);
+                setSettings(mergedSettings);
+            } else {
+                // Initialize settings if they don't exist
+                setDoc(settingsRef, initialSettings);
+                setSettings(initialSettings);
             }
-        };
+            setIsLoaded(true);
+        }, (error) => {
+            console.error("Failed to fetch settings from Firestore:", error);
+            setIsLoaded(true); // Still set to loaded to avoid blocking UI indefinitely
+        });
 
-        loadSettings();
-
-        // Cross-tab synchronization
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'businessSettings' && e.newValue) {
-                try {
-                    const parsed = JSON.parse(e.newValue);
-                    setSettings(parsed);
-                } catch (err) {
-                    console.error("Failed to sync settings across tabs", err);
-                }
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
+        return () => unsubscribe();
+    }, [currentUser?.businessId]);
 
     useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem('businessSettings', JSON.stringify(settings));
+        if (isLoaded && settings.system.themeColor) {
             // Apply theme class
             document.documentElement.classList.forEach(c => {
                 if (c.startsWith('theme-')) {
@@ -389,9 +391,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             });
             document.documentElement.classList.add(`theme-${settings.system.themeColor}`);
         }
-    }, [settings, isLoaded]);
+    }, [settings.system.themeColor, isLoaded]);
 
-    const handleUpdateSection = useCallback(<T extends keyof AllSettings>(section: T, newValues: Partial<AllSettings[T]>) => {
+    const handleUpdateSection = useCallback(async <T extends keyof AllSettings>(section: T, newValues: Partial<AllSettings[T]>) => {
+        if (!currentUser?.businessId) return;
+
+        const settingsRef = doc(db, 'businessSettings', currentUser.businessId);
+
+        // Optimistic update
         setSettings(prev => ({
             ...prev,
             [section]: {
@@ -399,7 +406,26 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
                 ...newValues,
             }
         }));
-    }, []);
+
+        try {
+            // Persist to Firestore
+            // Note: In an ideal world, we'd use a deep merge update or dot notation if Firestore supported it easily for nested objects in JS.
+            // For now, we fetch the latest and write back the updated section.
+            const snap = await getDoc(settingsRef);
+            const currentData = snap.exists() ? snap.data() : initialSettings;
+
+            await setDoc(settingsRef, {
+                ...currentData,
+                [section]: {
+                    ...currentData[section],
+                    ...newValues
+                }
+            }, { merge: true });
+        } catch (error) {
+            console.error("Failed to update settings in Firestore:", error);
+            // Optionally revert optimistic update here
+        }
+    }, [currentUser?.businessId]);
 
     const value = { settings, updateSection: handleUpdateSection };
 

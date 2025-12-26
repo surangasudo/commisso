@@ -30,9 +30,13 @@ export type PendingCommission = {
     }[];
 };
 
-export async function getCommissions(): Promise<Commission[]> {
+export async function getCommissions(businessId?: string): Promise<Commission[]> {
     noStore();
-    const snapshot = await getDocs(commissionsCollection);
+    let q = query(commissionsCollection);
+    if (businessId) {
+        q = query(commissionsCollection, where('businessId', '==', businessId));
+    }
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Commission>(doc));
 }
 
@@ -52,16 +56,23 @@ export async function getCommissionsByIds(ids: string[]): Promise<Commission[]> 
     return commissions;
 }
 
-export async function getCommissionsForProfile(profileId: string): Promise<Commission[]> {
+export async function getCommissionsForProfile(profileId: string, businessId?: string): Promise<Commission[]> {
     noStore();
-    const q = query(commissionsCollection, where("recipient_profile_id", "==", profileId));
+    let q = query(commissionsCollection, where("recipient_profile_id", "==", profileId));
+    if (businessId) {
+        q = query(q, where('businessId', '==', businessId));
+    }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => processDoc<Commission>(doc));
 }
 
-export async function getCommissionProfiles(): Promise<CommissionProfileWithSummary[]> {
+export async function getCommissionProfiles(businessId?: string): Promise<CommissionProfileWithSummary[]> {
     noStore();
-    const profilesSnapshot = await getDocs(commissionProfilesCollection);
+    let q = query(commissionProfilesCollection);
+    if (businessId) {
+        q = query(commissionProfilesCollection, where('businessId', '==', businessId));
+    }
+    const profilesSnapshot = await getDocs(q);
     const profiles = profilesSnapshot.docs.map(doc => processDoc<CommissionProfileWithSummary>(doc));
     return profiles;
 }
@@ -79,13 +90,17 @@ export async function getCommissionProfile(id: string): Promise<CommissionProfil
 }
 
 
-export async function getPendingCommissions(profileId: string): Promise<PendingCommission[]> {
+export async function getPendingCommissions(profileId: string, businessId?: string): Promise<PendingCommission[]> {
     noStore();
-    const commissionsQuery = query(
+    let commissionsQuery = query(
         commissionsCollection,
         where("recipient_profile_id", "==", profileId),
-        where("status", "==", "Pending Approval") // Fetch records ready for payout
+        where("status", "==", "Pending Approval")
     );
+
+    if (businessId) {
+        commissionsQuery = query(commissionsQuery, where('businessId', '==', businessId));
+    }
 
     const snapshot = await getDocs(commissionsQuery);
     if (snapshot.empty) return [];
@@ -174,9 +189,10 @@ export async function getPendingCommissions(profileId: string): Promise<PendingC
 }
 
 
-export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>): Promise<void> {
+export async function addCommissionProfile(profile: Omit<CommissionProfile, 'id'>, businessId?: string): Promise<void> {
     const dataToSave: any = {
         ...profile,
+        businessId: businessId || null,
         email: profile.email || null,
         bankDetails: profile.bankDetails || null,
         commission: {

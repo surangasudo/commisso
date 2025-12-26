@@ -7,19 +7,31 @@ import { unstable_noStore as noStore } from 'next/cache';
 const COLLECTION_NAME = 'registerLogs';
 const registerLogsCollection = collection(db, COLLECTION_NAME);
 
-export async function getRegisterLogs(): Promise<RegisterLog[]> {
+export async function getRegisterLogs(businessId?: string): Promise<RegisterLog[]> {
   noStore();
-  const snapshot = await getDocs(registerLogsCollection);
+  let q = query(registerLogsCollection);
+  if (businessId) {
+    q = query(registerLogsCollection, where('businessId', '==', businessId));
+  }
+  const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => processDoc<RegisterLog>(doc));
 }
 
-export async function getActiveRegister(userId: string): Promise<RegisterLog | null> {
+export async function getActiveRegister(userId: string, businessId?: string): Promise<RegisterLog | null> {
   noStore();
-  const q = query(
+  let q = query(
     registerLogsCollection,
     where('userId', '==', userId),
     where('status', '==', 'Open')
   );
+  if (businessId) {
+    q = query(
+      registerLogsCollection,
+      where('userId', '==', userId),
+      where('businessId', '==', businessId),
+      where('status', '==', 'Open')
+    );
+  }
   const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
   return processDoc<RegisterLog>(snapshot.docs[0]);
@@ -29,7 +41,8 @@ export async function openRegister(
   userId: string,
   userName: string,
   openingCash: number,
-  location: string
+  location: string,
+  businessId?: string
 ): Promise<string> {
   const newLog: Omit<RegisterLog, 'id'> = {
     userId,
@@ -46,6 +59,7 @@ export async function openRegister(
     totalExpenses: 0,
     closingCash: 0,
     closingNote: null,
+    businessId: businessId || null,
   };
   const docRef = await addDoc(registerLogsCollection, newLog);
   return docRef.id;

@@ -1,0 +1,56 @@
+﻿On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   firestore.indexes.json
+	modified:   src/app/admin/layout.tsx
+	modified:   src/app/admin/payment-accounts/list/page.tsx
+	modified:   src/app/admin/pos/page.tsx
+	modified:   src/app/admin/roles/page.tsx
+	modified:   src/app/admin/sales-commission-agents/add/page.tsx
+	modified:   src/app/admin/sales-commission-agents/page.tsx
+	modified:   src/app/admin/settings/multi-currency/page.tsx
+	modified:   src/app/admin/users/add/page.tsx
+	modified:   src/app/admin/users/edit/[id]/page.tsx
+	modified:   src/app/admin/users/page.tsx
+	modified:   src/app/admin/users/view/[id]/page.tsx
+	modified:   src/app/login/page.tsx
+	modified:   src/hooks/use-auth.tsx
+	modified:   src/hooks/use-settings.ts
+	modified:   src/lib/data.ts
+	modified:   src/services/brandService.ts
+	modified:   src/services/commissionService.ts
+	modified:   src/services/currencyService.ts
+	modified:   src/services/customerService.ts
+	modified:   src/services/expenseCategoryService.ts
+	modified:   src/services/expenseService.ts
+	modified:   src/services/moneyExchangeService.ts
+	modified:   src/services/paymentAccountService.ts
+	modified:   src/services/productCategoryService.ts
+	modified:   src/services/productService.ts
+	modified:   src/services/purchaseService.ts
+	modified:   src/services/registerLogService.ts
+	modified:   src/services/saleService.ts
+	modified:   src/services/sellingPriceGroupService.ts
+	modified:   src/services/stockAdjustmentService.ts
+	modified:   src/services/stockTransferService.ts
+	modified:   src/services/supplierService.ts
+	modified:   src/services/userService.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	git_diff.txt
+	git_remote.txt
+	git_status.txt
+	git_status_clean.txt
+	git_status_full.txt
+	scripts/
+	src/app/superadmin-login/
+	src/app/superadmin/
+	src/components/superadmin/
+	src/services/activityLogService.ts
+	src/services/businessService.ts
+
+no changes added to commit (use "git add" and/or "git commit -a")

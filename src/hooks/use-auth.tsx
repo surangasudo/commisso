@@ -1,21 +1,31 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { auth } from '@/lib/firebase';
-import { signInAnonymously, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import {
+    signInAnonymously,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    User as FirebaseUser,
+    updateProfile
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { type User, type UserRole, SUPERADMIN_EMAILS } from '@/lib/data';
 
-type User = {
-    name: string;
-    email: string;
-    role: 'Admin' | 'Cashier';
-    uid?: string;
-};
+const googleProvider = new GoogleAuthProvider();
 
 type AuthContextType = {
     user: User | null;
     loading: boolean;
-    login: (userData: { name: string, email: string, role: 'Admin' | 'Cashier' }) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    loginWithGoogle: (asSuperAdmin?: boolean) => Promise<void>;
+    loginAsUser: (userData: { name: string, email: string, role: UserRole, id: string, businessId?: string }) => Promise<void>;
+    register: (email: string, password: string, userData: Omit<User, 'id'>) => Promise<void>;
     logout: () => Promise<void>;
 };
 
@@ -23,6 +33,9 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     loading: true,
     login: async () => { },
+    loginWithGoogle: async () => { },
+    loginAsUser: async () => { },
+    register: async () => { },
     logout: async () => { },
 });
 
@@ -31,93 +44,156 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const [authError, setAuthError] = useState<string | null>(null);
     const router = useRouter();
 
     useEffect(() => {
         console.log('[AuthProvider] Initializing Firebase Auth...');
 
-        // Set a timeout to prevent infinite loading
-        const timeoutId = setTimeout(() => {
-            console.warn('[AuthProvider] Auth initialization timeout after 5 seconds');
-            if (loading) {
-                setLoading(false);
-                setAuthError('Authentication initialization timed out. Please refresh the page.');
-            }
-        }, 5000);
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            console.log('[AuthProvider] Auth state changed:', firebaseUser ? 'User signed in' : 'User signed out');
 
-        let unsubscribe: (() => void) | null = null;
+            if (firebaseUser) {
+                try {
+                    // 1. Try to get user data from Firestore first (for email/password users)
+                    const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
-        try {
-            unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-                console.log('[AuthProvider] Auth state changed:', firebaseUser ? 'User signed in' : 'User signed out');
-                clearTimeout(timeoutId);
-
-                if (firebaseUser) {
-                    // User is signed in.
-                    // We still need to recover their "role" from local storage since anonymous auth doesn't store that.
-                    try {
-                        const savedUser = localStorage.getItem('erp-user');
-                        if (savedUser) {
-                            const parsedUser = JSON.parse(savedUser);
-                            setUser({
-                                ...parsedUser,
-                                uid: firebaseUser.uid
-                            });
-                            console.log('[AuthProvider] User restored from localStorage:', parsedUser.email);
-                        } else {
-                            // Fallback if no local data but firebase session exists (edge case)
-                            console.warn('[AuthProvider] No saved user in localStorage, using fallback');
-                            setUser({
-                                name: 'Anonymous User',
-                                email: 'anon@example.com',
-                                role: 'Cashier',
-                                uid: firebaseUser.uid
-                            });
+                    if (userDoc.exists()) {
+                        const data = userDoc.data() as User;
+                        // Check if whitelisted for SuperAdmin (even if Firestore says otherwise)
+                        const isWhitelisted = SUPERADMIN_EMAILS.includes(firebaseUser.email?.toLowerCase() || '');
+                        if (isWhitelisted && data.role !== 'SuperAdmin') {
+                            data.role = 'SuperAdmin';
                         }
-                    } catch (e) {
-                        console.error('[AuthProvider] Failed to restore user role', e);
-                        setAuthError('Failed to restore user session');
+                        setUser({ ...data, id: firebaseUser.uid });
+                        console.log('[AuthProvider] User loaded from Firestore:', data.email, 'Role:', data.role);
+                    } else {
+                        // Check if whitelisted for SuperAdmin for new users
+                        const isWhitelisted = SUPERADMIN_EMAILS.includes(firebaseUser.email?.toLowerCase() || '');
+                        if (isWhitelisted) {
+                            const superAdminUser: User = {
+                                id: firebaseUser.uid,
+                                name: firebaseUser.displayName || 'SuperAdmin',
+                                email: firebaseUser.email!,
+                                role: 'SuperAdmin',
+                                username: firebaseUser.email!.split('@')[0],
+                                status: 'Active',
+                                businessId: null,
+                                privileges: {
+                                    canManageRegister: true,
+                                    modules: []
+                                }
+                            };
+                            setUser(superAdminUser);
+                            console.log('[AuthProvider] Whitelisted SuperAdmin loaded from email:', firebaseUser.email);
+                        } else {
+                            // 2. Fallback to localStorage for anonymous POS users
+                            const savedUser = localStorage.getItem('erp-user');
+                            if (savedUser) {
+                                const parsedUser = JSON.parse(savedUser);
+                                setUser({
+                                    ...parsedUser,
+                                    id: firebaseUser.uid
+                                });
+                                console.log('[AuthProvider] User restored from localStorage:', parsedUser.email);
+                            } else {
+                                // 3. Absolute fallback
+                                setUser({
+                                    id: firebaseUser.uid,
+                                    name: firebaseUser.displayName || 'Anonymous User',
+                                    email: firebaseUser.email || 'anon@example.com',
+                                    role: 'Cashier',
+                                    username: 'anonymous',
+                                    status: 'Active',
+                                    businessId: null
+                                });
+                            }
+                        }
                     }
-                } else {
-                    // User is signed out.
-                    console.log('[AuthProvider] User signed out');
-                    setUser(null);
+                } catch (e) {
+                    console.error('[AuthProvider] Error fetching user data:', e);
                 }
-                setLoading(false);
-            }, (error) => {
-                console.error('[AuthProvider] Auth state listener error:', error);
-                clearTimeout(timeoutId);
-                setLoading(false);
-                setAuthError(`Authentication error: ${error.message}`);
-            });
-        } catch (error) {
-            console.error('[AuthProvider] Failed to initialize auth listener:', error);
-            clearTimeout(timeoutId);
-            setLoading(false);
-            setAuthError('Failed to initialize authentication');
-        }
-
-        return () => {
-            clearTimeout(timeoutId);
-            if (unsubscribe) {
-                unsubscribe();
+            } else {
+                setUser(null);
             }
-        };
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    const login = async (userData: { name: string, email: string, role: 'Admin' | 'Cashier' }) => {
+    const login = async (email: string, password: string) => {
         setLoading(true);
         try {
-            await signInAnonymously(auth);
-
-            // Store role metadata locally used for UI
-            localStorage.setItem('erp-user', JSON.stringify(userData));
-
-            // State update will happen in onAuthStateChanged
+            await signInWithEmailAndPassword(auth, email, password);
         } catch (error) {
             console.error("Login failed", error);
             setLoading(false);
+            throw error;
+        }
+    };
+
+    const loginWithGoogle = async (asSuperAdmin: boolean = false) => {
+        setLoading(true);
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const firebaseUser = result.user;
+
+            if (asSuperAdmin) {
+                // Create or update user document as SuperAdmin
+                const userRef = doc(db, 'users', firebaseUser.uid);
+                await setDoc(userRef, {
+                    email: firebaseUser.email,
+                    name: firebaseUser.displayName || 'SuperAdmin',
+                    username: firebaseUser.email?.split('@')[0] || 'superadmin',
+                    role: 'SuperAdmin',
+                    status: 'Active',
+                    businessId: null,
+                    privileges: {
+                        canManageRegister: true,
+                        modules: []
+                    }
+                }, { merge: true });
+                console.log('[AuthProvider] SuperAdmin user created/updated in Firestore');
+            }
+            // Auth state listener will handle the rest
+        } catch (error) {
+            console.error("Google login failed", error);
+            setLoading(false);
+            throw error;
+        }
+    };
+
+    const loginAsUser = async (userData: { name: string, email: string, role: UserRole, id: string, businessId?: string }) => {
+        setLoading(true);
+        try {
+            await signInAnonymously(auth);
+            localStorage.setItem('erp-user', JSON.stringify(userData));
+            // Auth state listener will handle the rest
+        } catch (error) {
+            console.error("Anonymous login failed", error);
+            setLoading(false);
+            throw error;
+        }
+    };
+
+    const register = async (email: string, password: string, userData: Omit<User, 'id'>) => {
+        setLoading(true);
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
+
+            await updateProfile(firebaseUser, { displayName: userData.name });
+
+            // Save to Firestore
+            await setDoc(doc(db, 'users', firebaseUser.uid), {
+                ...userData,
+                id: firebaseUser.uid
+            });
+
+        } catch (error) {
+            console.error("Registration failed", error);
+            setLoading(false);
+            throw error;
         }
     };
 
@@ -131,7 +207,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const value = { user, loading, login, logout };
+    const value = { user, loading, login, loginWithGoogle, loginAsUser, register, logout };
 
     return (
         <AuthContext.Provider value={value}>

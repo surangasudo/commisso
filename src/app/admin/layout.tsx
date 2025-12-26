@@ -30,6 +30,7 @@ import {
     HelpCircle,
     Repeat,
     Megaphone,
+    Shield,
 } from 'lucide-react';
 
 import {
@@ -58,39 +59,41 @@ import { useAuth } from '@/hooks/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { BroadcastDialog } from '@/components/broadcast-dialog';
+import { SUPERADMIN_EMAILS } from '@/lib/data';
 
 const allSidebarNav = [
-    { href: "/admin/dashboard", icon: Home, label: "Home", roles: ['Admin', 'Cashier'] },
+    { href: "/admin/dashboard", icon: Home, label: "Home", roles: ['Admin', 'Manager', 'Cashier'] },
+    { href: "/superadmin/dashboard", icon: Shield, label: "Superadmin Portal", roles: ['SuperAdmin'] },
     {
         label: "User Management",
         icon: Users,
-        roles: ['Admin'],
+        roles: ['Admin', 'Manager'],
         children: [
             { href: "/admin/users", label: "Users" },
-            { href: "/admin/roles", label: "Roles" },
-            { href: "/admin/sales-commission-agents", label: "Sales Commission Agents" }
+            { href: "/admin/roles", label: "Roles", roles: ['Admin'] },
+            { href: "/admin/sales-commission-agents", label: "Sales Commission Agents", module: 'commission' }
         ]
     },
     {
         label: "Contacts",
         icon: Contact,
-        roles: ['Admin', 'Cashier'],
+        roles: ['Admin', 'Manager', 'Cashier'],
         children: [
-            { href: "/admin/contacts/suppliers", label: "Suppliers", roles: ['Admin'] },
-            { href: "/admin/contacts/customers", label: "Customers", roles: ['Admin', 'Cashier'] },
-            { href: "/admin/contacts/customer-groups", label: "Customer Groups", roles: ['Admin'] },
+            { href: "/admin/contacts/suppliers", label: "Suppliers", roles: ['Admin', 'Manager'] },
+            { href: "/admin/contacts/customers", label: "Customers" },
+            { href: "/admin/contacts/customer-groups", label: "Customer Groups", roles: ['Admin', 'Manager'] },
             { href: "/admin/contacts/import", label: "Import Contacts", roles: ['Admin'] },
         ]
     },
     {
         label: "Products",
         icon: Package,
-        roles: ['Admin', 'Cashier'],
+        roles: ['Admin', 'Manager', 'Cashier'],
         children: [
             { href: "/admin/products/list", label: "List Products" },
-            { href: "/admin/products/add", label: "Add Product" },
+            { href: "/admin/products/add", label: "Add Product", roles: ['Admin', 'Manager'] },
             { href: "/admin/products/update-price", label: "Update Price", roles: ['Admin'] },
-            { href: "/admin/products/print-labels", label: "Print Labels", roles: ['Admin'] },
+            { href: "/admin/products/print-labels", label: "Print Labels" },
             { href: "/admin/products/variations", label: "Variations", roles: ['Admin'] },
             { href: "/admin/products/import", label: "Import Products", roles: ['Admin'] },
             { href: "/admin/products/import-opening-stock", label: "Import Opening Stock", roles: ['Admin'] },
@@ -104,7 +107,7 @@ const allSidebarNav = [
     {
         label: "Purchases",
         icon: Download,
-        roles: ['Admin'],
+        roles: ['Admin', 'Manager'],
         children: [
             { href: "/admin/purchases/list", label: "List Purchases" },
             { href: "/admin/purchases/add", label: "Add Purchase" },
@@ -114,26 +117,27 @@ const allSidebarNav = [
     {
         label: "Sell",
         icon: Upload,
-        roles: ['Admin', 'Cashier'],
+        roles: ['Admin', 'Manager', 'Cashier'],
         children: [
             { href: "/admin/sales/all", label: "All sales" },
             { href: "/admin/sales/add", label: "Add Sale" },
             { href: "/admin/sales/list-pos", label: "List POS" },
             { href: "/admin/pos", label: "POS" },
-            { href: "/admin/sales/draft/add", label: "Add Draft", roles: ['Admin'] },
-            { href: "/admin/sales/drafts", label: "List Drafts", roles: ['Admin'] },
-            { href: "/admin/sales/quotation/add", label: "Add Quotation", roles: ['Admin'] },
-            { href: "/admin/sales/quotations", label: "List quotations", roles: ['Admin'] },
+            { href: "/admin/sales/draft/add", label: "Add Draft" },
+            { href: "/admin/sales/drafts", label: "List Drafts" },
+            { href: "/admin/sales/quotation/add", label: "Add Quotation" },
+            { href: "/admin/sales/quotations", label: "List quotations" },
             { href: "/admin/sales/return/list", label: "List Sell Return" },
-            { href: "/admin/sales/shipments", label: "Shipments", roles: ['Admin'] },
-            { href: "/admin/sales/discounts", label: "Discounts", roles: ['Admin'] },
+            { href: "/admin/sales/shipments", label: "Shipments", roles: ['Admin', 'Manager'] },
+            { href: "/admin/sales/discounts", label: "Discounts", roles: ['Admin', 'Manager'] },
             { href: "/admin/sales/import", label: "Import Sales", roles: ['Admin'] },
         ]
     },
     {
         label: "Stock Transfers",
         icon: ArrowRightLeft,
-        roles: ['Admin'],
+        roles: ['Admin', 'Manager'],
+        module: 'stock-transfers',
         children: [
             { href: "/admin/stock-transfers/list", label: "List Stock Transfers" },
             { href: "/admin/stock-transfers/add", label: "Add Stock Transfer" },
@@ -142,7 +146,8 @@ const allSidebarNav = [
     {
         label: "Stock Adjustment",
         icon: SlidersHorizontal,
-        roles: ['Admin'],
+        roles: ['Admin', 'Manager'],
+        module: 'stock-adjustment',
         children: [
             { href: "/admin/stock-adjustment/list", label: "List Stock Adjustments" },
             { href: "/admin/stock-adjustment/add", label: "Add Stock Adjustment" },
@@ -151,7 +156,8 @@ const allSidebarNav = [
     {
         label: "Expenses",
         icon: Wallet,
-        roles: ['Admin', 'Cashier'],
+        roles: ['Admin', 'Manager', 'Cashier'],
+        module: 'expenses',
         children: [
             { href: "/admin/expenses/list", label: "List Expenses" },
             { href: "/admin/expenses/add", label: "Add Expense" },
@@ -162,6 +168,7 @@ const allSidebarNav = [
         label: "Payment Accounts",
         icon: Landmark,
         roles: ['Admin'],
+        module: 'payment-accounts',
         children: [
             { href: "/admin/payment-accounts/list", label: "List Accounts" },
             { href: "/admin/payment-accounts/balance-sheet", label: "Balance Sheet" },
@@ -173,7 +180,8 @@ const allSidebarNav = [
     {
         label: "Reports",
         icon: FileText,
-        roles: ['Admin'],
+        roles: ['Admin', 'Manager'],
+        module: 'reports',
         children: [
             { href: "/admin/reports/profit-loss", label: "Profit / Loss Report" },
             { href: "/admin/reports/purchase-sale", label: "Purchase & Sale" },
@@ -207,8 +215,7 @@ const allSidebarNav = [
             { href: "/admin/settings/barcode", label: "Barcode Settings" },
             { href: "/admin/settings/receipt-printers", label: "Receipt Printers" },
             { href: "/admin/settings/tax-rates", label: "Tax Rates" },
-            { href: "/admin/settings/multi-currency", label: "Multi-currency" },
-            { href: "/admin/settings/package-subscription", label: "Package Subscription" },
+            { href: "/admin/settings/multi-currency", label: "Multi-currency", module: 'multi-currency' },
         ]
     },
 ];
@@ -230,11 +237,23 @@ export default function AdminLayout({
     const sidebarNav = React.useMemo(() => {
         if (!user) return [];
 
-        const filterNav = (items: any[]) => {
-            return items.reduce((acc: any[], item) => {
-                if (item.roles && !item.roles.includes(user.role)) {
+        const enabledModules = user.privileges?.modules || [];
+
+        const filterNav = (items: any[]): any[] => {
+            return items.reduce((acc: any[], item: any) => {
+                // SuperAdmin bypasses all role and module checks
+                const isSuperAdmin = user.role === 'SuperAdmin' || (user.email && SUPERADMIN_EMAILS.includes(user.email.toLowerCase()));
+
+                // Role check
+                if (!isSuperAdmin && item.roles && !item.roles.includes(user.role)) {
                     return acc;
                 }
+
+                // Module check
+                if (!isSuperAdmin && item.module && !enabledModules.includes(item.module)) {
+                    return acc;
+                }
+
                 if (item.children) {
                     const filteredChildren = filterNav(item.children);
                     if (filteredChildren.length > 0) {
@@ -258,8 +277,8 @@ export default function AdminLayout({
 
 
     useEffect(() => {
-        const activeParent = sidebarNav.find(item =>
-            item.children?.some(child => pathname.startsWith(child.href))
+        const activeParent = sidebarNav.find((item: any) =>
+            item.children?.some((child: any) => pathname.startsWith(child.href))
         );
         if (activeParent) {
             setOpenMenu(activeParent.label);
@@ -287,12 +306,12 @@ export default function AdminLayout({
                 <Sidebar>
                     <SidebarContent>
                         <SidebarMenu>
-                            {sidebarNav.map((item) => (
+                            {sidebarNav.map((item: any) => (
                                 <SidebarMenuItem key={item.label}>
                                     {item.children ? (
                                         <>
                                             <SidebarMenuButton
-                                                variant={openMenu === item.label || item.children.some(c => pathname.startsWith(c.href)) ? 'secondary' : 'ghost'}
+                                                variant={openMenu === item.label || item.children.some((c: any) => pathname.startsWith(c.href)) ? 'default' : 'ghost'}
                                                 className="w-full justify-between"
                                                 onClick={() => toggleMenu(item.label)}
                                             >
@@ -304,12 +323,12 @@ export default function AdminLayout({
                                             </SidebarMenuButton>
                                             {openMenu === item.label && (
                                                 <ul className="pl-7 pt-2 flex flex-col gap-1">
-                                                    {item.children.map((child) => (
+                                                    {item.children.map((child: any) => (
                                                         <li key={child.label}>
                                                             <Link href={child.href} className="w-full">
                                                                 <SidebarMenuButton
                                                                     tooltip={child.label}
-                                                                    variant={pathname === child.href ? 'secondary' : 'ghost'}
+                                                                    variant={pathname === child.href ? 'default' : 'ghost'}
                                                                     className="w-full justify-start h-8 text-sm"
                                                                 >
                                                                     <span>{child.label}</span>
@@ -322,7 +341,7 @@ export default function AdminLayout({
                                         </>
                                     ) : (
                                         <Link href={item.href!} className="w-full">
-                                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'secondary' : 'ghost'}>
+                                            <SidebarMenuButton tooltip={item.label} variant={pathname === item.href ? 'default' : 'ghost'}>
                                                 <item.icon />
                                                 <span>{item.label}</span>
                                             </SidebarMenuButton>
@@ -378,6 +397,14 @@ export default function AdminLayout({
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>{user.name} ({user.role})</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
+                                    {(user.role === 'SuperAdmin' || (user.email && SUPERADMIN_EMAILS.includes(user.email.toLowerCase()))) && (
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/superadmin/dashboard" className="flex items-center gap-2">
+                                                <Shield className="h-4 w-4" />
+                                                Superadmin Portal
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuItem>Settings</DropdownMenuItem>
                                     <DropdownMenuItem>Support</DropdownMenuItem>
                                     <DropdownMenuSeparator />
