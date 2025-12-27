@@ -3089,6 +3089,7 @@ export default function PosPage() {
                 onClose={() => setIsOpenRegisterOpen(false)}
                 userId={user?.id || ''}
                 userName={user?.name || ''}
+                businessId={user?.businessId || undefined}
                 isAutoOpened={!activeRegister}
                 onSuccess={() => {
                     fetchActiveRegister();

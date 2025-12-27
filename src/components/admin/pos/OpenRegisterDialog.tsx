@@ -14,11 +14,12 @@ interface OpenRegisterDialogProps {
     onClose: () => void;
     userId: string;
     userName: string;
+    businessId?: string; // Added businessId prop
     onSuccess: (registerId: string) => void;
     isAutoOpened?: boolean;
 }
 
-export function OpenRegisterDialog({ isOpen, onClose, userId, userName, onSuccess, isAutoOpened = false }: OpenRegisterDialogProps) {
+export function OpenRegisterDialog({ isOpen, onClose, userId, userName, businessId, onSuccess, isAutoOpened = false }: OpenRegisterDialogProps) {
     const [openingCash, setOpeningCash] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const { toast } = useToast();
@@ -27,7 +28,7 @@ export function OpenRegisterDialog({ isOpen, onClose, userId, userName, onSucces
         const cashValue = parseFloat(openingCash) || 0;
         setLoading(true);
         try {
-            const registerId = await openRegister(userId, userName, cashValue, 'Main Store');
+            const registerId = await openRegister(userId, userName, cashValue, 'Main Store', businessId); // Pass businessId
             toast({
                 title: "Register Opened",
                 description: `Cash register opened with $${cashValue.toLocaleString()}`,
