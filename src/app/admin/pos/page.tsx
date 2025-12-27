@@ -1810,7 +1810,7 @@ export default function PosPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast, products.length]);
+    }, [toast, products.length, user]);
 
     const finalizeAndShowReceipt = useCallback(async (paymentMethod: string, paymentStatus: 'Paid' | 'Due' | 'Partial', totalPaid: number, paymentReference?: string) => {
         if (cart.length === 0) {

@@ -65,6 +65,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useCurrency } from '@/hooks/use-currency';
+import { useAuth } from '@/hooks/use-auth';
 import { getProducts, deleteProduct } from '@/services/productService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AppFooter } from '@/components/app-footer';
@@ -84,6 +85,7 @@ const productHints: { [key: string]: string } = {
 export default function ListProductsPage() {
   const router = useRouter();
   const { formatCurrency } = useCurrency();
+  const { user, loading: isLoadingAuth } = useAuth();
   const [products, setProducts] = useState<DetailedProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -91,8 +93,11 @@ export default function ListProductsPage() {
 
   useEffect(() => {
     const fetchProducts = async () => {
+      if (isLoadingAuth) return;
+      setIsLoading(true); // Ensure loading state is true when fetching starts/restarts
       try {
-        const productsData = await getProducts();
+        const bizId = user?.businessId || undefined;
+        const productsData = await getProducts(bizId);
         setProducts(productsData);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -101,7 +106,7 @@ export default function ListProductsPage() {
       }
     };
     fetchProducts();
-  }, []);
+  }, [user, isLoadingAuth]);
 
   const handleView = (productId: string) => {
     router.push(`/admin/products/view/${productId}`);

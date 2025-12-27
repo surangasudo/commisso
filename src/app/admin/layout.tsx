@@ -360,7 +360,7 @@ export default function AdminLayout({
                             <SidebarTrigger className="lg:hidden text-primary-foreground" />
                             <div className="hidden items-center gap-2 lg:flex">
                                 <Logo className="size-7" />
-                                <span className="font-headline text-lg">{settings.system.appName}</span>
+                                <span className="font-headline text-lg">{settings.business.businessName}</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">

@@ -66,6 +66,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/hooks/use-currency';
+import { useAuth } from '@/hooks/use-auth';
 import { Checkbox } from '@/components/ui/checkbox';
 
 
@@ -85,6 +86,7 @@ const getPaymentStatusBadge = (status: string) => {
 export default function AllSalesPage() {
     const [sales, setSales] = useState<Sale[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { user, loading: isLoadingAuth } = useAuth();
     const router = useRouter();
     const { toast } = useToast();
     const { formatCurrency } = useCurrency();
@@ -98,7 +100,8 @@ export default function AllSalesPage() {
     const fetchSalesData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = await getSales();
+            const bizId = user?.businessId || undefined;
+            const data = await getSales(bizId);
             setSales(data);
         } catch (error) {
             console.error("Failed to fetch sales:", error);
@@ -106,11 +109,13 @@ export default function AllSalesPage() {
         } finally {
             setIsLoading(false);
         }
-    }, [toast]);
+    }, [toast, user]);
 
     useEffect(() => {
-        fetchSalesData();
-    }, [fetchSalesData]);
+        if (!isLoadingAuth) {
+            fetchSalesData();
+        }
+    }, [fetchSalesData, isLoadingAuth]);
 
     const totalAmount = sales.reduce((acc, sale) => acc + sale.totalAmount, 0);
     const totalPaid = sales.reduce((acc, sale) => acc + sale.totalPaid, 0);
